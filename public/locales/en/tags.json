@@ -1,0 +1,13 @@
+{
+  "title": "Tags",
+  "add": "New Tag",
+  "edit": "Edit Tag",
+  "delete": "Delete",
+  "deleteTitle": "Delete Tag",
+  "deleteConfirmation": "Are you sure you want to delete tag {name}?",
+  "deleteWarning": "This action cannot be undone. Any messages or prompts using this tag will be unaffected.",
+  "form": {
+    "name": "Name",
+    "color": "Color"
+  }
+}

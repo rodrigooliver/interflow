@@ -1,0 +1,16 @@
+{
+  "title": "Atajos de Mensaje",
+  "newShortcut": "Nuevo Atajo",
+  "editShortcut": "Editar Atajo",
+  "saveChanges": "Guardar Cambios",
+  "noShortcuts": "No hay atajos registrados",
+  "attachments": "Adjuntos",
+  "uploadFiles": "Subir archivos",
+  "dragAndDrop": "o arrastrar y soltar",
+  "maxSize": "Cualquier tipo de archivo hasta 10MB",
+  "delete": {
+    "title": "Eliminar Atajo",
+    "confirmation": "¿Estás seguro de que deseas eliminar el atajo {name}?",
+    "warning": "Esta acción no se puede deshacer."
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "title": "Flujos",
+  "newFlow": "Nuevo Flujo",
+  "newFolder": "Nueva Carpeta",
+  "published": "Publicado",
+  "publish": "Publicar",
+  "restore": "Restaurar Versión Publicada",
+  "lastSaved": "Guardado a las {{time}}",
+  "variables": {
+    "title": "Variables",
+    "add": "Agregar Variable"
+  },
+  "nodes": {
+    "start": "Inicio",
+    "sendText": "Enviar Texto",
+    "sendAudio": "Enviar Audio",
+    "sendImage": "Enviar Imagen",
+    "sendVideo": "Enviar Video",
+    "sendDocument": "Enviar Documento",
+    "messagePlaceholder": "Escribe tu mensaje...",
+    "audio": "Audio",
+    "image": "Imagen",
+    "video": "Video",
+    "document": "Documento",
+    "delay": "Esperar",
+    "delaySeconds": "segundos",
+    "variable": {
+      "title": "Cambiar Variable",
+      "namePlaceholder": "Nombre de la variable",
+      "valuePlaceholder": "Valor"
+    },
+    "condition": {
+      "title": "Condición",
+      "if": "Si",
+      "elseIf": "Si no si",
+      "else": "Si no",
+      "variablePlaceholder": "Nombre de la variable",
+      "valuePlaceholder": "Valor",
+      "operators": {
+        "equals": "es igual a",
+        "notEquals": "es diferente de",
+        "greaterThan": "mayor que",
+        "lessThan": "menor que",
+        "greaterOrEqual": "mayor o igual a",
+        "lessOrEqual": "menor o igual a"
+      }
+    },
+    "input": "Esperar Respuesta",
+    "inputPlaceholder": "Escribe la pregunta...",
+    "options": {
+      "title": "Opciones",
+      "textPlaceholder": "Texto de la opción",
+      "valuePlaceholder": "Valor"
+    },
+    "mediaUrlPlaceholder": "URL del archivo"
+  },
+  "delete": {
+    "title": "Eliminar Flujo",
+    "confirmation": "¿Estás seguro de que deseas eliminar el flujo {name}?",
+    "warning": "Esta acción no se puede deshacer."
+  },
+  "folder": {
+    "title": "Eliminar Carpeta",
+    "confirmation": "¿Estás seguro de que deseas eliminar la carpeta {name}?",
+    "warning": "Esta acción no se puede deshacer. Todos los flujos dentro de esta carpeta se moverán a la raíz."
+  }
+}

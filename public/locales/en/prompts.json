@@ -1,0 +1,17 @@
+{
+  "title": "Prompts",
+  "add": "New Prompt",
+  "edit": "Edit Prompt",
+  "delete": "Delete",
+  "deleteTitle": "Delete Prompt",
+  "deleteConfirmation": "Are you sure you want to delete prompt {name}?",
+  "deleteWarning": "This action cannot be undone.",
+  "lastUpdated": "Last updated",
+  "form": {
+    "title": "Title",
+    "description": "Description",
+    "content": "Content",
+    "tags": "Tags",
+    "tagsPlaceholder": "Enter tags separated by commas"
+  }
+}

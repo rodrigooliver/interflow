@@ -1,0 +1,16 @@
+{
+  "title": "Atalhos de Mensagem",
+  "newShortcut": "Novo Atalho",
+  "editShortcut": "Editar Atalho",
+  "saveChanges": "Salvar Alterações",
+  "noShortcuts": "Nenhum atalho cadastrado",
+  "attachments": "Anexos",
+  "uploadFiles": "Fazer upload de arquivos",
+  "dragAndDrop": "ou arraste e solte",
+  "maxSize": "Qualquer tipo de arquivo até 10MB",
+  "delete": {
+    "title": "Excluir Atalho",
+    "confirmation": "Tem certeza que deseja excluir o atalho {name}?",
+    "warning": "Esta ação não pode ser desfeita."
+  }
+}

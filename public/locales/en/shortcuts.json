@@ -1,0 +1,16 @@
+{
+  "title": "Message Shortcuts",
+  "newShortcut": "New Shortcut",
+  "editShortcut": "Edit Shortcut",
+  "saveChanges": "Save Changes",
+  "noShortcuts": "No shortcuts registered",
+  "attachments": "Attachments",
+  "uploadFiles": "Upload files",
+  "dragAndDrop": "or drag and drop",
+  "maxSize": "Any file type up to 10MB",
+  "delete": {
+    "title": "Delete Shortcut",
+    "confirmation": "Are you sure you want to delete shortcut {name}?",
+    "warning": "This action cannot be undone."
+  }
+}

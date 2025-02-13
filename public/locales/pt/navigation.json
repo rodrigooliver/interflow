@@ -1,0 +1,15 @@
+{
+  "dashboard": "Painel",
+  "chats": "Atendimentos",
+  "customers": "Clientes",
+  "crm": "CRM",
+  "shortcuts": "Atalhos",
+  "settings": "Configurações",
+  "team": "Usuários",
+  "serviceTeams": "Equipes",
+  "channels": "Canais",
+  "flows": "Fluxos",
+  "organizations": "Organizações",
+  "tags": "Tags",
+  "prompts": "Modelos de Mensagem"
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Etiquetas",
+  "add": "Nueva Etiqueta",
+  "edit": "Editar Etiqueta",
+  "delete": "Eliminar",
+  "deleteTitle": "Eliminar Etiqueta",
+  "deleteConfirmation": "¿Estás seguro de que deseas eliminar la etiqueta {name}?",
+  "deleteWarning": "Esta acción no se puede deshacer. Los mensajes y prompts que usan esta etiqueta no se verán afectados.",
+  "form": {
+    "name": "Nombre",
+    "color": "Color"
+  }
+}

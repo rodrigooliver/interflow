@@ -1,0 +1,27 @@
+{
+  "title": "CRM",
+  "funnels": {
+    "title": "Funis de Vendas",
+    "newFunnel": "Novo Funil",
+    "noFunnels": "Nenhum Funil de Vendas",
+    "createFirst": "Crie seu primeiro funil de vendas para começar a organizar suas oportunidades",
+    "name": "Nome do Funil",
+    "description": "Descrição",
+    "delete": {
+      "title": "Excluir Funil",
+      "confirmation": "Tem certeza que deseja excluir o funil {name}?",
+      "warning": "Esta ação não pode ser desfeita.",
+      "hasCustomers": "Não é possível excluir o funil pois existem clientes em algum dos estágios."
+    }
+  },
+  "stages": {
+    "new": "Novo",
+    "inProgress": "Em Andamento",
+    "completed": "Concluído",
+    "addStage": "Novo Estágio",
+    "editStage": "Editar Estágio",
+    "deleteStage": "Excluir Estágio",
+    "stageName": "Nome do Estágio",
+    "stageColor": "Cor"
+  }
+}

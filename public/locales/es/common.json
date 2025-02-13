@@ -1,0 +1,13 @@
+{
+  "search": "Buscar",
+  "loading": "Cargando...",
+  "saving": "Guardar",
+  "deleting": "Eliminando...",
+  "confirmDelete": "Eliminar",
+  "noResults": "No se encontraron resultados",
+  "error": "Ocurrió un error. Por favor, intente nuevamente.",
+  "back": "Volver",
+  "lightMode": "Modo Claro",
+  "darkMode": "Modo Oscuro",
+  "logout": "Cerrar Sesión"
+}

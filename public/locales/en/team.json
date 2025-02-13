@@ -1,0 +1,40 @@
+{
+  "title": "Users",
+  "addUser": "Add User",
+  "user": {
+    "title": "User",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "since": "Since",
+    "unknown": "Unknown User",
+    "emailNotAvailable": "Email not available"
+  },
+  "form": {
+    "fullName": "Full Name",
+    "email": "Email",
+    "password": "Password",
+    "role": "Role"
+  },
+  "actions": {
+    "register": "Register",
+    "remove": "Remove",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "delete": {
+    "title": "Delete User",
+    "confirmation": "Are you sure you want to delete user {name}?",
+    "warning": "This action cannot be undone."
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Administrator",
+    "agent": "Agent"
+  },
+  "errors": {
+    "noOrganization": "No organization selected",
+    "userExists": "This email is already registered. Please use another email."
+  }
+}

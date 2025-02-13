@@ -1,0 +1,67 @@
+{
+  "title": "Fluxos",
+  "newFlow": "Novo Fluxo",
+  "newFolder": "Nova Pasta",
+  "published": "Publicado",
+  "publish": "Publicar",
+  "restore": "Restaurar Versão Publicada",
+  "lastSaved": "Salvo às {{time}}",
+  "variables": {
+    "title": "Variáveis",
+    "add": "Adicionar Variável"
+  },
+  "nodes": {
+    "start": "Início",
+    "sendText": "Enviar Texto",
+    "sendAudio": "Enviar Áudio",
+    "sendImage": "Enviar Imagem",
+    "sendVideo": "Enviar Vídeo",
+    "sendDocument": "Enviar Documento",
+    "messagePlaceholder": "Digite sua mensagem...",
+    "audio": "Áudio",
+    "image": "Imagem",
+    "video": "Vídeo",
+    "document": "Documento",
+    "delay": "Aguardar",
+    "delaySeconds": "segundos",
+    "variable": {
+      "title": "Alterar Variável",
+      "namePlaceholder": "Nome da variável",
+      "valuePlaceholder": "Valor"
+    },
+    "condition": {
+      "title": "Condição",
+      "if": "Se",
+      "elseIf": "Senão se",
+      "else": "Senão",
+      "variablePlaceholder": "Nome da variável",
+      "valuePlaceholder": "Valor",
+      "operators": {
+        "equals": "é igual a",
+        "notEquals": "é diferente de",
+        "greaterThan": "maior que",
+        "lessThan": "menor que",
+        "greaterOrEqual": "maior ou igual a",
+        "lessOrEqual": "menor ou igual a"
+      }
+    },
+    "input": "Aguardar Resposta",
+    "inputPlaceholder": "Digite a pergunta...",
+    "options": {
+      "title": "Opções",
+      "textPlaceholder": "Texto da opção",
+      "valuePlaceholder": "Valor"
+    },
+    "mediaUrlPlaceholder": "URL do arquivo"
+  },
+  "delete": {
+    "title": "Excluir Fluxo",
+    "confirmation": "Tem certeza que deseja excluir o fluxo {name}?",
+    "warning": "Esta ação não pode ser desfeita."
+  },
+  "folder": {
+    "title": "Excluir Pasta",
+    "confirmation": "Tem certeza que deseja excluir a pasta {name}?",
+    "warning": "Esta ação não pode ser desfeita. Todos os fluxos dentro desta pasta serão movidos para a raiz."
+  }
+}

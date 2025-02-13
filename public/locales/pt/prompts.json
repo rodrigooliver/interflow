@@ -1,0 +1,17 @@
+{
+  "title": "Prompts",
+  "add": "Novo Prompt",
+  "edit": "Editar Prompt",
+  "delete": "Excluir",
+  "deleteTitle": "Excluir Prompt",
+  "deleteConfirmation": "Tem certeza que deseja excluir o prompt {name}?",
+  "deleteWarning": "Esta ação não pode ser desfeita.",
+  "lastUpdated": "Última atualização",
+  "form": {
+    "title": "Título",
+    "description": "Descrição",
+    "content": "Conteúdo",
+    "tags": "Tags",
+    "tagsPlaceholder": "Digite as tags separadas por vírgulas"
+  }
+}

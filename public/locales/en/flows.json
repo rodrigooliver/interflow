@@ -1,0 +1,67 @@
+{
+  "title": "Flows",
+  "newFlow": "New Flow",
+  "newFolder": "New Folder",
+  "published": "Published",
+  "publish": "Publish",
+  "restore": "Restore Published Version",
+  "lastSaved": "Last saved at {{time}}",
+  "variables": {
+    "title": "Variables",
+    "add": "Add Variable"
+  },
+  "nodes": {
+    "start": "Start",
+    "sendText": "Send Text",
+    "sendAudio": "Send Audio",
+    "sendImage": "Send Image",
+    "sendVideo": "Send Video",
+    "sendDocument": "Send Document",
+    "messagePlaceholder": "Type your message...",
+    "audio": "Audio",
+    "image": "Image",
+    "video": "Video",
+    "document": "Document",
+    "delay": "Wait",
+    "delaySeconds": "seconds",
+    "variable": {
+      "title": "Change Variable",
+      "namePlaceholder": "Variable name",
+      "valuePlaceholder": "Value"
+    },
+    "condition": {
+      "title": "Condition",
+      "if": "If",
+      "elseIf": "Else if",
+      "else": "Else",
+      "variablePlaceholder": "Variable name",
+      "valuePlaceholder": "Value",
+      "operators": {
+        "equals": "equals",
+        "notEquals": "not equals",
+        "greaterThan": "greater than",
+        "lessThan": "less than",
+        "greaterOrEqual": "greater than or equal to",
+        "lessOrEqual": "less than or equal to"
+      }
+    },
+    "input": "Wait for Response",
+    "inputPlaceholder": "Type the question...",
+    "options": {
+      "title": "Options",
+      "textPlaceholder": "Option text",
+      "valuePlaceholder": "Value"
+    },
+    "mediaUrlPlaceholder": "File URL"
+  },
+  "delete": {
+    "title": "Delete Flow",
+    "confirmation": "Are you sure you want to delete flow {name}?",
+    "warning": "This action cannot be undone."
+  },
+  "folder": {
+    "title": "Delete Folder",
+    "confirmation": "Are you sure you want to delete folder {name}?",
+    "warning": "This action cannot be undone. All flows inside this folder will be moved to the root."
+  }
+}

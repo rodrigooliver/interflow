@@ -1,0 +1,33 @@
+{
+  "title": "CRM",
+  "funnels": {
+    "title": "Embudos de Venta",
+    "newFunnel": "Nuevo Embudo",
+    "noFunnels": "Sin Embudos de Venta",
+    "createFirst": "Crea tu primer embudo de ventas para comenzar a organizar tus oportunidades",
+    "name": "Nombre del Embudo",
+    "description": "Descripción",
+    "delete": {
+      "title": "Eliminar Embudo",
+      "confirmation": "¿Estás seguro de que deseas eliminar el embudo {name}?",
+      "warning": "Esta acción no se puede deshacer.",
+      "hasCustomers": "No se puede eliminar el embudo porque hay clientes en algunas etapas."
+    }
+  },
+  "stages": {
+    "title": "Etapas",
+    "new": "Nuevo",
+    "inProgress": "En Proceso",
+    "completed": "Completado",
+    "addStage": "Nueva Etapa",
+    "editStage": "Editar Etapa",
+    "deleteStage": "Eliminar Etapa",
+    "stageName": "Nombre de la Etapa",
+    "stageColor": "Color"
+  },
+  "customers": {
+    "addCustomer": "Agregar Cliente",
+    "addToStage": "Agregar Cliente a {stage}",
+    "searchPlaceholder": "Buscar clientes por nombre, email o teléfono..."
+  }
+}

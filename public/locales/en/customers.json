@@ -1,0 +1,20 @@
+{
+  "title": "Customers",
+  "addCustomer": "Add Customer",
+  "viewCRM": "View CRM",
+  "name": "Name",
+  "contact": "Contact",
+  "registeredAt": "Registered At",
+  "actions": "Actions",
+  "noCustomers": "No customers registered",
+  "edit": {
+    "title": "Edit Customer",
+    "phone": "Phone",
+    "email": "Email"
+  },
+  "delete": {
+    "title": "Delete Customer",
+    "confirmation": "Are you sure you want to delete customer {name}?",
+    "warning": "This action cannot be undone."
+  }
+}

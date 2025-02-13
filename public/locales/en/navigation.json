@@ -1,0 +1,15 @@
+{
+  "dashboard": "Dashboard",
+  "chats": "Chats",
+  "customers": "Customers",
+  "crm": "CRM",
+  "shortcuts": "Shortcuts",
+  "settings": "Settings",
+  "team": "Users",
+  "serviceTeams": "Teams",
+  "channels": "Channels",
+  "flows": "Flows",
+  "organizations": "Organizations",
+  "tags": "Tags",
+  "prompts": "Message Templates"
+}

@@ -1,0 +1,62 @@
+{
+  "title": "Canales de Servicio",
+  "newChannel": "Nuevo Canal",
+  "form": {
+    "title": {
+      "create": "Nuevo Canal de Servicio",
+      "edit": "Editar Canal de Servicio"
+    },
+    "name": "Nombre del Canal",
+    "type": "Tipo de Canal",
+    "email": {
+      "server": "Servidor IMAP",
+      "port": "Puerto",
+      "secure": "Conexión Segura",
+      "secureYes": "Sí (SSL/TLS)",
+      "secureNo": "No",
+      "username": "Correo",
+      "password": "Contraseña",
+      "passwordHint": "Para Gmail, usa una contraseña de aplicación",
+      "senderName": "Nombre del Remitente",
+      "pollingInterval": "Intervalo de Verificación (segundos)",
+      "testConnection": "Probar Conexión",
+      "testing": "Probando Conexión...",
+      "success": "¡Conexión establecida con éxito!",
+      "error": "Error al conectar con el servidor de correo"
+    }
+  },
+  "types": {
+    "whatsapp_official": "WhatsApp Business API",
+    "whatsapp_wapi": "WhatsApp WApi",
+    "whatsapp_zapi": "WhatsApp ZApi",
+    "whatsapp_evo": "WhatsApp Evolution",
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "email": "Correo"
+  },
+  "descriptions": {
+    "whatsapp_official": "Integración oficial con WhatsApp Business API",
+    "whatsapp_wapi": "Integración con WhatsApp vía WApi - Soporte para múltiples sesiones",
+    "whatsapp_zapi": "Integración con WhatsApp vía ZApi - API administrada y estable",
+    "whatsapp_evo": "Integración con WhatsApp vía Evolution API - Solución open source",
+    "instagram": "Integración con Mensajes Directos de Instagram",
+    "facebook": "Integración con Facebook Messenger",
+    "email": "Soporte de correo con IMAP/SMTP"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "tested": "Probado",
+    "notTested": "No Probado"
+  },
+  "errors": {
+    "testRequired": "El canal debe ser probado antes de activarlo"
+  },
+  "delete": {
+    "title": "Eliminar Canal",
+    "confirmation": "¿Estás seguro de que deseas eliminar el canal {name}?",
+    "warning": "Esta acción no se puede deshacer."
+  }
+}

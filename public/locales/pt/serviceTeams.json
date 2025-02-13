@@ -1,0 +1,22 @@
+{
+  "title": "Equipes",
+  "newTeam": "Nova Equipe",
+  "members": "Membros",
+  "leader": "Líder",
+  "member": "Membro",
+  "addMember": "Adicionar Membro",
+  "form": {
+    "name": "Nome da Equipe",
+    "description": "Descrição"
+  },
+  "removeMember": {
+    "title": "Remover Membro",
+    "confirmation": "Tem certeza que deseja remover {name} da equipe?",
+    "warning": "Esta ação não pode ser desfeita."
+  },
+  "removeTeam": {
+    "title": "Remover Equipe",
+    "confirmation": "Tem certeza que deseja remover a equipe {name}?",
+    "warning": "Esta ação não pode ser desfeita."
+  }
+}

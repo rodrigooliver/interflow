@@ -1,0 +1,40 @@
+{
+  "title": "Usuários",
+  "addUser": "Cadastrar Usuário",
+  "user": {
+    "title": "Usuário",
+    "name": "Nome",
+    "email": "Email",
+    "role": "Função",
+    "since": "Desde",
+    "unknown": "Usuário Desconhecido",
+    "emailNotAvailable": "Email não disponível"
+  },
+  "form": {
+    "fullName": "Nome Completo",
+    "email": "Email",
+    "password": "Senha",
+    "role": "Função"
+  },
+  "actions": {
+    "register": "Cadastrar",
+    "remove": "Remover",
+    "edit": "Editar",
+    "save": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "delete": {
+    "title": "Excluir Usuário",
+    "confirmation": "Tem certeza que deseja excluir o usuário {name}?",
+    "warning": "Esta ação não pode ser desfeita."
+  },
+  "roles": {
+    "owner": "Proprietário",
+    "admin": "Administrador",
+    "agent": "Atendente"
+  },
+  "errors": {
+    "noOrganization": "Organização não selecionada",
+    "userExists": "Este email já está cadastrado. Por favor, use outro email."
+  }
+}

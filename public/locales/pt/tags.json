@@ -1,0 +1,13 @@
+{
+  "title": "Tags",
+  "add": "Nova Tag",
+  "edit": "Editar Tag",
+  "delete": "Excluir",
+  "deleteTitle": "Excluir Tag",
+  "deleteConfirmation": "Tem certeza que deseja excluir a tag {name}?",
+  "deleteWarning": "Esta ação não pode ser desfeita. Mensagens e prompts que usam esta tag não serão afetados.",
+  "form": {
+    "name": "Nome",
+    "color": "Cor"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Profile",
+  "form": {
+    "avatar": "Profile Picture",
+    "changeAvatar": "Change Picture",
+    "removeAvatar": "Remove Picture",
+    "fullName": "Full Name",
+    "email": "Email"
+  },
+  "errors": {
+    "avatarTooLarge": "Profile picture must be less than 2MB",
+    "invalidFileType": "Only image files are allowed"
+  }
+}

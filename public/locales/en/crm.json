@@ -1,0 +1,33 @@
+{
+  "title": "CRM",
+  "funnels": {
+    "title": "Sales Funnels",
+    "newFunnel": "New Funnel",
+    "noFunnels": "No Sales Funnels",
+    "createFirst": "Create your first sales funnel to start organizing your opportunities",
+    "name": "Funnel Name",
+    "description": "Description",
+    "delete": {
+      "title": "Delete Funnel",
+      "confirmation": "Are you sure you want to delete funnel {name}?",
+      "warning": "This action cannot be undone.",
+      "hasCustomers": "Cannot delete funnel because there are customers in some stages."
+    }
+  },
+  "stages": {
+    "title": "Stages",
+    "new": "New",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "addStage": "New Stage",
+    "editStage": "Edit Stage",
+    "deleteStage": "Delete Stage",
+    "stageName": "Stage Name",
+    "stageColor": "Color"
+  },
+  "customers": {
+    "addCustomer": "Add Customer",
+    "addToStage": "Add Customer to {stage}",
+    "searchPlaceholder": "Search customers by name, email or phone..."
+  }
+}

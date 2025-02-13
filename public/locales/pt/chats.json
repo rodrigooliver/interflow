@@ -1,0 +1,71 @@
+{
+  "title": "Atendimentos",
+  "searchPlaceholder": "Buscar atendimento...",
+  "filters": {
+    "title": "Filtros",
+    "unassigned": "Não atribuídos",
+    "assignedToMe": "Atribuídos a mim",
+    "assignedToTeam": "Atribuídos à equipe"
+  },
+  "emptyState": {
+    "title": "Nenhum atendimento",
+    "description": {
+      "unassigned": "Não há atendimentos não atribuídos no momento",
+      "assigned-to-me": "Não há atendimentos atribuídos a você no momento",
+      "team": "Não há atendimentos atribuídos à sua equipe no momento"
+    }
+  },
+  "selectChat": {
+    "title": "Selecione um atendimento",
+    "description": "Escolha um atendimento da lista à esquerda para visualizar a conversa"
+  },
+  "status": {
+    "open": "Em andamento",
+    "closed": "Finalizado"
+  },
+  "messageStatus": {
+    "pending": "Mensagem pendente",
+    "sent": "Mensagem enviada",
+    "delivered": "Mensagem entregue",
+    "read": "Mensagem lida",
+    "failed": "Falha ao enviar"
+  },
+  "time": {
+    "start": "Início",
+    "end": "Fim"
+  },
+  "input": {
+    "placeholder": "Digite sua mensagem..."
+  },
+  "send": "Enviar mensagem",
+  "formatting": {
+    "bold": "Negrito",
+    "italic": "Itálico"
+  },
+  "attachments": {
+    "title": "Anexar arquivo",
+    "image": "Imagem",
+    "document": "Documento",
+    "uploadImage": "Enviar Imagem",
+    "uploadDocument": "Enviar Documento",
+    "dragAndDrop": "Arraste e solte um arquivo aqui, ou clique para selecionar",
+    "maxSize": "Tamanho máximo: 10MB",
+    "selectFile": "Selecionar Arquivo",
+    "uploading": "Enviando...",
+    "errors": {
+      "invalidType": "Tipo de arquivo inválido",
+      "tooLarge": "Arquivo muito grande (máx 10MB)",
+      "uploadFailed": "Falha ao enviar arquivo"
+    }
+  },
+  "emoji": {
+    "title": "Adicionar emoji"
+  },
+  "voice": {
+    "title": "Mensagem de voz"
+  },
+  "errors": {
+    "loading": "Erro ao carregar mensagens",
+    "sending": "Erro ao enviar mensagem"
+  }
+}

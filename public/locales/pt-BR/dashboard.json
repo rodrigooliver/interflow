@@ -1,0 +1,9 @@
+{
+  "title": "Dashboard",
+  "activeChats": "Atendimentos Ativos",
+  "activeChatsDescription": "Conversas em andamento no momento",
+  "totalCustomers": "Total de Clientes",
+  "totalCustomersDescription": "Clientes cadastrados na plataforma",
+  "todayMessages": "Mensagens Hoje",
+  "todayMessagesDescription": "Total de mensagens trocadas hoje"
+}

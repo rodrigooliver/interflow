@@ -1,0 +1,32 @@
+{
+  "title": "Settings",
+  "sections": {
+    "general": "General",
+    "notifications": "Notifications", 
+    "integrations": "Integrations",
+    "billing": "Billing",
+    "usage": "Usage",
+    "comingSoon": "Coming soon"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "add": "Add Integration",
+    "edit": "Edit Integration",
+    "delete": "Delete",
+    "deleteConfirmation": "Are you sure you want to delete this integration?",
+    "type": "Integration Type",
+    "lastUpdated": "Last updated"
+  },
+  "fileManager": {
+    "title": "File Manager",
+    "storageUsage": "Storage Usage",
+    "file": "File",
+    "size": "Size",
+    "uploaded": "Uploaded",
+    "actions": "Actions",
+    "delete": "Delete",
+    "deleteTitle": "Delete File",
+    "deleteConfirmation": "Are you sure you want to delete {name}?",
+    "deleteWarning": "This action cannot be undone. If this file is used in any messages, they will no longer display the file."
+  }
+}

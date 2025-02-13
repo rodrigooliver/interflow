@@ -1,0 +1,40 @@
+{
+  "title": "Usuarios",
+  "addUser": "Agregar Usuario",
+  "user": {
+    "title": "Usuario",
+    "name": "Nombre",
+    "email": "Correo",
+    "role": "Rol",
+    "since": "Desde",
+    "unknown": "Usuario Desconocido",
+    "emailNotAvailable": "Correo no disponible"
+  },
+  "form": {
+    "fullName": "Nombre Completo",
+    "email": "Correo",
+    "password": "Contraseña",
+    "role": "Rol"
+  },
+  "actions": {
+    "register": "Registrar",
+    "remove": "Eliminar",
+    "edit": "Editar",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "delete": {
+    "title": "Eliminar Usuario",
+    "confirmation": "¿Estás seguro de que deseas eliminar el usuario {name}?",
+    "warning": "Esta acción no se puede deshacer."
+  },
+  "roles": {
+    "owner": "Propietario",
+    "admin": "Administrador",
+    "agent": "Agente"
+  },
+  "errors": {
+    "noOrganization": "Organización no seleccionada",
+    "userExists": "Este correo ya está registrado. Por favor, use otro correo."
+  }
+}

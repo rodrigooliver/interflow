@@ -1,0 +1,32 @@
+{
+  "title": "Configuración",
+  "sections": {
+    "general": "General",
+    "notifications": "Notificaciones",
+    "integrations": "Integraciones",
+    "billing": "Facturación",
+    "usage": "Uso",
+    "comingSoon": "Próximamente"
+  },
+  "integrations": {
+    "title": "Integraciones",
+    "add": "Agregar Integración",
+    "edit": "Editar Integración",
+    "delete": "Eliminar",
+    "deleteConfirmation": "¿Estás seguro de que deseas eliminar esta integración?",
+    "type": "Tipo de Integración",
+    "lastUpdated": "Última actualización"
+  },
+  "fileManager": {
+    "title": "Administrador de Archivos",
+    "storageUsage": "Uso de Almacenamiento",
+    "file": "Archivo",
+    "size": "Tamaño",
+    "uploaded": "Subido",
+    "actions": "Acciones",
+    "delete": "Eliminar",
+    "deleteTitle": "Eliminar Archivo",
+    "deleteConfirmation": "¿Estás seguro de que deseas eliminar {name}?",
+    "deleteWarning": "Esta acción no se puede deshacer. Si este archivo se usa en algún mensaje, ya no mostrará el archivo."
+  }
+}

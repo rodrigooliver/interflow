@@ -1,0 +1,9 @@
+{
+  "title": "Painel de Controle",
+  "activeChats": "Atendimentos Ativos",
+  "activeChatsDescription": "Conversas em andamento no momento",
+  "totalCustomers": "Total de Clientes",
+  "totalCustomersDescription": "Clientes cadastrados na plataforma",
+  "todayMessages": "Mensagens de Hoje",
+  "todayMessagesDescription": "Total de mensagens trocadas hoje"
+}

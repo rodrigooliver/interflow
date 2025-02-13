@@ -1,0 +1,71 @@
+{
+  "title": "Chats",
+  "searchPlaceholder": "Search chats...",
+  "filters": {
+    "title": "Filters",
+    "unassigned": "Unassigned",
+    "assignedToMe": "Assigned to me",
+    "assignedToTeam": "Assigned to team"
+  },
+  "emptyState": {
+    "title": "No chats",
+    "description": {
+      "unassigned": "There are no unassigned chats at the moment",
+      "assigned-to-me": "There are no chats assigned to you at the moment",
+      "team": "There are no chats assigned to your team at the moment"
+    }
+  },
+  "selectChat": {
+    "title": "Select a chat",
+    "description": "Choose a chat from the list on the left to view the conversation"
+  },
+  "status": {
+    "open": "In progress",
+    "closed": "Finished"
+  },
+  "messageStatus": {
+    "pending": "Message pending",
+    "sent": "Message sent",
+    "delivered": "Message delivered", 
+    "read": "Message read",
+    "failed": "Failed to send"
+  },
+  "time": {
+    "start": "Start",
+    "end": "End"
+  },
+  "input": {
+    "placeholder": "Type your message..."
+  },
+  "send": "Send message",
+  "formatting": {
+    "bold": "Bold",
+    "italic": "Italic"
+  },
+  "attachments": {
+    "title": "Attach file",
+    "image": "Image",
+    "document": "Document", 
+    "uploadImage": "Upload Image",
+    "uploadDocument": "Upload Document",
+    "dragAndDrop": "Drag and drop a file here, or click to select",
+    "maxSize": "Maximum file size: 10MB",
+    "selectFile": "Select File",
+    "uploading": "Uploading...",
+    "errors": {
+      "invalidType": "Invalid file type",
+      "tooLarge": "File is too large (max 10MB)",
+      "uploadFailed": "Failed to upload file"
+    }
+  },
+  "emoji": {
+    "title": "Add emoji"
+  },
+  "voice": {
+    "title": "Voice message"
+  },
+  "errors": {
+    "loading": "Error loading messages",
+    "sending": "Error sending message"
+  }
+}

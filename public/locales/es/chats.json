@@ -1,0 +1,71 @@
+{
+  "title": "Chats",
+  "searchPlaceholder": "Buscar chat...",
+  "filters": {
+    "title": "Filtros",
+    "unassigned": "Sin asignar",
+    "assignedToMe": "Asignados a mí",
+    "assignedToTeam": "Asignados al equipo"
+  },
+  "emptyState": {
+    "title": "Sin chats",
+    "description": {
+      "unassigned": "No hay chats sin asignar en este momento",
+      "assigned-to-me": "No hay chats asignados a ti en este momento",
+      "team": "No hay chats asignados a tu equipo en este momento"
+    }
+  },
+  "selectChat": {
+    "title": "Selecciona un chat",
+    "description": "Elige un chat de la lista a la izquierda para ver la conversación"
+  },
+  "status": {
+    "open": "En progreso",
+    "closed": "Finalizado"
+  },
+  "messageStatus": {
+    "pending": "Mensaje pendiente",
+    "sent": "Mensaje enviado",
+    "delivered": "Mensaje entregado",
+    "read": "Mensaje leído",
+    "failed": "Error al enviar"
+  },
+  "time": {
+    "start": "Inicio",
+    "end": "Fin"
+  },
+  "input": {
+    "placeholder": "Escribe tu mensaje..."
+  },
+  "send": "Enviar mensaje",
+  "formatting": {
+    "bold": "Negrita",
+    "italic": "Cursiva"
+  },
+  "attachments": {
+    "title": "Adjuntar archivo",
+    "image": "Imagen",
+    "document": "Documento",
+    "uploadImage": "Subir Imagen",
+    "uploadDocument": "Subir Documento",
+    "dragAndDrop": "Arrastra y suelta un archivo aquí, o haz clic para seleccionar",
+    "maxSize": "Tamaño máximo: 10MB",
+    "selectFile": "Seleccionar Archivo",
+    "uploading": "Subiendo...",
+    "errors": {
+      "invalidType": "Tipo de archivo inválido",
+      "tooLarge": "Archivo demasiado grande (máx 10MB)",
+      "uploadFailed": "Error al subir archivo"
+    }
+  },
+  "emoji": {
+    "title": "Añadir emoji"
+  },
+  "voice": {
+    "title": "Mensaje de voz"
+  },
+  "errors": {
+    "loading": "Error al cargar mensajes",
+    "sending": "Error al enviar mensaje"
+  }
+}

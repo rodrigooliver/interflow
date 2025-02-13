@@ -1,0 +1,62 @@
+{
+  "title": "Service Channels",
+  "newChannel": "New Channel",
+  "form": {
+    "title": {
+      "create": "New Service Channel",
+      "edit": "Edit Service Channel"
+    },
+    "name": "Channel Name",
+    "type": "Channel Type",
+    "email": {
+      "server": "IMAP Server",
+      "port": "Port",
+      "secure": "Secure Connection",
+      "secureYes": "Yes (SSL/TLS)",
+      "secureNo": "No",
+      "username": "Email",
+      "password": "Password",
+      "passwordHint": "For Gmail, use an app password",
+      "senderName": "Sender Name",
+      "pollingInterval": "Polling Interval (seconds)",
+      "testConnection": "Test Connection",
+      "testing": "Testing Connection...",
+      "success": "Connection established successfully!",
+      "error": "Failed to connect to email server"
+    }
+  },
+  "types": {
+    "whatsapp_official": "WhatsApp Business API",
+    "whatsapp_wapi": "WhatsApp WApi",
+    "whatsapp_zapi": "WhatsApp ZApi",
+    "whatsapp_evo": "WhatsApp Evolution",
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "email": "Email"
+  },
+  "descriptions": {
+    "whatsapp_official": "Official integration with WhatsApp Business API",
+    "whatsapp_wapi": "WhatsApp integration via WApi - Multiple sessions support",
+    "whatsapp_zapi": "WhatsApp integration via ZApi - Managed and stable API",
+    "whatsapp_evo": "WhatsApp integration via Evolution API - Open source solution",
+    "instagram": "Instagram Direct Messages integration",
+    "facebook": "Facebook Messenger integration",
+    "email": "Email support with IMAP/SMTP"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "tested": "Tested",
+    "notTested": "Not Tested"
+  },
+  "errors": {
+    "testRequired": "Channel must be tested before activation"
+  },
+  "delete": {
+    "title": "Remove Channel",
+    "confirmation": "Are you sure you want to remove channel {name}?",
+    "warning": "This action cannot be undone."
+  }
+}

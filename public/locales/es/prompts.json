@@ -1,0 +1,17 @@
+{
+  "title": "Prompts",
+  "add": "Nuevo Prompt",
+  "edit": "Editar Prompt",
+  "delete": "Eliminar",
+  "deleteTitle": "Eliminar Prompt",
+  "deleteConfirmation": "¿Estás seguro de que deseas eliminar el prompt {name}?",
+  "deleteWarning": "Esta acción no se puede deshacer.",
+  "lastUpdated": "Última actualización",
+  "form": {
+    "title": "Título",
+    "description": "Descripción",
+    "content": "Contenido",
+    "tags": "Etiquetas",
+    "tagsPlaceholder": "Ingrese etiquetas separadas por comas"
+  }
+}

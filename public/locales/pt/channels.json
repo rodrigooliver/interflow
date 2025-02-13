@@ -1,0 +1,62 @@
+{
+  "title": "Canais de Atendimento",
+  "newChannel": "Novo Canal",
+  "form": {
+    "title": {
+      "create": "Novo Canal de Atendimento",
+      "edit": "Editar Canal de Atendimento"
+    },
+    "name": "Nome do Canal",
+    "type": "Tipo de Canal",
+    "email": {
+      "server": "Servidor IMAP",
+      "port": "Porta",
+      "secure": "Conexão Segura",
+      "secureYes": "Sim (SSL/TLS)",
+      "secureNo": "Não",
+      "username": "Email",
+      "password": "Senha",
+      "passwordHint": "Para Gmail, use uma senha de aplicativo",
+      "senderName": "Nome do Remetente",
+      "pollingInterval": "Intervalo de Verificação (segundos)",
+      "testConnection": "Testar Conexão",
+      "testing": "Testando Conexão...",
+      "success": "Conexão estabelecida com sucesso!",
+      "error": "Erro ao conectar com o servidor de email"
+    }
+  },
+  "types": {
+    "whatsapp_official": "WhatsApp Business API",
+    "whatsapp_wapi": "WhatsApp WApi",
+    "whatsapp_zapi": "WhatsApp ZApi",
+    "whatsapp_evo": "WhatsApp Evolution",
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "email": "Email"
+  },
+  "descriptions": {
+    "whatsapp_official": "Integração oficial com a API do WhatsApp Business",
+    "whatsapp_wapi": "Integração com WhatsApp via WApi - Suporte a múltiplas sessões",
+    "whatsapp_zapi": "Integração com WhatsApp via ZApi - API gerenciada e estável",
+    "whatsapp_evo": "Integração com WhatsApp via Evolution API - Solução open source",
+    "instagram": "Integração com Direct Messages do Instagram",
+    "facebook": "Integração com Messenger do Facebook",
+    "email": "Atendimento via Email com suporte IMAP/SMTP"
+  },
+  "status": {
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "tested": "Testado",
+    "notTested": "Não Testado"
+  },
+  "errors": {
+    "testRequired": "O canal precisa ser testado antes de ser ativado"
+  },
+  "delete": {
+    "title": "Remover Canal",
+    "confirmation": "Tem certeza que deseja remover o canal {name}?",
+    "warning": "Esta ação não pode ser desfeita."
+  }
+}

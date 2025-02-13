@@ -1,0 +1,20 @@
+{
+  "title": "Clientes",
+  "addCustomer": "Agregar Cliente",
+  "viewCRM": "Ver CRM",
+  "name": "Nombre",
+  "contact": "Contacto",
+  "registeredAt": "Registrado el",
+  "actions": "Acciones",
+  "noCustomers": "No hay clientes registrados",
+  "edit": {
+    "title": "Editar Cliente",
+    "phone": "Teléfono",
+    "email": "Correo"
+  },
+  "delete": {
+    "title": "Eliminar Cliente",
+    "confirmation": "¿Estás seguro de que deseas eliminar el cliente {name}?",
+    "warning": "Esta acción no se puede deshacer."
+  }
+}

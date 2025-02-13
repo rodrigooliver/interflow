@@ -1,0 +1,22 @@
+{
+  "title": "Teams",
+  "newTeam": "New Team",
+  "members": "Members",
+  "leader": "Leader",
+  "member": "Member",
+  "addMember": "Add Member",
+  "form": {
+    "name": "Team Name",
+    "description": "Description"
+  },
+  "removeMember": {
+    "title": "Remove Member",
+    "confirmation": "Are you sure you want to remove {name} from the team?",
+    "warning": "This action cannot be undone."
+  },
+  "removeTeam": {
+    "title": "Remove Team",
+    "confirmation": "Are you sure you want to remove team {name}?",
+    "warning": "This action cannot be undone."
+  }
+}
