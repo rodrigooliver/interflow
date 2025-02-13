@@ -47,6 +47,12 @@ export default function Channels() {
   async function handleToggleStatus(channel: ChatChannel) {
     setUpdatingStatus(channel.id);
     try {
+      // Don't allow activation if channel hasn't been tested
+      if (!channel.is_tested && channel.status === 'inactive') {
+        setError(t('errors.testRequired'));
+        return;
+      }
+
       const newStatus = channel.status === 'active' ? 'inactive' : 'active';
       const { error } = await supabase
         .from('chat_channels')
@@ -65,6 +71,24 @@ export default function Channels() {
   async function handleDeleteChannel(channelId: string) {
     setDeletingChannel(true);
     try {
+      // Check if channel has any chats
+      const { data: chats, error: chatsError } = await supabase
+        .from('chats')
+        .select('id')
+        .eq('channel_id', channelId)
+        .limit(1);
+
+      if (chatsError) throw chatsError;
+
+      // If channel has chats, don't allow deletion
+      if (chats && chats.length > 0) {
+        setError(t('delete.error.hasChats'));
+        setShowDeleteModal(false);
+        setSelectedChannel(null);
+        return;
+      }
+
+      // Delete channel if no chats exist
       const { error } = await supabase
         .from('chat_channels')
         .delete()
@@ -76,6 +100,7 @@ export default function Channels() {
       setSelectedChannel(null);
     } catch (error) {
       console.error('Error deleting channel:', error);
+      setError(t('common:error'));
     } finally {
       setDeletingChannel(false);
     }

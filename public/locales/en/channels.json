@@ -23,6 +23,15 @@
       "testing": "Testing Connection...",
       "success": "Connection established successfully!",
       "error": "Failed to connect to email server"
+    },
+    "whatsapp": {
+      "hostFormat": "Format: host10.serverapi.dev (without https://)",
+      "invalidHost": "Invalid host format. Use format: host10.serverapi.dev",
+      "testConnection": "Test Connection",
+      "testing": "Testing Connection...",
+      "success": "Connection established successfully!",
+      "error": "Failed to connect to WApi server",
+      "scanQrCode": "Scan this QR code in WhatsApp to connect"
     }
   },
   "types": {
@@ -57,6 +66,9 @@
   "delete": {
     "title": "Remove Channel",
     "confirmation": "Are you sure you want to remove channel {name}?",
-    "warning": "This action cannot be undone."
+    "warning": "This action cannot be undone.",
+    "error": {
+      "hasChats": "Cannot delete channel with existing chats"
+    }
   }
 }

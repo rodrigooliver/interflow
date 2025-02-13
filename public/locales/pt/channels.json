@@ -23,6 +23,15 @@
       "testing": "Testando Conexão...",
       "success": "Conexão estabelecida com sucesso!",
       "error": "Erro ao conectar com o servidor de email"
+    },
+    "whatsapp": {
+      "hostFormat": "Formato: host10.serverapi.dev (sem https://)",
+      "invalidHost": "Formato de host inválido. Use o formato: host10.serverapi.dev",
+      "testConnection": "Testar Conexão",
+      "testing": "Testando Conexão...",
+      "success": "Conexão estabelecida com sucesso!",
+      "error": "Erro ao conectar com o servidor WApi",
+      "scanQrCode": "Escaneie este QR code no WhatsApp para conectar"
     }
   },
   "types": {
@@ -57,6 +66,9 @@
   "delete": {
     "title": "Remover Canal",
     "confirmation": "Tem certeza que deseja remover o canal {name}?",
-    "warning": "Esta ação não pode ser desfeita."
+    "warning": "Esta ação não pode ser desfeita.",
+    "error": {
+      "hasChats": "Não é possível excluir um canal com atendimentos existentes"
+    }
   }
 }

@@ -1,28 +1,37 @@
 {
-  "title": "Canales de Servicio",
-  "newChannel": "Nuevo Canal",
+  "title": "Service Channels",
+  "newChannel": "New Channel",
   "form": {
     "title": {
-      "create": "Nuevo Canal de Servicio",
-      "edit": "Editar Canal de Servicio"
+      "create": "New Service Channel",
+      "edit": "Edit Service Channel"
     },
-    "name": "Nombre del Canal",
-    "type": "Tipo de Canal",
+    "name": "Channel Name",
+    "type": "Channel Type",
     "email": {
-      "server": "Servidor IMAP",
-      "port": "Puerto",
-      "secure": "Conexión Segura",
-      "secureYes": "Sí (SSL/TLS)",
+      "server": "IMAP Server",
+      "port": "Port",
+      "secure": "Secure Connection",
+      "secureYes": "Yes (SSL/TLS)",
       "secureNo": "No",
-      "username": "Correo",
-      "password": "Contraseña",
-      "passwordHint": "Para Gmail, usa una contraseña de aplicación",
-      "senderName": "Nombre del Remitente",
-      "pollingInterval": "Intervalo de Verificación (segundos)",
-      "testConnection": "Probar Conexión",
-      "testing": "Probando Conexión...",
-      "success": "¡Conexión establecida con éxito!",
-      "error": "Error al conectar con el servidor de correo"
+      "username": "Email",
+      "password": "Password",
+      "passwordHint": "For Gmail, use an app password",
+      "senderName": "Sender Name",
+      "pollingInterval": "Polling Interval (seconds)",
+      "testConnection": "Test Connection",
+      "testing": "Testing Connection...",
+      "success": "Connection established successfully!",
+      "error": "Failed to connect to email server"
+    },
+    "whatsapp": {
+      "hostFormat": "Format: host10.serverapi.dev (without https://)",
+      "invalidHost": "Invalid host format. Use format: host10.serverapi.dev",
+      "testConnection": "Test Connection",
+      "testing": "Testing Connection...",
+      "success": "Connection established successfully!",
+      "error": "Failed to connect to WApi server",
+      "scanQrCode": "Scan this QR code in WhatsApp to connect"
     }
   },
   "types": {
@@ -32,31 +41,34 @@
     "whatsapp_evo": "WhatsApp Evolution",
     "instagram": "Instagram",
     "facebook": "Facebook",
-    "email": "Correo"
+    "email": "Email"
   },
   "descriptions": {
-    "whatsapp_official": "Integración oficial con WhatsApp Business API",
-    "whatsapp_wapi": "Integración con WhatsApp vía WApi - Soporte para múltiples sesiones",
-    "whatsapp_zapi": "Integración con WhatsApp vía ZApi - API administrada y estable",
-    "whatsapp_evo": "Integración con WhatsApp vía Evolution API - Solución open source",
-    "instagram": "Integración con Mensajes Directos de Instagram",
-    "facebook": "Integración con Facebook Messenger",
-    "email": "Soporte de correo con IMAP/SMTP"
+    "whatsapp_official": "Official integration with WhatsApp Business API",
+    "whatsapp_wapi": "WhatsApp integration via WApi - Multiple sessions support",
+    "whatsapp_zapi": "WhatsApp integration via ZApi - Managed and stable API",
+    "whatsapp_evo": "WhatsApp integration via Evolution API - Open source solution",
+    "instagram": "Instagram Direct Messages integration",
+    "facebook": "Facebook Messenger integration",
+    "email": "Email support with IMAP/SMTP"
   },
   "status": {
-    "active": "Activo",
-    "inactive": "Inactivo",
-    "connected": "Conectado",
-    "disconnected": "Desconectado",
-    "tested": "Probado",
-    "notTested": "No Probado"
+    "active": "Active",
+    "inactive": "Inactive",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "tested": "Tested",
+    "notTested": "Not Tested"
   },
   "errors": {
-    "testRequired": "El canal debe ser probado antes de activarlo"
+    "testRequired": "Channel must be tested before activation"
   },
   "delete": {
-    "title": "Eliminar Canal",
-    "confirmation": "¿Estás seguro de que deseas eliminar el canal {name}?",
-    "warning": "Esta acción no se puede deshacer."
+    "title": "Remove Channel",
+    "confirmation": "Are you sure you want to remove channel {name}?",
+    "warning": "This action cannot be undone.",
+    "error": {
+      "hasChats": "Cannot delete channel with existing chats"
+    }
   }
 }

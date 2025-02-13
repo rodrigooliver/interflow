@@ -52,7 +52,7 @@ VITE_API_URL=your_backend_api_url
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/interflow.git
+git clone https://github.com/rodrigooliver/interflow.git
 cd interflow
 ```
 
