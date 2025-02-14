@@ -1,37 +1,56 @@
 {
-  "title": "Service Channels",
-  "newChannel": "New Channel",
+  "title": "Canales de Servicio",
+  "newChannel": "Nuevo Canal",
   "form": {
     "title": {
-      "create": "New Service Channel",
-      "edit": "Edit Service Channel"
+      "create": "Nuevo Canal de Servicio",
+      "edit": "Editar Canal de Servicio"
     },
-    "name": "Channel Name",
-    "type": "Channel Type",
+    "name": "Nombre del Canal",
+    "type": "Tipo de Canal",
     "email": {
-      "server": "IMAP Server",
-      "port": "Port",
-      "secure": "Secure Connection",
-      "secureYes": "Yes (SSL/TLS)",
+      "server": "Servidor IMAP",
+      "port": "Puerto",
+      "secure": "Conexión Segura",
+      "secureYes": "Sí (SSL/TLS)",
       "secureNo": "No",
-      "username": "Email",
-      "password": "Password",
-      "passwordHint": "For Gmail, use an app password",
-      "senderName": "Sender Name",
-      "pollingInterval": "Polling Interval (seconds)",
-      "testConnection": "Test Connection",
-      "testing": "Testing Connection...",
-      "success": "Connection established successfully!",
-      "error": "Failed to connect to email server"
+      "username": "Correo electrónico",
+      "password": "Contraseña",
+      "passwordHint": "Para Gmail, use una contraseña de aplicación",
+      "senderName": "Nombre del Remitente",
+      "pollingInterval": "Intervalo de Sondeo (segundos)",
+      "testConnection": "Probar Conexión",
+      "testing": "Probando Conexión...",
+      "success": "¡Conexión establecida exitosamente!",
+      "error": "Error al conectar con el servidor de correo"
     },
     "whatsapp": {
-      "hostFormat": "Format: host10.serverapi.dev (without https://)",
-      "invalidHost": "Invalid host format. Use format: host10.serverapi.dev",
-      "testConnection": "Test Connection",
-      "testing": "Testing Connection...",
-      "success": "Connection established successfully!",
-      "error": "Failed to connect to WApi server",
-      "scanQrCode": "Scan this QR code in WhatsApp to connect"
+      "hostFormat": "Formato: host10.serverapi.dev (sin https://)",
+      "invalidHost": "Formato de host inválido. Use el formato: host10.serverapi.dev",
+      "testConnection": "Probar Conexión",
+      "testing": "Probando Conexión...",
+      "success": "¡Conexión establecida exitosamente!",
+      "error": "Error al conectar con el servidor WApi",
+      "scanQrCode": "Escanee este código QR en WhatsApp para conectar",
+      "startConnection": "Iniciar Conexión",
+      "qrExpiresAt": "El código QR expira a las {{time}}",
+      "waitingQrCode": "Iniciando conexión, esperando código QR...",
+      "connectionSuccess": "¡Conexión establecida exitosamente!",
+      "connectionError": "Error al conectar con WhatsApp",
+      "connectionSettings": "Configuración de Conexión",
+      "connectionTested": "Conexión probada exitosamente",
+      "credentialsConfigured": "Credenciales configuradas y probadas",
+      "editConnection": "Editar Configuración de Conexión",
+      "credentialsValid": "Las credenciales proporcionadas son válidas.",
+      "restartConnection": "Reiniciar Conexión",
+      "restarting": "Reiniciando...",
+      "connectionRestarted": "Conexión reiniciada exitosamente!",
+      "disconnectConfirmation": "¿Está seguro de que desea desconectar WhatsApp?",
+      "disconnecting": "Desconectando...",
+      "disconnectSuccess": "WhatsApp desconectado con éxito!",
+      "disconnectTitle": "Desconectar WhatsApp",
+      "disconnectWarning": "¿Está seguro de que desea desconectar WhatsApp? Será necesario escanear el código QR nuevamente para reconectarse.",
+      "confirmDisconnect": "Sí, desconectar"
     }
   },
   "types": {
@@ -41,34 +60,34 @@
     "whatsapp_evo": "WhatsApp Evolution",
     "instagram": "Instagram",
     "facebook": "Facebook",
-    "email": "Email"
+    "email": "Correo electrónico"
   },
   "descriptions": {
-    "whatsapp_official": "Official integration with WhatsApp Business API",
-    "whatsapp_wapi": "WhatsApp integration via WApi - Multiple sessions support",
-    "whatsapp_zapi": "WhatsApp integration via ZApi - Managed and stable API",
-    "whatsapp_evo": "WhatsApp integration via Evolution API - Open source solution",
-    "instagram": "Instagram Direct Messages integration",
-    "facebook": "Facebook Messenger integration",
-    "email": "Email support with IMAP/SMTP"
+    "whatsapp_official": "Integración oficial con WhatsApp Business API",
+    "whatsapp_wapi": "Integración de WhatsApp vía WApi - Soporte para múltiples sesiones",
+    "whatsapp_zapi": "Integración de WhatsApp vía ZApi - API administrada y estable",
+    "whatsapp_evo": "Integración de WhatsApp vía Evolution API - Solución de código abierto",
+    "instagram": "Integración con mensajes directos de Instagram",
+    "facebook": "Integración con Facebook Messenger",
+    "email": "Soporte de correo electrónico con IMAP/SMTP"
   },
   "status": {
-    "active": "Active",
-    "inactive": "Inactive",
-    "connected": "Connected",
-    "disconnected": "Disconnected",
-    "tested": "Tested",
-    "notTested": "Not Tested"
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "tested": "Probado",
+    "notTested": "No Probado"
   },
   "errors": {
-    "testRequired": "Channel must be tested before activation"
+    "testRequired": "El canal debe ser probado antes de la activación"
   },
   "delete": {
-    "title": "Remove Channel",
-    "confirmation": "Are you sure you want to remove channel {name}?",
-    "warning": "This action cannot be undone.",
+    "title": "Eliminar Canal",
+    "confirmation": "¿Está seguro de que desea eliminar el canal {name}?",
+    "warning": "Esta acción no se puede deshacer.",
     "error": {
-      "hasChats": "Cannot delete channel with existing chats"
+      "hasChats": "No se puede eliminar un canal con chats existentes"
     }
   }
 }

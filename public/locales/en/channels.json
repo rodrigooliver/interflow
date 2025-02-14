@@ -31,7 +31,26 @@
       "testing": "Testing Connection...",
       "success": "Connection established successfully!",
       "error": "Failed to connect to WApi server",
-      "scanQrCode": "Scan this QR code in WhatsApp to connect"
+      "scanQrCode": "Scan this QR code in WhatsApp to connect",
+      "startConnection": "Start Connection",
+      "qrExpiresAt": "The QR code expires at {{time}}",
+      "waitingQrCode": "Initializing connection, waiting for QR code...",
+      "connectionSuccess": "Connection established successfully!",
+      "connectionError": "Failed to connect to WhatsApp",
+      "connectionSettings": "Connection Settings",
+      "connectionTested": "Connection tested successfully",
+      "credentialsConfigured": "Credentials configured and tested",
+      "editConnection": "Edit Connection Settings",
+      "credentialsValid": "The provided credentials are valid.",
+      "restartConnection": "Restart Connection",
+      "restarting": "Restarting...",
+      "connectionRestarted": "Connection restarted successfully!",
+      "disconnectConfirmation": "Are you sure you want to disconnect WhatsApp?",
+      "disconnecting": "Disconnecting...",
+      "disconnectSuccess": "WhatsApp disconnected successfully!",
+      "disconnectTitle": "Disconnect WhatsApp",
+      "disconnectWarning": "Are you sure you want to disconnect WhatsApp? It will require a new QR code to reconnect.",
+      "confirmDisconnect": "Yes, disconnect"
     }
   },
   "types": {

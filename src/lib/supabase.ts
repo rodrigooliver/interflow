@@ -14,6 +14,24 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true
   },
   global: {
-    headers: { 'x-application-name': 'chat-atendimento' }
+    headers: { 'x-application-name': 'interflow_vite' }
+  },
+  // Configure realtime
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
+
+// // Add realtime subscription for chat channels
+// supabase
+//   .channel('chat_channels')
+//   .on('postgres_changes', {
+//     event: '*',
+//     schema: 'public',
+//     table: 'chat_channels'
+//   }, (payload) => {
+//     console.log('Chat channel changed:', payload);
+//   })
+//   .subscribe();
