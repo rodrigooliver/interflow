@@ -46,34 +46,28 @@ export function ChannelCard({
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-      <div className="p-6">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-row justify-between sm:items-start gap-4">
+          <div className="flex flex-col items-start">
             <img
               src={getChannelIcon(channel.type)}
               alt={t(`types.${channel.type}`)}
-              className="w-8 h-8 mr-3"
+              className="w-6 h-6 flex-shrink-0"
             />
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {channel.name}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t(`types.${channel.type}`)}
-              </p>
-            </div>
+            
           </div>
+
           {canManage && (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 self-end sm:self-start">
               <button
                 onClick={onToggleStatus}
-                disabled={updatingStatus || !channel.is_tested}
+                disabled={updatingStatus || !channel.is_tested || !channel.is_connected}
                 className={`p-2 rounded-full ${
                   channel.status === 'active'
                     ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-500'
                     : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={channel.is_tested ? undefined : t('errors.testRequired')}
+                title={!channel.is_tested ? t('errors.testRequired') : !channel.is_connected ? t('errors.connectionRequired') : undefined}
               >
                 {updatingStatus ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -99,8 +93,20 @@ export function ChannelCard({
           )}
         </div>
 
+        <div className="w-full min-w-0">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+            {channel.name}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t(`types.${channel.type}`)}
+            {channel.type === 'email' && channel.credentials?.username && (' [' + channel.credentials.username + ']')}
+            {channel.type === 'whatsapp_wapi' && channel.credentials?.numberPhone && (' [' + channel.credentials.numberPhone + ']')}
+          </p>
+          
+        </div>
+        
         <div className="mt-4">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               channel.status === 'active'
                 ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400'
@@ -121,23 +127,8 @@ export function ChannelCard({
               )}
               {t(channel.is_connected ? 'status.connected' : 'status.disconnected')}
             </span>
-
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              channel.is_tested
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400'
-                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400'
-            }`}>
-              {t(channel.is_tested ? 'status.tested' : 'status.notTested')}
-            </span>
           </div>
         </div>
-
-        {channel.type === 'email' && channel.credentials && (
-          <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-            <p>Email: {channel.credentials.username}</p>
-            <p>{t('form.email.pollingInterval')}: {channel.credentials.pollingInterval}</p>
-          </div>
-        )}
       </div>
     </div>
   );

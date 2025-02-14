@@ -79,7 +79,10 @@
     "connected": "Conectado",
     "disconnected": "Desconectado",
     "tested": "Testado",
-    "notTested": "Não Testado"
+    "notTested": "Não Testado",
+    "activate": "Ativar",
+    "deactivate": "Desativar",
+    "updating": "Atualizando..."
   },
   "errors": {
     "testRequired": "O canal precisa ser testado antes de ser ativado"

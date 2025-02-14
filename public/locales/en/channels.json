@@ -44,6 +44,7 @@
       "credentialsValid": "The provided credentials are valid.",
       "restartConnection": "Restart Connection",
       "restarting": "Restarting...",
+      "disconnect": "Disconnect",
       "connectionRestarted": "Connection restarted successfully!",
       "disconnectConfirmation": "Are you sure you want to disconnect WhatsApp?",
       "disconnecting": "Disconnecting...",
@@ -77,7 +78,10 @@
     "connected": "Connected",
     "disconnected": "Disconnected",
     "tested": "Tested",
-    "notTested": "Not Tested"
+    "notTested": "Not Tested",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "updating": "Updating..."
   },
   "errors": {
     "testRequired": "Channel must be tested before activation"

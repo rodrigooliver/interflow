@@ -45,6 +45,7 @@
       "restartConnection": "Reiniciar Conexión",
       "restarting": "Reiniciando...",
       "connectionRestarted": "Conexión reiniciada exitosamente!",
+      "disconnect": "Desconectar",
       "disconnectConfirmation": "¿Está seguro de que desea desconectar WhatsApp?",
       "disconnecting": "Desconectando...",
       "disconnectSuccess": "WhatsApp desconectado con éxito!",
@@ -77,7 +78,10 @@
     "connected": "Conectado",
     "disconnected": "Desconectado",
     "tested": "Probado",
-    "notTested": "No Probado"
+    "notTested": "No Probado",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "updating": "Actualizando..."
   },
   "errors": {
     "testRequired": "El canal debe ser probado antes de la activación"

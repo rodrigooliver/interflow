@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { useOrganization } from '../../../hooks/useOrganization';
 import { supabase } from '../../../lib/supabase';
 
 export default function WhatsAppWApiForm() {
-  const { t } = useTranslation(['channels', 'common']);
+  const { t } = useTranslation(['channels', 'common', 'status']);
   const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganization } = useOrganization();
@@ -34,7 +34,8 @@ export default function WhatsAppWApiForm() {
       qrExpiresAt: null as string | null
     },
     is_tested: false,
-    is_connected: false
+    is_connected: false,
+    status: 'inactive' as 'active' | 'inactive'
   });
 
   const [showConnectionSettings, setShowConnectionSettings] = useState(false);
@@ -45,6 +46,9 @@ export default function WhatsAppWApiForm() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectSuccess, setDisconnectSuccess] = useState(false);
+
+  // Adicionar novo estado
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const validateApiHost = (host: string) => {
     // Remove any protocol and trailing slashes
@@ -175,7 +179,8 @@ export default function WhatsAppWApiForm() {
           name: data.name || '',
           credentials,
           is_tested: data.is_tested || false,
-          is_connected: data.is_connected || false
+          is_connected: data.is_connected || false,
+          status: data.status || 'inactive'
         });
         setShowConnectionSettings(!data.is_tested || false);
       }
@@ -389,6 +394,36 @@ export default function WhatsAppWApiForm() {
     }
   };
 
+  // Adicionar nova função para alternar status
+  const handleToggleStatus = async () => {
+    if (!id) return;
+    
+    setUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('chat_channels')
+        .update({
+          status: formData.status === 'active' ? 'inactive' : 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Atualizar estado local
+      setFormData(prev => ({
+        ...prev,
+        status: prev.status === 'active' ? 'inactive' : 'active'
+      }));
+
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      setError(t('common:error'));
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!currentOrganization) return;
@@ -421,6 +456,7 @@ export default function WhatsAppWApiForm() {
             credentials,
             is_tested: formData.is_tested,
             is_connected: formData.is_connected,
+            status: formData.status,
             updated_at: new Date().toISOString()
           })
           .eq('id', id);
@@ -485,6 +521,48 @@ export default function WhatsAppWApiForm() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {id ? t('form.title.edit') : t('form.title.create')}
           </h1>
+          
+          {/* Status de Conexão */}
+          {id && (
+            <div className="ml-4 flex items-center">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                formData.is_connected
+                  ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-400'
+                  : 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-400'
+              }`}>
+                {formData.is_connected ? t('status.connected') : t('status.disconnected')}
+              </span>
+            </div>
+          )}
+
+          {id && (
+            <button
+              onClick={handleToggleStatus}
+              disabled={updatingStatus || !formData.is_tested || !formData.is_connected}
+              className={`ml-auto inline-flex items-center px-3 py-2 rounded-md ${
+                formData.status === 'active'
+                  ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-500'
+                  : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={!formData.is_tested ? t('errors.testRequired') : !formData.is_connected ? t('errors.connectionRequired') : undefined}
+            >
+              {updatingStatus ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  {t('status.updating')}
+                </>
+              ) : (
+                <>
+                  {formData.status === 'active' ? (
+                    <Power className="w-5 h-5 mr-2" />
+                  ) : (
+                    <PowerOff className="w-5 h-5 mr-2" />
+                  )}
+                  {formData.status === 'active' ? t('status.deactivate') : t('status.activate')}
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
