@@ -9,12 +9,18 @@ export type NodeType =
   | 'condition'
   | 'input'
   | 'options'
-  | 'start';
+  | 'start'
+  | 'openai';
 
 export interface Variable {
   id: string;
   name: string;
   value: string;
+}
+
+export interface OpenAINodeData {
+  integration_id: string;
+  prompt: string;
 }
 
 export interface FlowNode {
@@ -46,7 +52,7 @@ export interface FlowNode {
       debounceTime: number;
       fallbackNodeId?: string;
     };
-  };
+  } | OpenAINodeData;
 }
 
 export interface FlowConnection {
@@ -89,4 +95,70 @@ export interface FlowSession {
   last_interaction: string;
   timeout_at?: string;
   debounce_timestamp?: string;
+}
+
+export interface Trigger {
+  id: string;
+  flow_id: string;
+  type: 'first_contact' | 'inactivity';
+  conditions: {
+    operator: 'AND' | 'OR';
+    rules: TriggerRule[];
+  };
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ScheduleRuleParams {
+  timezone: string;
+  timeSlots: {
+    id: string;
+    day: number;
+    startTime: string;
+    endTime: string;
+  }[];
+}
+
+export interface ChannelRuleParams {
+  channels: string[];
+}
+
+export interface InactivityRuleParams {
+  source: string;
+  minutes: number;
+}
+
+export type RuleParams = ChannelRuleParams | InactivityRuleParams | ScheduleRuleParams;
+
+export interface TriggerRule {
+  id: string;
+  type: 'channel' | 'inactivity' | 'schedule';
+  params: RuleParams;
+}
+
+export interface ChannelRule {
+  type: 'channel';
+  params: {
+    channels: string[];
+    requireNoActiveChat: boolean;
+  };
+}
+
+export interface InactivityRule {
+  type: 'inactivity';
+  params: {
+    source: 'customer' | 'agent';
+    minutes: number;
+  };
+}
+
+export interface ScheduleRule {
+  type: 'schedule';
+  params: {
+    days: number[];
+    startTime: string;
+    endTime: string;
+    timezone: string;
+  };
 }

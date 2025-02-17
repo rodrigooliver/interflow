@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReactFlowProvider } from 'reactflow';
-import { ArrowLeft, Save, Loader2, Variable, Send, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Variable, Send, RotateCcw, Pencil, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { FlowBuilder } from '../components/flow/FlowBuilder';
-import { FlowNode, FlowConnection, Variable as FlowVariable } from '../types/flow';
-import { supabase } from '../lib/supabase';
-import { useOrganization } from '../hooks/useOrganization';
+import { FlowBuilder } from '../../components/flow/FlowBuilder';
+import { FlowNode, FlowConnection, Variable as FlowVariable } from '../../types/flow';
+import { supabase } from '../../lib/supabase';
+import { useOrganization } from '../../hooks/useOrganization';
+import { EventBus } from '../../lib/eventBus';
 
 function FlowEditor() {
   const { t } = useTranslation(['flows', 'common']);
@@ -22,18 +23,39 @@ function FlowEditor() {
   const [publishedNodes, setPublishedNodes] = useState<FlowNode[]>([]);
   const [publishedEdges, setPublishedEdges] = useState<FlowConnection[]>([]);
   const [variables, setVariables] = useState<FlowVariable[]>([]);
+  const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 0.7 });
   const [flowName, setFlowName] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [showVariablesModal, setShowVariablesModal] = useState(false);
   const [error, setError] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [flowKey, setFlowKey] = useState(0); // Key for forcing re-render
+  const [flowKey, setFlowKey] = useState(0);
 
   useEffect(() => {
     if (currentOrganization && id) {
       loadFlow();
     }
   }, [currentOrganization, id]);
+
+  useEffect(() => {
+    // Adicionar listener para o evento openModalVariable
+    const handleOpenModal = (event: CustomEvent) => {
+      console.log('Rodrigo')
+      if (event.detail?.id === 'variableModal') {
+        setShowVariablesModal(true);
+      }
+    };
+
+    // Registrar o listener
+    document.addEventListener('openModalVariable', handleOpenModal as EventListener);
+
+    // Cleanup ao desmontar o componente
+    return () => {
+      document.removeEventListener('openModalVariable', handleOpenModal as EventListener);
+    };
+  }, []);
 
   async function loadFlow() {
     try {
@@ -46,15 +68,16 @@ function FlowEditor() {
       if (error) throw error;
 
       if (flow) {
-        // Use draft version if it exists, otherwise use published version
         setNodes(flow.draft_nodes?.length ? flow.draft_nodes : flow.nodes || []);
         setEdges(flow.draft_edges?.length ? flow.draft_edges : flow.edges || []);
         setPublishedNodes(flow.nodes || []);
         setPublishedEdges(flow.edges || []);
         setVariables(flow.variables || []);
+        setViewport(flow.viewport || { x: 0, y: 0, zoom: 0.7 });
         setFlowName(flow.name);
+        setEditedName(flow.name);
         setIsPublished(flow.is_published || false);
-        setFlowKey(prev => prev + 1); // Force re-render
+        setFlowKey(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error loading flow:', error);
@@ -64,7 +87,7 @@ function FlowEditor() {
     }
   }
 
-  const handleSave = useCallback(async (newNodes: FlowNode[], newEdges: FlowConnection[]) => {
+  const handleSave = useCallback(async (newNodes: FlowNode[], newEdges: FlowConnection[], newViewport: any) => {
     if (!currentOrganization || !id) return;
     
     setSaving(true);
@@ -77,6 +100,7 @@ function FlowEditor() {
           draft_nodes: newNodes,
           draft_edges: newEdges,
           variables,
+          viewport: newViewport,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -85,6 +109,7 @@ function FlowEditor() {
 
       setNodes(newNodes);
       setEdges(newEdges);
+      setViewport(newViewport);
       setLastSaved(new Date());
     } catch (error) {
       console.error('Error saving flow:', error);
@@ -109,6 +134,7 @@ function FlowEditor() {
           draft_nodes: nodes,
           draft_edges: edges,
           variables,
+          viewport,
           is_published: true,
           published_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -126,7 +152,7 @@ function FlowEditor() {
     } finally {
       setPublishing(false);
     }
-  }, [currentOrganization, id, nodes, edges, variables]);
+  }, [currentOrganization, id, nodes, edges, variables, viewport]);
 
   const handleRestore = useCallback(async () => {
     if (!currentOrganization || !id) return;
@@ -149,7 +175,7 @@ function FlowEditor() {
       setNodes(publishedNodes);
       setEdges(publishedEdges);
       setLastSaved(new Date());
-      setFlowKey(prev => prev + 1); // Force re-render after restore
+      setFlowKey(prev => prev + 1);
     } catch (error) {
       console.error('Error restoring flow:', error);
       setError(t('common:error'));
@@ -162,9 +188,68 @@ function FlowEditor() {
     setVariables(newVariables);
   }, []);
 
+  const handleNameEdit = useCallback(async () => {
+    if (!currentOrganization || !id || !editedName.trim()) return;
+    
+    setSaving(true);
+    setError('');
+
+    try {
+      const { error } = await supabase
+        .from('flows')
+        .update({
+          name: editedName.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setFlowName(editedName.trim());
+      setIsEditingName(false);
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Error updating flow name:', error);
+      setError(t('common:error'));
+    } finally {
+      setSaving(false);
+    }
+  }, [currentOrganization, id, editedName]);
+
   // Check if current version is different from published version
   const hasChanges = JSON.stringify(nodes) !== JSON.stringify(publishedNodes) || 
                     JSON.stringify(edges) !== JSON.stringify(publishedEdges);
+
+  const formatVariableName = (name: string): string => {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^a-z0-9]+/g, '_')     // Substitui caracteres especiais e espaços por underscore
+      .replace(/^_+|_+$/g, '');        // Remove underscores do início e fim
+  };
+
+  const handleVariableNameChange = (index: number, newName: string) => {
+    const newVariables = [...variables];
+    newVariables[index].name = formatVariableName(newName);
+    setVariables(newVariables);
+  };
+
+  const handleVariableNameBlur = (index: number) => {
+    const currentVariable = variables[index];
+    
+    // Verifica se já existe uma variável com este nome (exceto a atual)
+    const isDuplicate = variables.some((v, i) => 
+      i !== index && v.name === currentVariable.name
+    );
+
+    if (isDuplicate) {
+      // Se encontrou duplicata, reverte para string vazia
+      const newVariables = [...variables];
+      newVariables[index].name = '';
+      setVariables(newVariables);
+    }
+  };
 
   if (loading) {
     return (
@@ -197,9 +282,48 @@ function FlowEditor() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex flex-col">
-            <h1 className="text-lg font-medium text-gray-900 dark:text-white">
-              {flowName}
-            </h1>
+            {isEditingName ? (
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleNameEdit();
+                    } else if (e.key === 'Escape') {
+                      setIsEditingName(false);
+                      setEditedName(flowName);
+                    }
+                  }}
+                  className="text-lg font-medium text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-0 px-1"
+                  autoFocus
+                />
+                <button
+                  onClick={handleNameEdit}
+                  disabled={saving}
+                  className="ml-2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <h1 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {flowName}
+                </h1>
+                <button
+                  onClick={() => setIsEditingName(true)}
+                  className="ml-2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <div className="flex items-center space-x-2">
               {isPublished && (
                 <span className="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
@@ -254,10 +378,11 @@ function FlowEditor() {
       <div className="flex-1 overflow-hidden">
         <ReactFlowProvider>
           <FlowBuilder
-            key={flowKey} // Force re-render when key changes
+            key={flowKey}
             initialNodes={nodes}
             initialEdges={edges}
             initialVariables={variables}
+            initialViewport={viewport}
             onSave={handleSave}
             onVariablesUpdate={handleVariablesUpdate}
           />
@@ -277,11 +402,8 @@ function FlowEditor() {
                   <input
                     type="text"
                     value={variable.name}
-                    onChange={(e) => {
-                      const newVariables = [...variables];
-                      newVariables[index].name = e.target.value;
-                      setVariables(newVariables);
-                    }}
+                    onChange={(e) => handleVariableNameChange(index, e.target.value)}
+                    onBlur={() => handleVariableNameBlur(index)}
                     placeholder={t('flows:nodes.variable.namePlaceholder')}
                     className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
@@ -300,7 +422,8 @@ function FlowEditor() {
               ))}
               <button
                 onClick={() => setVariables([...variables, { id: crypto.randomUUID(), name: '', value: '' }])}
-                className="w-full p-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                disabled={variables.length > 0 && !variables[variables.length - 1].name}
+                className="w-full p-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 + {t('flows:variables.add')}
               </button>

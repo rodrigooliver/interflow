@@ -13,5 +13,12 @@
     "content": "Content",
     "tags": "Tags",
     "tagsPlaceholder": "Enter tags separated by commas"
-  }
+  },
+  "test": "Test Prompt",
+  "testPlaceholder": "Enter a message to test the prompt",
+  "send": "Send",
+  "testing": "Testing...",
+  "testSuccess": "Prompt tested successfully!",
+  "testError": "Error testing the prompt",
+  "selectIntegration": "Select the integration to test the prompt"
 }

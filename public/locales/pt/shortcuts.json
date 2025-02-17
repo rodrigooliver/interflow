@@ -8,6 +8,9 @@
   "uploadFiles": "Fazer upload de arquivos",
   "dragAndDrop": "ou arraste e solte",
   "maxSize": "Qualquer tipo de arquivo até 10MB",
+  "content": "Conteúdo",
+  "searchPlaceholder": "Pesquisar atalhos",
+  "noSearchResults": "Nenhum atalho encontrado para esta pesquisa",
   "delete": {
     "title": "Excluir Atalho",
     "confirmation": "Tem certeza que deseja excluir o atalho {name}?",

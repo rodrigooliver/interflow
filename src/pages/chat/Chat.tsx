@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useOrganization } from '../hooks/useOrganization';
-import { ChatMessages } from '../components/chat/ChatMessages';
+import { useOrganization } from '../../hooks/useOrganization';
+import { ChatMessages } from '../../components/chat/ChatMessages';
 
 export default function Chat() {
   const { id } = useParams();

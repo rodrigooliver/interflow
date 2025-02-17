@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../hooks/useOrganization';
-import { supabase } from '../lib/supabase';
-import { CRMFunnel as CRMFunnelType, CRMStage, CRMCustomerStage } from '../types/crm';
-import { Customer } from '../types/database';
-import { KanbanBoard } from '../components/crm/KanbanBoard';
-import { StageModal } from '../components/crm/StageModal';
-import { DeleteStageModal } from '../components/crm/DeleteStageModal';
-import { AddCustomerModal } from '../components/crm/AddCustomerModal';
-import { CustomerEditModal } from '../components/customers/CustomerEditModal';
-import { RemoveCustomerModal } from '../components/crm/RemoveCustomerModal';
-import { FunnelHeader } from '../components/crm/FunnelHeader';
+import { useOrganization } from '../../hooks/useOrganization';
+import { supabase } from '../../lib/supabase';
+import { CRMFunnel as CRMFunnelType, CRMStage, CRMCustomerStage } from '../../types/crm';
+import { Customer } from '../../types/database';
+import { KanbanBoard } from '../../components/crm/KanbanBoard';
+import { StageModal } from '../../components/crm/StageModal';
+import { DeleteStageModal } from '../../components/crm/DeleteStageModal';
+import { AddCustomerModal } from '../../components/crm/AddCustomerModal';
+import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
+import { RemoveCustomerModal } from '../../components/crm/RemoveCustomerModal';
+import { FunnelHeader } from '../../components/crm/FunnelHeader';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 export default function CRMFunnel() {
@@ -26,12 +26,10 @@ export default function CRMFunnel() {
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [customerStages, setCustomerStages] = useState<CRMCustomerStage[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Modal states
   const [showStageModal, setShowStageModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteStageModal, setShowDeleteStageModal] = useState(false);
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
@@ -94,8 +92,6 @@ export default function CRMFunnel() {
     } catch (error) {
       console.error('Error loading funnel:', error);
       setError(t('common:error'));
-    } finally {
-      setLoading(false);
     }
   }
 

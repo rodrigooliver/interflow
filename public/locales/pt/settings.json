@@ -15,7 +15,12 @@
     "delete": "Excluir",
     "deleteConfirmation": "Tem certeza que deseja excluir esta integração?",
     "type": "Tipo de Integração",
-    "lastUpdated": "Última atualização"
+    "lastUpdated": "Última atualização",
+    "form": {
+      "title": "Título",
+      "titlePlaceholderOpenAI": "Título para OpenAI",
+      "titlePlaceholderS3": "Título para AWS"
+    }
   },
   "fileManager": {
     "title": "Gerenciador de Arquivos",
@@ -28,5 +33,29 @@
     "deleteTitle": "Excluir Arquivo",
     "deleteConfirmation": "Tem certeza que deseja excluir {name}?",
     "deleteWarning": "Esta ação não pode ser desfeita. Se este arquivo for usado em alguma mensagem, ela não exibirá mais o arquivo."
-  }
+  },
+  "billing": {
+    "currentPlan": "Plano Atual",
+    "trialEnds": "Período de teste termina em {{date}}",
+    "renewsOn": "Renova em {{date}}",
+    "manageBilling": "Gerenciar Cobrança",
+    "selectPlan": "Selecionar Plano",
+    "paymentMethods": "Métodos de Pagamento",
+    "edit": "Editar",
+    "addPaymentMethod": "Adicionar método de pagamento",
+    "history": "Histórico de Cobranças",
+    "date": "Data",
+    "description": "Descrição",
+    "amount": "Valor",
+    "status": "Status",
+    "download": "Download",
+    "paid": "Pago",
+    "features": {
+      "users": "{{count}} usuários",
+      "storage": "{{size}} de armazenamento",
+      "channels": "{{count}} canais de chat",
+      "concurrentChats": "{{count}} chats simultâneos"
+    }
+  },
+  "expand": "Expandir"
 }

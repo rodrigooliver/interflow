@@ -1,11 +1,17 @@
 {
   "title": "Atendimentos",
   "searchPlaceholder": "Buscar atendimento...",
+  "resolve": "Resolver",
+  "attend": "Atender",
   "filters": {
     "title": "Filtros",
     "unassigned": "Não atribuídos",
     "assignedToMe": "Atribuídos a mim",
     "assignedToTeam": "Atribuídos à equipe"
+  },
+  "dateHeaders": {
+    "today": "Hoje",
+    "yesterday": "Ontem"
   },
   "emptyState": {
     "title": "Nenhum atendimento",
@@ -62,10 +68,37 @@
     "title": "Adicionar emoji"
   },
   "voice": {
-    "title": "Mensagem de voz"
+    "title": "Mensagem de voz",
+    "start": "Iniciar gravação",
+    "stop": "Parar gravação"
   },
   "errors": {
     "loading": "Erro ao carregar mensagens",
-    "sending": "Erro ao enviar mensagem"
-  }
+    "sending": "Erro ao enviar mensagem",
+    "microphoneAccess": "Não foi possível acessar o microfone. Verifique suas permissões.",
+    "uploadFailed": "Falha ao enviar o arquivo de áudio"
+  },
+  "ai": {
+    "title": "Melhorar texto com IA",
+    "improve": "Melhorar com IA",
+    "selectAccount": "Selecionar conta OpenAI",
+    "selectAccountPlaceholder": "Escolha uma conta",
+    "selectPrompt": "Selecionar prompt",
+    "selectPromptPlaceholder": "Escolha um prompt",
+    "improvementType": "Tipo de melhoria",
+    "customPrompt": "Prompt personalizado",
+    "customPromptPlaceholder": "Digite instruções específicas...",
+    "result": "Resultado",
+    "cancel": "Cancelar",
+    "apply": "Aplicar",
+    "options": {
+      "generate": "Gerar resposta",
+      "expand": "Expandir",
+      "shorten": "Encurtar",
+      "improve": "Melhorar escrita",
+      "formal": "Mais formal",
+      "casual": "Mais casual"
+    }
+  },
+  "noChatsFound": "Nenhum atendimento encontrado"
 }

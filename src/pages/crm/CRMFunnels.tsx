@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { GitMerge, Plus, Loader2, X, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../hooks/useOrganization';
-import { supabase } from '../lib/supabase';
-import { CRMFunnel } from '../types/crm';
+import { useOrganization } from '../../hooks/useOrganization';
+import { supabase } from '../../lib/supabase';
+import { CRMFunnel } from '../../types/crm';
 
 export default function CRMFunnels() {
   const { t } = useTranslation(['crm', 'common']);

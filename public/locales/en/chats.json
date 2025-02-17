@@ -1,11 +1,17 @@
 {
   "title": "Chats",
-  "searchPlaceholder": "Search chats...",
+  "searchPlaceholder": "Search chats...", 
+  "resolve": "Resolve",
+  "attend": "Attend",
   "filters": {
     "title": "Filters",
     "unassigned": "Unassigned",
     "assignedToMe": "Assigned to me",
     "assignedToTeam": "Assigned to team"
+  },
+  "dateHeaders": {
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "emptyState": {
     "title": "No chats",
@@ -66,6 +72,31 @@
   },
   "errors": {
     "loading": "Error loading messages",
-    "sending": "Error sending message"
-  }
+    "sending": "Error sending message",
+    "microphoneAccess": "Could not access microphone. Please check your permissions.",
+    "uploadFailed": "Failed to upload audio file"
+  },
+  "ai": {
+    "title": "Improve text with AI",
+    "improve": "Improve with AI",
+    "selectAccount": "Select OpenAI account",
+    "selectAccountPlaceholder": "Choose an account",  
+    "selectPrompt": "Select prompt",
+    "selectPromptPlaceholder": "Choose a prompt",
+    "improvementType": "Improvement type",
+    "customPrompt": "Custom prompt",
+    "customPromptPlaceholder": "Enter specific instructions...",
+    "result": "Result",
+    "cancel": "Cancel",
+    "apply": "Apply",
+    "options": {
+      "generate": "Generate response",
+      "expand": "Expand",
+      "shorten": "Shorten",
+      "improve": "Improve writing",
+      "formal": "More formal",
+      "casual": "More casual"
+    }
+  },
+  "noChatsFound": "No chats found"
 }

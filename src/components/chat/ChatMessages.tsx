@@ -4,7 +4,6 @@ import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
 import { MessageBubble } from './MessageBubble';
-import { Loader2 } from 'lucide-react';
 
 interface ChatMessagesProps {
   chatId: string;
@@ -15,7 +14,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const { t } = useTranslation('chats');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [sending, setSending] = useState(false);
+  const [chat, setChat] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -23,6 +22,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     let subscription: ReturnType<typeof supabase.channel>;
 
     if (chatId) {
+      loadChat();
       loadMessages();
       subscription = subscribeToMessages();
     }
@@ -78,41 +78,83 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     }
   };
 
+  const loadChat = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .select(`
+          *,
+          customer:customer_id(*),
+          channel_details:channel_id(*),
+          assigned_agent:assigned_to(*)
+        `)
+        .eq('id', chatId)
+        .single();
+
+      if (error) throw error;
+      setChat(data);
+    } catch (error) {
+      console.error('Erro ao carregar chat:', error);
+      setError(t('errors.loadingChat'));
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = async (content: string, attachments?: { url: string; type: string; name: string }[]) => {
-    setSending(true);
-    try {
-      // Create message data with or without content
-      const messageData = {
-        chat_id: chatId,
-        organization_id: organizationId,
-        content: content || '', // Empty string if no content
-        sender_type: 'agent',
-        sender_id: organizationId,
-        status: 'pending',
-        attachments: attachments || []
-      };
+  const formatMessageDate = (date: string) => {
+    const messageDate = new Date(date);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-      const { data: newMsg, error } = await supabase
-        .from('messages')
-        .insert([messageData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      if (newMsg) {
-        setMessages(prev => [...prev, newMsg]);
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError(t('errors.sending'));
-    } finally {
-      setSending(false);
+    if (messageDate.toDateString() === today.toDateString()) {
+      return t('dateHeaders.today');
+    } else if (messageDate.toDateString() === yesterday.toDateString()) {
+      return t('dateHeaders.yesterday');
+    } else {
+      return messageDate.toLocaleDateString();
     }
+  };
+
+  const groupMessagesByDate = (messages: Message[]) => {
+    const groups: { [key: string]: Message[] } = {};
+    
+    messages.forEach(message => {
+      const date = new Date(message.created_at).toDateString();
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+    });
+    
+    return groups;
+  };
+
+  const getRandomColor = (name: string) => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-yellow-500',
+      'bg-purple-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-red-500',
+      'bg-teal-500'
+    ];
+    
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[index % colors.length];
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   if (loading) {
@@ -135,32 +177,91 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className={`w-10 h-10 rounded-full ${getRandomColor(chat?.customer?.name || 'Anônimo')} flex items-center justify-center`}>
+              <span className="text-white font-medium">
+                {getInitials(chat?.customer?.name || 'Anônimo')}
+              </span>
+            </div>
+            <div>
+              <div className="font-medium text-gray-900 dark:text-gray-100">
+                {chat?.customer?.name || t('unnamed')}
+              </div>
+              {chat?.ticket_number && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  #{chat.ticket_number}
+                </div>
+              )}
+            </div>
+          </div>
+          {chat?.status === 'in_progress' && (
+            <button
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+              onClick={() => {/* Adicionar lógica para resolver */}}
+            >
+              {t('resolve')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 relative">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 p-3 rounded-md text-center">
             {error}
           </div>
         )}
         
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            content={message.content}
-            timestamp={message.created_at}
-            isAgent={message.sender_type === 'agent'}
-            status={message.sender_type === 'agent' ? message.status : undefined}
-            errorMessage={message.error_message}
-            attachments={message.attachments}
-          />
+        {Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
+          <div key={date}>
+            <div className="sticky top-2 flex justify-center mb-4 z-10">
+              <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
+                {formatMessageDate(dateMessages[0].created_at)}
+              </span>
+            </div>
+            
+            <div className="space-y-4">
+              {dateMessages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                />
+              ))}
+            </div>
+          </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      <MessageInput
-        onSend={handleSendMessage}
-        sending={sending}
-        organizationId={organizationId}
-      />
+      {chat?.status === 'in_progress' && (
+        <MessageInput
+          chatId={chatId}
+          organizationId={organizationId}
+          onMessageSent={(newMsg) => setMessages(prev => [...prev, newMsg])}
+        />
+      )}
+
+      {chat?.status === 'pending' && (
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+          <button
+            onClick={() => {/* Adicionar lógica para atender */}}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+          >
+            {t('attend')}
+          </button>
+        </div>
+      )}
+
+      {chat?.status === 'closed' && (
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            <span className="inline-block mr-2">✓</span>
+            {t('chatClosed')}
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1,24 +1,34 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, Smile, Paperclip, Send, Mic, Loader2, Image, FileText, X } from 'lucide-react';
+import { Bold, Italic, Smile, Paperclip, Send, Mic, Loader2, Image, FileText, X, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { FileUpload } from './FileUpload';
 import { supabase } from '../../lib/supabase';
+import { AudioPlayer } from './AudioPlayer';
+import { AIImproveModal } from './AIImproveModal';
+import { Message } from '../../types/database';
+import { useAuth } from '../../hooks/useAuth';
 
 interface MessageInputProps {
-  onSend: (message: string, attachments?: { url: string; type: string; name: string }[]) => Promise<void>;
-  sending: boolean;
+  chatId: string;
   organizationId: string;
+  onMessageSent: (message: Message) => void;
 }
 
-export function MessageInput({ onSend, sending, organizationId }: MessageInputProps) {
+interface EmojiData {
+  native: string;
+  // outros campos do emoji se necessário
+}
+
+export function MessageInput({ chatId, organizationId, onMessageSent }: MessageInputProps) {
+  const { profile } = useAuth();
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState('');
-  const [textFormat, setTextFormat] = useState({
+  const [textFormat] = useState({
     bold: false,
     italic: false
   });
@@ -27,6 +37,14 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
   const [showFileUpload, setShowFileUpload] = useState<'image' | 'document' | null>(null);
   const [error, setError] = useState('');
   const [pendingAttachments, setPendingAttachments] = useState<{ url: string; type: string; name: string }[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const timerIntervalRef = useRef<NodeJS.Timeout>();
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,6 +68,48 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
     }
   }, [message]);
 
+  const handleSendMessage = async (content: string, attachments?: { url: string; type: string; name: string }[]) => {
+    setSending(true);
+    try {
+      const messageData = {
+        chat_id: chatId,
+        organization_id: organizationId,
+        content: content || '',
+        sender_type: 'agent',
+        sender_agent_id: profile?.id,
+        status: 'pending',
+        attachments: attachments || []
+      };
+
+      const { data: newMsg, error } = await supabase
+        .from('messages')
+        .insert([messageData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      if (newMsg) {
+        const { error: updateError } = await supabase
+          .from('chats')
+          .update({ 
+            last_message_id: newMsg.id,
+            last_message_at: newMsg.created_at 
+          })
+          .eq('id', chatId);
+
+        if (updateError) throw updateError;
+        
+        onMessageSent(newMsg);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setError(t('errors.sending'));
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!message.trim() && pendingAttachments.length === 0) return;
 
@@ -60,14 +120,14 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
     // If there are pending attachments, send them as separate messages
     if (pendingAttachments.length > 0) {
       for (const attachment of pendingAttachments) {
-        await onSend('', [attachment]);
+        await handleSendMessage('', [attachment]);
       }
       setPendingAttachments([]);
     }
 
     // Send text message if there is one
     if (formattedMessage.trim()) {
-      await onSend(formattedMessage);
+      await handleSendMessage(formattedMessage);
     }
 
     setMessage('');
@@ -82,7 +142,7 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
     }
   };
 
-  const onEmojiSelect = (emoji: any) => {
+  const onEmojiSelect = (emoji: EmojiData) => {
     setMessage(prev => prev + emoji.native);
   };
 
@@ -91,6 +151,7 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
   };
 
   const handleRemoveAttachment = async (url: string) => {
+    setDeletingAttachment(url);
     // Extract file path from URL
     const filePath = url.split('/').pop();
     if (filePath) {
@@ -98,11 +159,134 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
         await supabase.storage
           .from('attachments')
           .remove([`${organizationId}/chat-attachments/${filePath}`]);
+        setPendingAttachments(prev => prev.filter(a => a.url !== url));
       } catch (error) {
         console.error('Error removing file:', error);
       }
     }
-    setPendingAttachments(prev => prev.filter(a => a.url !== url));
+    setDeletingAttachment(null);
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Determinar o formato suportado
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/mp4';
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        audioChunksRef.current = [];
+
+        try {
+          const extension = mimeType.split('/')[1];
+          const timestamp = new Date().getTime(); // Usar timestamp como número
+          const fileName = `audio-${timestamp}.${extension}`;
+          const file = new File([audioBlob], fileName, { type: mimeType });
+          
+          const { error } = await supabase.storage
+            .from('attachments')
+            .upload(`${organizationId}/chat-attachments/${fileName}`, file);
+
+          if (error) throw error;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('attachments')
+            .getPublicUrl(`${organizationId}/chat-attachments/${fileName}`);
+
+          handleFileUploadComplete(publicUrl, mimeType, fileName);
+        } catch (error) {
+          setError(t('errors.uploadFailed'));
+          console.error('Error uploading audio:', error);
+        }
+      };
+
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      // Iniciar o contador
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+      
+    } catch (error) {
+      setError(t('errors.microphoneAccess'));
+      console.error('Error accessing microphone:', error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      // Limpar o intervalo do contador
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+      
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+      setMediaRecorder(null);
+      setRecordingDuration(0);
+    }
+  };
+
+  // Limpar o intervalo quando o componente for desmontado
+  useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const applyFormatting = (format: 'bold' | 'italic') => {
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      const selectedText = message.substring(start, end);
+
+      if (selectedText) {
+        const prefix = format === 'bold' ? '**' : '_';
+        const newText = 
+          message.substring(0, start) +
+          `${prefix}${selectedText}${prefix}` +
+          message.substring(end);
+        
+        setMessage(newText);
+        
+        // Restaurar o foco no textarea
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            textareaRef.current.setSelectionRange(
+              start + prefix.length,
+              end + prefix.length
+            );
+          }
+        }, 0);
+      }
+    }
+  };
+
+  // Atualizar os handlers dos botões de formatação
+  const handleBoldClick = () => {
+    applyFormatting('bold');
+  };
+
+  const handleItalicClick = () => {
+    applyFormatting('italic');
   };
 
   return (
@@ -121,18 +305,48 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
               className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-2"
             >
               {attachment.type.startsWith('image/') ? (
-                <Image className="w-4 h-4 mr-2" />
+                <>
+                  <a 
+                    href={attachment.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center hover:text-blue-500 dark:hover:text-blue-400"
+                  >
+                    <Image className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm truncate max-w-[180px] text-gray-700 dark:text-gray-300">{attachment.name}</span>
+                  </a>
+                </>
+              ) : attachment.type.startsWith('audio/') ? (
+                <div className="flex-1">
+                  <AudioPlayer
+                    src={attachment.url}
+                    fileName={attachment.name}
+                    compact
+                  />
+                </div>
               ) : (
-                <FileText className="w-4 h-4 mr-2" />
+                <>
+                  <a 
+                    href={attachment.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center hover:text-blue-500 dark:hover:text-blue-400"
+                  >
+                    <FileText className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm truncate max-w-[180px] text-gray-700 dark:text-gray-300">{attachment.name}</span>
+                  </a>
+                </>
               )}
-              <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[200px]">
-                {attachment.name}
-              </span>
               <button
                 onClick={() => handleRemoveAttachment(attachment.url)}
                 className="ml-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
+                disabled={deletingAttachment === attachment.url}
               >
-                <X className="w-4 h-4" />
+                {deletingAttachment === attachment.url ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <X className="w-4 h-4" />
+                )}
               </button>
             </div>
           ))}
@@ -141,23 +355,15 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
 
       <div className="flex items-center space-x-2 mb-2">
         <button
-          onClick={() => setTextFormat(prev => ({ ...prev, bold: !prev.bold }))}
-          className={`p-2 rounded-lg transition-colors ${
-            textFormat.bold
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-          }`}
+          onClick={handleBoldClick}
+          className={`p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
           title={t('formatting.bold')}
         >
           <Bold className="w-5 h-5" />
         </button>
         <button
-          onClick={() => setTextFormat(prev => ({ ...prev, italic: !prev.italic }))}
-          className={`p-2 rounded-lg transition-colors ${
-            textFormat.italic
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-          }`}
+          onClick={handleItalicClick}
+          className={`p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
           title={t('formatting.italic')}
         >
           <Italic className="w-5 h-5" />
@@ -230,6 +436,13 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
             </div>
           )}
         </div>
+        <button
+          onClick={() => setShowAIModal(true)}
+          className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
+          title={t('ai.improve')}
+        >
+          <Sparkles className="w-5 h-5" />
+        </button>
       </div>
 
       <div className="flex items-center space-x-2">
@@ -242,11 +455,21 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
           className="flex-1 min-h-[40px] max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
         />
         <button
-          onClick={() => {/* TODO: Implement voice recording */}}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 transition-colors"
-          title={t('voice.title')}
+          onClick={isRecording ? stopRecording : startRecording}
+          className={`p-2 rounded-lg transition-colors flex items-center ${
+            isRecording
+              ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+          }`}
+          title={t(isRecording ? 'voice.stop' : 'voice.start')}
         >
-          <Mic className="w-5 h-5" />
+          <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
+          {isRecording && (
+            <span className="ml-2 text-sm">
+              {Math.floor(recordingDuration / 60)}:
+              {(recordingDuration % 60).toString().padStart(2, '0')}
+            </span>
+          )}
         </button>
         <button
           onClick={handleSend}
@@ -269,6 +492,14 @@ export function MessageInput({ onSend, sending, organizationId }: MessageInputPr
           onUploadComplete={handleFileUploadComplete}
           onError={setError}
           onClose={() => setShowFileUpload(null)}
+        />
+      )}
+
+      {showAIModal && (
+        <AIImproveModal
+          text={message}
+          onClose={() => setShowAIModal(false)}
+          onTextUpdate={(newText) => setMessage(newText)}
         />
       )}
     </div>

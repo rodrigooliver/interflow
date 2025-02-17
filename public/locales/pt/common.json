@@ -2,6 +2,7 @@
   "search": "Buscar",
   "loading": "Carregando...",
   "saving": "Salvar",
+  "save": "Salvar",
   "deleting": "Excluindo...",
   "confirmDelete": "Excluir",
   "noResults": "Nenhum resultado encontrado",
@@ -9,5 +10,11 @@
   "back": "Voltar",
   "lightMode": "Modo Claro",
   "darkMode": "Modo Escuro",
-  "logout": "Sair"
+  "logout": "Sair",
+  "cancel": "Cancelar",
+  "send": "Enviar",
+  "previous": "Anterior",
+  "next": "Próximo",
+  "pageOf": "Página {{current}} de {{total}}",
+  "remove": "Remover"
 }

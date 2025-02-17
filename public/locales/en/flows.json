@@ -6,9 +6,19 @@
   "publish": "Publish",
   "restore": "Restore Published Version",
   "lastSaved": "Last saved at {{time}}",
+  "edit": "Edit", 
+  "editFlow": "Edit Flow",
+  "flowDescription": "Flow Description",
+  "flowName": "Flow Name",
   "variables": {
     "title": "Variables",
     "add": "Add Variable"
+  },
+  "categories": {
+    "send": "Send",
+    "receive": "Receive",
+    "action": "Action",
+    "integrations": "Integrations"
   },
   "nodes": {
     "start": "Start",
@@ -27,7 +37,8 @@
     "variable": {
       "title": "Change Variable",
       "namePlaceholder": "Variable name",
-      "valuePlaceholder": "Value"
+      "valuePlaceholder": "Value",
+      "selectVariable": "Select Variable"
     },
     "condition": {
       "title": "Condition",
@@ -52,7 +63,74 @@
       "textPlaceholder": "Option text",
       "valuePlaceholder": "Value"
     },
-    "mediaUrlPlaceholder": "File URL"
+    "mediaUrlPlaceholder": "File URL",
+    "openai": {
+      "title": "OpenAI",
+      "model": "Model",
+      "prompt": "Prompt",
+      "promptPlaceholder": "Type your prompt...",
+      "temperature": "Temperature",
+      "maxTokens": "Max. Tokens",
+      "saveResponse": "Save response in",
+      "integration": "OpenAI Integration",
+      "selectIntegration": "Select OpenAI Integration",
+      "systemPrompt": "System Prompt",
+      "selectPrompt": "Select Prompt",
+      "selectModel": "Select Model",
+      "apiType": "API Type",
+      "apiTypes": {
+        "chatCompletion": "Chat Completion"
+      },
+      "settings": "Settings",
+      "messages": {
+        "type": "Message type",
+        "chatMessages": "Chat messages",
+        "allClientMessages": "All client messages"
+      },
+      "tabs": {
+        "messages": "Messages",
+        "general": "General",
+        "tools": "Tools/Functions"
+      },
+      "tools": {
+        "tools": "Tools",
+        "title": "Tools",
+        "addTool": "Add tool",
+        "name": "Name",
+        "tool": "Tool",
+        "description": "Description",
+        "parameters": "Parameters",
+        "availableVariables": "Available variables",
+        "clickToAdd": "Click to add",
+        "noVariables": "No variables available",
+        "createVariable": "Create variable",
+        "noParameters": "No parameters available"
+      }
+    },
+    "updateCustomer": {
+      "title": "Update Customer",
+      "field": "Field to Update",
+      "value": "New Value",
+      "selectField": "Select Field",
+      "valuePlaceholder": "Type the new value",
+      "funnel": "Funnel",
+      "stage": "Stage",
+      "team": "Team",
+      "user": "User",
+      "selectFunnel": "Select Funnel",
+      "selectStage": "Select Stage",
+      "selectTeam": "Select Team",
+      "selectUser": "Select User",
+      "fields": {
+        "funnel": "Sales Funnel",
+        "team": "Support Team",
+        "user": "Support User",
+        "email": "Email",
+        "phone": "Phone",
+        "facebook": "Facebook",
+        "instagram": "Instagram"
+      }
+    }
   },
   "delete": {
     "title": "Delete Flow",
@@ -63,5 +141,52 @@
     "title": "Delete Folder",
     "confirmation": "Are you sure you want to delete folder {name}?",
     "warning": "This action cannot be undone. All flows inside this folder will be moved to the root."
+  },
+  "triggers": {
+    "title": "Automation Triggers",
+    "configure": "Configure Triggers",
+    "add": "Add Trigger",
+    "selectType": "Select Trigger Type",
+    "firstContact": "First Contact",
+    "firstContactDescription": "Activate when a customer enters contact for the first time",
+    "inactivity": "Inactivity",
+    "inactivityDescription": "Activate after a period of inactivity",
+    "schedule": "First Contact at Specific Times",
+    "scheduleDescription": "Activate at specific times",
+    "channels": "Channels",
+    "requireNoActiveChat": "Only when there is no active chat",
+    "useSchedule": "Only at specific times",
+    "addTimeSlot": "Add Time Slot",
+    "inactivitySource": "Inactivity Source",
+    "customer": "Customer",
+    "agent": "Agent",
+    "inactivityMinutes": "Inactivity Minutes",
+    "days": "Days",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "timezone": "Timezone",
+    "selectChannels": "Select Channels",
+    "noChannels": "No channels found",
+    "timeSlot": {
+      "day": "Day of the week",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "remove": "Remove Time Slot"
+    }
+  },
+  "rules": {
+    "title": "Rules and Conditions",
+    "add": "Add Condition",
+    "channel": "Specific Channel",
+    "schedule": "Specific Schedule"
+  },
+  "days": {
+    "sunday": "Sunday",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday"
   }
 }

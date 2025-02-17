@@ -1,17 +1,25 @@
 import React from 'react';
 import { MessageStatus } from './MessageStatus';
-import { Image, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { AudioPlayer } from './AudioPlayer';
+import { Message } from '../../types/database';
 
 interface MessageBubbleProps {
-  content: string;
-  timestamp: string;
-  isAgent: boolean;
-  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
-  errorMessage?: string;
-  attachments?: { url: string; type: string; name: string }[];
+  message: Message;
 }
 
-export function MessageBubble({ content, timestamp, isAgent, status, errorMessage, attachments }: MessageBubbleProps) {
+export function MessageBubble({ message }: MessageBubbleProps) {
+  const {
+    content,
+    created_at,
+    sender_type,
+    status,
+    error_message,
+    attachments
+  } = message;
+  
+  const isAgent = sender_type === 'agent';
+
   const formatMessageContent = (content: string) => {
     let formatted = content;
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -33,9 +41,22 @@ export function MessageBubble({ content, timestamp, isAgent, status, errorMessag
             <img
               src={attachment.url}
               alt={attachment.name}
-              className="max-w-full rounded-lg max-h-[300px] object-contain"
+              className="max-w-full rounded-lg h-[200px] object-contain"
             />
           </a>
+        </div>
+      );
+    }
+
+    if (attachment.type.startsWith('audio/')) {
+      return (
+        <div className="mt-2">
+          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2">
+            <AudioPlayer
+              src={attachment.url}
+              fileName={attachment.name}
+            />
+          </div>
         </div>
       );
     }
@@ -49,7 +70,7 @@ export function MessageBubble({ content, timestamp, isAgent, status, errorMessag
           className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
           <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+          <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[250px]">
             {attachment.name}
           </span>
         </a>
@@ -86,11 +107,11 @@ export function MessageBubble({ content, timestamp, isAgent, status, errorMessag
             ? 'text-blue-100'
             : 'text-gray-500 dark:text-gray-400'
         }`}>
-          <span>{new Date(timestamp).toLocaleTimeString()}</span>
+          <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           {isAgent && status && (
             <MessageStatus 
               status={status} 
-              errorMessage={errorMessage}
+              errorMessage={error_message}
             />
           )}
         </div>

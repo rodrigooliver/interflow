@@ -1,38 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquareText, Plus, Loader2, X, AlertTriangle } from 'lucide-react';
-import { useOrganization } from '../hooks/useOrganization';
-import { supabase } from '../lib/supabase';
-import { PromptForm } from '../components/prompts/PromptForm';
+import { MessageSquareText, Plus, Loader2, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
+import { useOrganization } from '../../hooks/useOrganization';
+import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
+import { Prompt } from '../../types/database';
 
-interface Prompt {
-  id: string;
-  organization_id: string;
-  title: string;
-  content: string;
-  description?: string;
-  tags?: string[];
-  created_at: string;
-  updated_at: string;
-}
 
 export default function Prompts() {
   const { t } = useTranslation(['prompts', 'common']);
   const { currentOrganization } = useOrganization();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    description: '',
-    tags: [] as string[]
-  });
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (currentOrganization) {
@@ -59,70 +42,6 @@ export default function Prompts() {
       setLoading(false);
     }
   }
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentOrganization) return;
-
-    setSaving(true);
-    setError('');
-
-    try {
-      const { error } = await supabase
-        .from('prompts')
-        .insert([{
-          organization_id: currentOrganization.id,
-          title: formData.title,
-          content: formData.content,
-          description: formData.description || null,
-          tags: formData.tags
-        }]);
-
-      if (error) throw error;
-
-      await loadPrompts();
-      setShowAddModal(false);
-      setFormData({ title: '', content: '', description: '', tags: [] });
-    } catch (error) {
-      console.error('Error adding prompt:', error);
-      setError(t('common:error'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentOrganization || !selectedPrompt) return;
-
-    setSaving(true);
-    setError('');
-
-    try {
-      const { error } = await supabase
-        .from('prompts')
-        .update({
-          title: formData.title,
-          content: formData.content,
-          description: formData.description || null,
-          tags: formData.tags,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedPrompt.id);
-
-      if (error) throw error;
-
-      await loadPrompts();
-      setShowEditModal(false);
-      setSelectedPrompt(null);
-      setFormData({ title: '', content: '', description: '', tags: [] });
-    } catch (error) {
-      console.error('Error updating prompt:', error);
-      setError(t('common:error'));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDelete = async (prompt: Prompt) => {
     try {
@@ -160,7 +79,7 @@ export default function Prompts() {
           {t('prompts:title')}
         </h1>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => navigate('/prompts/new')}
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -190,34 +109,27 @@ export default function Prompts() {
               </div>
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => {
-                    setSelectedPrompt(prompt);
-                    setFormData({
-                      title: prompt.title,
-                      content: prompt.content,
-                      description: prompt.description || '',
-                      tags: prompt.tags || []
-                    });
-                    setShowEditModal(true);
-                  }}
-                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                  onClick={() => navigate(`/prompts/edit/${prompt.id}`)}
+                  className="p-2 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full"
+                  title={t('prompts:edit')}
                 >
-                  {t('prompts:edit')}
+                  <Pencil className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => {
                     setSelectedPrompt(prompt);
                     setShowDeleteModal(true);
                   }}
-                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                  className="p-2 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"
+                  title={t('prompts:delete')}
                 >
-                  {t('prompts:delete')}
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
             <div className="prose dark:prose-invert max-w-none">
-              <pre className="text-sm bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg overflow-x-auto">
+              <pre className="text-sm bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto max-h-[200px] overflow-y-auto whitespace-pre-wrap text-gray-800 dark:text-gray-200">
                 {prompt.content}
               </pre>
             </div>
@@ -241,44 +153,6 @@ export default function Prompts() {
           </div>
         ))}
       </div>
-
-      {/* Add/Edit Modal */}
-      {(showAddModal || showEditModal) && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full">
-            <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {showAddModal ? t('prompts:add') : t('prompts:edit')}
-              </h3>
-              <button
-                onClick={() => {
-                  showAddModal ? setShowAddModal(false) : setShowEditModal(false);
-                  setSelectedPrompt(null);
-                  setFormData({ title: '', content: '', description: '', tags: [] });
-                }}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              <PromptForm
-                formData={formData}
-                onChange={setFormData}
-                onSubmit={showAddModal ? handleAdd : handleEdit}
-                onCancel={() => {
-                  showAddModal ? setShowAddModal(false) : setShowEditModal(false);
-                  setSelectedPrompt(null);
-                  setFormData({ title: '', content: '', description: '', tags: [] });
-                }}
-                saving={saving}
-                error={error}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedPrompt && (

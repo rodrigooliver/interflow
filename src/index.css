@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --select-bg: white;
+    --select-border: #e5e7eb;
+    --select-focus-border: #3b82f6;
+    --select-hover-border: #d1d5db;
+    --select-text: #111827;
+    --select-selected-bg: #3b82f6;
+    --select-selected-text: white;
+    --select-hover-bg: #f3f4f6;
+    --select-tag-bg: #e5e7eb;
+    --select-tag-text: #111827;
+    --select-tag-remove: #6b7280;
+    --select-tag-remove-hover-bg: #ef4444;
+    --select-tag-remove-hover-text: white;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+
+    --select-bg: #374151;
+    --select-border: #4b5563;
+    --select-focus-border: #60a5fa;
+    --select-hover-border: #6b7280;
+    --select-text: #f3f4f6;
+    --select-selected-bg: #2563eb;
+    --select-selected-text: white;
+    --select-hover-bg: #4b5563;
+    --select-tag-bg: #4b5563;
+    --select-tag-text: #f3f4f6;
+    --select-tag-remove: #9ca3af;
+    --select-tag-remove-hover-bg: #dc2626;
+    --select-tag-remove-hover-text: white;
+  }
+}
 /* Custom scrollbar styles */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

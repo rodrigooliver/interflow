@@ -57,7 +57,7 @@ await i18nInstance.init({
   },
   load: 'currentOnly',
   preload: ['pt', 'en', 'es'],
-  debug: process.env.NODE_ENV === 'development',
+  debug: import.meta.env.VITE_ENV === 'development',
   react: {
     useSuspense: true,
     bindI18n: 'languageChanged loaded',

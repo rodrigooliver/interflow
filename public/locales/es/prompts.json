@@ -13,5 +13,12 @@
     "content": "Contenido",
     "tags": "Etiquetas",
     "tagsPlaceholder": "Ingrese etiquetas separadas por comas"
-  }
+  },
+  "test": "Probar Prompt",
+  "testPlaceholder": "Ingrese un mensaje para probar el prompt",
+  "send": "Enviar",
+  "testing": "Probiando...",
+  "testSuccess": "Prompt probado con éxito!",
+  "testError": "Error al probar el prompt",
+  "selectIntegration": "Seleccione la integración para probar el prompt"
 }

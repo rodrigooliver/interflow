@@ -2,44 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../hooks/useOrganization';
-import { supabase } from '../lib/supabase';
+import { useOrganization } from '../../hooks/useOrganization';
+import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
-
+import { Chat } from '../../types/database';
+import { Customer } from '../../types/database';
 const locales = {
   pt: ptBR,
   en: enUS,
   es: es
 };
-
-interface Chat {
-  id: string;
-  status: 'open' | 'closed';
-  channel: string;
-  created_at: string;
-  arrival_time: string;
-  start_time?: string;
-  end_time?: string;
-  last_message_at: string;
-  assigned_to?: string;
-  assigned_agent?: {
-    full_name: string;
-    email: string;
-  };
-  last_message?: {
-    content: string;
-    status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
-    error_message?: string;
-  };
-}
-
-interface Customer {
-  id: string;
-  name: string;
-  email?: string;
-  whatsapp?: string;
-}
 
 export default function CustomerChats() {
   const { id } = useParams();
@@ -68,7 +41,7 @@ export default function CustomerChats() {
       if (customerError) throw customerError;
       setCustomer(customerData);
 
-      // Load customer's chats with assigned agent details
+      // Load customer's chats with assigned agent details and last message
       const { data: chatsData, error: chatsError } = await supabase
         .from('chats')
         .select(`
@@ -77,7 +50,7 @@ export default function CustomerChats() {
             full_name,
             email
           ),
-          messages(
+          last_message:messages!chats_last_message_id_fkey(
             content,
             status,
             error_message,
@@ -89,21 +62,15 @@ export default function CustomerChats() {
 
       if (chatsError) throw chatsError;
 
-      // Process chats to include last message
-      const processedChats = (chatsData || []).map(chat => {
-        const messages = chat.messages || [];
-        messages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        const lastMessage = messages[0];
-
-        return {
-          ...chat,
-          last_message: lastMessage ? {
-            content: lastMessage.content,
-            status: lastMessage.status,
-            error_message: lastMessage.error_message
-          } : undefined
-        };
-      });
+      // Processar os chats para manter a estrutura existente
+      const processedChats = (chatsData || []).map(chat => ({
+        ...chat,
+        last_message: chat.last_message ? {
+          content: chat.last_message.content,
+          status: chat.last_message.status,
+          error_message: chat.last_message.error_message
+        } : undefined
+      }));
 
       setChats(processedChats);
     } catch (error) {
@@ -117,15 +84,15 @@ export default function CustomerChats() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Clock className="w-4 h-4 text-gray-400" title={t('chats:messageStatus.pending')} />;
+        return <Clock className="w-4 h-4 text-gray-400" />;
       case 'sent':
-        return <Check className="w-4 h-4" title={t('chats:messageStatus.sent')} />;
+        return <Check className="w-4 h-4" />;
       case 'delivered':
-        return <CheckCheck className="w-4 h-4" title={t('chats:messageStatus.delivered')} />;
+        return <CheckCheck className="w-4 h-4" />;
       case 'read':
-        return <CheckCheck className="w-4 h-4 text-blue-400" title={t('chats:messageStatus.read')} />;
+        return <CheckCheck className="w-4 h-4 text-blue-400" />;
       case 'failed':
-        return <AlertCircle className="w-4 h-4 text-red-500" title={t('chats:messageStatus.failed')} />;
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
     }

@@ -13,5 +13,12 @@
     "content": "Conteúdo",
     "tags": "Tags",
     "tagsPlaceholder": "Digite as tags separadas por vírgulas"
-  }
+  },
+  "test": "Testar Prompt",
+  "testPlaceholder": "Digite uma mensagem para testar o prompt",
+  "send": "Enviar",
+  "testing": "Testando...",
+  "testSuccess": "Prompt testado com sucesso!",
+  "testError": "Erro ao testar o prompt",
+  "selectIntegration": "Selecione a integração para testar o prompt"
 }

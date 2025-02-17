@@ -8,6 +8,9 @@
   "uploadFiles": "Subir archivos",
   "dragAndDrop": "o arrastrar y soltar",
   "maxSize": "Cualquier tipo de archivo hasta 10MB",
+  "content": "Contenido",
+  "searchPlaceholder": "Buscar atajos",
+  "noSearchResults": "No se encontraron atajos para esta búsqueda",
   "delete": {
     "title": "Eliminar Atajo",
     "confirmation": "¿Estás seguro de que deseas eliminar el atajo {name}?",

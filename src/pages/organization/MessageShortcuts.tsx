@@ -3,19 +3,7 @@ import { Keyboard, Plus, Loader2, X, AlertTriangle, Upload, Pencil, FileText, Im
 import { useTranslation } from 'react-i18next';
 import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
-
-interface MessageShortcut {
-  id: string;
-  organization_id: string;
-  title: string;
-  content: string;
-  attachments: {
-    name: string;
-    url: string;
-    type: string;
-  }[];
-  created_at: string;
-}
+import { MessageShortcut } from '../../types/database';
 
 export default function MessageShortcuts() {
   const { t } = useTranslation(['shortcuts', 'common']);
@@ -33,6 +21,10 @@ export default function MessageShortcuts() {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [removingFile, setRemovingFile] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
 
   useEffect(() => {
     if (currentOrganization) {
@@ -80,11 +72,13 @@ export default function MessageShortcuts() {
 
   async function handleRemoveExistingFile(url: string) {
     if (!selectedShortcut) return;
-
-    const updatedAttachments = selectedShortcut.attachments.filter(a => a.url !== url);
-    const filePath = url.split('/').pop();
-
+    
+    setRemovingFile(url);
+    
     try {
+      const updatedAttachments = selectedShortcut.attachments.filter(a => a.url !== url);
+      const filePath = url.split('/').pop();
+
       if (filePath) {
         await supabase.storage
           .from('attachments')
@@ -107,6 +101,8 @@ export default function MessageShortcuts() {
     } catch (error) {
       console.error('Error removing file:', error);
       setError(t('common:error'));
+    } finally {
+      setRemovingFile(null);
     }
   }
 
@@ -161,7 +157,7 @@ export default function MessageShortcuts() {
       setShowCreateModal(false);
       setFormData({ title: '', content: '' });
       setFiles([]);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating shortcut:', error);
       setError(t('common:error'));
     } finally {
@@ -222,7 +218,7 @@ export default function MessageShortcuts() {
       setSelectedShortcut(null);
       setFormData({ title: '', content: '' });
       setFiles([]);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating shortcut:', error);
       setError(t('common:error'));
     } finally {
@@ -260,6 +256,17 @@ export default function MessageShortcuts() {
       setError(t('common:error'));
     }
   }
+
+  const filteredShortcuts = shortcuts.filter(shortcut => 
+    shortcut.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    shortcut.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredShortcuts.length / itemsPerPage);
+  const paginatedShortcuts = filteredShortcuts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (!currentOrganization) {
     return (
@@ -299,90 +306,130 @@ export default function MessageShortcuts() {
         </button>
       </div>
 
-      {shortcuts.length === 0 ? (
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder={t('shortcuts:searchPlaceholder')}
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        />
+      </div>
+
+      {paginatedShortcuts.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400">
-          {t('shortcuts:noShortcuts')}
+          {searchTerm ? t('shortcuts:noSearchResults') : t('shortcuts:noShortcuts')}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {shortcuts.map((shortcut) => (
-            <div key={shortcut.id} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-              <div className="p-6">
-                <div className="flex justify-between items-start">
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedShortcuts.map((shortcut) => (
+              <div key={shortcut.id} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                <div className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                        {shortcut.title}
+                      </h3>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditClick(shortcut)}
+                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        <Pencil className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedShortcut(shortcut);
+                          setShowDeleteModal(true);
+                        }}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {shortcut.title}
-                    </h3>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 line-clamp-3 max-h-[4.5rem] overflow-hidden">
                       {shortcut.content}
                     </p>
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEditClick(shortcut)}
-                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                    >
-                      <Pencil className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedShortcut(shortcut);
-                        setShowDeleteModal(true);
-                      }}
-                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
 
-                {shortcut.attachments.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                      {t('shortcuts:attachments')}
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {shortcut.attachments.map((attachment, index) => {
-                        // Determine icon based on file type
-                        let Icon = File; // Default icon
-                        if (attachment.type.startsWith('image/')) {
-                          Icon = Image;
-                        } else if (attachment.type.startsWith('audio/')) {
-                          Icon = Music;
-                        } else if (attachment.type.startsWith('video/')) {
-                          Icon = Video;
-                        } else if (attachment.type.startsWith('text/') || attachment.type.includes('pdf')) {
-                          Icon = FileText;
-                        }
+                  {shortcut.attachments.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                        {t('shortcuts:attachments')}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {shortcut.attachments.map((attachment, index) => {
+                          let Icon = File;
+                          if (attachment.type.startsWith('image/')) {
+                            Icon = Image;
+                          } else if (attachment.type.startsWith('audio/')) {
+                            Icon = Music;
+                          } else if (attachment.type.startsWith('video/')) {
+                            Icon = Video;
+                          } else if (attachment.type.startsWith('text/') || attachment.type.includes('pdf')) {
+                            Icon = FileText;
+                          }
 
-                        return (
-                          <a
-                            key={index}
-                            href={attachment.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center p-2 space-x-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
-                          >
-                            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                              <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                            </div>
-                            <span className="flex-1 truncate">
-                              {attachment.name}
-                            </span>
-                          </a>
-                        );
-                      })}
+                          return (
+                            <a
+                              key={index}
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center p-2 space-x-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
+                            >
+                              <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
+                                <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                              </div>
+                              <span className="flex-1 truncate">
+                                {attachment.name}
+                              </span>
+                            </a>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                  {new Date(shortcut.created_at).toLocaleDateString()}
+                  <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                    {new Date(shortcut.created_at).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-700 transition-colors"
+              >
+                {t('common:previous')}
+              </button>
+              
+              <span className="px-3 py-1 text-gray-700 dark:text-gray-300">
+                {t('common:pageOf', { current: currentPage, total: totalPages })}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-gray-700 transition-colors"
+              >
+                {t('common:next')}
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {/* Create/Edit Shortcut Modal */}
@@ -395,7 +442,11 @@ export default function MessageShortcuts() {
               </h3>
               <button
                 onClick={() => {
-                  showEditModal ? setShowEditModal(false) : setShowCreateModal(false);
+                  if(showEditModal) {
+                    setShowEditModal(false)
+                  } else {
+                    setShowCreateModal(false)
+                  }
                   setSelectedShortcut(null);
                   setFormData({ title: '', content: '' });
                   setFiles([]);
@@ -447,7 +498,6 @@ export default function MessageShortcuts() {
                     {t('shortcuts:attachments')}
                   </label>
 
-                  {/* Existing Attachments */}
                   {showEditModal && selectedShortcut && selectedShortcut.attachments.length > 0 && (
                     <div className="mb-4 space-y-2">
                       {selectedShortcut.attachments.map((attachment, index) => (
@@ -458,16 +508,20 @@ export default function MessageShortcuts() {
                           <button
                             type="button"
                             onClick={() => handleRemoveExistingFile(attachment.url)}
-                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            disabled={removingFile === attachment.url}
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
                           >
-                            <X className="w-4 h-4" />
+                            {removingFile === attachment.url ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <X className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* File Upload Area */}
                   <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md">
                     <div className="space-y-1 text-center">
                       <Upload className="mx-auto h-12 w-12 text-gray-400" />
@@ -494,7 +548,6 @@ export default function MessageShortcuts() {
                     </div>
                   </div>
 
-                  {/* New Files List */}
                   {files.length > 0 && (
                     <div className="mt-4 space-y-2">
                       {files.map((file, index) => (
@@ -518,7 +571,11 @@ export default function MessageShortcuts() {
                 <button
                   type="button"
                   onClick={() => {
-                    showEditModal ? setShowEditModal(false) : setShowCreateModal(false);
+                    if(showEditModal) {
+                      setShowEditModal(false)
+                    } else {
+                      setShowCreateModal(false)
+                    }
                     setSelectedShortcut(null);
                     setFormData({ title: '', content: '' });
                     setFiles([]);
@@ -550,7 +607,6 @@ export default function MessageShortcuts() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedShortcut && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">

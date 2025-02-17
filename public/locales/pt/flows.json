@@ -6,9 +6,19 @@
   "publish": "Publicar",
   "restore": "Restaurar Versão Publicada",
   "lastSaved": "Salvo às {{time}}",
+  "edit": "Editar",
+  "editFlow": "Editar Fluxo",
+  "flowDescription": "Descrição do Fluxo",
+  "flowName": "Nome do Fluxo",
   "variables": {
     "title": "Variáveis",
     "add": "Adicionar Variável"
+  },
+  "categories": {
+    "send": "Enviar",
+    "receive": "Receber",
+    "action": "Ação",
+    "integrations": "Integrações"
   },
   "nodes": {
     "start": "Início",
@@ -27,7 +37,8 @@
     "variable": {
       "title": "Alterar Variável",
       "namePlaceholder": "Nome da variável",
-      "valuePlaceholder": "Valor"
+      "valuePlaceholder": "Valor",
+      "selectVariable": "Selecione uma variável"
     },
     "condition": {
       "title": "Condição",
@@ -52,7 +63,75 @@
       "textPlaceholder": "Texto da opção",
       "valuePlaceholder": "Valor"
     },
-    "mediaUrlPlaceholder": "URL do arquivo"
+    "mediaUrlPlaceholder": "URL do arquivo",
+    "openai": {
+      "title": "OpenAI",
+      "model": "Modelo",
+      "prompt": "Prompt",
+      "promptPlaceholder": "Digite seu prompt...",
+      "temperature": "Temperatura",
+      "maxTokens": "Máx. Tokens",
+      "saveResponse": "Salvar resposta em",
+      "integration": "Integração OpenAI",
+      "selectIntegration": "Selecione uma integração OpenAI",
+      "systemPrompt": "Prompt do Sistema",
+      "selectPrompt": "Selecione um Prompt",
+      "selectModel": "Selecione um Modelo",
+      "apiType": "Tipo de API",
+      "selectApiType": "Selecione um tipo de API",
+      "apiTypes": {
+        "chatCompletion": "Criar resposta"
+      },
+      "settings": "Configurações",
+      "messages": {
+        "type": "Tipo de mensagem",
+        "chatMessages": "Mensagens do chat",
+        "allClientMessages": "Todas as mensagens do cliente"
+      },
+      "tabs": {
+        "messages": "Mensagens",
+        "general": "Geral",
+        "tools": "Ferramentas/Funções"
+      },
+      "tools": {
+        "tools": "Ferramentas",
+        "title": "Ferramentas",
+        "addTool": "Adicionar ferramenta",
+        "name": "Nome",
+        "tool": "Ferramenta",
+        "description": "Descrição",
+        "parameters": "Parâmetros",
+        "availableVariables": "Variáveis disponíveis",
+        "clickToAdd": "Clique para adicionar",
+        "noVariables": "Nenhuma variável disponível",
+        "createVariable": "Criar variável",
+        "noParameters": "Nenhum parâmetro disponível"
+      }
+    },
+    "updateCustomer": {
+      "title": "Atualizar Cliente",
+      "field": "Campo para Atualizar",
+      "value": "Novo Valor",
+      "selectField": "Selecione o campo",
+      "valuePlaceholder": "Digite o novo valor",
+      "funnel": "Funil",
+      "stage": "Estágio",
+      "team": "Equipe",
+      "user": "Usuário",
+      "selectFunnel": "Selecione o funil",
+      "selectStage": "Selecione o estágio",
+      "selectTeam": "Selecione a equipe",
+      "selectUser": "Selecione o usuário",
+      "fields": {
+        "funnel": "Funil de Vendas",
+        "team": "Equipe de Atendimento",
+        "user": "Usuário Atendente",
+        "email": "Email",
+        "phone": "Telefone",
+        "facebook": "Facebook",
+        "instagram": "Instagram"
+      }
+    }
   },
   "delete": {
     "title": "Excluir Fluxo",
@@ -63,5 +142,52 @@
     "title": "Excluir Pasta",
     "confirmation": "Tem certeza que deseja excluir a pasta {name}?",
     "warning": "Esta ação não pode ser desfeita. Todos os fluxos dentro desta pasta serão movidos para a raiz."
+  },
+  "triggers": {
+    "title": "Gatilhos de Automação",
+    "configure": "Configurar Gatilhos",
+    "add": "Adicionar Gatilho",
+    "selectType": "Selecione o tipo de gatilho",
+    "firstContact": "Primeiro Contato",
+    "firstContactDescription": "Ativar quando um cliente entrar em contato pela primeira vez",
+    "inactivity": "Inatividade",
+    "inactivityDescription": "Ativar após um período de inatividade",
+    "schedule": "Primeiro contato em horários específicos",
+    "scheduleDescription": "Ativar em horários específicos",
+    "channels": "Canais",
+    "requireNoActiveChat": "Apenas quando não houver chat ativo",
+    "useSchedule": "Apenas em horários específicos",
+    "addTimeSlot": "Adicionar horário",
+    "inactivitySource": "Fonte de inatividade",
+    "customer": "Cliente",
+    "agent": "Atendente",
+    "inactivityMinutes": "Minutos de inatividade",
+    "days": "Dias da semana",
+    "startTime": "Horário inicial",
+    "endTime": "Horário final",
+    "timezone": "Fuso horário",
+    "selectChannels": "Selecione os canais",
+    "noChannels": "Nenhum canal encontrado",
+    "timeSlot": {
+      "day": "Dia da semana",
+      "startTime": "Horário inicial",
+      "endTime": "Horário final",
+      "remove": "Remover horário"
+    }
+  },
+  "rules": {
+    "title": "Regras e Condições",
+    "add": "Adicionar Condição",
+    "channel": "Canal específico",
+    "schedule": "Horário específico"
+  },
+  "days": {
+    "sunday": "Domingo",
+    "monday": "Segunda",
+    "tuesday": "Terça",
+    "wednesday": "Quarta",
+    "thursday": "Quinta",
+    "friday": "Sexta",
+    "saturday": "Sábado"
   }
 }

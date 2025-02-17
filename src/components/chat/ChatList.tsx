@@ -3,6 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Clock, Check, CheckCheck } from 'lucide-react';
+import { Chat } from '../../types/database';
 
 const locales = {
   pt: ptBR,
@@ -10,31 +11,12 @@ const locales = {
   es: es
 };
 
-interface Chat {
-  id: string;
-  customer_id: string;
-  status: string;
-  channel: string;
-  assigned_to: string | null;
-  team_id: string | null;
-  last_message_at: string;
-  customer: {
-    name: string;
-    email: string | null;
-    whatsapp: string | null;
-  };
-  isSelected?: boolean;
-  last_message?: {
-    status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
-    error_message?: string;
-  };
-}
-
 interface ChatListProps {
   chats: Chat[];
+  selectedChat: string | null;
 }
 
-export function ChatList({ chats }: ChatListProps) {
+export function ChatList({ chats, selectedChat }: ChatListProps) {
   const { t, i18n } = useTranslation('chats');
 
   const getInitials = (name: string) => {
@@ -71,6 +53,7 @@ export function ChatList({ chats }: ChatListProps) {
   };
 
   const getStatusIcon = (chat: Chat) => {
+    
     if (!chat.last_message) return null;
 
     switch (chat.last_message.status) {
@@ -78,35 +61,30 @@ export function ChatList({ chats }: ChatListProps) {
         return (
           <Clock 
             className="w-4 h-4 text-gray-400 dark:text-gray-500" 
-            title={t('messageStatus.pending')}
           />
         );
       case 'sent':
         return (
           <Check 
             className="w-4 h-4 text-gray-500 dark:text-gray-400" 
-            title={t('messageStatus.sent')}
           />
         );
       case 'delivered':
         return (
           <CheckCheck 
             className="w-4 h-4 text-gray-500 dark:text-gray-400" 
-            title={t('messageStatus.delivered')}
           />
         );
       case 'read':
         return (
           <CheckCheck 
             className="w-4 h-4 text-blue-500 dark:text-blue-400" 
-            title={t('messageStatus.read')}
           />
         );
       case 'failed':
         return (
           <AlertCircle 
             className="w-4 h-4 text-red-500 dark:text-red-400" 
-            title={chat.last_message.error_message || t('messageStatus.failed')}
           />
         );
       default:
@@ -115,46 +93,50 @@ export function ChatList({ chats }: ChatListProps) {
   };
 
   return (
-    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+    <div className="flex-1 overflow-y-auto">
       {chats.map((chat) => (
         <a
           key={chat.id}
-          href={`/chats/${chat.id}`}
+          href="#"
           data-chat-id={chat.id}
-          className={`block p-4 transition-colors ${
-            chat.isSelected 
-              ? 'bg-blue-50 dark:bg-blue-900/50'
-              : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+          className={`block p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+            selectedChat === chat.id ? 'bg-blue-50 dark:bg-blue-900/50' : ''
           }`}
         >
           <div className="flex items-start space-x-3">
-            <div className={`flex-shrink-0 w-10 h-10 rounded-full ${getRandomColor(chat.customer.name)} flex items-center justify-center text-white font-medium`}>
-              {getInitials(chat.customer.name)}
+            <div className={`flex-shrink-0 w-10 h-10 rounded-full ${getRandomColor(chat.customer?.name || 'Anônimo')} flex items-center justify-center`}>
+              <span className="text-white font-medium">
+                {getInitials(chat.customer?.name || 'Anônimo')}
+              </span>
             </div>
+            
             <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-center">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {chat.customer.name}
-                </h4>
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(chat)}
-                  <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    {formatLastMessageTime(chat.last_message_at)}
-                  </span>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                {chat.customer.email || chat.customer.whatsapp}
-              </p>
-              <div className="mt-1">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  chat.status === 'open'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400'
-                }`}>
-                  {t(`status.${chat.status}`)}
+              <div className="flex justify-between items-start mb-1">
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {chat.customer?.name || chat.customer?.whatsapp || 'Sem nome'}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(chat.last_message_at).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
                 </span>
               </div>
+              
+              {chat.last_message && (
+                <div className="flex items-center gap-1">
+                  {chat.last_message.sender_type === 'agent' && getStatusIcon(chat)}
+                  <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                    {chat.last_message.content}
+                  </div>
+                </div>
+              )}
+              
+              {chat.last_message?.status && chat.last_message.sender_type === 'agent' && chat.last_message.error_message && (
+                <div className="text-xs text-red-500 mt-1">
+                  {chat.last_message.error_message}
+                </div>
+              )}
             </div>
           </div>
         </a>

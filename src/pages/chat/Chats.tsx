@@ -1,30 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Filter, MessageSquare, Users, UserCheck, UserMinus, Loader2 } from 'lucide-react';
-import { useOrganization } from '../hooks/useOrganization';
-import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../lib/supabase';
-import { ChatList } from '../components/chat/ChatList';
-import { ChatMessages } from '../components/chat/ChatMessages';
+import { useOrganization } from '../../hooks/useOrganization';
+import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../lib/supabase';
+import { ChatList } from '../../components/chat/ChatList';
+import { ChatMessages } from '../../components/chat/ChatMessages';
+import { Chat } from '../../types/database';
 
-interface Chat {
-  id: string;
-  customer_id: string;
-  status: string;
-  channel: string;
-  assigned_to: string | null;
-  team_id: string | null;
-  last_message_at: string;
-  customer: {
-    name: string;
-    email: string | null;
-    whatsapp: string | null;
-  };
-  last_message?: {
-    status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
-    error_message?: string;
-  };
-}
 
 export default function Chats() {
   const { t } = useTranslation(['chats', 'common']);
@@ -84,38 +67,44 @@ export default function Chats() {
             email,
             whatsapp
           ),
-          messages:messages(
+          last_message:messages!chats_last_message_id_fkey(
+            content,
             status,
             error_message,
-            created_at
+            created_at,
+            sender_type
           )
         `)
         .eq('organization_id', currentOrganization.id)
-        .eq('status', 'open')
         .order('last_message_at', { ascending: false });
 
       // Apply filter
+      let teamMembers;
+      let teamIds;
       switch (selectedFilter) {
         case 'unassigned':
-          query = query.is('assigned_to', null);
+          query = query.eq('status', 'pending');
           break;
         case 'assigned-to-me':
-          query = query.eq('assigned_to', session.user.id);
+          query = query
+            .eq('assigned_to', session.user.id)
+            .eq('status', 'in_progress');
           break;
-        case 'team':
-          // Get user's teams first
-          const { data: teamMembers } = await supabase
+        case 'team': {
+          const { data } = await supabase
             .from('service_team_members')
             .select('team_id')
             .eq('user_id', session.user.id);
-
-          const teamIds = teamMembers?.map(tm => tm.team_id) || [];
           
-          // Filter chats by team and exclude those assigned to the current user
+          teamMembers = data;
+          teamIds = teamMembers?.map(tm => tm.team_id) || [];
+          
           query = query
             .in('team_id', teamIds)
-            .neq('assigned_to', session.user.id);
+            .neq('assigned_to', session.user.id)
+            .eq('status', 'in_progress');
           break;
+        }
       }
 
       // Apply search if there's a term
@@ -127,20 +116,16 @@ export default function Chats() {
 
       if (chatsError) throw chatsError;
 
-      // Process chats to include last message status
-      const processedChats = (data || []).map(chat => {
-        const messages = chat.messages || [];
-        // Sort messages by created_at to get the latest one
-        messages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        const lastMessage = messages[0];
-        return {
-          ...chat,
-          last_message: lastMessage ? {
-            status: lastMessage.status,
-            error_message: lastMessage.error_message
-          } : undefined
-        };
-      });
+      const processedChats = (data || []).map(chat => ({
+        ...chat,
+        last_message: chat.last_message ? {
+          content: chat.last_message.content,
+          status: chat.last_message.status,
+          error_message: chat.last_message.error_message,
+          created_at: chat.last_message.created_at,
+          sender_type: chat.last_message.sender_type
+        } : undefined
+      }));
 
       setChats(processedChats);
     } catch (error) {
@@ -209,44 +194,39 @@ export default function Chats() {
         )}
 
         {/* Chat List */}
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <div onClick={(e) => {
+          const target = e.target as HTMLElement;
+          const chatItem = target.closest('a');
+          if (chatItem) {
+            e.preventDefault();
+            const chatId = chatItem.getAttribute('data-chat-id');
+            if (chatId) {
+              setSelectedChat(chatId);
+            }
+          }
+        }}>
+          {error ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <p className="text-red-500 dark:text-red-400">
+                {error}
+              </p>
             </div>
-          ) : error ? (
-            <div className="p-4 text-red-600 dark:text-red-400">{error}</div>
+          ) : loading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            </div>
           ) : chats.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                <MessageSquare className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                {t('chats:emptyState.title')}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t(`chats:emptyState.description.${selectedFilter}`)}
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">
+                {t('chats:noChatsFound')}
               </p>
             </div>
           ) : (
-            <div onClick={(e) => {
-              const target = e.target as HTMLElement;
-              const chatItem = target.closest('a');
-              if (chatItem) {
-                e.preventDefault();
-                const chatId = chatItem.getAttribute('data-chat-id');
-                if (chatId) {
-                  setSelectedChat(chatId);
-                }
-              }
-            }}>
-              <ChatList 
-                chats={chats.map(chat => ({
-                  ...chat,
-                  isSelected: chat.id === selectedChat
-                }))} 
-              />
-            </div>
+            <ChatList 
+              chats={chats}
+              selectedChat={selectedChat}
+            />
           )}
         </div>
       </div>

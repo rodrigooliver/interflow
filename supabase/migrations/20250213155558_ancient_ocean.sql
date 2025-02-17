@@ -66,26 +66,3 @@ CREATE POLICY "Organization admins can manage files"
       AND om.role IN ('owner', 'admin')
     )
   );
-
--- Create function to update organization storage usage
-CREATE OR REPLACE FUNCTION update_organization_storage_usage()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE organizations
-    SET storage_used = storage_used + NEW.size
-    WHERE id = NEW.organization_id;
-  ELSIF TG_OP = 'DELETE' OR NEW.deleted_at IS NOT NULL THEN
-    UPDATE organizations
-    SET storage_used = storage_used - OLD.size
-    WHERE id = OLD.organization_id;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger for storage usage updates
-CREATE TRIGGER update_storage_usage
-  AFTER INSERT OR UPDATE OF deleted_at OR DELETE ON files
-  FOR EACH ROW
-  EXECUTE FUNCTION update_organization_storage_usage();

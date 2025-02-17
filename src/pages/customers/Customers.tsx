@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Mail, Phone, Loader2, Pencil, Trash2, GitMerge, Search, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../lib/supabase';
-import { Customer } from '../types/database';
-import { useOrganization } from '../hooks/useOrganization';
-import { CustomerRegistrationModal } from '../components/customers/CustomerRegistrationModal';
-import { CustomerEditModal } from '../components/customers/CustomerEditModal';
-import { CustomerDeleteModal } from '../components/customers/CustomerDeleteModal';
-import { ContactChannelModal } from '../components/customers/ContactChannelModal';
+import { supabase } from '../../lib/supabase';
+import { Customer } from '../../types/database';
+import { useOrganization } from '../../hooks/useOrganization';
+import { CustomerRegistrationModal } from '../../components/customers/CustomerRegistrationModal';
+import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
+import { CustomerDeleteModal } from '../../components/customers/CustomerDeleteModal';
+import { ContactChannelModal } from '../../components/customers/ContactChannelModal';
 
 interface ContactModalState {
   type: 'email' | 'whatsapp';

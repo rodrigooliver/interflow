@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Tag as TagIcon, Plus, Loader2, X, AlertTriangle } from 'lucide-react';
+import { Tag as TagIcon, Plus, Loader2, X, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { useOrganization } from '../hooks/useOrganization';
 import { supabase } from '../lib/supabase';
 import { TagForm } from '../components/tags/TagForm';
@@ -190,7 +190,7 @@ export default function Tags() {
                   }}
                   className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                 >
-                  {t('tags:edit')}
+                  <Pencil className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => {
@@ -199,7 +199,7 @@ export default function Tags() {
                   }}
                   className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                 >
-                  {t('tags:delete')}
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>

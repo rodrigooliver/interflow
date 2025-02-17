@@ -1,7 +1,8 @@
 {
   "search": "Search",
   "loading": "Loading...",
-  "saving": "Save",
+  "saving": "Saving...",
+  "save": "Save",
   "deleting": "Deleting...",
   "confirmDelete": "Delete",
   "noResults": "No results found",
@@ -9,5 +10,11 @@
   "back": "Back",
   "lightMode": "Light Mode",
   "darkMode": "Dark Mode",
-  "logout": "Logout"
+  "logout": "Logout",
+  "cancel": "Cancel",
+  "send": "Send",
+  "previous": "Previous",
+  "next": "Next",
+  "pageOf": "Page {{current}} of {{total}}",
+  "remove": "Remove"
 }

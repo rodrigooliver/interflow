@@ -6,9 +6,19 @@
   "publish": "Publicar",
   "restore": "Restaurar Versión Publicada",
   "lastSaved": "Guardado a las {{time}}",
+  "edit": "Editar",
+  "editFlow": "Editar Flujo",
+  "flowDescription": "Descripción del Flujo",
+  "flowName": "Nombre del Flujo",
   "variables": {
     "title": "Variables",
     "add": "Agregar Variable"
+  },
+  "categories": {
+    "send": "Enviar",
+    "receive": "Recibir",
+    "action": "Acción",
+    "integrations": "Integraciones"
   },
   "nodes": {
     "start": "Inicio",
@@ -50,9 +60,77 @@
     "options": {
       "title": "Opciones",
       "textPlaceholder": "Texto de la opción",
-      "valuePlaceholder": "Valor"
+      "valuePlaceholder": "Valor",
+      "selectVariable": "Selecciona una variable"
     },
-    "mediaUrlPlaceholder": "URL del archivo"
+    "mediaUrlPlaceholder": "URL del archivo",
+    "openai": {
+      "title": "OpenAI",
+      "model": "Modelo",
+      "prompt": "Prompt",
+      "promptPlaceholder": "Escribe tu prompt aquí...",
+      "temperature": "Temperatura",
+      "maxTokens": "Máx. Tokens",
+      "saveResponse": "Guardar respuesta en",
+      "integration": "Integración OpenAI",
+      "selectIntegration": "Selecciona una integración OpenAI",
+      "systemPrompt": "Prompt del Sistema",
+      "selectPrompt": "Selecciona un Prompt",
+      "selectModel": "Selecciona un Modelo",
+      "apiType": "Tipo de API",
+      "apiTypes": {
+        "chatCompletion": "Crear respuesta"
+      },
+      "settings": "Configurações",
+      "messages": {
+        "type": "Tipo de mensaje",
+        "chatMessages": "Mensajes del chat",
+        "allClientMessages": "Todas las mensagens del cliente"
+      },
+      "tabs": {
+        "messages": "Mensajes",
+        "general": "General",
+        "tools": "Herramientas/Funciones"
+      },
+      "tools": {
+        "tools": "Herramientas",
+        "title": "Herramientas",
+        "addTool": "Agregar herramienta",
+        "name": "Nombre",
+        "tool": "Herramienta",
+        "description": "Descripción",
+        "parameters": "Parámetros",
+        "availableVariables": "Variables disponibles",
+        "clickToAdd": "Clic para agregar",
+        "noVariables": "Ninguna variable disponible",
+        "createVariable": "Crear variable",
+        "noParameters": "Ningún parámetro disponible"
+      }
+    },
+    "updateCustomer": {
+      "title": "Actualizar Cliente",
+      "field": "Campo para Actualizar",
+      "value": "Nuevo Valor",
+      "selectField": "Selecciona el campo",
+      "valuePlaceholder": "Escribe el nuevo valor",
+      "funnel": "Funnel",
+      "stage": "Estágio",
+      "team": "Equipo",
+      "user": "Usuario",
+      "selectFunnel": "Selecciona el funil",
+      "selectStage": "Selecciona el estágio",
+      "selectTeam": "Selecciona el equipo",
+      "selectUser": "Selecciona el usuario",
+      "fields": {
+        "funnel": "Funnel de Ventas",
+        "team": "Equipo de Atención",
+        "user": "Usuario Atendente",
+        "email": "Email",
+        "phone": "Teléfono",
+        "facebook": "Facebook",
+        "instagram": "Instagram"
+      }
+    }
   },
   "delete": {
     "title": "Eliminar Flujo",
@@ -63,5 +141,52 @@
     "title": "Eliminar Carpeta",
     "confirmation": "¿Estás seguro de que deseas eliminar la carpeta {name}?",
     "warning": "Esta acción no se puede deshacer. Todos los flujos dentro de esta carpeta se moverán a la raíz."
+  },
+  "triggers": {
+    "title": "Gatilhos de Automação",
+    "configure": "Configurar Gatilhos",
+    "add": "Agregar Gatilho",
+    "selectType": "Selecciona el tipo de gatilho",
+    "firstContact": "Primer Contacto",
+    "firstContactDescription": "Activar cuando un cliente entre en contacto por primera vez",
+    "inactivity": "Inactividad",
+    "inactivityDescription": "Activar después de un período de inactividad",
+    "schedule": "Primer contacto en horarios específicos",
+    "scheduleDescription": "Activar en horarios específicos",
+    "channels": "Canales",
+    "requireNoActiveChat": "Apenas cuando no hay chat activo",
+    "useSchedule": "Apenas en horarios específicos",
+    "addTimeSlot": "Agregar horario",
+    "inactivitySource": "Fuente de inactividad",
+    "customer": "Cliente",
+    "agent": "Atendente",
+    "inactivityMinutes": "Minutos de inactividad",
+    "days": "Días de la semana",
+    "startTime": "Hora inicial",
+    "endTime": "Hora final",
+    "timezone": "Fuso horario",
+    "selectChannels": "Selecciona los canales",
+    "noChannels": "Ningún canal encontrado",
+    "timeSlot": {
+      "day": "Día de la semana",
+      "startTime": "Hora inicial",
+      "endTime": "Hora final",
+      "remove": "Remover horario"
+    }
+  },
+  "rules": {
+    "title": "Reglas y Condiciones",
+    "add": "Agregar Condición",
+    "channel": "Canal específico",
+    "schedule": "Horario específico"
+  },  
+  "days": {
+    "sunday": "Domingo",
+    "monday": "Lunes",
+    "tuesday": "Martes",
+    "wednesday": "Miércoles",
+    "thursday": "Jueves",
+    "friday": "Viernes",
+    "saturday": "Sábado"
   }
 }

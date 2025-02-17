@@ -8,6 +8,9 @@
   "uploadFiles": "Upload files",
   "dragAndDrop": "or drag and drop",
   "maxSize": "Any file type up to 10MB",
+  "content": "Content",
+  "searchPlaceholder": "Search shortcuts",
+  "noSearchResults": "No shortcuts found for this search",
   "delete": {
     "title": "Delete Shortcut",
     "confirmation": "Are you sure you want to delete shortcut {name}?",

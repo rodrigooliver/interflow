@@ -15,7 +15,12 @@
     "delete": "Delete",
     "deleteConfirmation": "Are you sure you want to delete this integration?",
     "type": "Integration Type",
-    "lastUpdated": "Last updated"
+    "lastUpdated": "Last updated",
+    "form": {
+      "title": "Title",
+      "titlePlaceholderOpenAI": "Title for OpenAI",
+      "titlePlaceholderS3": "Title for AWS"
+    }
   },
   "fileManager": {
     "title": "File Manager",
@@ -28,5 +33,29 @@
     "deleteTitle": "Delete File",
     "deleteConfirmation": "Are you sure you want to delete {name}?",
     "deleteWarning": "This action cannot be undone. If this file is used in any messages, they will no longer display the file."
-  }
+  },
+  "billing": {
+    "currentPlan": "Current Plan",
+    "trialEnds": "Trial ends on {{date}}",
+    "renewsOn": "Renews on {{date}}",
+    "manageBilling": "Manage Billing",
+    "selectPlan": "Select Plan",
+    "paymentMethods": "Payment Methods",
+    "edit": "Edit",
+    "addPaymentMethod": "Add Payment Method",
+    "history": "Billing History",
+    "date": "Date",
+    "description": "Description",
+    "amount": "Amount",
+    "status": "Status",
+    "download": "Download",
+    "paid": "Paid",
+    "features": {
+      "users": "{{count}} users",
+      "storage": "{{size}} storage",
+      "channels": "{{count}} channels",
+      "concurrentChats": "{{count}} concurrent chats"
+    }
+  },
+  "expand": "Expand"
 }

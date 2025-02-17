@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, HardDrive, MessageSquareText } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, HardDrive, MessageSquareText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -65,7 +65,7 @@ function Sidebar({ onClose }: SidebarProps) {
   return (
     <div className={`h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
       isCollapsed ? 'w-16' : 'w-64'
-    } transition-all duration-300 ease-in-out`}>
+    } transition-all duration-300 ease-in-out relative`}>
       {/* Header */}
       <div className={`flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
@@ -87,6 +87,20 @@ function Sidebar({ onClose }: SidebarProps) {
         </button>
       </div>
       
+      {/* Botão de alternância - movido para cima */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className={`absolute top-4 -right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+          !isCollapsed ? 'hidden lg:block' : 'block'
+        }`}
+      >
+        {isCollapsed ? (
+          <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        ) : (
+          <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        )}
+      </button>
+
       {/* Scrollable Navigation */}
       <div className="flex-1 overflow-y-auto">
         <nav className="p-4">

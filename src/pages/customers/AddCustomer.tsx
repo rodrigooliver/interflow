@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../lib/supabase';
-import { useOrganization } from '../hooks/useOrganization';
-import { CRMFunnel, CRMStage } from '../types/crm';
+import { supabase } from '../../lib/supabase';
+import { useOrganization } from '../../hooks/useOrganization';
+import { CRMFunnel, CRMStage } from '../../types/crm';
 
 interface CountryCode {
   code: string;

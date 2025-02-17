@@ -3,12 +3,16 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
-import Chats from './pages/Chats';
-import Chat from './pages/Chat';
-import Customers from './pages/Customers';
-import CustomerChats from './pages/CustomerChats';
-import AddCustomer from './pages/AddCustomer';
-import SettingsPage from './pages/Settings';
+import Chats from './pages/chat/Chats';
+import Chat from './pages/chat/Chat';
+import Customers from './pages/customers/Customers';
+import CustomerChats from './pages/customers/CustomerChats';
+import AddCustomer from './pages/customers/AddCustomer';
+import SettingsPage from './pages/settings/Settings';
+import BillingPage from './pages/settings/Billing';
+import IntegrationsPage from './pages/settings/Integrations';
+import NotificationsPage from './pages/settings/Notifications';
+import UsagePage from './pages/settings/Usage';
 import Login from './pages/Login';
 import Organizations from './pages/admin/Organizations';
 import AddOrganization from './pages/admin/AddOrganization';
@@ -24,13 +28,14 @@ import WhatsAppEvoForm from './pages/organization/channels/WhatsAppEvoForm';
 import FacebookForm from './pages/organization/channels/FacebookForm';
 import InstagramForm from './pages/organization/channels/InstagramForm';
 import MessageShortcuts from './pages/organization/MessageShortcuts';
-import FlowList from './pages/FlowList';
-import FlowEditor from './pages/FlowEditor';
-import CRMFunnels from './pages/CRMFunnels';
-import CRMFunnel from './pages/CRMFunnel';
+import FlowList from './pages/flow/FlowList';
+import FlowEditor from './pages/flow/FlowEditor';
+import CRMFunnels from './pages/crm/CRMFunnels';
+import CRMFunnel from './pages/crm/CRMFunnel';
 import Profile from './pages/Profile';
 import Tags from './pages/Tags';
-import Prompts from './pages/Prompts';
+import Prompts from './pages/prompts/Prompts';
+import PromptFormPage from './pages/prompts/PromptForm';
 import { useAuth } from './hooks/useAuth';
 import { LoadingScreen } from './components/LoadingScreen';
 
@@ -87,6 +92,10 @@ function App() {
                 <Route path="/customers/:id/chats" element={<CustomerChats />} />
                 <Route path="/customers/add" element={<AddCustomer />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/settings/billing" element={<BillingPage />} />
+                <Route path="/settings/integrations" element={<IntegrationsPage />} />
+                <Route path="/settings/notifications" element={<NotificationsPage />} />
+                <Route path="/settings/usage" element={<UsagePage />} />
                 <Route path="/team" element={<TeamMembers />} />
                 <Route path="/service-teams" element={<ServiceTeams />} />
                 <Route path="/channels" element={<Channels />} />
@@ -113,6 +122,8 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/tags" element={<Tags />} />
                 <Route path="/prompts" element={<Prompts />} />
+                <Route path="/prompts/new" element={<PromptFormPage />} />
+                <Route path="/prompts/edit/:id" element={<PromptFormPage />} />
                 {profile?.is_superadmin && (
                   <>
                     <Route path="/admin/organizations" element={<Organizations />} />
