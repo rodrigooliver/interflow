@@ -91,6 +91,22 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
     document.dispatchEvent(event);
   }, [id, data, removedHandles]);
 
+  const handleOptionChange = useCallback((index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = { text: value };
+    setOptions(newOptions);
+  }, [options]);
+
+  const handleOptionBlur = useCallback(() => {
+    const event = new CustomEvent('nodeDataChanged', {
+      detail: { 
+        nodeId: id, 
+        data: { ...data, options: options } 
+      }
+    });
+    document.dispatchEvent(event);
+  }, [id, data, options]);
+
   const renderHandle = (handleId: string, position: Position, className: string) => {
     if (removedHandles.includes(handleId)) return null;
 
@@ -107,15 +123,8 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
           style={{ top: '50%', transform: 'translateY(-50%)' }}
           isConnectable={isConnectable}
           className={className}
+          key={`handle-${handleId}`}
         />
-        {hoveredHandle === handleId && (
-          <button
-            onClick={() => removeHandle(handleId)}
-            className="absolute top-1/2 -translate-y-1/2 right-0 transform translate-x-full ml-2 p-1 bg-red-100 dark:bg-red-900/50 rounded-full hover:bg-red-200 dark:hover:bg-red-800/50"
-          >
-            <X className="w-3 h-3 text-red-600 dark:text-red-400" />
-          </button>
-        )}
       </div>
     );
   };
@@ -179,7 +188,17 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
                 {t('nodes.input.options')}
               </label>
               <button
-                onClick={() => setOptions([...options, { text: '' }])}
+                onClick={() => {
+                  const newOptions = [...options, { text: '' }];
+                  setOptions(newOptions);
+                  const event = new CustomEvent('nodeDataChanged', {
+                    detail: { 
+                      nodeId: id, 
+                      data: { ...data, options: newOptions } 
+                    }
+                  });
+                  document.dispatchEvent(event);
+                }}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
               >
                 <Plus className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -188,25 +207,22 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
             
             <div className="space-y-3">
               {options.map((option, index) => (
-                <div key={index} className="relative flex items-center">
+                <div key={`option-${index}`} className="relative flex items-center">
                   <input
                     type="text"
                     value={option.text}
-                    onChange={(e) => {
-                      const newOptions = [...options];
-                      newOptions[index] = { text: e.target.value };
-                      handleOptionsChange(newOptions);
-                    }}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    onBlur={handleOptionBlur}
                     placeholder={t('nodes.input.optionText')}
                     className="flex-1 p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 pr-8"
                   />
                   <button
                     onClick={() => handleOptionsChange(options.filter((_, i) => i !== index))}
-                    className="absolute right-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                    className="absolute right-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
                   >
                     <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </button>
-                  {renderHandle(`option-${index}`, Position.Right, 'w-3 h-3 bg-blue-500')}
+                  {renderHandle(`option${index}`, Position.Right, 'w-3 h-3 mr-2 bg-blue-500')}
                 </div>
               ))}
 
