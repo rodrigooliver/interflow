@@ -3,8 +3,10 @@ import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { Music, Image, Video, FileText, Upload, X, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { BaseNode } from './BaseNode';
 
 interface MediaNodeProps {
+  id: string;
   type: 'audio' | 'image' | 'video' | 'document';
   data: {
     mediaUrl?: string;
@@ -43,7 +45,7 @@ const typeConfig = {
   }
 };
 
-export function MediaNode({ type, data, isConnectable }: MediaNodeProps) {
+export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
   const { t } = useTranslation('flows');
   const [url, setUrl] = useState(data.mediaUrl || '');
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -51,6 +53,13 @@ export function MediaNode({ type, data, isConnectable }: MediaNodeProps) {
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const Icon = typeConfig[type].icon;
+
+  const handleLabelChange = (newLabel: string) => {
+    const event = new CustomEvent('nodeDataChanged', {
+      detail: { nodeId: id, data: { ...data, label: newLabel } }
+    });
+    document.dispatchEvent(event);
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -93,27 +102,37 @@ export function MediaNode({ type, data, isConnectable }: MediaNodeProps) {
     }
   };
 
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrl(e.target.value);
+  };
+
+  const handleUrlBlur = () => {
+    // Disparar evento de mudança apenas quando terminar de editar
+    const event = new CustomEvent('nodeDataChanged', {
+      detail: { 
+        nodeId: id, 
+        data: { ...data, mediaUrl: url } 
+      }
+    });
+    console.log('Dispatching event', event);
+    document.dispatchEvent(event);
+  };
+
   return (
-    <div className="node-content">
-      <Handle
-        type="target"
-        position={Position.Left}
-        isConnectable={isConnectable}
-        className="w-3 h-3 bg-gray-300 dark:bg-gray-600"
+    <div className="bg-white dark:bg-gray-800">
+      <BaseNode 
+        id={id} 
+        data={data} 
+        onLabelChange={handleLabelChange}
+        icon={<Icon className="w-4 h-4 text-gray-500" />}
       />
-      
-      <div className="flex items-center mb-2">
-        <Icon className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {t(typeConfig[type].label)}
-        </span>
-      </div>
 
       <div className="flex items-center space-x-2">
         <input
           type="text"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={handleUrlChange}
+          onBlur={handleUrlBlur}
           placeholder={t('nodes.mediaUrlPlaceholder')}
           className="flex-1 p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
         />
@@ -125,6 +144,12 @@ export function MediaNode({ type, data, isConnectable }: MediaNodeProps) {
         </button>
       </div>
 
+      <Handle
+        type="target"
+        position={Position.Left}
+        isConnectable={isConnectable}
+        className="w-3 h-3 bg-gray-300 dark:bg-gray-600"
+      />
       <Handle
         type="source"
         position={Position.Right}

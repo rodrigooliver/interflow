@@ -10,6 +10,9 @@
   "editFlow": "Edit Flow",
   "flowDescription": "Flow Description",
   "flowName": "Flow Name",
+  "resetConfirmTitle": "Clear Flow",
+  "resetConfirmMessage": "Are you sure you want to clear the flow?",
+  "reset": "Clear",
   "variables": {
     "title": "Variables",
     "add": "Add Variable"
@@ -22,17 +25,29 @@
   },
   "nodes": {
     "start": "Start",
-    "sendText": "Send Text",
-    "sendAudio": "Send Audio",
-    "sendImage": "Send Image",
-    "sendVideo": "Send Video",
-    "sendDocument": "Send Document",
+    "sendText": {
+      "title": "Send Text"
+    },
+    "sendAudio": {
+      "title": "Send Audio"
+    },
+    "sendImage": {
+      "title": "Send Image"
+    },
+    "sendVideo": {
+      "title": "Send Video"
+    },
+    "sendDocument": {
+      "title": "Send Document"
+    },
     "messagePlaceholder": "Type your message...",
     "audio": "Audio",
     "image": "Image",
     "video": "Video",
     "document": "Document",
-    "delay": "Wait",
+    "delay": {
+      "title": "Wait"
+    },
     "delaySeconds": "seconds",
     "variable": {
       "title": "Change Variable",
@@ -56,7 +71,18 @@
         "lessOrEqual": "less than or equal to"
       }
     },
-    "input": "Wait for Response",
+    "input": {
+      "title": "Wait for Response",
+      "saveResponse": "Save response in",
+      "freeText": "Text received",
+      "multipleChoice": "Options received",
+      "textReceived": "After text received",
+      "timeout": "Wait minutes without response",
+      "timeoutOutput": "After timeout go to",
+      "options": "Response options",
+      "optionText": "Option text",
+      "noMatchingOption": "No matching option"
+    },
     "inputPlaceholder": "Type the question...",
     "options": {
       "title": "Options",

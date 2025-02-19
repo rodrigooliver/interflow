@@ -8,7 +8,7 @@ export type NodeType =
   | 'variable'
   | 'condition'
   | 'input'
-  | 'options'
+  | 'update_customer'
   | 'start'
   | 'openai';
 

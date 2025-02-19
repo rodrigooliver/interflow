@@ -10,6 +10,9 @@
   "editFlow": "Editar Flujo",
   "flowDescription": "Descripción del Flujo",
   "flowName": "Nombre del Flujo",
+  "resetConfirmTitle": "Limpar Flujo",
+  "resetConfirmMessage": "Tem certeza que deseja limpar todo o fluxo?",
+  "reset": "Limpar",
   "variables": {
     "title": "Variables",
     "add": "Agregar Variable"
@@ -22,22 +25,35 @@
   },
   "nodes": {
     "start": "Inicio",
-    "sendText": "Enviar Texto",
-    "sendAudio": "Enviar Audio",
-    "sendImage": "Enviar Imagen",
-    "sendVideo": "Enviar Video",
-    "sendDocument": "Enviar Documento",
+    "sendText": {
+      "title": "Enviar Texto"
+    },
+    "sendAudio": {
+      "title": "Enviar Audio"
+    },
+    "sendImage": {
+      "title": "Enviar Imagen"
+    },
+    "sendVideo": {
+      "title": "Enviar Video"
+    },
+    "sendDocument": {
+      "title": "Enviar Documento"
+    },
     "messagePlaceholder": "Escribe tu mensaje...",
     "audio": "Audio",
     "image": "Imagen",
     "video": "Video",
     "document": "Documento",
-    "delay": "Esperar",
+    "delay": {
+      "title": "Esperar"
+    },
     "delaySeconds": "segundos",
     "variable": {
       "title": "Cambiar Variable",
       "namePlaceholder": "Nombre de la variable",
-      "valuePlaceholder": "Valor"
+      "valuePlaceholder": "Valor",
+      "selectVariable": "Selecciona una variable"
     },
     "condition": {
       "title": "Condición",
@@ -55,7 +71,18 @@
         "lessOrEqual": "menor o igual a"
       }
     },
-    "input": "Esperar Respuesta",
+    "input": {
+      "title": "Esperar Respuesta",
+      "saveResponse": "Guardar respuesta en",
+      "freeText": "Texto recibido",
+      "multipleChoice": "Opciones recibidas",
+      "textReceived": "Después del texto recibido",
+      "timeout": "Esperar minutos sin respuesta",
+      "timeoutOutput": "Después del tiempo ir a",
+      "options": "Opciones de respuesta",
+      "optionText": "Texto de la opción",
+      "noMatchingOption": "Ninguna opción correspondiente"
+    },
     "inputPlaceholder": "Escribe la pregunta...",
     "options": {
       "title": "Opciones",

@@ -56,7 +56,7 @@ export function UsageSettings() {
         .from('chats')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', currentOrganization?.id)
-        .eq('status', 'open');
+        .eq('status', 'in_progress');
 
       if (chatsError) throw chatsError;
 

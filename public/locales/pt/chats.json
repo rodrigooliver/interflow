@@ -26,7 +26,7 @@
     "description": "Escolha um atendimento da lista à esquerda para visualizar a conversa"
   },
   "status": {
-    "open": "Em andamento",
+    "in_progress": "Em andamento",
     "closed": "Finalizado"
   },
   "messageStatus": {

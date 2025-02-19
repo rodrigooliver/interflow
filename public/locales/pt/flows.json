@@ -10,6 +10,9 @@
   "editFlow": "Editar Fluxo",
   "flowDescription": "Descrição do Fluxo",
   "flowName": "Nome do Fluxo",
+  "resetConfirmTitle": "Limpar Fluxo",
+  "resetConfirmMessage": "Tem certeza que deseja limpar todo o fluxo?",
+  "reset": "Limpar",
   "variables": {
     "title": "Variáveis",
     "add": "Adicionar Variável"
@@ -22,17 +25,29 @@
   },
   "nodes": {
     "start": "Início",
-    "sendText": "Enviar Texto",
-    "sendAudio": "Enviar Áudio",
-    "sendImage": "Enviar Imagem",
-    "sendVideo": "Enviar Vídeo",
-    "sendDocument": "Enviar Documento",
+    "sendText": {
+      "title": "Enviar Texto"
+    },
+    "sendAudio": {
+      "title": "Enviar Áudio"
+    },
+    "sendImage": {
+      "title": "Enviar Imagem"
+    },
+    "sendVideo": {
+      "title": "Enviar Vídeo"
+    },
+    "sendDocument": {
+      "title": "Enviar Documento"
+    },
     "messagePlaceholder": "Digite sua mensagem...",
     "audio": "Áudio",
     "image": "Imagem",
     "video": "Vídeo",
     "document": "Documento",
-    "delay": "Aguardar",
+    "delay": {
+      "title": "Aguardar"
+    },
     "delaySeconds": "segundos",
     "variable": {
       "title": "Alterar Variável",
@@ -56,7 +71,18 @@
         "lessOrEqual": "menor ou igual a"
       }
     },
-    "input": "Aguardar Resposta",
+    "input": {
+      "title": "Aguardar Resposta",
+      "saveResponse": "Salvar resposta em",
+      "freeText": "Texto recebido",
+      "multipleChoice": "Opções recebidas",
+      "textReceived": "Após texto recebido",
+      "timeout": "Esperar minutos sem resposta",
+      "timeoutOutput": "Após o tempo ir para",
+      "options": "Opções de resposta",
+      "optionText": "Texto da opção",
+      "noMatchingOption": "Nenhuma opção correspondente"
+    },
     "inputPlaceholder": "Digite a pergunta...",
     "options": {
       "title": "Opções",

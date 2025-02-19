@@ -28,8 +28,7 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
       const { count: chatsCount, error: chatsError } = await supabase
         .from('chats')
         .select('*', { count: 'exact', head: true })
-        .eq('customer_id', customer.id)
-        .eq('status', 'open');
+        .eq('customer_id', customer.id);
 
       if (chatsError) throw chatsError;
       

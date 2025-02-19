@@ -121,7 +121,7 @@ export function ContactChannelModal({ onClose, contactType, contactValue }: Cont
         .select('*')
         .eq('organization_id', currentOrganization.id)
         .eq('channel_id', channel.id)
-        .eq('status', 'open')
+        .eq('status', 'in_progress')
         .eq(contactType, contactValue);
 
       if (chatsError) throw chatsError;
@@ -151,7 +151,7 @@ export function ContactChannelModal({ onClose, contactType, contactValue }: Cont
             channel_id: channel.id,
             customer_id: customerId,
             channel: contactType === 'email' ? 'email' : 'whatsapp',
-            status: 'open',
+            status: 'pending',
             assigned_to: session.user.id,
             team_id: teamId,
             whatsapp: contactType === 'whatsapp' ? contactValue : null,

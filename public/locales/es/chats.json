@@ -26,7 +26,7 @@
     "description": "Elige un chat de la lista a la izquierda para ver la conversación"
   },
   "status": {
-    "open": "En progreso",
+    "in_progress": "En progreso",
     "closed": "Finalizado"
   },
   "messageStatus": {

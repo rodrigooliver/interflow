@@ -97,7 +97,7 @@ export default function Dashboard() {
         .from('chats')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', currentOrganization?.id)
-        .eq('status', 'open');
+        .eq('status', 'in_progress');
 
       if (error) throw error;
       setActiveChatsCount(count || 0);

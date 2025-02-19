@@ -39,23 +39,23 @@ export function NodeToolbar() {
     {
       title: t('categories.send'),
       nodes: [
-        { type: 'text', label: t('nodes.sendText'), icon: MessageSquare },
-        { type: 'audio', label: t('nodes.sendAudio'), icon: Music },
-        { type: 'image', label: t('nodes.sendImage'), icon: Image },
-        { type: 'video', label: t('nodes.sendVideo'), icon: Video },
-        { type: 'document', label: t('nodes.sendDocument'), icon: FileText },
+        { type: 'text', label: t('nodes.sendText.title'), icon: MessageSquare },
+        { type: 'audio', label: t('nodes.sendAudio.title'), icon: Music },
+        { type: 'image', label: t('nodes.sendImage.title'), icon: Image },
+        { type: 'video', label: t('nodes.sendVideo.title'), icon: Video },
+        { type: 'document', label: t('nodes.sendDocument.title'), icon: FileText },
       ]
     },
     {
       title: t('categories.receive'),
       nodes: [
-        { type: 'input', label: t('nodes.input'), icon: MessageCircle },
+        { type: 'input', label: t('nodes.input.title'), icon: MessageCircle },
       ]
     },
     {
       title: t('categories.action'),
       nodes: [
-        { type: 'delay', label: t('nodes.delay'), icon: Clock },
+        { type: 'delay', label: t('nodes.delay.title'), icon: Clock },
         { type: 'variable', label: t('nodes.variable.title'), icon: Variable },
         { type: 'condition', label: t('nodes.condition.title'), icon: GitFork },
         { type: 'update_customer', label: t('nodes.updateCustomer.title'), icon: UserCog },
