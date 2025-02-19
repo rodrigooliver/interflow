@@ -94,19 +94,22 @@
     "openai": {
       "title": "OpenAI",
       "model": "Modelo",
-      "prompt": "Prompt",
-      "promptPlaceholder": "Escribe tu prompt aquí...",
+      "prompt": "Instrucción IA",
+      "promptPlaceholder": "Escribe tu instrucción IA...",
       "temperature": "Temperatura",
       "maxTokens": "Máx. Tokens",
       "saveResponse": "Guardar respuesta en",
       "integration": "Integración OpenAI",
       "selectIntegration": "Selecciona una integración OpenAI",
-      "systemPrompt": "Prompt del Sistema",
-      "selectPrompt": "Selecciona un Prompt",
+      "systemPrompt": "Instrucción IA del Sistema",
+      "selectPrompt": "Selecciona una Instrucción IA",
       "selectModel": "Selecciona un Modelo",
       "apiType": "Tipo de API",
+      "voice": "Voz",
       "apiTypes": {
-        "chatCompletion": "Crear respuesta"
+        "textGeneration": "Generar texto",
+        "audioGeneration": "Generar audio",
+        "textToSpeech": "Transformar texto en voz"
       },
       "settings": "Configurações",
       "messages": {
@@ -117,7 +120,8 @@
       "tabs": {
         "messages": "Mensajes",
         "general": "General",
-        "tools": "Herramientas/Funciones"
+        "tools": "Herramientas/Funciones",
+        "prompts": "Instrucciones IA"
       },
       "tools": {
         "tools": "Herramientas",
@@ -127,13 +131,15 @@
         "tool": "Herramienta",
         "description": "Descripción",
         "parameters": "Parámetros",
+        "parameterDescription": "Descripción del parámetro",
         "availableVariables": "Variables disponibles",
         "clickToAdd": "Clic para agregar",
         "noVariables": "Ninguna variable disponible",
         "createVariable": "Crear variable",
         "noParameters": "Ningún parámetro adicionado",
         "targetNode": "Nodo de destino",
-        "selectTargetNode": "Selecciona un nodo de destino"
+        "selectTargetNode": "Selecciona un nodo de destino",
+        "required": "Obligatorio"
       }
     },
     "updateCustomer": {

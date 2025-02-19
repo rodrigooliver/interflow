@@ -1,10 +1,10 @@
 {
-  "title": "Prompts",
-  "add": "Novo Prompt",
-  "edit": "Editar Prompt",
+  "title": "Instruções IA",
+  "add": "Nova Instrução IA",
+  "edit": "Editar Instrução IA",
   "delete": "Excluir",
-  "deleteTitle": "Excluir Prompt",
-  "deleteConfirmation": "Tem certeza que deseja excluir o prompt {name}?",
+  "deleteTitle": "Excluir Instrução IA",
+  "deleteConfirmation": "Tem certeza que deseja excluir a instrução IA {name}?",
   "deleteWarning": "Esta ação não pode ser desfeita.",
   "lastUpdated": "Última atualização",
   "form": {
@@ -14,11 +14,11 @@
     "tags": "Tags",
     "tagsPlaceholder": "Digite as tags separadas por vírgulas"
   },
-  "test": "Testar Prompt",
-  "testPlaceholder": "Digite uma mensagem para testar o prompt",
+  "test": "Testar Instrução IA",
+  "testPlaceholder": "Digite uma mensagem para testar a instrução IA",
   "send": "Enviar",
   "testing": "Testando...",
-  "testSuccess": "Prompt testado com sucesso!",
-  "testError": "Erro ao testar o prompt",
-  "selectIntegration": "Selecione a integração para testar o prompt"
+  "testSuccess": "Instrução IA testada com sucesso!",
+  "testError": "Erro ao testar a instrução IA",
+  "selectIntegration": "Selecione a integração para testar a instrução IA"
 }

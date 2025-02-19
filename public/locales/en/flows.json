@@ -93,19 +93,22 @@
     "openai": {
       "title": "OpenAI",
       "model": "Model",
-      "prompt": "Prompt",
-      "promptPlaceholder": "Type your prompt...",
+      "prompt": "AI Instruction",
+      "promptPlaceholder": "Type your AI instruction...",
       "temperature": "Temperature",
       "maxTokens": "Max. Tokens",
       "saveResponse": "Save response in",
       "integration": "OpenAI Integration",
       "selectIntegration": "Select OpenAI Integration",
-      "systemPrompt": "System Prompt",
-      "selectPrompt": "Select Prompt",
+      "systemPrompt": "System AI Instruction",
+      "selectPrompt": "Select AI Instruction",
       "selectModel": "Select Model",
+      "voice": "Voice",
       "apiType": "API Type",
       "apiTypes": {
-        "chatCompletion": "Chat Completion"
+        "textGeneration": "Generate text",
+        "audioGeneration": "Generate audio",
+        "textToSpeech": "Transform text to speech"
       },
       "settings": "Settings",
       "messages": {
@@ -116,7 +119,8 @@
       "tabs": {
         "messages": "Messages",
         "general": "General",
-        "tools": "Tools/Functions"
+        "tools": "Tools/Functions",
+        "prompts": "AI Instructions"
       },
       "tools": {
         "tools": "Tools",
@@ -126,14 +130,20 @@
         "tool": "Tool",
         "description": "Description",
         "parameters": "Parameters",
+        "parameterDescription": "Parameter description",
         "availableVariables": "Available variables",
         "clickToAdd": "Click to add",
         "noVariables": "No variables available",
         "createVariable": "Create variable",
         "noParameters": "No parameters added",
         "targetNode": "Target node",
-        "selectTargetNode": "Select a target node"
-      }
+        "selectTargetNode": "Select a target node",
+        "required": "Required"
+      },
+      "promptType": "AI Instruction Type",
+      "customPrompt": "Custom AI Instruction",
+      "enterCustomPrompt": "Enter your custom AI instruction...",
+      "selectApiType": "Select API Type"
     },
     "updateCustomer": {
       "title": "Update Customer",

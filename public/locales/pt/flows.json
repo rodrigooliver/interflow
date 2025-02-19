@@ -93,20 +93,26 @@
     "openai": {
       "title": "OpenAI",
       "model": "Modelo",
-      "prompt": "Prompt",
-      "promptPlaceholder": "Digite seu prompt...",
+      "prompt": "Instrução IA",
+      "promptPlaceholder": "Digite sua instrução IA...",
+      "promptType": "Tipo de Instrução IA",
+      "customPrompt": "Instrução IA Personalizada",
+      "enterCustomPrompt": "Digite sua instrução IA personalizada...",
       "temperature": "Temperatura",
       "maxTokens": "Máx. Tokens",
       "saveResponse": "Salvar resposta em",
       "integration": "Integração OpenAI",
       "selectIntegration": "Selecione uma integração OpenAI",
-      "systemPrompt": "Prompt do Sistema",
-      "selectPrompt": "Selecione um Prompt",
+      "systemPrompt": "Instrução IA do Sistema",
+      "selectPrompt": "Selecione uma Instrução IA",
       "selectModel": "Selecione um Modelo",
       "apiType": "Tipo de API",
       "selectApiType": "Selecione um tipo de API",
+      "voice": "Voz",
       "apiTypes": {
-        "chatCompletion": "Criar resposta"
+        "textGeneration": "Gerar texto",
+        "audioGeneration": "Gerar áudio",
+        "textToSpeech": "Transformar texto em fala"
       },
       "settings": "Configurações",
       "messages": {
@@ -117,7 +123,8 @@
       "tabs": {
         "messages": "Mensagens",
         "general": "Geral",
-        "tools": "Ferramentas/Funções"
+        "tools": "Ferramentas/Funções",
+        "prompts": "Instruções IA"
       },
       "tools": {
         "tools": "Ferramentas",
@@ -127,11 +134,13 @@
         "tool": "Ferramenta",
         "description": "Descrição",
         "parameters": "Parâmetros",
+        "parameterDescription": "Descrição do parâmetro",
         "availableVariables": "Variáveis disponíveis",
         "clickToAdd": "Clique para adicionar",
         "noVariables": "Nenhuma variável disponível",
         "createVariable": "Criar variável",
         "noParameters": "Nenhum parâmetro adicionado",
+        "required": "Obrigatório",
         "targetNode": "Nó de destino",
         "selectTargetNode": "Selecione um nó de destino"
       }

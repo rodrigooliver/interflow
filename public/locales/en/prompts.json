@@ -1,10 +1,10 @@
 {
-  "title": "Prompts",
-  "add": "New Prompt",
-  "edit": "Edit Prompt",
+  "title": "Instructions AI",
+  "add": "New AI Instruction",
+  "edit": "Edit AI Instruction",
   "delete": "Delete",
-  "deleteTitle": "Delete Prompt",
-  "deleteConfirmation": "Are you sure you want to delete prompt {name}?",
+  "deleteTitle": "Delete AI Instruction",
+  "deleteConfirmation": "Are you sure you want to delete AI instruction {name}?",
   "deleteWarning": "This action cannot be undone.",
   "lastUpdated": "Last updated",
   "form": {
@@ -14,11 +14,11 @@
     "tags": "Tags",
     "tagsPlaceholder": "Enter tags separated by commas"
   },
-  "test": "Test Prompt",
-  "testPlaceholder": "Enter a message to test the prompt",
+  "test": "Test AI Instruction",
+  "testPlaceholder": "Enter a message to test the AI instruction",
   "send": "Send",
   "testing": "Testing...",
-  "testSuccess": "Prompt tested successfully!",
-  "testError": "Error testing the prompt",
-  "selectIntegration": "Select the integration to test the prompt"
+  "testSuccess": "AI instruction tested successfully!",
+  "testError": "Error testing the AI instruction",
+  "selectIntegration": "Select the integration to test the AI instruction"
 }
