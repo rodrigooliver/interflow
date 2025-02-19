@@ -59,6 +59,16 @@ interface HistoryState {
   edges: FlowConnection[];
 }
 
+// Adicione esta interface para tipar os nós
+interface NodeData {
+  id: string;
+  type: string;
+  data: {
+    label?: string;
+    [key: string]: any;
+  };
+}
+
 export function FlowBuilder({
   initialNodes = [],
   initialEdges = [],
@@ -91,7 +101,11 @@ export function FlowBuilder({
             data: {
               ...node.data,
               variables,
-              nodes: nds.map(n => ({ id: n.id, type: n.type })),
+              nodes: nds.map(n => ({ 
+                id: n.id, 
+                type: n.type,
+                label: (n as NodeData).data?.label || n.type
+              })),
             },
           };
         }
@@ -219,7 +233,11 @@ export function FlowBuilder({
       node.data = { 
         ...node.data, 
         variables,
-        nodes: nodes.map(n => ({ id: n.id, type: n.type })),
+        nodes: nodes.map(n => ({ 
+          id: n.id, 
+          type: n.type,
+          label: n.data?.label || n.type
+        })),
       };
     }
 
@@ -409,6 +427,17 @@ export function FlowBuilder({
     }, 0);
   }, [nodes, setNodes, setEdges, onSave, reactFlowInstance, getViewport]);
 
+  const handleFlowError = (error: any) => {
+
+    // Ignorar erros específicos do React Flow relacionados a handles
+    if (error.message?.includes("Couldn't create edge for source handle id") || error === '008') {
+      return; // Silenciosamente ignora o erro
+    }
+    // Para outros erros, você pode logar ou tratar como desejar
+    console.error(error);
+    
+  };
+
   return (
     <div className="flex h-[calc(100vh-64px)]" ref={reactFlowWrapper}>
       <div className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -462,6 +491,7 @@ export function FlowBuilder({
           zoomOnDoubleClick={false}
           panOnDrag={true}
           selectionOnDrag={false}
+          onError={handleFlowError}
           onNodeDragStop={(event, node) => {
             onNodeUpdate(node.id, node.data);
           }}

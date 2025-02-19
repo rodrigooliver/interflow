@@ -131,7 +131,9 @@
         "clickToAdd": "Clic para agregar",
         "noVariables": "Ninguna variable disponible",
         "createVariable": "Crear variable",
-        "noParameters": "Ningún parámetro disponible"
+        "noParameters": "Ningún parámetro adicionado",
+        "targetNode": "Nodo de destino",
+        "selectTargetNode": "Selecciona un nodo de destino"
       }
     },
     "updateCustomer": {

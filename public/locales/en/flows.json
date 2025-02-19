@@ -130,7 +130,9 @@
         "clickToAdd": "Click to add",
         "noVariables": "No variables available",
         "createVariable": "Create variable",
-        "noParameters": "No parameters available"
+        "noParameters": "No parameters added",
+        "targetNode": "Target node",
+        "selectTargetNode": "Select a target node"
       }
     },
     "updateCustomer": {
