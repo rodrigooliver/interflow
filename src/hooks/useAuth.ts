@@ -55,8 +55,21 @@ export function useAuth() {
   }
 
   async function signOut() {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      // Limpa os estados mesmo se houver erro de "session not found"
+      setSession(null);
+      setProfile(null);
+      
+      return { error };
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Garante que os estados sejam limpos mesmo em caso de erro
+      setSession(null);
+      setProfile(null);
+      return { error };
+    }
   }
 
   return { session, profile, loading, signIn, signOut };
