@@ -28,7 +28,7 @@ interface InputNodeProps {
 
 export function InputNode({ data, isConnectable, id }: InputNodeProps) {
   const { t } = useTranslation('flows');
-  const { variables } = useFlowEditor();
+  const { variables, updateNodeData } = useFlowEditor();
   const [inputType, setInputType] = useState(data.inputType || 'text');
   const [options, setOptions] = useState<Option[]>(data.options || []);
   const [config, setConfig] = useState(data.inputConfig || {
@@ -36,61 +36,43 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
     timeout: 5,
     fallbackNodeId: ''
   });
-  const [hoveredHandle, setHoveredHandle] = useState<string | null>(null);
 
   const removedHandles = data.removedHandles || [];
 
-  const handleLabelChange = (newLabel: string) => {
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { nodeId: id, data: { ...data, label: newLabel } }
-    });
-    document.dispatchEvent(event);
-  };
-
-  const handleInputTypeChange = useCallback((value: 'text' | 'options') => {
+  const handleInputTypeChange = useCallback(async (value: 'text' | 'options') => {
     setInputType(value);
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, inputType: value } 
-      }
-    });
-    document.dispatchEvent(event);
-  }, [id, data]);
+    try {
+      await updateNodeData(id, { ...data, inputType: value });
+    } catch (error) {
+      console.error('Error updating input type:', error);
+    }
+  }, [id, data, updateNodeData]);
 
-  const handleConfigChange = useCallback((updates: Partial<typeof config>) => {
+  const handleConfigChange = useCallback(async (updates: Partial<typeof config>) => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, inputConfig: newConfig } 
-      }
-    });
-    document.dispatchEvent(event);
-  }, [id, data, config]);
+    
+    try {
+      await updateNodeData(id, { 
+        ...data, 
+        inputConfig: newConfig 
+      });
+    } catch (error) {
+      console.error('Error saving node config:', error);
+    }
+  }, [id, data, config, updateNodeData]);
 
-  const handleOptionsChange = useCallback((newOptions: Option[]) => {
+  const handleOptionsChange = useCallback(async (newOptions: Option[]) => {
     setOptions(newOptions);
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, options: newOptions } 
-      }
-    });
-    document.dispatchEvent(event);
-  }, [id, data]);
-
-  const removeHandle = useCallback((handleId: string) => {
-    const newRemovedHandles = [...removedHandles, handleId];
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, removedHandles: newRemovedHandles } 
-      }
-    });
-    document.dispatchEvent(event);
-  }, [id, data, removedHandles]);
+    try {
+      await updateNodeData(id, { 
+        ...data, 
+        options: newOptions 
+      });
+    } catch (error) {
+      console.error('Error updating options:', error);
+    }
+  }, [id, data, updateNodeData]);
 
   const handleOptionChange = useCallback((index: number, value: string) => {
     const newOptions = [...options];
@@ -98,25 +80,24 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
     setOptions(newOptions);
   }, [options]);
 
-  const handleOptionBlur = useCallback(() => {
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, options: options } 
-      }
-    });
-    document.dispatchEvent(event);
-  }, [id, data, options]);
+  const handleOptionBlur = useCallback(async () => {
+    try {
+      setTimeout(async () => {
+        await updateNodeData(id, { 
+          ...data, 
+          options: options 
+        });
+      }, 0);
+    } catch (error) {
+      console.error('Error updating options on blur:', error);
+    }
+  }, [id, data, options, updateNodeData]);
 
   const renderHandle = (handleId: string, position: Position, className: string) => {
     if (removedHandles.includes(handleId)) return null;
 
     return (
-      <div
-        className="relative"
-        onMouseEnter={() => setHoveredHandle(handleId)}
-        onMouseLeave={() => setHoveredHandle(null)}
-      >
+      <div className="relative">
         <Handle
           type="source"
           position={position}
@@ -131,11 +112,10 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800">
       <BaseNode 
         id={id} 
         data={data} 
-        onLabelChange={handleLabelChange}
         icon={<MessageCircle className="w-4 h-4 text-gray-500" />}
       />
 
@@ -178,7 +158,7 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
               <Type className="w-4 h-4 mr-1" />
               <span>{t('nodes.input.textReceived')}</span>
             </div>
-            {renderHandle('text', Position.Right, 'w-3 h-3 bg-blue-500')}
+            {renderHandle('text', Position.Right, 'w-3 h-3 -mr-4 bg-blue-500')}
           </div>
         )}
 
@@ -213,17 +193,17 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
                     type="text"
                     value={option.text}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
-                    onBlur={handleOptionBlur}
+                    onBlur={(handleOptionBlur)}
                     placeholder={t('nodes.input.optionText')}
                     className="flex-1 p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 pr-8"
                   />
                   <button
                     onClick={() => handleOptionsChange(options.filter((_, i) => i !== index))}
-                    className="absolute right-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                    className="absolute right-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
                   >
                     <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </button>
-                  {renderHandle(`option${index}`, Position.Right, 'w-3 h-3 mr-2 bg-blue-500')}
+                  {renderHandle(`option${index}`, Position.Right, 'w-3 h-3 -mr-2 bg-blue-500')}
                 </div>
               ))}
 
@@ -231,7 +211,7 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   {t('nodes.input.noMatchingOption')}
                 </span>
-                {renderHandle('no-match', Position.Right, 'w-3 h-3 bg-yellow-500')}
+                {renderHandle('no-match', Position.Right, 'w-3 h-3 -mr-4 bg-yellow-500')}
               </div>
             </div>
           </div>
@@ -259,7 +239,7 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
               <Clock className="w-4 h-4 mr-1" />
               <span>{t('nodes.input.timeoutOutput')}</span>
             </div>
-            {renderHandle('timeout', Position.Right, 'w-3 h-3 bg-red-500')}
+            {renderHandle('timeout', Position.Right, 'w-3 h-3 -mr-4 bg-red-500')}
           </div>
         </div>
       </div>

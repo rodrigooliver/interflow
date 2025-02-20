@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { Clock } from 'lucide-react';
 import { BaseNode } from './BaseNode';
+import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
 interface DelayNodeProps {
   id: string;
@@ -15,24 +16,12 @@ interface DelayNodeProps {
 
 export function DelayNode({ id, data, isConnectable }: DelayNodeProps) {
   const { t } = useTranslation('flows');
+  const { updateNodeData } = useFlowEditor();
   const [delay, setDelay] = useState(data.delaySeconds || 0);
 
   const handleBlur = useCallback(() => {
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, delaySeconds: delay } 
-      }
-    });
-    document.dispatchEvent(event);
-  }, [id, data, delay]);
-
-  const handleLabelChange = (newLabel: string) => {
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { nodeId: id, data: { ...data, label: newLabel } }
-    });
-    document.dispatchEvent(event);
-  };
+    updateNodeData(id, { ...data, delaySeconds: delay });
+  }, [id, data, delay, updateNodeData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value === '' ? 0 : Number(e.target.value);
@@ -43,12 +32,11 @@ export function DelayNode({ id, data, isConnectable }: DelayNodeProps) {
     <div className="bg-white dark:bg-gray-800">
       <BaseNode 
         id={id} 
-        data={data} 
-        onLabelChange={handleLabelChange}
+        data={data}
         icon={<Clock className="w-4 h-4 text-gray-500" />}
       />
 
-      <div className="flex items-center space-x-2 p-2">
+      <div className="flex items-center space-x-2">
         <input
           type="number"
           min="0"

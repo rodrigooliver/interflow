@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { UserCog, Loader2 } from 'lucide-react';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
+import { BaseNode } from './BaseNode';
 
 interface UpdateCustomerNodeProps {
   data: {
@@ -17,14 +18,12 @@ interface UpdateCustomerNodeProps {
   };
   id: string;
   isConnectable: boolean;
-  selected?: boolean;
 }
 
-
-export function UpdateCustomerNode({ data, id, isConnectable, selected }: UpdateCustomerNodeProps) {
+export function UpdateCustomerNode({ data, id, isConnectable }: UpdateCustomerNodeProps) {
   const { t } = useTranslation('flows');
-  const { funnels, teams, users } = useFlowEditor();
-  const [config, setConfig] = useState(data.updateCustomer || {
+  const { funnels, teams, users, updateNodeData } = useFlowEditor();
+  const [localConfig, setLocalConfig] = useState(data.updateCustomer || {
     field: '',
     value: '',
     funnelId: '',
@@ -40,23 +39,15 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
     }
   }, [funnels, teams, users]);
 
-  // Effect to update node data when config changes
-  useEffect(() => {
-    const event = new CustomEvent('updateNodeInternals', { detail: { nodeId: id } });
-    document.dispatchEvent(event);
-  }, [id, config]);
+  const handleConfigChange = (updates: Partial<typeof localConfig>) => {
+    const newConfig = { ...localConfig, ...updates };
+    setLocalConfig(newConfig);
+  };
 
-  const handleConfigChange = (updates: Partial<typeof config>) => {
-    const newConfig = { ...config, ...updates };
-    setConfig(newConfig);
-    
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: {
-        nodeId: id,
-        data: { updateCustomer: newConfig }
-      }
-    });
-    document.dispatchEvent(event);
+  const handleConfigBlur = () => {
+    setTimeout(() => {
+      updateNodeData(id, { ...data, updateCustomer: localConfig });
+    }, 1000);
   };
 
   if (loading) {
@@ -86,12 +77,11 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
         className="w-3 h-3 bg-gray-300 dark:bg-gray-600"
       />
       
-      <div className="flex items-center mb-4">
-        <UserCog className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {t('nodes.updateCustomer.title')}
-        </span>
-      </div>
+      <BaseNode 
+        id={id} 
+        data={data}
+        icon={<UserCog className="w-4 h-4 text-gray-500" />}
+      />
 
       <div className="space-y-4">
         <div>
@@ -99,7 +89,7 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
             {t('nodes.updateCustomer.field')}
           </label>
           <select
-            value={config.field}
+            value={localConfig.field}
             onChange={(e) => handleConfigChange({ 
               field: e.target.value,
               value: '',
@@ -108,6 +98,7 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
               teamId: '',
               userId: ''
             })}
+            onBlur={handleConfigBlur}
             className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="">{t('nodes.updateCustomer.selectField')}</option>
@@ -119,18 +110,19 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
           </select>
         </div>
 
-        {config.field === 'funnel' && (
+        {localConfig.field === 'funnel' && (
           <>
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                 {t('nodes.updateCustomer.funnel')}
               </label>
               <select
-                value={config.funnelId}
+                value={localConfig.funnelId}
                 onChange={(e) => handleConfigChange({ 
                   funnelId: e.target.value,
                   stageId: ''
                 })}
+                onBlur={handleConfigBlur}
                 className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="">{t('nodes.updateCustomer.selectFunnel')}</option>
@@ -142,19 +134,20 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
               </select>
             </div>
 
-            {config.funnelId && (
+            {localConfig.funnelId && (
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   {t('nodes.updateCustomer.stage')}
                 </label>
                 <select
-                  value={config.stageId}
+                  value={localConfig.stageId}
                   onChange={(e) => handleConfigChange({ stageId: e.target.value })}
+                  onBlur={handleConfigBlur}
                   className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">{t('nodes.updateCustomer.selectStage')}</option>
                   {funnels
-                    .find(f => f.id === config.funnelId)
+                    .find(f => f.id === localConfig.funnelId)
                     ?.stages.map(stage => (
                       <option key={stage.id} value={stage.id}>
                         {stage.name}
@@ -166,14 +159,15 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
           </>
         )}
 
-        {config.field === 'team' && (
+        {localConfig.field === 'team' && (
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {t('nodes.updateCustomer.team')}
             </label>
             <select
-              value={config.teamId}
+              value={localConfig.teamId}
               onChange={(e) => handleConfigChange({ teamId: e.target.value })}
+              onBlur={handleConfigBlur}
               className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">{t('nodes.updateCustomer.selectTeam')}</option>
@@ -186,14 +180,15 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
           </div>
         )}
 
-        {config.field === 'user' && (
+        {localConfig.field === 'user' && (
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {t('nodes.updateCustomer.user')}
             </label>
             <select
-              value={config.userId}
+              value={localConfig.userId}
               onChange={(e) => handleConfigChange({ userId: e.target.value })}
+              onBlur={handleConfigBlur}
               className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">{t('nodes.updateCustomer.selectUser')}</option>
@@ -206,15 +201,16 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
           </div>
         )}
 
-        {['email', 'phone', 'facebook', 'instagram'].includes(config.field) && (
+        {['email', 'phone', 'facebook', 'instagram'].includes(localConfig.field) && (
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {t('nodes.updateCustomer.value')}
             </label>
             <input
               type="text"
-              value={config.value}
+              value={localConfig.value}
               onChange={(e) => handleConfigChange({ value: e.target.value })}
+              onBlur={handleConfigBlur}
               placeholder={t('nodes.updateCustomer.valuePlaceholder')}
               className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             />

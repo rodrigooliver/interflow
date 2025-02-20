@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Music, Image, Video, FileText, Upload, X, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { BaseNode } from './BaseNode';
+import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
 interface MediaNodeProps {
   id: string;
@@ -47,6 +48,7 @@ const typeConfig = {
 
 export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
   const { t } = useTranslation('flows');
+  const { updateNodeData } = useFlowEditor();
   const [url, setUrl] = useState(data.mediaUrl || '');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -54,11 +56,12 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const Icon = typeConfig[type].icon;
 
-  const handleLabelChange = (newLabel: string) => {
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { nodeId: id, data: { ...data, label: newLabel } }
-    });
-    document.dispatchEvent(event);
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrl(e.target.value);
+  };
+
+  const handleUrlBlur = () => {
+    updateNodeData(id, { ...data, mediaUrl: url });
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +84,7 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
       const filePath = `${typeConfig[type].bucket}/${fileName}`;
 
       // Upload file to Supabase Storage
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(typeConfig[type].bucket)
         .upload(filePath, file);
 
@@ -93,6 +96,7 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
         .getPublicUrl(filePath);
 
       setUrl(publicUrl);
+      updateNodeData(id, { ...data, mediaUrl: publicUrl });
       setShowUploadModal(false);
     } catch (err) {
       console.error('Upload error:', err);
@@ -102,28 +106,11 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
     }
   };
 
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUrl(e.target.value);
-  };
-
-  const handleUrlBlur = () => {
-    // Disparar evento de mudança apenas quando terminar de editar
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, mediaUrl: url } 
-      }
-    });
-    console.log('Dispatching event', event);
-    document.dispatchEvent(event);
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800">
       <BaseNode 
         id={id} 
-        data={data} 
-        onLabelChange={handleLabelChange}
+        data={data}
         icon={<Icon className="w-4 h-4 text-gray-500" />}
       />
 

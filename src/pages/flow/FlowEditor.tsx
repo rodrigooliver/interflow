@@ -1,220 +1,100 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReactFlowProvider } from 'reactflow';
-import { ArrowLeft, Save, Loader2, Variable, Send, RotateCcw, Pencil, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Variable, Send, RotateCcw, Pencil, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FlowBuilder } from '../../components/flow/FlowBuilder';
-import { FlowNode, FlowConnection, Variable as FlowVariable } from '../../types/flow';
-import { supabase } from '../../lib/supabase';
+import { FlowNode, FlowConnection } from '../../types/flow';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { FlowEditorProvider, useFlowEditor } from '../../contexts/FlowEditorContext';
-import { Node } from 'reactflow';
+import { VariablesModal } from '../../components/flow/VariablesModal';
 
 function FlowEditorContent() {
   const { t } = useTranslation(['flows', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
+  const { 
+    loading,
+    error,
+    nodes,
+    edges,
+    flowName,
+    isPublished,
+    publishedNodes,
+    publishedEdges,
+    lastSaved,
+    loadFlow,
+    onSaveFlow,
+    publishFlow,
+    restoreFlow,
+    setFlowName: updateFlowName,
+  } = useFlowEditor();
   const { currentOrganization } = useOrganizationContext();
-  const { variables, setVariables, handleVariableNameChange, handleVariableNameBlur, addVariable } = useFlowEditor();
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [nodes, setNodes] = useState<FlowNode[]>([]);
-  const [edges, setEdges] = useState<FlowConnection[]>([]);
-  const [publishedNodes, setPublishedNodes] = useState<FlowNode[]>([]);
-  const [publishedEdges, setPublishedEdges] = useState<FlowConnection[]>([]);
-  const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 0.7 });
-  const [flowName, setFlowName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState('');
-  const [isPublished, setIsPublished] = useState(false);
+  const [editedName, setEditedName] = useState(flowName);
   const [showVariablesModal, setShowVariablesModal] = useState(false);
-  const [error, setError] = useState('');
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [flowKey, setFlowKey] = useState(0);
 
   useEffect(() => {
     if (currentOrganization && id) {
-      loadFlow();
+      loadFlow(id);
     }
-  }, [currentOrganization, id]);
+  }, [currentOrganization, id, loadFlow]);
 
   useEffect(() => {
-    // Adicionar listener para o evento openModalVariable
-    const handleOpenModal = (event: CustomEvent) => {
-      if (event.detail?.id === 'variableModal') {
-        setShowVariablesModal(true);
-      }
-    };
+    setEditedName(flowName);
+  }, [flowName]);
 
-    // Registrar o listener
-    document.addEventListener('openModalVariable', handleOpenModal as EventListener);
+  // const handleSave = useCallback(async (newNodes: FlowNode[], newEdges: FlowConnection[], newViewport: any) => {
+  //   setSaving(true);
 
-    // Cleanup ao desmontar o componente
-    return () => {
-      document.removeEventListener('openModalVariable', handleOpenModal as EventListener);
-    };
-  }, []);
-
-  async function loadFlow() {
-    try {
-      const { data: flow, error } = await supabase
-        .from('flows')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-
-      if (flow) {
-        setNodes(flow.draft_nodes?.length ? flow.draft_nodes : flow.nodes || []);
-        setEdges(flow.draft_edges?.length ? flow.draft_edges : flow.edges || []);
-        setPublishedNodes(flow.nodes || []);
-        setPublishedEdges(flow.edges || []);
-        setVariables(flow.variables || []);
-        setViewport(flow.viewport || { x: 0, y: 0, zoom: 0.7 });
-        setFlowName(flow.name);
-        setEditedName(flow.name);
-        setIsPublished(flow.is_published || false);
-        setFlowKey(prev => prev + 1);
-      }
-    } catch (error) {
-      console.error('Error loading flow:', error);
-      setError(t('common:error'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSave = useCallback(async (newNodes: FlowNode[], newEdges: FlowConnection[], newViewport: any) => {
-    if (!currentOrganization || !id) return;
-    
-    setSaving(true);
-    setError('');
-
-    try {
-      const { error } = await supabase
-        .from('flows')
-        .update({
-          draft_nodes: newNodes,
-          draft_edges: newEdges,
-          variables,
-          viewport: newViewport,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setNodes(newNodes);
-      setEdges(newEdges);
-      setViewport(newViewport);
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error('Error saving flow:', error);
-      setError(t('common:error'));
-    } finally {
-      setSaving(false);
-    }
-  }, [currentOrganization, id, variables]);
+  //   try {
+  //     await onSaveFlow(newNodes, newEdges, newViewport);
+  //   } catch (error) {
+  //     console.error('Error saving flow:', error);
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // }, [onSaveFlow]);
 
   const handlePublish = useCallback(async () => {
-    if (!currentOrganization || !id) return;
-    
     setPublishing(true);
-    setError('');
-
     try {
-      const { error } = await supabase
-        .from('flows')
-        .update({
-          nodes: nodes,
-          edges: edges,
-          draft_nodes: nodes,
-          draft_edges: edges,
-          variables,
-          viewport,
-          is_published: true,
-          published_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      setIsPublished(true);
-      setPublishedNodes(nodes);
-      setPublishedEdges(edges);
+      await publishFlow();
     } catch (error) {
       console.error('Error publishing flow:', error);
-      setError(t('common:error'));
     } finally {
       setPublishing(false);
     }
-  }, [currentOrganization, id, nodes, edges, variables, viewport]);
+  }, [publishFlow]);
 
   const handleRestore = useCallback(async () => {
-    if (!currentOrganization || !id) return;
-    
     setRestoring(true);
-    setError('');
-
     try {
-      const { error } = await supabase
-        .from('flows')
-        .update({
-          draft_nodes: publishedNodes,
-          draft_edges: publishedEdges,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setNodes(publishedNodes);
-      setEdges(publishedEdges);
-      setLastSaved(new Date());
-      setFlowKey(prev => prev + 1);
+      await restoreFlow();
     } catch (error) {
       console.error('Error restoring flow:', error);
-      setError(t('common:error'));
     } finally {
       setRestoring(false);
     }
-  }, [currentOrganization, id, publishedNodes, publishedEdges]);
-
-  const handleVariablesUpdate = useCallback((newVariables: FlowVariable[]) => {
-    setVariables(newVariables);
-  }, []);
+  }, [restoreFlow]);
 
   const handleNameEdit = useCallback(async () => {
-    if (!currentOrganization || !id || !editedName.trim()) return;
+    if (!editedName.trim()) return;
     
     setSaving(true);
-    setError('');
-
     try {
-      const { error } = await supabase
-        .from('flows')
-        .update({
-          name: editedName.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setFlowName(editedName.trim());
+      await updateFlowName(editedName);
       setIsEditingName(false);
-      setLastSaved(new Date());
     } catch (error) {
       console.error('Error updating flow name:', error);
-      setError(t('common:error'));
     } finally {
       setSaving(false);
     }
-  }, [currentOrganization, id, editedName]);
+  }, [editedName, updateFlowName]);
 
   // Check if current version is different from published version
   const hasChanges = JSON.stringify(nodes) !== JSON.stringify(publishedNodes) || 
@@ -346,90 +226,21 @@ function FlowEditorContent() {
 
       <div className="flex-1 overflow-hidden">
         <ReactFlowProvider>
-          <FlowBuilder
-            key={flowKey}
-            initialNodes={nodes}
-            initialEdges={edges}
-            initialVariables={variables}
-            initialViewport={viewport}
-            onSave={handleSave}
-            onVariablesUpdate={handleVariablesUpdate}
-          />
+          <FlowBuilder key={flowKey} />
         </ReactFlowProvider>
       </div>
 
-      {/* Variables Modal */}
-      {showVariablesModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              {t('flows:variables.title')}
-            </h3>
-            <div className="space-y-4">
-              {variables.map((variable, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={variable.name}
-                    onChange={(e) => handleVariableNameChange(index, e.target.value)}
-                    onBlur={() => handleVariableNameBlur(index)}
-                    placeholder={t('flows:nodes.variable.namePlaceholder')}
-                    className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    value={variable.value}
-                    onChange={(e) => {
-                      const newVariables = [...variables];
-                      newVariables[index].value = e.target.value;
-                      setVariables(newVariables);
-                    }}
-                    placeholder={t('flows:nodes.variable.valuePlaceholder')}
-                    className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-              ))}
-              <button
-                onClick={addVariable}
-                disabled={variables.length > 0 && !variables[variables.length - 1].name}
-                className="w-full p-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                + {t('flows:variables.add')}
-              </button>
-            </div>
-            <div className="mt-6 flex justify-end space-x-2">
-              <button
-                onClick={() => setShowVariablesModal(false)}
-                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                {t('common:back')}
-              </button>
-              <button
-                onClick={() => {
-                  handleVariablesUpdate(variables);
-                  setShowVariablesModal(false);
-                }}
-                className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                {t('common:saving')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <VariablesModal 
+        isOpen={showVariablesModal}
+        onClose={() => setShowVariablesModal(false)}
+      />
     </div>
   );
 }
 
 function FlowEditor() {
-  const [variables, setVariables] = useState<FlowVariable[]>([]);
-  const [initialNodes, setInitialNodes] = useState<Node[]>([]);
-  
   return (
-    <FlowEditorProvider 
-      initialVariables={variables}
-      initialNodes={initialNodes}
-    >
+    <FlowEditorProvider>
       <FlowEditorContent />
     </FlowEditorProvider>
   );

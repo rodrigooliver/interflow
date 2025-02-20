@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -6,17 +6,16 @@ import ReactFlow, {
   Node,
   Edge,
   Connection,
-  useNodesState,
-  useEdgesState,
   addEdge,
-  useReactFlow,
   XYPosition,
   Viewport,
   NodeTypes,
   NodeProps,
+  applyNodeChanges,
+  applyEdgeChanges,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { FlowNode, FlowConnection, NodeType, Variable } from '../../types/flow';
+import { FlowNode, FlowConnection, NodeType } from '../../types/flow';
 import { NodeToolbar } from './NodeToolbar';
 import { TextNode } from './nodes/TextNode';
 import { MediaNode } from './nodes/MediaNode';
@@ -29,6 +28,7 @@ import { OpenAINode } from './nodes/OpenAINode';
 import { UpdateCustomerNode } from './nodes/UpdateCustomerNode';
 import { Trash2, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFlowEditor } from '../../contexts/FlowEditorContext';
 
 const nodeTypes: NodeTypes = {
   text: TextNode,
@@ -45,122 +45,24 @@ const nodeTypes: NodeTypes = {
   update_customer: UpdateCustomerNode,
 };
 
-interface FlowBuilderProps {
-  initialNodes?: FlowNode[];
-  initialEdges?: FlowConnection[];
-  initialVariables?: Variable[];
-  initialViewport?: Viewport;
-  onSave?: (nodes: FlowNode[], edges: FlowConnection[], viewport: Viewport) => void;
-  onVariablesUpdate?: (variables: Variable[]) => void;
-}
-
-interface HistoryState {
-  nodes: FlowNode[];
-  edges: FlowConnection[];
-}
-
-// Adicione esta interface para tipar os nós
-interface NodeData {
-  id: string;
-  type: string;
-  data: {
-    label?: string;
-    [key: string]: any;
-  };
-}
-
-export function FlowBuilder({
-  initialNodes = [],
-  initialEdges = [],
-  initialVariables = [],
-  initialViewport,
-  onSave,
-  onVariablesUpdate,
-}: FlowBuilderProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [variables, setVariables] = useState<Variable[]>(initialVariables);
-  const [history, setHistory] = useState<HistoryState[]>([{ nodes: initialNodes, edges: initialEdges }]);
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+export function FlowBuilder() {
+  const { 
+    nodes, 
+    edges, 
+    viewport,
+    setViewport,
+    setNodes,
+    setEdges, 
+    onSaveFlow,
+    updateNodeData
+  } = useFlowEditor();
+  
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
-  const isHistoryActionRef = useRef(false);
-  const { project, getViewport } = useReactFlow();
   const { t } = useTranslation('flows');
   const [showResetModal, setShowResetModal] = useState(false);
-
-  // Effect to update input nodes when variables change
-  useEffect(() => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.type === 'input' || node.type === 'openai') {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-            },
-          };
-        }
-        return node;
-      })
-    );
-  }, [variables, nodes, setNodes]);
-
-  // Effect to sync with initialVariables
-  useEffect(() => {
-    setVariables(initialVariables);
-  }, [initialVariables]);
-
-  // Listen for node data change events
-  useEffect(() => {
-    const handleNodeDataChange = (event: CustomEvent) => {
-      const { nodeId, data } = event.detail;
-      
-      let updatedNodes: Node[] = [];
-
-      // Atualiza os nós
-      setNodes((nds) => {
-        updatedNodes = nds.map((node) => {
-          if (node.id === nodeId) {
-            return { 
-              ...node, 
-              data: { ...node.data, ...data }
-            };
-          }
-          return node;
-        });
-        return updatedNodes;
-      });
-
-      // Se tiver onSave, salva as mudanças
-      setTimeout(() => {
-        if (onSave && reactFlowInstance) {
-          const viewport = getViewport();
-          onSave(updatedNodes as FlowNode[], edges as FlowConnection[], viewport);
-        }
-      }, 0);
-    };
-
-    document.addEventListener('nodeDataChanged', handleNodeDataChange as EventListener);
-
-    return () => {
-      document.removeEventListener('nodeDataChanged', handleNodeDataChange as EventListener);
-    };
-  }, [setNodes, edges, onSave, getViewport, reactFlowInstance]);
-
-  useEffect(() => {
-    if (!isHistoryActionRef.current) {
-      const newState = { 
-        nodes: nodes as FlowNode[], 
-        edges: edges as FlowConnection[] 
-      };
-      setHistory(prev => [...prev.slice(0, currentHistoryIndex + 1), newState]);
-      setCurrentHistoryIndex(prev => prev + 1);
-    }
-    isHistoryActionRef.current = false;
-  }, [nodes, edges]);
 
   const generateFriendlyLabel = (type: NodeType): string => {
     const nodeCount = nodes.filter(n => n.type === type).length + 1;
@@ -183,8 +85,21 @@ export function FlowBuilder({
     return typeLabels[type] || t('nodes.labels.generic') + ` ${nodeCount}`;
   };
 
+  const onNodesChange = useCallback((changes: any) => {
+    setNodes((nds: Node[]) => {
+      const updatedNodes = applyNodeChanges(changes, nds);
+      return updatedNodes;
+    });
+  }, [setNodes]);
+
+  const onEdgesChange = useCallback((changes: any) => {
+    setEdges((eds: Edge[]) => {
+      const updatedEdges = applyEdgeChanges(changes, eds);
+      return updatedEdges;
+    });
+  }, [setEdges]);
+
   const onConnect = useCallback((params: Connection) => {
-    
     let updatedEdges: Edge[] = [];
     const newEdge = {
       ...params,
@@ -197,14 +112,8 @@ export function FlowBuilder({
     });
 
     // Agenda o salvamento para o próximo ciclo
-    setTimeout(() => {
-      if (onSave && reactFlowInstance) {
-        const viewport = getViewport();
-        onSave(nodes as FlowNode[], updatedEdges as FlowConnection[], viewport);
-      }
-    }, 0);
-  }, [setEdges, nodes, onSave, getViewport, reactFlowInstance]);
-
+    onSaveFlow({edges: updatedEdges});
+  }, [setEdges, onSaveFlow, reactFlowInstance]);
 
   const onNodeAdd = useCallback((node: Node) => {
     // Check if it's a start node and if one already exists
@@ -248,43 +157,67 @@ export function FlowBuilder({
 
     // Agenda o salvamento para o próximo ciclo
     setTimeout(() => {
-      if (onSave && reactFlowInstance) {
-        const viewport = getViewport();
-        onSave(updatedNodes as FlowNode[], updatedEdges as FlowConnection[], viewport);
+      if (reactFlowInstance) {
+        onSaveFlow();
       }
     }, 0);
-  }, [setNodes, setEdges, onSave, getViewport, reactFlowInstance]);
+  }, [setNodes, setEdges, reactFlowInstance, onSaveFlow]);
 
   const onNodeUpdate = useCallback((nodeId: string, data: any) => {
-    let updatedNodes: Node[] = [];
     let hasChanges = false;
     
-    // Atualiza o nó
+    // Primeiro verificamos as mudanças
+    const checkChanges = (currentNodes: Node[]) => {
+        const currentNode = currentNodes.find(n => n.id === nodeId);
+        if (!currentNode) return false;
+
+        if (currentNode.position.x !== data.position?.x || 
+            currentNode.position.y !== data.position?.y) {
+            console.log('Posição mudou:', {
+                atual: currentNode.position,
+                nova: data.position
+            });
+            return true;
+        }
+
+        const isEqual = JSON.stringify(currentNode.data) === JSON.stringify(data);
+        if (!isEqual) {
+            console.log('Dados mudaram:', {
+                atual: currentNode.data,
+                novos: data
+            });
+            return true;
+        }
+
+        return false;
+    };
+
+    // Depois atualizamos os nodes
     setNodes((nds) => {
-      updatedNodes = nds.map(node => {
-        if (node.id === nodeId) {
-          // Verifica se houve mudança real nos dados
-          const isEqual = JSON.stringify(node.data) === JSON.stringify(data);
-          if (!isEqual) {
-            hasChanges = true;
-            return { ...node, data: { ...node.data, ...data } };
-          }
+        hasChanges = checkChanges(nds);
+        
+        const updatedNodes = nds.map(node => {
+            if (node.id === nodeId) {
+                return { ...node, data: { ...node.data, ...data } };
+            }
+            return node;
+        });
+
+        // Se houve mudanças, salvamos imediatamente
+        if (hasChanges && reactFlowInstance) {
+            console.log('Mudanças detectadas, salvando...');
+            onSaveFlow({nodes: updatedNodes});
         }
-        return node;
-      });
-      return updatedNodes;
+
+        return updatedNodes;
     });
-    
-    // Só chama onSave se houver mudanças reais
-    if (hasChanges) {
-      setTimeout(() => {
-        if (onSave && reactFlowInstance) {
-          const viewport = getViewport();
-          onSave(updatedNodes as FlowNode[], edges as FlowConnection[], viewport);
-        }
-      }, 0);
-    }
-  }, [setNodes, edges, onSave, getViewport, reactFlowInstance]);
+
+    console.log('On node update...', {
+        nodeId,
+        data,
+        position: data.position
+    });
+  }, [setNodes, reactFlowInstance, onSaveFlow]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -325,13 +258,12 @@ export function FlowBuilder({
       onNodeAdd(newNode);
 
       // Salvar após adicionar o novo nó
-      if (onSave) {
-        const updatedNodes = [...nodes, newNode];
-        const viewport = getViewport();
-        onSave(updatedNodes as FlowNode[], edges as FlowConnection[], viewport);
+      if (reactFlowInstance) {
+        setNodes([...nodes, newNode]);
+        onSaveFlow();
       }
     },
-    [reactFlowInstance, onNodeAdd, nodes, edges, onSave, getViewport]
+    [reactFlowInstance, onNodeAdd, nodes, onSaveFlow]
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -364,21 +296,18 @@ export function FlowBuilder({
 
     // Agenda o salvamento para o próximo ciclo
     setTimeout(() => {
-      if (onSave && reactFlowInstance) {
-        const viewport = getViewport();
-        onSave(nodes as FlowNode[], updatedEdges as FlowConnection[], viewport);
+      if (reactFlowInstance) {
+        onSaveFlow();
       }
     }, 0);
-  }, [setEdges, nodes, onSave, getViewport, reactFlowInstance]);
+  }, [setEdges, reactFlowInstance, onSaveFlow]);
 
   const onMoveEnd = useCallback((event: MouseEvent | TouchEvent, viewport: Viewport) => {
-    // Agenda o salvamento para o próximo ciclo
-    setTimeout(() => {
-      if (onSave && reactFlowInstance) {
-        onSave(nodes as FlowNode[], edges as FlowConnection[], viewport);
-      }
-    }, 0);
-  }, [nodes, edges, onSave, reactFlowInstance]);
+    setViewport(viewport);
+    if (reactFlowInstance) {
+      onSaveFlow({viewport});
+    }
+  }, [setViewport, onSaveFlow]);
 
   const onReset = useCallback(() => {
     // Encontra o nó start
@@ -402,12 +331,11 @@ export function FlowBuilder({
 
     // Agenda o salvamento para o próximo ciclo
     setTimeout(() => {
-      if (onSave && reactFlowInstance) {
-        const viewport = getViewport();
-        onSave([startNode] as FlowNode[], [] as FlowConnection[], viewport);
+      if (reactFlowInstance) {
+        onSaveFlow();
       }
     }, 0);
-  }, [nodes, setNodes, setEdges, onSave, reactFlowInstance, getViewport]);
+  }, [nodes, setNodes, setEdges, reactFlowInstance, onSaveFlow]);
 
   const handleFlowError = (error: any) => {
 
@@ -466,16 +394,17 @@ export function FlowBuilder({
           onMoveEnd={onMoveEnd}
           nodeTypes={nodeTypes}
           onInit={setReactFlowInstance}
-          defaultViewport={initialViewport || { x: 0, y: 0, zoom: 0.7 }}
+          defaultViewport={viewport || { x: 0, y: 0, zoom: 0.7 }}
           minZoom={0.2}
           maxZoom={1.5}
-          fitView={!initialViewport}
+          fitView={!viewport}
           zoomOnDoubleClick={false}
           panOnDrag={true}
           selectionOnDrag={false}
           onError={handleFlowError}
           onNodeDragStop={(event, node) => {
-            onNodeUpdate(node.id, node.data);
+            console.log('On node drag stop...', event, node);
+            onNodeUpdate(node.id, { ...node.data, position: node.position });
           }}
         >
           <Background />

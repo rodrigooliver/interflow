@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -56,10 +56,13 @@ const OpenAILogo = () => (
   />
 );
 
-export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
-  const { t } = useTranslation(['flows', 'common']);
-  const { integrations, prompts, variables, loading, nodes } = useFlowEditor();
-  const [config, setConfig] = useState(data.openai || {
+export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
+  const { t } = useTranslation('flows');
+  const { integrations, prompts, variables, nodes, updateNodeData } = useFlowEditor();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('general');
+  const [loading] = useState(false);
+  const [localConfig, setLocalConfig] = useState(data.openai || {
     model: 'gpt-4o',
     temperature: 0.7,
     maxTokens: 150,
@@ -73,26 +76,19 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
     voice: 'alloy',
     tools: []
   });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('general');
 
-  useEffect(() => {
-    const event = new CustomEvent('updateNodeInternals', { detail: { nodeId: id } });
-    document.dispatchEvent(event);
-  }, [id, config]);
-
-  const handleConfigChange = (updates: Partial<typeof config>) => {
-    const newConfig = { ...config, ...updates };
-    setConfig(newConfig);
-    
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: {
-        nodeId: id,
-        data: { openai: newConfig }
-      }
-    });
-    document.dispatchEvent(event);
+  // Atualiza estado local
+  const handleConfigChange = (updates: Partial<typeof localConfig>) => {
+    setLocalConfig(prev => ({ ...prev, ...updates }));
   };
+
+  // Salva no banco quando perde o foco
+  const handleConfigBlur = useCallback(() => {
+    updateNodeData(id, {
+      ...data,
+      openai: localConfig
+    });
+  }, [id, data, localConfig, updateNodeData]);
 
   const textGenerationModels = [
     { value: 'gpt-4o', label: 'GPT-4O' },
@@ -214,7 +210,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                     >
                       {t('nodes.openai.tabs.general')}
                     </button>
-                    {config.apiType === 'textGeneration' && (
+                    {localConfig.apiType === 'textGeneration' && (
                       <>
                         <button
                           onClick={() => setActiveTab('prompts')}
@@ -258,8 +254,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         {t('nodes.openai.integration')}
                       </label>
                       <select
-                        value={config.integrationId}
+                        value={localConfig.integrationId}
                         onChange={(e) => handleConfigChange({ integrationId: e.target.value })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option value="">{t('nodes.openai.selectIntegration')}</option>
@@ -276,8 +273,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         {t('nodes.openai.apiType')}
                       </label>
                       <select
-                        value={config.apiType}
+                        value={localConfig.apiType}
                         onChange={(e) => handleConfigChange({ apiType: e.target.value })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option key="default" value="">
@@ -296,16 +294,17 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         {t('nodes.openai.model')}
                       </label>
                       <select
-                        value={config.model}
+                        value={localConfig.model}
                         onChange={(e) => handleConfigChange({ model: e.target.value })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option key="default" value="">
                           {t('nodes.openai.selectModel')}
                         </option>
-                        {(config.apiType === 'textGeneration' 
+                        {(localConfig.apiType === 'textGeneration' 
                           ? textGenerationModels 
-                          : config.apiType === 'audioGeneration'
+                          : localConfig.apiType === 'audioGeneration'
                           ? audioGenerationModels
                           : textToSpeechModels).map(model => (
                           <option key={model.value} value={model.value}>
@@ -315,14 +314,15 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                       </select>
                     </div>
 
-                    {config.apiType === 'textToSpeech' && (
+                    {localConfig.apiType === 'textToSpeech' && (
                       <div>
                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                           {t('nodes.openai.voice')}
                         </label>
                         <select
-                          value={config.voice || 'alloy'}
+                          value={localConfig.voice || 'alloy'}
                           onChange={(e) => handleConfigChange({ voice: e.target.value })}
+                          onBlur={handleConfigBlur}
                           className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                         >
                           {voices.map(voice => (
@@ -343,8 +343,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         min="0"
                         max="2"
                         step="0.1"
-                        value={config.temperature}
+                        value={localConfig.temperature}
                         onChange={(e) => handleConfigChange({ temperature: Number(e.target.value) })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       />
                     </div>
@@ -357,8 +358,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         type="number"
                         min="1"
                         max="4000"
-                        value={config.maxTokens}
+                        value={localConfig.maxTokens}
                         onChange={(e) => handleConfigChange({ maxTokens: Number(e.target.value) })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       />
                     </div>
@@ -368,8 +370,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         {t('nodes.openai.saveResponse')}
                       </label>
                       <select
-                        value={config.variableName}
+                        value={localConfig.variableName}
                         onChange={(e) => handleConfigChange({ variableName: e.target.value })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option value="">{t('nodes.variable.selectVariable')}</option>
@@ -388,8 +391,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         {t('nodes.openai.promptType')}
                       </label>
                       <select
-                        value={config.promptType || 'select'}
+                        value={localConfig.promptType || 'select'}
                         onChange={(e) => handleConfigChange({ promptType: e.target.value })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option value="select">{t('nodes.openai.selectPrompt')}</option>
@@ -397,14 +401,15 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                       </select>
                     </div>
 
-                    {config.promptType === 'select' ? (
+                    {localConfig.promptType === 'select' ? (
                       <div>
                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                           {t('nodes.openai.systemPrompt')}
                         </label>
                         <select
-                          value={config.promptId}
+                          value={localConfig.promptId}
                           onChange={(e) => handleConfigChange({ promptId: e.target.value })}
+                          onBlur={handleConfigBlur}
                           className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                         >
                           <option value="">{t('nodes.openai.selectPrompt')}</option>
@@ -421,8 +426,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                           {t('nodes.openai.customPrompt')}
                         </label>
                         <textarea
-                          defaultValue={config.customPrompt ?? ''}
-                          onBlur={(e) => handleConfigChange({ customPrompt: e.target.value })}
+                          defaultValue={localConfig.customPrompt ?? ''}
+                          onChange={(e) => handleConfigChange({ customPrompt: e.target.value })}
+                          onBlur={handleConfigBlur}
                           rows={20}
                           className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                           placeholder={t('nodes.openai.enterCustomPrompt')}
@@ -437,8 +443,9 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                         {t('nodes.openai.messages.type')}
                       </label>
                       <select
-                        value={config.messageType}
+                        value={localConfig.messageType}
                         onChange={(e) => handleConfigChange({ messageType: e.target.value })}
+                        onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option value="chatMessages">{t('nodes.openai.messages.chatMessages')}</option>
@@ -448,7 +455,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                   </div>
                 ) : activeTab === 'tools' && (
                   <div className="space-y-4">
-                    {(config.tools || []).map((tool, index) => (
+                    {(localConfig.tools || []).map((tool, index) => (
                       <div key={index} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <div className="flex justify-between items-center mb-3">
                           <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -456,7 +463,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                           </h5>
                           <button
                             onClick={() => {
-                              const newTools = config.tools.filter((_, i) => i !== index);
+                              const newTools = localConfig.tools.filter((_, i) => i !== index);
                               handleConfigChange({ tools: newTools });
                             }}
                             className="text-red-500 hover:text-red-600"
@@ -476,11 +483,12 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                             <input
                               type="text"
                               defaultValue={tool.name ?? ''}
-                              onBlur={(e) => {
-                                const newTools = [...config.tools];
+                              onChange={(e) => {
+                                const newTools = [...localConfig.tools];
                                 newTools[index] = { ...tool, name: e.target.value };
                                 handleConfigChange({ tools: newTools });
                               }}
+                              onBlur={handleConfigBlur}
                               className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             />
                           </div>
@@ -491,11 +499,12 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                             </label>
                             <textarea
                               defaultValue={tool.description ?? ''}
-                              onBlur={(e) => {
-                                const newTools = [...config.tools];
+                              onChange={(e) => {
+                                const newTools = [...localConfig.tools];
                                 newTools[index] = { ...tool, description: e.target.value };
                                 handleConfigChange({ tools: newTools });
                               }}
+                              onBlur={handleConfigBlur}
                               rows={3}
                               className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             />
@@ -578,7 +587,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                                 },
                                                 required: tool.parameters?.required || []
                                               };
-                                              const newTools = [...config.tools];
+                                              const newTools = [...localConfig.tools];
                                               newTools[index] = { ...tool, parameters: currentParams };
                                               handleConfigChange({ tools: newTools });
                                             } catch (error) {
@@ -646,7 +655,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                                         currentParams.required = required.filter(name => name !== paramName);
                                                       }
 
-                                                      const newTools = [...config.tools];
+                                                      const newTools = [...localConfig.tools];
                                                       newTools[index] = { ...tool, parameters: currentParams };
                                                       handleConfigChange({ tools: newTools });
                                                     } catch (error) {
@@ -672,7 +681,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                                     required: (tool.parameters?.required || []).filter(name => name !== paramName)
                                                   };
                                                   
-                                                  const newTools = [...(config.tools || [])].map((t, idx) => {
+                                                  const newTools = [...(localConfig.tools || [])].map((t, idx) => {
                                                     if (idx === index) {
                                                       return {
                                                         ...t,
@@ -708,7 +717,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                           <input
                                             type="text"
                                             defaultValue={paramConfig?.description ?? ''}
-                                            onBlur={(e) => {
+                                            onChange={(e) => {
                                               try {
                                                 const currentParams = { ...tool.parameters };
                                                 currentParams.properties[paramName] = {
@@ -716,13 +725,14 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                                   type: 'string',
                                                   description: e.target.value
                                                 };
-                                                const newTools = [...config.tools];
+                                                const newTools = [...localConfig.tools];
                                                 newTools[index] = { ...tool, parameters: currentParams };
                                                 handleConfigChange({ tools: newTools });
                                               } catch (error) {
                                                 console.error('Error updating parameter description:', error);
                                               }
                                             }}
+                                            onBlur={handleConfigBlur}
                                             placeholder={t('nodes.openai.tools.parameterDescription')}
                                             className="w-full text-xs p-1.5 border rounded border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                                           />
@@ -747,13 +757,14 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                   label: `${node.data?.label || node.type}`
                                 }))[0]}
                               onChange={(selected) => {
-                                const newTools = [...config.tools];
+                                const newTools = [...localConfig.tools];
                                 newTools[index] = { 
                                   ...tool, 
                                   targetNodeId: selected ? selected.value : undefined 
                                 };
                                 handleConfigChange({ tools: newTools });
                               }}
+                              onBlur={handleConfigBlur}
                               options={nodes
                                 .filter(node => node.id !== id && node.type !== 'start')
                                 .map(node => ({
@@ -803,7 +814,7 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                     <div className="flex justify-center mt-4">
                       <button
                         onClick={() => {
-                          const newTools = [...(config.tools || []), { 
+                          const newTools = [...(localConfig.tools || []), { 
                             name: '', 
                             description: '', 
                             parameters: { type: 'object', properties: {} },

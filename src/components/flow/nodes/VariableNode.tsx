@@ -1,56 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { Variable } from 'lucide-react';
+import { BaseNode } from './BaseNode';
+import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
 interface VariableNodeProps {
+  id: string;
   data: {
     variable?: {
       name: string;
       value: string;
     };
+    label?: string;
   };
   isConnectable: boolean;
 }
 
-export function VariableNode({ data, isConnectable }: VariableNodeProps) {
+export function VariableNode({ id, data, isConnectable }: VariableNodeProps) {
   const { t } = useTranslation('flows');
-  const [name, setName] = useState(data.variable?.name || '');
-  const [value, setValue] = useState(data.variable?.value || '');
+  const { updateNodeData, variables } = useFlowEditor();
+  const [localVariable, setLocalVariable] = useState(data.variable || {
+    name: '',
+    value: ''
+  });
+
+  const handleChange = (field: 'name' | 'value', value: string) => {
+    setLocalVariable(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleBlur = useCallback(() => {
+    updateNodeData(id, {
+      ...data,
+      variable: localVariable
+    });
+  }, [id, data, localVariable, updateNodeData]);
 
   return (
-    <div className="node-content">
+    <div className="bg-white dark:bg-gray-800">
+      <BaseNode 
+        id={id} 
+        data={data}
+        icon={<Variable className="w-4 h-4 text-gray-500" />}
+      />
+
+      <div className="space-y-2">
+        <select
+          value={localVariable.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          onBlur={handleBlur}
+          className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
+        >
+          <option value="">{t('nodes.variable.selectVariable')}</option>
+          {variables.map((variable) => (
+            <option key={variable.name} value={variable.name}>
+              {variable.name}
+            </option>
+          ))}
+        </select>
+        
+        <input
+          type="text"
+          value={localVariable.value}
+          onChange={(e) => handleChange('value', e.target.value)}
+          onBlur={handleBlur}
+          placeholder={t('nodes.variable.valuePlaceholder')}
+          className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
       <Handle
         type="target"
         position={Position.Left}
         isConnectable={isConnectable}
         className="w-3 h-3 bg-gray-300 dark:bg-gray-600"
       />
-      
-      <div className="flex items-center mb-2">
-        <Variable className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {t('nodes.variable.title')}
-        </span>
-      </div>
-
-      <div className="space-y-2">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('nodes.variable.namePlaceholder')}
-          className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={t('nodes.variable.valuePlaceholder')}
-          className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
-
       <Handle
         type="source"
         position={Position.Right}

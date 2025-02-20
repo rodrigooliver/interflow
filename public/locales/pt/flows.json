@@ -60,8 +60,9 @@
       "if": "Se",
       "elseIf": "Senão se",
       "else": "Senão",
-      "variablePlaceholder": "Nome da variável",
+      "selectVariable": "Selecione uma variável",
       "valuePlaceholder": "Valor",
+      "addCondition": "Adicionar Condição",
       "operators": {
         "equals": "é igual a",
         "notEquals": "é diferente de",

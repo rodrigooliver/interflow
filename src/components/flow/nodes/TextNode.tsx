@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { MessageSquare } from 'lucide-react';
 import { BaseNode } from './BaseNode';
+import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
 interface TextNodeProps {
   id: string;
@@ -15,49 +16,33 @@ interface TextNodeProps {
 
 export function TextNode({ id, data, isConnectable }: TextNodeProps) {
   const { t } = useTranslation('flows');
+  const { updateNodeData } = useFlowEditor();
   const [content, setContent] = useState(data.text || '');
 
-  const handleChange = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = evt.target.value;
-    setContent(newContent);
-  }, []);
+  const handleChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(evt.target.value);
+  };
 
   const handleBlur = useCallback(() => {
-    // Disparar evento de mudança apenas quando terminar de editar
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { 
-        nodeId: id, 
-        data: { ...data, text: content } 
-      }
-    });   
-    document.dispatchEvent(event);
-  }, [id, data, content]);
-
-  const handleLabelChange = (newLabel: string) => {
-    const event = new CustomEvent('nodeDataChanged', {
-      detail: { nodeId: id, data: { ...data, label: newLabel } }
-    });
-    console.log('Dispatching event', event);
-    document.dispatchEvent(event);
-  };
+    updateNodeData(id, { ...data, text: content });
+  }, [id, data, content, updateNodeData]);
 
   return (
     <div className="bg-white dark:bg-gray-800">
       <BaseNode 
         id={id} 
-        data={data} 
-        onLabelChange={handleLabelChange}
+        data={data}
         icon={<MessageSquare className="w-4 h-4 text-gray-500" />}
       />
       
       <textarea
-          value={content}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          placeholder={t('nodes.messagePlaceholder')}
-          className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-          rows={4}
-        />
+        value={content}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder={t('nodes.messagePlaceholder')}
+        className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
+        rows={4}
+      />
 
       <Handle
         type="target"
