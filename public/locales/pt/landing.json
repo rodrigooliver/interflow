@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "home": "Início",
+    "pricing": "Preços",
+    "login": "Entrar",
+    "register": "Registrar",
+    "startFree": "Começar Grátis"
+  },
+  "hero": {
+    "title": "Transforme seu Atendimento em uma Experiência Única!",
+    "subtitle": "Conecte-se com seus clientes em todos os canais com a plataforma multicanal mais rápida e fácil de usar com IA integrado!",
+    "cta": "Teste grátis por 15 dias!"
+  },
+  "features": {
+    "title": "Atendimento inteligente, rápido e personalizado"
+  },
+  "pricing": {
+    "title": "Planos e Preços"
+  },
+  "footer": {
+    "copyright": "© 2024 Sua Empresa. Todos os direitos reservados."
+  }
+} 

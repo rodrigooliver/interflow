@@ -1,5 +1,5 @@
 import React, { useState, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
@@ -38,8 +38,13 @@ import Prompts from './pages/prompts/Prompts';
 import PromptFormPage from './pages/prompts/PromptForm';
 import { useAuth } from './hooks/useAuth';
 import { LoadingScreen } from './components/LoadingScreen';
+import { ThemeProvider } from './providers/ThemeProvider';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './i18n';
+import Home from './pages/index';
+import SignupPage from './pages/public/signup/page';
 
-function App() {
+function AppContent() {
   const { session, profile, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -48,94 +53,111 @@ function App() {
   }
 
   if (!session) {
-    return <Login />;
+    return (
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
   }
 
   return (
-    <Router>
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Mobile menu button */}
-        <button
-          type="button"
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-lg"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          <Menu className="h-6 w-6" />
-        </button>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Mobile menu button */}
+      <button
+        type="button"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-lg"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <Menu className="h-6 w-6" />
+      </button>
 
-        {/* Backdrop */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Sidebar */}
+      {/* Backdrop */}
+      {sidebarOpen && (
         <div
-          className={`fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 transform ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          } transition-transform duration-300 ease-in-out`}
-        >
-          <Sidebar onClose={() => setSidebarOpen(false)} />
-        </div>
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="min-h-full">
-            <Suspense fallback={<LoadingScreen />}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/chats" element={<Chats />} />
-                <Route path="/chats/:id" element={<Chat />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/customers/:id/chats" element={<CustomerChats />} />
-                <Route path="/customers/add" element={<AddCustomer />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/settings/billing" element={<BillingPage />} />
-                <Route path="/settings/integrations" element={<IntegrationsPage />} />
-                <Route path="/settings/notifications" element={<NotificationsPage />} />
-                <Route path="/settings/usage" element={<UsagePage />} />
-                <Route path="/team" element={<TeamMembers />} />
-                <Route path="/service-teams" element={<ServiceTeams />} />
-                <Route path="/channels" element={<Channels />} />
-                <Route path="/channels/new" element={<SelectChannelType />} />
-                <Route path="/channels/new/email" element={<EmailChannelForm />} />
-                <Route path="/channels/new/whatsapp_official" element={<WhatsAppOfficialForm />} />
-                <Route path="/channels/new/whatsapp_wapi" element={<WhatsAppWApiForm />} />
-                <Route path="/channels/new/whatsapp_zapi" element={<WhatsAppZApiForm />} />
-                <Route path="/channels/new/whatsapp_evo" element={<WhatsAppEvoForm />} />
-                <Route path="/channels/new/facebook" element={<FacebookForm />} />
-                <Route path="/channels/new/instagram" element={<InstagramForm />} />
-                <Route path="/channels/:id/edit/email" element={<EmailChannelForm />} />
-                <Route path="/channels/:id/edit/whatsapp_official" element={<WhatsAppOfficialForm />} />
-                <Route path="/channels/:id/edit/whatsapp_wapi" element={<WhatsAppWApiForm />} />
-                <Route path="/channels/:id/edit/whatsapp_zapi" element={<WhatsAppZApiForm />} />
-                <Route path="/channels/:id/edit/whatsapp_evo" element={<WhatsAppEvoForm />} />
-                <Route path="/channels/:id/edit/facebook" element={<FacebookForm />} />
-                <Route path="/channels/:id/edit/instagram" element={<InstagramForm />} />
-                <Route path="/shortcuts" element={<MessageShortcuts />} />
-                <Route path="/flows" element={<FlowList />} />
-                <Route path="/flows/:id" element={<FlowEditor />} />
-                <Route path="/crm" element={<CRMFunnels />} />
-                <Route path="/crm/:id" element={<CRMFunnel />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/tags" element={<Tags />} />
-                <Route path="/prompts" element={<Prompts />} />
-                <Route path="/prompts/new" element={<PromptFormPage />} />
-                <Route path="/prompts/edit/:id" element={<PromptFormPage />} />
-                {profile?.is_superadmin && (
-                  <>
-                    <Route path="/admin/organizations" element={<Organizations />} />
-                    <Route path="/admin/organizations/add" element={<AddOrganization />} />
-                  </>
-                )}
-              </Routes>
-            </Suspense>
-          </div>
-        </main>
+      {/* Sidebar */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 transform ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } transition-transform duration-300 ease-in-out`}
+      >
+        <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
-    </Router>
+
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="min-h-full">
+          <Suspense fallback={<LoadingScreen />}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/chats" element={<Chats />} />
+              <Route path="/chats/:id" element={<Chat />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/customers/:id/chats" element={<CustomerChats />} />
+              <Route path="/customers/add" element={<AddCustomer />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/billing" element={<BillingPage />} />
+              <Route path="/settings/integrations" element={<IntegrationsPage />} />
+              <Route path="/settings/notifications" element={<NotificationsPage />} />
+              <Route path="/settings/usage" element={<UsagePage />} />
+              <Route path="/team" element={<TeamMembers />} />
+              <Route path="/service-teams" element={<ServiceTeams />} />
+              <Route path="/channels" element={<Channels />} />
+              <Route path="/channels/new" element={<SelectChannelType />} />
+              <Route path="/channels/new/email" element={<EmailChannelForm />} />
+              <Route path="/channels/new/whatsapp_official" element={<WhatsAppOfficialForm />} />
+              <Route path="/channels/new/whatsapp_wapi" element={<WhatsAppWApiForm />} />
+              <Route path="/channels/new/whatsapp_zapi" element={<WhatsAppZApiForm />} />
+              <Route path="/channels/new/whatsapp_evo" element={<WhatsAppEvoForm />} />
+              <Route path="/channels/new/facebook" element={<FacebookForm />} />
+              <Route path="/channels/new/instagram" element={<InstagramForm />} />
+              <Route path="/channels/:id/edit/email" element={<EmailChannelForm />} />
+              <Route path="/channels/:id/edit/whatsapp_official" element={<WhatsAppOfficialForm />} />
+              <Route path="/channels/:id/edit/whatsapp_wapi" element={<WhatsAppWApiForm />} />
+              <Route path="/channels/:id/edit/whatsapp_zapi" element={<WhatsAppZApiForm />} />
+              <Route path="/channels/:id/edit/whatsapp_evo" element={<WhatsAppEvoForm />} />
+              <Route path="/channels/:id/edit/facebook" element={<FacebookForm />} />
+              <Route path="/channels/:id/edit/instagram" element={<InstagramForm />} />
+              <Route path="/shortcuts" element={<MessageShortcuts />} />
+              <Route path="/flows" element={<FlowList />} />
+              <Route path="/flows/:id" element={<FlowEditor />} />
+              <Route path="/crm" element={<CRMFunnels />} />
+              <Route path="/crm/:id" element={<CRMFunnel />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/tags" element={<Tags />} />
+              <Route path="/prompts" element={<Prompts />} />
+              <Route path="/prompts/new" element={<PromptFormPage />} />
+              <Route path="/prompts/edit/:id" element={<PromptFormPage />} />
+              {profile?.is_superadmin && (
+                <>
+                  <Route path="/admin/organizations" element={<Organizations />} />
+                  <Route path="/admin/organizations/add" element={<AddOrganization />} />
+                </>
+              )}
+            </Routes>
+          </Suspense>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nextProvider i18n={i18n}>
+      <ThemeProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ThemeProvider>
+    </I18nextProvider>
   );
 }
 

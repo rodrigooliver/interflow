@@ -543,7 +543,6 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                   <button
                                     onClick={() => {
                                       // Disparar evento para abrir o modal de variáveis
-                                      console.log("rodrigo2")
                                       const event = new CustomEvent('openModalVariable', {
                                         detail: {
                                           id: 'variableModal',

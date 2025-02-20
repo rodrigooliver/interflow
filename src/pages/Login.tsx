@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { useTheme } from '../providers/ThemeProvider';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -8,6 +9,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+  const { theme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +37,13 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Chat Atendimento
-          </h2>
+          <div className="flex justify-center">
+            <img
+              className="h-12 w-auto"
+              src={theme === 'dark' ? '/interflow-logo-white.svg' : '/interflow-logo.svg'}
+              alt="Logo"
+            />
+          </div>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Faça login para acessar o sistema
           </p>

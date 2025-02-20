@@ -42,7 +42,6 @@ function FlowEditor() {
   useEffect(() => {
     // Adicionar listener para o evento openModalVariable
     const handleOpenModal = (event: CustomEvent) => {
-      console.log('Rodrigo')
       if (event.detail?.id === 'variableModal') {
         setShowVariablesModal(true);
       }

@@ -1,0 +1,22 @@
+{
+  "nav": {
+    "home": "Home",
+    "pricing": "Pricing",
+    "login": "Login",
+    "startFree": "Start Free"
+  },
+  "hero": {
+    "title": "Transform Your Customer Service into a Unique Experience!",
+    "subtitle": "Connect with your customers across all channels with the fastest and easiest-to-use multichannel platform with integrated AI!",
+    "cta": "Try free for 15 days!"
+  },
+  "features": {
+    "title": "Intelligent, fast, and personalized service"
+  },
+  "pricing": {
+    "title": "Plans and Pricing"
+  },
+  "footer": {
+    "copyright": "© 2024 Your Company. All rights reserved."
+  }
+} 

@@ -16,5 +16,16 @@
   "previous": "Anterior",
   "next": "Próximo",
   "pageOf": "Página {{current}} de {{total}}",
-  "remove": "Remover"
+  "remove": "Remover",
+  "signup": {
+    "title": "Criar uma conta",
+    "subtitle": "Já tem uma conta?",
+    "login_link": "Faça login aqui",
+    "name": "Nome completo",
+    "email": "Email",
+    "password": "Senha",
+    "submit": "Cadastrar",
+    "loading": "Cadastrando...",
+    "or_continue_with": "Ou continue com"
+  }
 }

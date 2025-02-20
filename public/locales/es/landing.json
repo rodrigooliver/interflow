@@ -1,0 +1,22 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "pricing": "Precios",
+    "login": "Iniciar Sesión",
+    "startFree": "Comenzar Gratis"
+  },
+  "hero": {
+    "title": "¡Transforma tu Servicio al Cliente en una Experiencia Única!",
+    "subtitle": "¡Conéctate con tus clientes en todos los canales con la plataforma multicanal más rápida y fácil de usar con IA integrada!",
+    "cta": "¡Prueba gratis por 15 días!"
+  },
+  "features": {
+    "title": "Servicio inteligente, rápido y personalizado"
+  },
+  "pricing": {
+    "title": "Planes y Precios"
+  },
+  "footer": {
+    "copyright": "© 2024 Tu Empresa. Todos los derechos reservados."
+  }
+} 

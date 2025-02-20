@@ -18,10 +18,11 @@ const namespaces = [
   'serviceTeams',
   'channels',
   'flows',
-  'settings'
+  'settings',
+  'landing'
 ] as const;
 
-type Namespace = typeof namespaces[number];
+export type Namespace = typeof namespaces[number];
 
 // Initialize i18n
 const i18nInstance = i18n
@@ -31,9 +32,10 @@ const i18nInstance = i18n
 
 // Initialize with basic configuration first
 await i18nInstance.init({
-  fallbackLng: false, // Disable fallback to avoid loading common
+  fallbackLng: ['pt'],
   supportedLngs: ['pt', 'en', 'es'],
   ns: namespaces,
+  defaultNS: 'common',
   interpolation: {
     escapeValue: false
   },
@@ -120,4 +122,7 @@ const defaultLanguage = localStorage.getItem('i18nextLng') || 'pt';
 await i18n.changeLanguage(defaultLanguage);
 // Load all namespaces
 await Promise.all(namespaces.map(ns => i18n.loadNamespaces(ns)));
+
+// Exporte a instância do i18n
+export default i18nInstance;
 
