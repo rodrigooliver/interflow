@@ -16,5 +16,26 @@
   "previous": "Previous",
   "next": "Next",
   "pageOf": "Page {{current}} of {{total}}",
-  "remove": "Remove"
+  "remove": "Remove",
+  "signup": {
+    "title": "Create an account",
+    "subtitle": "Already have an account?",
+    "login_link": "Login here",
+    "name": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign up",
+    "loading": "Signing up...",
+    "or_continue_with": "Or continue with"
+  },
+  "login": {
+    "description": "Sign in to access the system",
+    "signIn": "Sign In",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create account",
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "generic": "Error signing in. Please try again."
+    }
+  }
 }

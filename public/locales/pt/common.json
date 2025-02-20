@@ -27,5 +27,15 @@
     "submit": "Cadastrar",
     "loading": "Cadastrando...",
     "or_continue_with": "Ou continue com"
+  },
+  "login": {
+    "description": "Faça login para acessar o sistema",
+    "signIn": "Entrar",
+    "noAccount": "Ainda não tem uma conta?",
+    "createAccount": "Criar conta",
+    "errors": {
+      "invalidCredentials": "Email ou senha incorretos",
+      "generic": "Erro ao fazer login. Por favor, tente novamente."
+    }
   }
 }

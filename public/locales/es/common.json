@@ -16,5 +16,26 @@
   "previous": "Anterior",
   "next": "Siguiente",
   "pageOf": "Página {{current}} de {{total}}",
-  "remove": "Eliminar"
+  "remove": "Eliminar",
+  "signup": {
+    "title": "Crear una cuenta",
+    "subtitle": "¿Ya tienes una cuenta?",
+    "login_link": "Inicia sesión aquí",
+    "name": "Nombre completo",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "submit": "Registrarse",
+    "loading": "Registrando...",
+    "or_continue_with": "O continúa con"
+  },
+  "login": {
+    "description": "Inicia sesión para acceder al sistema",
+    "signIn": "Iniciar Sesión",
+    "noAccount": "¿No tienes una cuenta?",
+    "createAccount": "Crear cuenta",
+    "errors": {
+      "invalidCredentials": "Correo electrónico o contraseña incorrectos",
+      "generic": "Error al iniciar sesión. Por favor, intente nuevamente."
+    }
+  }
 }

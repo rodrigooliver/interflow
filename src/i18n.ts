@@ -84,7 +84,12 @@ await i18nInstance.init({
   }
 });
 
-// Function to update user language preference
+// Função auxiliar para atualizar o atributo lang do HTML
+function updateHtmlLang(language: string) {
+  document.documentElement.lang = language;
+}
+
+// Atualizar a função updateUserLanguage
 export async function updateUserLanguage(userId: string, language: string) {
   try {
     // Update language in database first
@@ -100,26 +105,49 @@ export async function updateUserLanguage(userId: string, language: string) {
     
     // Update localStorage language
     localStorage.setItem('i18nextLng', language);
+    
+    // Atualizar o atributo lang do HTML
+    updateHtmlLang(language);
   } catch (err) {
     console.error('Error updating user language:', err);
     throw err;
   }
 }
 
-// Function to force reload translations
+// Atualizar a função reloadTranslations
 export async function reloadTranslations(language: string) {
   try {
     // Change language and let i18next handle caching
     await i18n.changeLanguage(language);
+    
+    // Atualizar o atributo lang do HTML
+    updateHtmlLang(language);
   } catch (err) {
     console.error('Error reloading translations:', err);
     throw err;
   }
 }
 
+// Função para obter o idioma do navegador compatível com os idiomas suportados
+function getBrowserLanguage(): string {
+  const browserLang = navigator.language.split('-')[0]; // Pega apenas a parte principal do idioma (ex: 'pt-BR' -> 'pt')
+  const supportedLangs = ['pt', 'en', 'es'];
+  
+  return supportedLangs.includes(browserLang) ? browserLang : 'pt';
+}
+
 // Initialize with default language
-const defaultLanguage = localStorage.getItem('i18nextLng') || 'pt';
+const savedLanguage = localStorage.getItem('i18nextLng');
+const defaultLanguage = savedLanguage || getBrowserLanguage();
+
+// Se não houver idioma salvo, salvar a preferência do navegador
+if (!savedLanguage) {
+  localStorage.setItem('i18nextLng', defaultLanguage);
+}
+
 await i18n.changeLanguage(defaultLanguage);
+// Atualizar o atributo lang do HTML com o idioma padrão
+updateHtmlLang(defaultLanguage);
 // Load all namespaces
 await Promise.all(namespaces.map(ns => i18n.loadNamespaces(ns)));
 

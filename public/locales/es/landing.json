@@ -2,16 +2,18 @@
   "nav": {
     "home": "Inicio",
     "pricing": "Precios",
-    "login": "Iniciar Sesión",
+    "login": "Acceder",
+    "register": "Registrarse",
+    "goToDashboard": "Ir al Panel",
     "startFree": "Comenzar Gratis"
   },
   "hero": {
-    "title": "¡Transforma tu Servicio al Cliente en una Experiencia Única!",
-    "subtitle": "¡Conéctate con tus clientes en todos los canales con la plataforma multicanal más rápida y fácil de usar con IA integrada!",
+    "title": "¡Transforma tu Atención al Cliente en una Experiencia Única!",
+    "subtitle": "Conéctate con tus clientes en todos los canales con la plataforma multicanal más rápida y fácil de usar con IA integrada!",
     "cta": "¡Prueba gratis por 15 días!"
   },
   "features": {
-    "title": "Servicio inteligente, rápido y personalizado"
+    "title": "Servicio Inteligente, Rápido y Personalizado"
   },
   "pricing": {
     "title": "Planes y Precios"

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, HardDrive, MessageSquareText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -8,9 +8,10 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface SidebarProps {
   onClose: () => void;
+  isMobile?: boolean;
 }
 
-function Sidebar({ onClose }: SidebarProps) {
+const Sidebar = ({ onClose, isMobile = false }: SidebarProps) => {
   const location = useLocation();
   const { signOut, profile } = useAuth();
   const { isDark, setIsDark } = useDarkMode();
@@ -19,13 +20,13 @@ function Sidebar({ onClose }: SidebarProps) {
 
   // Base links that all users can see
   const baseLinks = [
-    { to: '/', icon: LayoutDashboard, label: t('navigation:dashboard') },
-    { to: '/chats', icon: MessageSquare, label: t('navigation:chats') },
-    { to: '/customers', icon: Users, label: t('navigation:customers') },
-    { to: '/crm', icon: GitMerge, label: t('navigation:crm') },
-    { to: '/shortcuts', icon: Keyboard, label: t('navigation:shortcuts') },
-    { to: '/tags', icon: Tag, label: t('navigation:tags') },
-    { to: '/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
+    { to: '/app', icon: LayoutDashboard, label: t('navigation:dashboard') },
+    { to: '/app/chats', icon: MessageSquare, label: t('navigation:chats') },
+    { to: '/app/customers', icon: Users, label: t('navigation:customers') },
+    { to: '/app/crm', icon: GitMerge, label: t('navigation:crm') },
+    { to: '/app/shortcuts', icon: Keyboard, label: t('navigation:shortcuts') },
+    { to: '/app/tags', icon: Tag, label: t('navigation:tags') },
+    { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
   ];
 
   // Admin and owner only links
@@ -55,54 +56,61 @@ function Sidebar({ onClose }: SidebarProps) {
     links = [...links, ...superAdminLinks];
   }
 
-  // Effect to collapse sidebar when navigating to /chats
+  // Effect para colapsar sidebar apenas na versão desktop
   React.useEffect(() => {
-    if (location.pathname === '/chats') {
+    if (location.pathname === '/app/chats' && !isMobile) {
       setIsCollapsed(true);
     }
-  }, [location.pathname]);
+  }, [location.pathname, isMobile]);
+
+  // Determinar se deve mostrar conteúdo colapsado
+  const shouldCollapse = isCollapsed && !isMobile;
 
   return (
-    <div className={`h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
-      isCollapsed ? 'w-16' : 'w-64'
+    <div className={`h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
+      shouldCollapse ? 'w-16' : 'w-64'
     } transition-all duration-300 ease-in-out relative`}>
-      {/* Header */}
-      <div className={`flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-        {!isCollapsed && (
+      <div className={`flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center ${
+        shouldCollapse ? 'justify-center' : 'justify-between'
+      }`}>
+        {(!shouldCollapse) && (
           <div className="flex items-center">
             <img src="/interflow.svg" alt="Interflow" className="h-8 w-8 mr-2" />
             <h1 className="text-xl font-bold text-gray-800 dark:text-white">Interflow</h1>
           </div>
         )}
-        {isCollapsed && (
+        {shouldCollapse && (
           <div className="flex flex-col items-center">
             <img src="/interflow.svg" alt="Interflow" className="h-8 w-8" />
           </div>
         )}
-        <button
-          onClick={onClose}
-          className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      
-      {/* Botão de alternância - movido para cima */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className={`absolute top-4 -right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-          !isCollapsed ? 'hidden lg:block' : 'block'
-        }`}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-        ) : (
-          <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        {isMobile && (
+          <button
+            onClick={onClose}
+            className="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </button>
         )}
-      </button>
+      </div>
 
-      {/* Scrollable Navigation */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Botão de alternância - apenas na versão desktop */}
+      {!isMobile && (
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute top-4 -right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+          ) : (
+            <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+          )}
+        </button>
+      )}
+
+      {/* Scrollable Navigation - ajustando para garantir scroll adequado */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         <nav className="p-4">
           <ul className="space-y-2">
             {links.map(({ to, icon: Icon, label }) => (
@@ -110,14 +118,14 @@ function Sidebar({ onClose }: SidebarProps) {
                 <Link
                   to={to}
                   onClick={onClose}
-                  className={`flex items-center ${isCollapsed ? 'justify-center' : ''} rounded-lg transition-colors ${
+                  className={`flex items-center ${shouldCollapse ? 'justify-center' : ''} rounded-lg transition-colors ${
                     location.pathname === to
                       ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                  } ${isCollapsed ? 'px-2 py-2' : 'px-3 py-2'}`}
+                  } ${shouldCollapse ? 'px-2 py-2' : 'px-3 py-2'}`}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${!isCollapsed && 'mr-3'}`} />
-                  {!isCollapsed && <span>{label}</span>}
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${!shouldCollapse && 'mr-3'}`} />
+                  {!shouldCollapse && <span>{label}</span>}
                 </Link>
               </li>
             ))}
@@ -127,7 +135,7 @@ function Sidebar({ onClose }: SidebarProps) {
 
       {/* Footer */}
       <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
-        {!isCollapsed && (
+        {!shouldCollapse && (
           <Link
             to="/profile"
             className="flex items-center space-x-3 mb-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 p-2 rounded-lg transition-colors"
@@ -154,29 +162,29 @@ function Sidebar({ onClose }: SidebarProps) {
           </Link>
         )}
         <div className="flex flex-col space-y-2">
-          <LanguageSwitcher isCollapsed={isCollapsed} />
+          <LanguageSwitcher isCollapsed={shouldCollapse} />
           <button
             onClick={() => setIsDark(!isDark)}
-            className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-              isCollapsed ? 'p-2' : 'px-4 py-2'
+            className={`flex items-center ${shouldCollapse ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+              shouldCollapse ? 'p-2' : 'px-4 py-2'
             }`}
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {!isCollapsed && <span className="ml-2">{isDark ? t('common:lightMode') : t('common:darkMode')}</span>}
+            {!shouldCollapse && <span className="ml-2">{isDark ? t('common:lightMode') : t('common:darkMode')}</span>}
           </button>
           <button
             onClick={() => signOut()}
-            className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-              isCollapsed ? 'p-2' : 'px-4 py-2'
+            className={`flex items-center ${shouldCollapse ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+              shouldCollapse ? 'p-2' : 'px-4 py-2'
             }`}
           >
             <LogOut className="w-4 h-4" />
-            {!isCollapsed && <span className="ml-2">{t('common:logout')}</span>}
+            {!shouldCollapse && <span className="ml-2">{t('common:logout')}</span>}
           </button>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Sidebar;
