@@ -58,16 +58,25 @@ export function useAuth() {
     try {
       const { error } = await supabase.auth.signOut();
       
-      // Limpa os estados mesmo se houver erro de "session not found"
+      // Limpa os estados independentemente do resultado
       setSession(null);
       setProfile(null);
+
+      console.log(error)
+      
+      // Se houver erro de sessão não encontrada, apenas limpamos o estado local
+      if (error?.message?.includes('session_not_found')) {
+        // Limpa a sessão usando o método correto
+        await supabase.auth.signOut();
+        return { error: null };
+      }
       
       return { error };
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      // Garante que os estados sejam limpos mesmo em caso de erro
       setSession(null);
       setProfile(null);
+      await supabase.auth.signOut();
       return { error };
     }
   }
