@@ -244,7 +244,6 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       }
       return node;
     });
-    console.log('updatedNodes', updatedNodes, nodeId, newData, nodes);
 
     try {
       await onSaveFlow({ nodes: updatedNodes });

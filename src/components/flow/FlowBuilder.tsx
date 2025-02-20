@@ -173,19 +173,11 @@ export function FlowBuilder() {
 
         if (currentNode.position.x !== data.position?.x || 
             currentNode.position.y !== data.position?.y) {
-            console.log('Posição mudou:', {
-                atual: currentNode.position,
-                nova: data.position
-            });
             return true;
         }
 
         const isEqual = JSON.stringify(currentNode.data) === JSON.stringify(data);
         if (!isEqual) {
-            console.log('Dados mudaram:', {
-                atual: currentNode.data,
-                novos: data
-            });
             return true;
         }
 
@@ -205,17 +197,10 @@ export function FlowBuilder() {
 
         // Se houve mudanças, salvamos imediatamente
         if (hasChanges && reactFlowInstance) {
-            console.log('Mudanças detectadas, salvando...');
             onSaveFlow({nodes: updatedNodes});
         }
 
         return updatedNodes;
-    });
-
-    console.log('On node update...', {
-        nodeId,
-        data,
-        position: data.position
     });
   }, [setNodes, reactFlowInstance, onSaveFlow]);
 
