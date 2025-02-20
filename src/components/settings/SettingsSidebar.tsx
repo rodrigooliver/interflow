@@ -22,31 +22,31 @@ export function SettingsSidebar() {
       id: 'general', 
       icon: SettingsIcon, 
       label: t('settings:sections.general'),
-      href: '/settings'
+      href: '/app/settings'
     },
     { 
       id: 'notifications', 
       icon: Bell, 
       label: t('settings:sections.notifications'),
-      href: '/settings/notifications'
+      href: '/app/settings/notifications'
     },
     { 
       id: 'integrations', 
       icon: LinkIcon, 
       label: t('settings:sections.integrations'),
-      href: '/settings/integrations'
+      href: '/app/settings/integrations'
     },
     { 
       id: 'billing', 
       icon: CreditCard, 
       label: t('settings:sections.billing'),
-      href: '/settings/billing'
+      href: '/app/settings/billing'
     },
     { 
       id: 'usage', 
       icon: HardDrive, 
       label: t('settings:sections.usage'),
-      href: '/settings/usage'
+      href: '/app/settings/usage'
     }
   ];
 

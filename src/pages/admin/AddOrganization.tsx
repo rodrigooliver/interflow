@@ -115,7 +115,7 @@ export default function AddOrganization() {
           ]);
       }
 
-      navigate('/admin/organizations');
+      navigate('/app/admin/organizations');
     } catch (err: any) {
       console.error('Error creating organization:', err);
       setError(err.message || 'Erro ao criar organização');
@@ -155,7 +155,7 @@ export default function AddOrganization() {
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6">
           <Link
-            to="/admin/organizations"
+            to="/app/admin/organizations"
             className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />

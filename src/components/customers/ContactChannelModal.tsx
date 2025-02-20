@@ -175,7 +175,7 @@ export function ContactChannelModal({ onClose, contactType, contactValue }: Cont
       }
 
       // Navigate to chat
-      navigate(`/chats/${chatId}`);
+      navigate(`/app/chats/${chatId}`);
       onClose();
     } catch (error) {
       console.error('Error starting chat:', error);

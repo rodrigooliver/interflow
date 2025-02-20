@@ -121,7 +121,7 @@ export default function Customers() {
         </h1>
         <div className="flex space-x-2">
           <Link
-            to="/crm"
+            to="/app/crm"
             className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <GitMerge className="w-5 h-5 mr-2" />
@@ -224,7 +224,7 @@ export default function Customers() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
                         <Link
-                          to={`/customers/${customer.id}/chats`}
+                          to={`/app/customers/${customer.id}/chats`}
                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                           title="Ver atendimentos"
                         >

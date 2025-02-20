@@ -212,7 +212,7 @@ export default function CRMFunnels() {
         {funnels.map((funnel) => (
           <Link
             key={funnel.id}
-            to={`/crm/${funnel.id}`}
+            to={`/app/crm/${funnel.id}`}
             className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           >
             <div className="flex items-center justify-between">

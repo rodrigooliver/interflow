@@ -32,16 +32,16 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
 
   // Admin and owner only links
   const adminLinks = [
-    { to: '/team', icon: UserPlus, label: t('navigation:team') },
-    { to: '/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
-    { to: '/channels', icon: Share2, label: t('navigation:channels') },
-    { to: '/flows', icon: GitFork, label: t('navigation:flows') },
-    { to: '/settings', icon: SettingsIcon, label: t('navigation:settings') },
+    { to: '/app/team', icon: UserPlus, label: t('navigation:team') },
+    { to: '/app/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
+    { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
+    { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
+    { to: '/app/settings', icon: SettingsIcon, label: t('navigation:settings') },
   ];
 
   // Super admin links
   const superAdminLinks = [
-    { to: '/admin/organizations', icon: Building2, label: t('navigation:organizations') },
+    { to: '/app/admin/organizations', icon: Building2, label: t('navigation:organizations') },
   ];
 
   // Combine links based on user role
@@ -132,7 +132,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
       <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
         {!shouldCollapse && (
           <Link
-            to="/profile"
+            to="profile"
             className="flex items-center space-x-3 mb-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 p-2 rounded-lg transition-colors"
           >
             <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">

@@ -113,7 +113,7 @@ export default function PromptFormPage() {
         if (error) throw error;
       }
 
-      navigate('/prompts');
+      navigate('/app/prompts');
     } catch (error) {
       console.error('Error saving prompt:', error);
       setError(t('common:error'));
@@ -168,7 +168,7 @@ export default function PromptFormPage() {
         <div className="flex-1">
           <div className="flex items-center mb-6">
             <button
-              onClick={() => navigate('/prompts')}
+              onClick={() => navigate('/app/prompts')}
               className="mr-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
             >
               <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
@@ -242,7 +242,7 @@ export default function PromptFormPage() {
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={() => navigate('/prompts')}
+                onClick={() => navigate('/app/prompts')}
                 disabled={saving}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >

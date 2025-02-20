@@ -135,7 +135,7 @@ export default function Dashboard() {
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-500 dark:text-blue-400',
       textColor: 'text-blue-600 dark:text-blue-400',
-      link: '/chats'
+      link: '/app/chats'
     },
     {
       id: 'total-customers',
@@ -146,7 +146,7 @@ export default function Dashboard() {
       bgColor: 'bg-green-100 dark:bg-green-900/30',
       iconColor: 'text-green-500 dark:text-green-400',
       textColor: 'text-green-600 dark:text-green-400',
-      link: '/customers'
+      link: '/app/customers'
     },
     {
       id: 'today-messages',

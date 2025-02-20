@@ -275,7 +275,7 @@ function FlowEditor() {
       <div className="h-16 flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 flex items-center justify-between">
         <div className="flex items-center">
           <button
-            onClick={() => navigate('/flows')}
+            onClick={() => navigate('/app/flows')}
             className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ArrowLeft className="w-5 h-5" />

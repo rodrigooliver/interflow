@@ -117,7 +117,7 @@ export default function FlowList() {
       
       // Redirecionar para o novo flow
       if (flowData) {
-        navigate(`/flows/${flowData.id}`);
+        navigate(`/app/flows/${flowData.id}`);
       }
     } catch (error) {
       console.error('Error creating flow:', error);
@@ -286,7 +286,7 @@ export default function FlowList() {
               </button>
             </div>
             <Link
-              to={`/flows/${flow.id}`}
+              to={`/app/flows/${flow.id}`}
               className="flex items-center"
             >
               <GitFork className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-3" />

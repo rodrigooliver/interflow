@@ -301,7 +301,7 @@ export default function CRMFunnel() {
       <FunnelHeader
         funnelName={funnel.name}
         funnel={funnel}
-        onBack={() => navigate('/crm')}
+        onBack={() => navigate('/app/crm')}
         onAddStage={() => {
           setSelectedStage(null);
           setStageForm({ name: '', description: '', color: '#3B82F6' });

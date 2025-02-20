@@ -23,7 +23,7 @@ export function ChannelCard({
   const navigate = useNavigate();
 
   const handleEdit = () => {
-    navigate(`/channels/${channel.id}/edit/${channel.type}`);
+    navigate(`/app/channels/${channel.id}/edit/${channel.type}`);
   };
 
   const getChannelIcon = (type: string) => {

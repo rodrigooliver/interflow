@@ -57,7 +57,7 @@ export default function SelectChannelType() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <button
-            onClick={() => navigate('/channels')}
+            onClick={() => navigate('/app/channels')}
             className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -71,7 +71,7 @@ export default function SelectChannelType() {
           {channelTypes.map((type) => (
             <button
               key={type.id}
-              onClick={() => navigate(`/channels/new/${type.id}`)}
+              onClick={() => navigate(`/app/channels/new/${type.id}`)}
               className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
             >
               <div className="flex items-center mb-4">

@@ -129,7 +129,7 @@ export default function AddCustomer() {
         if (stageError) throw stageError;
       }
 
-      navigate('/customers');
+      navigate('/app/customers');
     } catch (err) {
       console.error('Error:', err);
       setError(t('common:error'));
@@ -153,7 +153,7 @@ export default function AddCustomer() {
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6">
           <Link
-            to="/customers"
+            to="/app/customers"
             className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
