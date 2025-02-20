@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Filter, MessageSquare, Users, UserCheck, UserMinus, Loader2 } from 'lucide-react';
 import { useOrganization } from '../../hooks/useOrganization';
-import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { ChatList } from '../../components/chat/ChatList';
 import { ChatMessages } from '../../components/chat/ChatMessages';
 import { Chat } from '../../types/database';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 
 export default function Chats() {
   const { t } = useTranslation(['chats', 'common']);
   const { currentOrganization } = useOrganization();
-  const { session } = useAuth();
+  const { session } = useAuthContext();
   const [selectedFilter, setSelectedFilter] = useState<string>('assigned-to-me');
   const [showFilters, setShowFilters] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);

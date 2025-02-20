@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { useAuthContext } from '../contexts/AuthContext';
 import { useTheme } from '../providers/ThemeProvider';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -11,7 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn } = useAuthContext();
   const { theme } = useTheme();
   const { t } = useTranslation();
 

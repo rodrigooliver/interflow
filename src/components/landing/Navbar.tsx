@@ -2,14 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../providers/ThemeProvider';
 import i18next from 'i18next';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
 import { Menu as MenuIcon, X } from 'lucide-react';
 import { useState } from 'react';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 export const Navbar = () => {
   const { t } = useTranslation('landing');
   const { theme, setTheme } = useTheme();
-  const { session } = useAuth();
+  const { session } = useAuthContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   return (

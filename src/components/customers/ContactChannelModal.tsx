@@ -3,9 +3,9 @@ import { X, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useOrganization } from '../../hooks/useOrganization';
-import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { ChatChannel, ServiceTeam } from '../../types/database';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 interface ContactChannelModalProps {
   onClose: () => void;
@@ -17,7 +17,7 @@ export function ContactChannelModal({ onClose, contactType, contactValue }: Cont
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { currentOrganization } = useOrganization();
-  const { session } = useAuth();
+  const { session } = useAuthContext();
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [userTeams, setUserTeams] = useState<ServiceTeam[]>([]);
   const [loading, setLoading] = useState(true);

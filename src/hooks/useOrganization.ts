@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Organization, OrganizationMember, Subscription } from '../types/database';
-import { useAuth } from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
 export function useOrganization() {
-  const { session } = useAuth();
+  const { session } = useAuthContext();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
   const [membership, setMembership] = useState<OrganizationMember | null>(null);

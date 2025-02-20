@@ -12,6 +12,8 @@ export function useAuth() {
   const { i18n } = useTranslation();
 
   const loadProfile = useCallback(async (userId: string) => {
+    if (profile && profile.id === userId) return;
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -23,7 +25,6 @@ export function useAuth() {
 
       if (data) {
         setProfile(data);
-        // Load translations for user's preferred language
         if (data.language && data.language !== i18n.language) {
           await reloadTranslations(data.language);
         }
@@ -31,7 +32,7 @@ export function useAuth() {
     } catch (error) {
       console.error('Error loading profile:', error);
     }
-  }, [i18n]);
+  }, [i18n, profile]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

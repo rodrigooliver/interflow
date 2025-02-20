@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { AudioPlayer } from './AudioPlayer';
 import { AIImproveModal } from './AIImproveModal';
 import { Message } from '../../types/database';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 interface MessageInputProps {
   chatId: string;
@@ -22,7 +22,7 @@ interface EmojiData {
 }
 
 export function MessageInput({ chatId, organizationId, onMessageSent }: MessageInputProps) {
-  const { profile } = useAuth();
+  const { profile } = useAuthContext();
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);

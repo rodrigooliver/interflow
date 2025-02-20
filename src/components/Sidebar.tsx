@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../hooks/useAuth';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { useAuthContext } from '../contexts/AuthContext';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -15,7 +15,7 @@ interface SidebarProps {
 
 const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: SidebarProps) => {
   const location = useLocation();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile } = useAuthContext();
   const { isDark, setIsDark } = useDarkMode();
   const { t } = useTranslation(['navigation', 'common']);
 

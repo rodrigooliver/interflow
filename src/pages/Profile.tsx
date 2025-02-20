@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, Camera, Loader2, X } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import { useAuthContext } from '../contexts/AuthContext';
 
 export default function Profile() {
   const { t } = useTranslation(['profile', 'common']);
-  const { profile: currentProfile } = useAuth();
+  const { profile: currentProfile } = useAuthContext();
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',

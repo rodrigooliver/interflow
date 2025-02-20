@@ -36,16 +36,16 @@ import Profile from './pages/Profile';
 import Tags from './pages/Tags';
 import Prompts from './pages/prompts/Prompts';
 import PromptFormPage from './pages/prompts/PromptForm';
-import { useAuth } from './hooks/useAuth';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import Home from './pages/index';
 import SignupPage from './pages/public/signup/page';
+import { AuthProvider, useAuthContext } from './contexts/AuthContext';
 
 function AppContent() {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading } = useAuthContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
@@ -194,13 +194,15 @@ function AppContent() {
 
 function App() {
   return (
-    <I18nextProvider i18n={i18n}>
-      <ThemeProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </ThemeProvider>
-    </I18nextProvider>
+    <AuthProvider>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </ThemeProvider>
+      </I18nextProvider>
+    </AuthProvider>
   );
 }
 

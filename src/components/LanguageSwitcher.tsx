@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe, Loader2 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
 import { updateUserLanguage, reloadTranslations } from '../i18n';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const languages = [
   { code: 'pt', name: 'PT' },
@@ -16,7 +16,7 @@ interface LanguageSwitcherProps {
 
 export function LanguageSwitcher({ isCollapsed }: LanguageSwitcherProps) {
   const { i18n } = useTranslation();
-  const { session } = useAuth();
+  const { session } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const [changing, setChanging] = useState(false);
   const [error, setError] = useState<string | null>(null);
