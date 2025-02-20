@@ -47,6 +47,7 @@ import SignupPage from './pages/public/signup/page';
 function AppContent() {
   const { session, profile, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
 
   // Enquanto estiver carregando, mostra o loading em todas as rotas
@@ -87,34 +88,44 @@ function AppContent() {
         element={
           <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
             {/* Sidebar Desktop */}
-            <aside className="hidden lg:block flex-shrink-0 transition-all duration-300 ease-in-out">
-              <Sidebar onClose={() => setSidebarOpen(false)} isMobile={false} />
+            <aside className="hidden md:block flex-shrink-0">
+              <Sidebar 
+                isCollapsed={isCollapsed} 
+                setIsCollapsed={setIsCollapsed} 
+                isMobile={false} 
+              />
             </aside>
 
-            {/* Sidebar Mobile e Overlay */}
-            {sidebarOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden transition-opacity"
-                  onClick={() => setSidebarOpen(false)}
+            {/* Sidebar Mobile */}
+            {sidebarOpen ? (
+               <div className={`md:hidden fixed inset-y-0 left-0 z-50 transform ${
+                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+              } transition-transform duration-300 ease-in-out`}>
+                <Sidebar 
+                  onClose={() => {setSidebarOpen(false); console.log('Rodrigo')}} 
+                  isMobile={true} 
                 />
-                <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
-                  <Sidebar onClose={() => setSidebarOpen(false)} isMobile={true} />
-                </div>
-              </>
-            )}
+              </div>
+            ) : null}
+           
 
             {/* Mobile Menu Button */}
-            {!sidebarOpen && (
-              <div className="lg:hidden fixed top-4 left-4 z-50">
-                <button
-                  type="button"
-                  className="p-2 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-lg"
-                  onClick={() => setSidebarOpen(true)}
-                >
-                  <Menu className="h-6 w-6" />
-                </button>
-              </div>
+            <button
+              type="button"
+              className={`md:hidden fixed top-4 z-10 ml-2 p-2 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-lg ${
+                sidebarOpen ? 'hidden' : 'block'
+              }`}
+              onClick={() => {setSidebarOpen(true); console.log('Rodrigo 2')}}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+
+            {/* Mobile Overlay */}
+            {sidebarOpen && (
+              <div
+                className="md:hidden fixed inset-0 z-30 bg-gray-600 bg-opacity-75 transition-opacity"
+                onClick={() => setSidebarOpen(false)}
+              />
             )}
 
             {/* Main Content */}

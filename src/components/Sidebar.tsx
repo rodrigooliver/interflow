@@ -7,15 +7,16 @@ import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface SidebarProps {
-  onClose: () => void;
+  onClose?: () => void;
   isMobile?: boolean;
+  isCollapsed?: boolean;
+  setIsCollapsed?: (value: boolean) => void;
 }
 
-const Sidebar = ({ onClose, isMobile = false }: SidebarProps) => {
+const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: SidebarProps) => {
   const location = useLocation();
   const { signOut, profile } = useAuth();
   const { isDark, setIsDark } = useDarkMode();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const { t } = useTranslation(['navigation', 'common']);
 
   // Base links that all users can see
@@ -56,38 +57,32 @@ const Sidebar = ({ onClose, isMobile = false }: SidebarProps) => {
     links = [...links, ...superAdminLinks];
   }
 
+  // Determinar se deve mostrar conteúdo colapsado (apenas em desktop)
+  const shouldCollapse = !isMobile && isCollapsed;
+
   // Effect para colapsar sidebar apenas na versão desktop
   React.useEffect(() => {
-    if (location.pathname === '/app/chats' && !isMobile) {
+    if (location.pathname === '/app/chats' && !isMobile && setIsCollapsed) {
       setIsCollapsed(true);
     }
-  }, [location.pathname, isMobile]);
-
-  // Determinar se deve mostrar conteúdo colapsado
-  const shouldCollapse = isCollapsed && !isMobile;
+  }, [location.pathname, isMobile, setIsCollapsed]);
 
   return (
     <div className={`h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
       shouldCollapse ? 'w-16' : 'w-64'
     } transition-all duration-300 ease-in-out relative`}>
-      <div className={`flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center ${
-        shouldCollapse ? 'justify-center' : 'justify-between'
-      }`}>
-        {(!shouldCollapse) && (
-          <div className="flex items-center">
-            <img src="/interflow.svg" alt="Interflow" className="h-8 w-8 mr-2" />
-            <h1 className="text-xl font-bold text-gray-800 dark:text-white">Interflow</h1>
-          </div>
-        )}
-        {shouldCollapse && (
-          <div className="flex flex-col items-center">
-            <img src="/interflow.svg" alt="Interflow" className="h-8 w-8" />
-          </div>
-        )}
+      {/* Header */}
+      <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="flex items-center">
+          <img src="/interflow.svg" alt="Interflow" className="h-8 w-8" />
+          {!shouldCollapse && (
+            <h1 className="ml-2 text-xl font-bold text-gray-800 dark:text-white">Interflow</h1>
+          )}
+        </div>
         {isMobile && (
           <button
             onClick={onClose}
-            className="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
@@ -95,11 +90,11 @@ const Sidebar = ({ onClose, isMobile = false }: SidebarProps) => {
         )}
       </div>
 
-      {/* Botão de alternância - apenas na versão desktop */}
-      {!isMobile && (
+      {/* Botão de colapso apenas no desktop */}
+      {!isMobile && setIsCollapsed && (
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute top-4 -right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          className="absolute top-4 -right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors z-10"
         >
           {isCollapsed ? (
             <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
