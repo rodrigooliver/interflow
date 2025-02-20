@@ -62,13 +62,12 @@ export function useAuth() {
       setSession(null);
       setProfile(null);
 
-      console.log(error)
+      // console.log(error);
       
-      // Se houver erro de sessão não encontrada, apenas limpamos o estado local
-      if (error?.message?.includes('session_not_found')) {
-        // Limpa a sessão usando o método correto
-        await supabase.auth.signOut();
-        return { error: null };
+      // Se houver erro de sessão não encontrada ou AuthSessionMissingError
+      const projectId = import.meta.env.VITE_SUPABASE_URL.match(/(?:\/\/|^)(.*?)\.supabase/)?.[1];
+      if (projectId) {
+        localStorage.removeItem(`sb-${projectId}-auth-token`);
       }
       
       return { error };
@@ -76,8 +75,10 @@ export function useAuth() {
       console.error('Erro ao fazer logout:', error);
       setSession(null);
       setProfile(null);
-      await supabase.auth.signOut();
-      return { error };
+      const projectId = import.meta.env.VITE_SUPABASE_URL.match(/(?:\/\/|^)(.*?)\.supabase/)?.[1];
+      if (projectId) {
+        localStorage.removeItem(`sb-${projectId}-auth-token`);
+      }
     }
   }
 
