@@ -1,5 +1,5 @@
 import React, { useState, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
@@ -47,6 +47,7 @@ import SignupPage from './pages/public/signup/page';
 function AppContent() {
   const { session, profile, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   // Enquanto estiver carregando, mostra o loading em todas as rotas
   if (loading) {
@@ -65,7 +66,7 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignupPage />} />
         {/* Redireciona qualquer outra rota para a home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace state={{ from: location }} />} />
       </Routes>
     );
   }
