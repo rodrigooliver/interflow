@@ -7,12 +7,15 @@ import { FlowBuilder } from '../../components/flow/FlowBuilder';
 import { FlowNode, FlowConnection, Variable as FlowVariable } from '../../types/flow';
 import { supabase } from '../../lib/supabase';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { FlowEditorProvider, useFlowEditor } from '../../contexts/FlowEditorContext';
+import { Node } from 'reactflow';
 
-function FlowEditor() {
+function FlowEditorContent() {
   const { t } = useTranslation(['flows', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentOrganization } = useOrganizationContext();
+  const { variables, setVariables, handleVariableNameChange, handleVariableNameBlur, addVariable } = useFlowEditor();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -21,7 +24,6 @@ function FlowEditor() {
   const [edges, setEdges] = useState<FlowConnection[]>([]);
   const [publishedNodes, setPublishedNodes] = useState<FlowNode[]>([]);
   const [publishedEdges, setPublishedEdges] = useState<FlowConnection[]>([]);
-  const [variables, setVariables] = useState<FlowVariable[]>([]);
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 0.7 });
   const [flowName, setFlowName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -218,37 +220,6 @@ function FlowEditor() {
   const hasChanges = JSON.stringify(nodes) !== JSON.stringify(publishedNodes) || 
                     JSON.stringify(edges) !== JSON.stringify(publishedEdges);
 
-  const formatVariableName = (name: string): string => {
-    return name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/[^a-z0-9]+/g, '_')     // Substitui caracteres especiais e espaços por underscore
-      .replace(/^_+|_+$/g, '');        // Remove underscores do início e fim
-  };
-
-  const handleVariableNameChange = (index: number, newName: string) => {
-    const newVariables = [...variables];
-    newVariables[index].name = formatVariableName(newName);
-    setVariables(newVariables);
-  };
-
-  const handleVariableNameBlur = (index: number) => {
-    const currentVariable = variables[index];
-    
-    // Verifica se já existe uma variável com este nome (exceto a atual)
-    const isDuplicate = variables.some((v, i) => 
-      i !== index && v.name === currentVariable.name
-    );
-
-    if (isDuplicate) {
-      // Se encontrou duplicata, reverte para string vazia
-      const newVariables = [...variables];
-      newVariables[index].name = '';
-      setVariables(newVariables);
-    }
-  };
-
   if (loading) {
     return (
       <div className="p-6">
@@ -419,7 +390,7 @@ function FlowEditor() {
                 </div>
               ))}
               <button
-                onClick={() => setVariables([...variables, { id: crypto.randomUUID(), name: '', value: '' }])}
+                onClick={addVariable}
                 disabled={variables.length > 0 && !variables[variables.length - 1].name}
                 className="w-full p-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -447,6 +418,20 @@ function FlowEditor() {
         </div>
       )}
     </div>
+  );
+}
+
+function FlowEditor() {
+  const [variables, setVariables] = useState<FlowVariable[]>([]);
+  const [initialNodes, setInitialNodes] = useState<Node[]>([]);
+  
+  return (
+    <FlowEditorProvider 
+      initialVariables={variables}
+      initialNodes={initialNodes}
+    >
+      <FlowEditorContent />
+    </FlowEditorProvider>
   );
 }
 

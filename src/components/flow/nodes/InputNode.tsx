@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { MessageCircle, Plus, X, Clock, Variable, Type } from 'lucide-react';
 import { BaseNode } from './BaseNode';
+import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
 interface Option {
   text: string;
@@ -27,6 +28,7 @@ interface InputNodeProps {
 
 export function InputNode({ data, isConnectable, id }: InputNodeProps) {
   const { t } = useTranslation('flows');
+  const { variables } = useFlowEditor();
   const [inputType, setInputType] = useState(data.inputType || 'text');
   const [options, setOptions] = useState<Option[]>(data.options || []);
   const [config, setConfig] = useState(data.inputConfig || {
@@ -36,7 +38,6 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
   });
   const [hoveredHandle, setHoveredHandle] = useState<string | null>(null);
 
-  const variables = data.variables || [];
   const removedHandles = data.removedHandles || [];
 
   const handleLabelChange = (newLabel: string) => {

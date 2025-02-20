@@ -100,12 +100,6 @@ export function FlowBuilder({
             ...node,
             data: {
               ...node.data,
-              variables,
-              nodes: nds.map(n => ({ 
-                id: n.id, 
-                type: n.type,
-                label: (n as NodeData).data?.label || n.type
-              })),
             },
           };
         }
@@ -228,24 +222,12 @@ export function FlowBuilder({
       node.data = { ...node.data, label: friendlyLabel };
     }
 
-    // Add variables and nodes list to input nodes
-    if (node.type === 'input' || node.type === 'openai') {
-      node.data = { 
-        ...node.data, 
-        variables,
-        nodes: nodes.map(n => ({ 
-          id: n.id, 
-          type: n.type,
-          label: n.data?.label || n.type
-        })),
-      };
-    }
-
-    // Ensure node has an id property in its data
+    // Removemos a adição de variables e nodes para input e openai nodes
+    // Apenas mantemos o id no data
     node.data = { ...node.data, id: node.id };
 
     setNodes((nds) => nds.concat(node));
-  }, [setNodes, nodes, variables]);
+  }, [setNodes, nodes]);
 
   const onNodeRemove = useCallback((nodeId: string) => {
     let updatedNodes: Node[] = [];
@@ -336,7 +318,7 @@ export function FlowBuilder({
         type,
         position,
         data: (type === 'input' || type === 'openai') 
-          ? { variables, id: crypto.randomUUID() } 
+          ? { id: crypto.randomUUID() } 
           : { id: crypto.randomUUID() },
       };
 
@@ -349,7 +331,7 @@ export function FlowBuilder({
         onSave(updatedNodes as FlowNode[], edges as FlowConnection[], viewport);
       }
     },
-    [reactFlowInstance, onNodeAdd, variables, getNodePosition, nodes, edges, onSave, getViewport]
+    [reactFlowInstance, onNodeAdd, nodes, edges, onSave, getViewport]
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {

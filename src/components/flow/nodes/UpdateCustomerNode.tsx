@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { UserCog, Loader2 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
+import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
 interface UpdateCustomerNodeProps {
   data: {
@@ -21,28 +20,10 @@ interface UpdateCustomerNodeProps {
   selected?: boolean;
 }
 
-interface Funnel {
-  id: string;
-  name: string;
-  stages: {
-    id: string;
-    name: string;
-  }[];
-}
-
-interface Team {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  full_name: string;
-}
 
 export function UpdateCustomerNode({ data, id, isConnectable, selected }: UpdateCustomerNodeProps) {
   const { t } = useTranslation('flows');
-  const { currentOrganization } = useOrganizationContext();
+  const { funnels, teams, users } = useFlowEditor();
   const [config, setConfig] = useState(data.updateCustomer || {
     field: '',
     value: '',
@@ -51,16 +32,13 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
     teamId: '',
     userId: ''
   });
-  const [funnels, setFunnels] = useState<Funnel[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (currentOrganization) {
-      loadData();
+    if (funnels.length && teams.length && users.length) {
+      setLoading(false);
     }
-  }, [currentOrganization]);
+  }, [funnels, teams, users]);
 
   // Effect to update node data when config changes
   useEffect(() => {
@@ -68,80 +46,10 @@ export function UpdateCustomerNode({ data, id, isConnectable, selected }: Update
     document.dispatchEvent(event);
   }, [id, config]);
 
-  async function loadData() {
-    try {
-      const [funnelsData, teamsData, usersData] = await Promise.all([
-        loadFunnels(),
-        loadTeams(),
-        loadUsers()
-      ]);
-
-      setFunnels(funnelsData);
-      setTeams(teamsData);
-      setUsers(usersData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadFunnels() {
-    const { data: funnelsData, error: funnelsError } = await supabase
-      .from('crm_funnels')
-      .select('id, name, stages:crm_stages(id, name)')
-      .eq('organization_id', currentOrganization?.id)
-      .order('created_at', { ascending: false });
-
-    if (funnelsError) throw funnelsError;
-    return funnelsData || [];
-  }
-
-  async function loadTeams() {
-    const { data: teamsData, error: teamsError } = await supabase
-      .from('service_teams')
-      .select('id, name')
-      .eq('organization_id', currentOrganization?.id)
-      .order('name');
-
-    if (teamsError) throw teamsError;
-    return teamsData || [];
-  }
-
-  async function loadUsers() {
-    try {
-      // First get all organization members
-      const { data: membersData, error: membersError } = await supabase
-        .from('organization_members')
-        .select('user_id')
-        .eq('organization_id', currentOrganization?.id);
-
-      if (membersError) throw membersError;
-
-      if (!membersData?.length) return [];
-
-      // Then get user profiles for those members
-      const userIds = membersData.map(member => member.user_id);
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds)
-        .order('full_name');
-
-      if (profilesError) throw profilesError;
-
-      return profilesData || [];
-    } catch (error) {
-      console.error('Error loading users:', error);
-      return [];
-    }
-  }
-
   const handleConfigChange = (updates: Partial<typeof config>) => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
     
-    // Update the node's data
     const event = new CustomEvent('nodeDataChanged', {
       detail: {
         nodeId: id,

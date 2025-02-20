@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../../../lib/supabase';
-import { Integration, Prompt } from '../../../types/database';
 import { createPortal } from 'react-dom';
 import Select from 'react-select';
 import { BaseNode } from './BaseNode';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
+import { useFlowEditor } from '../../../contexts/FlowEditorContext';
+import { Loader2 } from 'lucide-react';
 
 interface OpenAINodeProps {
   data: {
@@ -59,7 +58,7 @@ const OpenAILogo = () => (
 
 export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
   const { t } = useTranslation(['flows', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { integrations, prompts, variables, loading, nodes } = useFlowEditor();
   const [config, setConfig] = useState(data.openai || {
     model: 'gpt-4o',
     temperature: 0.7,
@@ -74,41 +73,8 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
     voice: 'alloy',
     tools: []
   });
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
-
-  // Garantir que variables seja sempre um array
-  const variables = data.variables || [];
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!currentOrganization) return;
-
-      const { data: integrationsData, error: integrationsError } = await supabase
-        .from('integrations')
-        .select('*')
-        .eq('type', 'openai')
-        .eq('status', 'active')
-        .eq('organization_id', currentOrganization.id);
-
-      const { data: promptsData, error: promptsError } = await supabase
-        .from('prompts')
-        .select('*')
-        .eq('organization_id', currentOrganization.id);
-
-      if (!integrationsError && integrationsData) {
-        setIntegrations(integrationsData);
-      }
-
-      if (!promptsError && promptsData) {
-        setPrompts(promptsData);
-      }
-    };
-
-    fetchData();
-  }, [currentOrganization]);
 
   useEffect(() => {
     const event = new CustomEvent('updateNodeInternals', { detail: { nodeId: id } });
@@ -165,6 +131,16 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
     { value: 'sage', label: 'Sage' },
     { value: 'shimmer', label: 'Shimmer' }
   ];
+
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-gray-800">
+        <div className="flex items-center justify-center p-4">
+          <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-gray-800">
@@ -764,11 +740,11 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                               {t('nodes.openai.tools.targetNode')}
                             </label>
                             <Select
-                              value={data.nodes
+                              value={nodes
                                 .filter(node => node.id === tool.targetNodeId)
                                 .map(node => ({
                                   value: node.id,
-                                  label: `${node.label || node.type}`
+                                  label: `${node.data?.label || node.type}`
                                 }))[0]}
                               onChange={(selected) => {
                                 const newTools = [...config.tools];
@@ -778,11 +754,11 @@ export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
                                 };
                                 handleConfigChange({ tools: newTools });
                               }}
-                              options={data.nodes
+                              options={nodes
                                 .filter(node => node.id !== id && node.type !== 'start')
                                 .map(node => ({
                                   value: node.id,
-                                  label: `${node.label || node.type}`
+                                  label: `${node.data?.label || node.type}`
                                 }))}
                               className="react-select-container"
                               classNamePrefix="react-select"
