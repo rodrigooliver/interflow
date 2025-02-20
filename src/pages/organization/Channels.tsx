@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { MessageSquare, Plus, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
 import { ChatChannel } from '../../types/database';
 import { ChannelCard } from '../../components/channels/ChannelCard';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 export default function Channels() {
   const { t } = useTranslation('channels');
   const navigate = useNavigate();
-  const { currentOrganization, membership } = useOrganization();
+  const { currentOrganization, membership } = useOrganizationContext();
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);

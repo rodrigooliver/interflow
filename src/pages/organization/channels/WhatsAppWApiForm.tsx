@@ -3,14 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
-import { useOrganization } from '../../../hooks/useOrganization';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { supabase } from '../../../lib/supabase';
 
 export default function WhatsAppWApiForm() {
   const { t } = useTranslation(['channels', 'common', 'status']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const API_URL = import.meta.env.VITE_API_URL;
 
   const [loading, setLoading] = useState(true);

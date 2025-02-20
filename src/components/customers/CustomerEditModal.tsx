@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { X, Loader2, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
 import { Customer } from '../../types/database';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 interface CustomerEditModalProps {
   customer: Customer;
@@ -22,7 +22,7 @@ const countryCodes = [
 
 export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEditModalProps) {
   const { t } = useTranslation(['customers', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

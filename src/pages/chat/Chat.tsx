@@ -1,11 +1,11 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useOrganization } from '../../hooks/useOrganization';
 import { ChatMessages } from '../../components/chat/ChatMessages';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 export default function Chat() {
   const { id } = useParams();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
 
   if (!currentOrganization || !id) {
     return null;

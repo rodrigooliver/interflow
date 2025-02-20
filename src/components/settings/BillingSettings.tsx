@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CreditCard, Package, ChevronRight, Loader2 } from 'lucide-react';
-import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
 import { SubscriptionPlan } from '../../types/database';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 export function BillingSettings() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization, subscription } = useOrganization();
+  const { subscription } = useOrganizationContext();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

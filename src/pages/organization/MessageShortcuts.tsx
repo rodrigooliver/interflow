@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Keyboard, Plus, Loader2, X, AlertTriangle, Upload, Pencil, FileText, Image, Music, Video, File } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { MessageShortcut } from '../../types/database';
 
 export default function MessageShortcuts() {
   const { t } = useTranslation(['shortcuts', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [shortcuts, setShortcuts] = useState<MessageShortcut[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);

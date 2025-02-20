@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HardDrive, Users, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 
 interface UsageStats {
@@ -21,7 +21,7 @@ interface UsageStats {
 
 export function UsageSettings() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization, subscription } = useOrganization();
+  const { currentOrganization, subscription } = useOrganizationContext();
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

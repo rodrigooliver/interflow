@@ -3,7 +3,7 @@ import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { UserCog, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { useOrganization } from '../../../hooks/useOrganization';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 
 interface UpdateCustomerNodeProps {
   data: {
@@ -42,7 +42,7 @@ interface User {
 
 export function UpdateCustomerNode({ data, id, isConnectable, selected }: UpdateCustomerNodeProps) {
   const { t } = useTranslation('flows');
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [config, setConfig] = useState(data.updateCustomer || {
     field: '',
     value: '',

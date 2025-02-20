@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, FileText, X, Loader2, AlertCircle } from 'lucide-react';
+import { Image, FileText, X, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../hooks/useOrganization';
 
 interface FileUploadProps {
   organizationId: string;
@@ -14,7 +13,6 @@ interface FileUploadProps {
 
 export function FileUpload({ organizationId, onUploadComplete, onError, type, onClose }: FileUploadProps) {
   const { t } = useTranslation('chats');
-  const { currentOrganization } = useOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = React.useState(false);
   const [dragOver, setDragOver] = React.useState(false);

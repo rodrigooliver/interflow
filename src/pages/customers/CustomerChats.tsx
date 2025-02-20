@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
@@ -17,7 +17,7 @@ const locales = {
 export default function CustomerChats() {
   const { id } = useParams();
   const { t, i18n } = useTranslation(['customers', 'chats', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);

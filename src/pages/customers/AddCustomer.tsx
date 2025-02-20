@@ -3,7 +3,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { CRMFunnel, CRMStage } from '../../types/crm';
 
 interface CountryCode {
@@ -24,7 +24,7 @@ const countryCodes: CountryCode[] = [
 export default function AddCustomer() {
   const navigate = useNavigate();
   const { t } = useTranslation(['customers', 'crm', 'common']);
-  const { currentOrganization, loading: orgLoading } = useOrganization();
+  const { currentOrganization, loading: orgLoading } = useOrganizationContext();
   const [loading, setLoading] = useState(false);
   const [loadingFunnels, setLoadingFunnels] = useState(true);
   const [formData, setFormData] = useState({

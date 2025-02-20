@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
 import { Integration } from '../../types/database';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 export default function PromptFormPage() {
   const { t } = useTranslation(['prompts', 'common']);
   const navigate = useNavigate();
   const { id } = useParams(); // para edição
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({

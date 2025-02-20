@@ -2,14 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
-import { useOrganization } from '../../../hooks/useOrganization';
 import { Integration, Prompt } from '../../../types/database';
-import { EventBus } from '../../../lib/eventBus';
-import { Plus } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import Select from 'react-select';
 import { BaseNode } from './BaseNode';
-import { Brain } from 'lucide-react';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 
 interface OpenAINodeProps {
   data: {
@@ -62,7 +59,7 @@ const OpenAILogo = () => (
 
 export function OpenAINode({ data, isConnectable, id }: OpenAINodeProps) {
   const { t } = useTranslation(['flows', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [config, setConfig] = useState(data.openai || {
     model: 'gpt-4o',
     temperature: 0.7,

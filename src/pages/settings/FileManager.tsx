@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HardDrive, Trash2, Loader2, AlertTriangle, FileText, Image, Music, Video, File } from 'lucide-react';
-import { useOrganization } from '../../hooks/useOrganization';
+import { HardDrive, Loader2, AlertTriangle, FileText, Image, Music, Video, File } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 interface StorageFile {
   id: string;
@@ -16,7 +16,7 @@ interface StorageFile {
 
 export default function FileManager() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [files, setFiles] = useState<StorageFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);

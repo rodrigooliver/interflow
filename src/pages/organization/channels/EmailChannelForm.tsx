@@ -2,14 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../../hooks/useOrganization';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { supabase } from '../../../lib/supabase';
 
 export default function EmailChannelForm() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const API_URL = import.meta.env.VITE_API_URL;
 
   const [loading, setLoading] = useState(true);

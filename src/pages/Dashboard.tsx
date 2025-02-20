@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquare, Users, MessageCircle } from 'lucide-react';
-import { useOrganization } from '../hooks/useOrganization';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
+import { useOrganizationContext } from '../contexts/OrganizationContext';
 
 interface StatCard {
   id: string;
@@ -19,7 +19,7 @@ interface StatCard {
 
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [customerCount, setCustomerCount] = useState(0);
   const [activeChatsCount, setActiveChatsCount] = useState(0);
   const [todayMessagesCount, setTodayMessagesCount] = useState(0);

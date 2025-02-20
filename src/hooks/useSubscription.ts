@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useOrganization } from './useOrganization';
 import { supabase } from '../lib/supabase';
 import { createCheckoutSession, createCustomerPortalSession } from '../lib/stripe';
+import { useOrganizationContext } from '../contexts/OrganizationContext';
 
 export function useSubscription() {
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Loader2, X, Mail, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { OrganizationMember, Profile } from '../../types/database';
 
@@ -18,7 +18,7 @@ interface InviteFormData {
 
 export default function TeamMembers() {
   const { t } = useTranslation(['team', 'common']);
-  const { currentOrganization, membership } = useOrganization();
+  const { currentOrganization, membership } = useOrganizationContext();
   const [members, setMembers] = useState<TeamMemberWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);

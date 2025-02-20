@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Loader2, X, UserPlus, UserCog, AlertTriangle, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { ServiceTeam, ServiceTeamMember, Profile } from '../../types/database';
 
@@ -18,7 +18,7 @@ interface TeamWithMembers extends ServiceTeam {
 
 export default function ServiceTeams() {
   const { t } = useTranslation(['serviceTeams', 'common']);
-  const { currentOrganization, membership } = useOrganization();
+  const { currentOrganization, membership } = useOrganizationContext();
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
   const [availableUsers, setAvailableUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);

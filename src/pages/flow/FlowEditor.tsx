@@ -6,14 +6,13 @@ import { useTranslation } from 'react-i18next';
 import { FlowBuilder } from '../../components/flow/FlowBuilder';
 import { FlowNode, FlowConnection, Variable as FlowVariable } from '../../types/flow';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../hooks/useOrganization';
-import { EventBus } from '../../lib/eventBus';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 function FlowEditor() {
   const { t } = useTranslation(['flows', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);

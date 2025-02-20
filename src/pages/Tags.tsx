@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tag as TagIcon, Plus, Loader2, X, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
-import { useOrganization } from '../hooks/useOrganization';
 import { supabase } from '../lib/supabase';
 import { TagForm } from '../components/tags/TagForm';
+import { useOrganizationContext } from '../contexts/OrganizationContext';
 
 interface Tag {
   id: string;
@@ -16,7 +16,7 @@ interface Tag {
 
 export default function Tags() {
   const { t } = useTranslation(['tags', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);

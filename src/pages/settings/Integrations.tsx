@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SettingsSidebar } from '../../components/settings/SettingsSidebar';
 import { Brain, HardDrive, Plus, Loader2, X, Trash2, Edit2 } from 'lucide-react';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { IntegrationForm } from '../../components/settings/IntegrationForm';
 import { Integration } from '../../types/database';
@@ -88,7 +88,7 @@ const integrationConfigs: IntegrationConfig[] = [
 
 export default function IntegrationsPage() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);

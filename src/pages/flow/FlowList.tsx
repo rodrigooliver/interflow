@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GitFork, Plus, Loader2, X, AlertTriangle, Pencil, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { Flow } from '../../types/flow';
 import { FlowTriggers } from '../../components/flow/FlowTriggers';
@@ -18,7 +18,7 @@ const DEFAULT_START_NODE = {
 export default function FlowList() {
   const navigate = useNavigate();
   const { t } = useTranslation(['flows', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingFlow, setCreatingFlow] = useState(false);

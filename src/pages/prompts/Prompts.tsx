@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquareText, Plus, Loader2, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '../../types/database';
@@ -9,7 +9,7 @@ import { Prompt } from '../../types/database';
 
 export default function Prompts() {
   const { t } = useTranslation(['prompts', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);

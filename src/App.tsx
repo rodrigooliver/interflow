@@ -43,6 +43,7 @@ import i18n from './i18n';
 import Home from './pages/index';
 import SignupPage from './pages/public/signup/page';
 import { AuthProvider, useAuthContext } from './contexts/AuthContext';
+import { OrganizationProvider } from './contexts/OrganizationContext';
 
 function AppContent() {
   const { session, profile, loading } = useAuthContext();
@@ -195,13 +196,15 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <I18nextProvider i18n={i18n}>
-        <ThemeProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </ThemeProvider>
-      </I18nextProvider>
+      <OrganizationProvider>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </ThemeProvider>
+        </I18nextProvider>
+      </OrganizationProvider>
     </AuthProvider>
   );
 }

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
-import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 interface IntegrationFormProps {
   type: 'openai' | 'aws_s3';
@@ -34,7 +34,7 @@ export function IntegrationForm({
   integrationId
 }: IntegrationFormProps) {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(!!integrationId);
 
   useEffect(() => {

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
 import { Customer } from '../../types/database';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 interface CustomerDeleteModalProps {
   customer: Customer;
@@ -13,7 +13,7 @@ interface CustomerDeleteModalProps {
 
 export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDeleteModalProps) {
   const { t } = useTranslation(['customers', 'common']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [hasStages, setHasStages] = useState(false);

@@ -4,7 +4,7 @@ import { Plus, Mail, Phone, Loader2, Pencil, Trash2, GitMerge, Search, ChevronLe
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { Customer } from '../../types/database';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { CustomerRegistrationModal } from '../../components/customers/CustomerRegistrationModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { CustomerDeleteModal } from '../../components/customers/CustomerDeleteModal';
@@ -22,7 +22,7 @@ export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);

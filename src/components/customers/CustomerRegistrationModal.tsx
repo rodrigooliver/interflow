@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, MessageSquare, Mail, Facebook, Instagram } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
 import { supabase } from '../../lib/supabase';
 import { CRMFunnel, CRMStage } from '../../types/crm';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 interface CustomerRegistrationModalProps {
   onClose: () => void;
@@ -28,7 +28,7 @@ export function CustomerRegistrationModal({
   initialStageId 
 }: CustomerRegistrationModalProps) {
   const { t } = useTranslation(['customers', 'common', 'crm']);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(false);
   const [loadingFunnels, setLoadingFunnels] = useState(true);
   const [loadingStages, setLoadingStages] = useState(false);

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../../hooks/useOrganization';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { supabase } from '../../../lib/supabase';
 
 export default function WhatsAppOfficialForm() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');

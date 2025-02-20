@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganization } from '../../hooks/useOrganization';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { CRMFunnel as CRMFunnelType, CRMStage, CRMCustomerStage } from '../../types/crm';
 import { Customer } from '../../types/database';
@@ -19,7 +19,7 @@ export default function CRMFunnel() {
   const { t } = useTranslation(['crm', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization } = useOrganizationContext();
   
   // State
   const [funnel, setFunnel] = useState<CRMFunnelType | null>(null);
