@@ -6,7 +6,6 @@ export interface Chat {
   channel_id: string;
   team_id?: string;
   status: 'pending' | 'in_progress' | 'closed';
-  channel: 'whatsapp' | 'instagram' | 'web' | 'email';
   created_at: string;
   arrival_time: string;
   start_time?: string;
@@ -14,6 +13,7 @@ export interface Chat {
   last_message_at: string;
   last_message?: Message;
   assigned_to?: string;
+  external_id?: string;
   customer?: Customer;
   channel_details?: ChatChannel;
   team?: ServiceTeam;
@@ -83,9 +83,10 @@ export interface Message {
   attachments?: { url: string; type: string; name: string }[];
   error_message?: string;
   errorMessage?: string;
-  sender_id: string;
   created_at: string;
   session_id?: string;
+  external_id?: string;
+  response_message_id?: string;
   sender_agent_id?: string;
   sender_customer_id?: string;
 }
