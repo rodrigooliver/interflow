@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
@@ -208,6 +208,19 @@ function AppContent() {
 }
 
 function App() {
+  useEffect(() => {
+    // Fix para iOS
+    const appHeight = () => {
+      const doc = document.documentElement;
+      doc.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    };
+
+    window.addEventListener('resize', appHeight);
+    appHeight();
+
+    return () => window.removeEventListener('resize', appHeight);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

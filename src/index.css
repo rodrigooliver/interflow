@@ -50,6 +50,33 @@
     --select-tag-remove-hover-bg: #dc2626;
     --select-tag-remove-hover-text: white;
   }
+
+  /* Adicione estas regras para corrigir o problema de altura no mobile */
+  html, body {
+    @apply m-0 p-0;
+    height: 100%;
+    height: -webkit-fill-available;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+    height: -webkit-fill-available;
+    overflow: auto;
+  }
+
+  .h-screen {
+    height: 100vh; /* Fallback */
+    height: calc(var(--vh, 1vh) * 100);
+    height: -webkit-fill-available;
+  }
+
+  .min-h-screen {
+    min-height: 100vh; /* Fallback */
+    min-height: calc(var(--vh, 1vh) * 100);
+    min-height: -webkit-fill-available;
+  }
 }
 /* Custom scrollbar styles */
 .custom-scrollbar::-webkit-scrollbar {
