@@ -101,7 +101,7 @@ function AppContent() {
       <Route
         path="/app/*"
         element={
-          <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="flex h-screen bg-gray-50 dark:bg-gray-900 mobile-container">
             {/* Sidebar Desktop */}
             <aside className="hidden md:block flex-shrink-0">
               <Sidebar 
@@ -146,55 +146,57 @@ function AppContent() {
             {/* Main Content */}
             <div className="flex-1 relative flex flex-col w-0 overflow-hidden">
               <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
-                <Suspense fallback={<LoadingScreen />}>
-                  <Routes>
-                    <Route index element={<Dashboard />} />
-                    <Route path="chats" element={<Chats />} />
-                    <Route path="chats/:id" element={<Chat />} />
-                    <Route path="customers" element={<Customers />} />
-                    <Route path="customers/:id/chats" element={<CustomerChats />} />
-                    <Route path="customers/add" element={<AddCustomer />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="settings/billing" element={<BillingPage />} />
-                    <Route path="settings/integrations" element={<IntegrationsPage />} />
-                    <Route path="settings/notifications" element={<NotificationsPage />} />
-                    <Route path="settings/usage" element={<UsagePage />} />
-                    <Route path="team" element={<TeamMembers />} />
-                    <Route path="service-teams" element={<ServiceTeams />} />
-                    <Route path="channels" element={<Channels />} />
-                    <Route path="channels/new" element={<SelectChannelType />} />
-                    <Route path="channels/new/email" element={<EmailChannelForm />} />
-                    <Route path="channels/new/whatsapp_official" element={<WhatsAppOfficialForm />} />
-                    <Route path="channels/new/whatsapp_wapi" element={<WhatsAppWApiForm />} />
-                    <Route path="channels/new/whatsapp_zapi" element={<WhatsAppZApiForm />} />
-                    <Route path="channels/new/whatsapp_evo" element={<WhatsAppEvoForm />} />
-                    <Route path="channels/new/facebook" element={<FacebookForm />} />
-                    <Route path="channels/new/instagram" element={<InstagramForm />} />
-                    <Route path="channels/:id/edit/email" element={<EmailChannelForm />} />
-                    <Route path="channels/:id/edit/whatsapp_official" element={<WhatsAppOfficialForm />} />
-                    <Route path="channels/:id/edit/whatsapp_wapi" element={<WhatsAppWApiForm />} />
-                    <Route path="channels/:id/edit/whatsapp_zapi" element={<WhatsAppZApiForm />} />
-                    <Route path="channels/:id/edit/whatsapp_evo" element={<WhatsAppEvoForm />} />
-                    <Route path="channels/:id/edit/facebook" element={<FacebookForm />} />
-                    <Route path="channels/:id/edit/instagram" element={<InstagramForm />} />
-                    <Route path="shortcuts" element={<MessageShortcuts />} />
-                    <Route path="flows" element={<FlowList />} />
-                    <Route path="flows/:id" element={<FlowEditor />} />
-                    <Route path="crm" element={<CRMFunnels />} />
-                    <Route path="crm/:id" element={<CRMFunnel />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="tags" element={<Tags />} />
-                    <Route path="prompts" element={<Prompts />} />
-                    <Route path="prompts/new" element={<PromptFormPage />} />
-                    <Route path="prompts/edit/:id" element={<PromptFormPage />} />
-                    {profile?.is_superadmin && (
-                      <>
-                        <Route path="admin/organizations" element={<Organizations />} />
-                        <Route path="admin/organizations/add" element={<AddOrganization />} />
-                      </>
-                    )}
-                  </Routes>
-                </Suspense>
+                <div className="min-h-full h-full">
+                  <Suspense fallback={<LoadingScreen />}>
+                    <Routes>
+                      <Route index element={<Dashboard />} />
+                      <Route path="chats" element={<Chats />} />
+                      <Route path="chats/:id" element={<Chat />} />
+                      <Route path="customers" element={<Customers />} />
+                      <Route path="customers/:id/chats" element={<CustomerChats />} />
+                      <Route path="customers/add" element={<AddCustomer />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      <Route path="settings/billing" element={<BillingPage />} />
+                      <Route path="settings/integrations" element={<IntegrationsPage />} />
+                      <Route path="settings/notifications" element={<NotificationsPage />} />
+                      <Route path="settings/usage" element={<UsagePage />} />
+                      <Route path="team" element={<TeamMembers />} />
+                      <Route path="service-teams" element={<ServiceTeams />} />
+                      <Route path="channels" element={<Channels />} />
+                      <Route path="channels/new" element={<SelectChannelType />} />
+                      <Route path="channels/new/email" element={<EmailChannelForm />} />
+                      <Route path="channels/new/whatsapp_official" element={<WhatsAppOfficialForm />} />
+                      <Route path="channels/new/whatsapp_wapi" element={<WhatsAppWApiForm />} />
+                      <Route path="channels/new/whatsapp_zapi" element={<WhatsAppZApiForm />} />
+                      <Route path="channels/new/whatsapp_evo" element={<WhatsAppEvoForm />} />
+                      <Route path="channels/new/facebook" element={<FacebookForm />} />
+                      <Route path="channels/new/instagram" element={<InstagramForm />} />
+                      <Route path="channels/:id/edit/email" element={<EmailChannelForm />} />
+                      <Route path="channels/:id/edit/whatsapp_official" element={<WhatsAppOfficialForm />} />
+                      <Route path="channels/:id/edit/whatsapp_wapi" element={<WhatsAppWApiForm />} />
+                      <Route path="channels/:id/edit/whatsapp_zapi" element={<WhatsAppZApiForm />} />
+                      <Route path="channels/:id/edit/whatsapp_evo" element={<WhatsAppEvoForm />} />
+                      <Route path="channels/:id/edit/facebook" element={<FacebookForm />} />
+                      <Route path="channels/:id/edit/instagram" element={<InstagramForm />} />
+                      <Route path="shortcuts" element={<MessageShortcuts />} />
+                      <Route path="flows" element={<FlowList />} />
+                      <Route path="flows/:id" element={<FlowEditor />} />
+                      <Route path="crm" element={<CRMFunnels />} />
+                      <Route path="crm/:id" element={<CRMFunnel />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route path="tags" element={<Tags />} />
+                      <Route path="prompts" element={<Prompts />} />
+                      <Route path="prompts/new" element={<PromptFormPage />} />
+                      <Route path="prompts/edit/:id" element={<PromptFormPage />} />
+                      {profile?.is_superadmin && (
+                        <>
+                          <Route path="admin/organizations" element={<Organizations />} />
+                          <Route path="admin/organizations/add" element={<AddOrganization />} />
+                        </>
+                      )}
+                    </Routes>
+                  </Suspense>
+                </div>
               </main>
             </div>
           </div>
