@@ -44,6 +44,20 @@ import Home from './pages/index';
 import SignupPage from './pages/public/signup/page';
 import { AuthProvider, useAuthContext } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
+// Criar uma instância do QueryClient
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      cacheTime: 1000 * 60 * 30, // 30 minutos
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function AppContent() {
   const { session, profile, loading } = useAuthContext();
@@ -195,17 +209,20 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <OrganizationProvider>
-        <I18nextProvider i18n={i18n}>
-          <ThemeProvider>
-            <Router>
-              <AppContent />
-            </Router>
-          </ThemeProvider>
-        </I18nextProvider>
-      </OrganizationProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <OrganizationProvider>
+          <I18nextProvider i18n={i18n}>
+            <ThemeProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </ThemeProvider>
+          </I18nextProvider>
+        </OrganizationProvider>
+      </AuthProvider>
+      <ReactQueryDevtools initialIsOpen={false} /> {/* Opcional: ferramenta de desenvolvimento */}
+    </QueryClientProvider>
   );
 }
 

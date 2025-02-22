@@ -14,9 +14,10 @@ const locales = {
 interface ChatListProps {
   chats: Chat[];
   selectedChat: string | null;
+  onSelectChat: (chatId: string) => void;
 }
 
-export function ChatList({ chats, selectedChat }: ChatListProps) {
+export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
   const { t, i18n } = useTranslation('chats');
 
   const getInitials = (name: string) => {
@@ -98,6 +99,10 @@ export function ChatList({ chats, selectedChat }: ChatListProps) {
         <a
           key={chat.id}
           href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            onSelectChat(chat.id);
+          }}
           data-chat-id={chat.id}
           className={`block p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 ${
             selectedChat === chat.id ? 'bg-blue-50 dark:bg-blue-900/50' : ''
@@ -116,7 +121,7 @@ export function ChatList({ chats, selectedChat }: ChatListProps) {
                   {chat.customer?.name || chat.customer?.whatsapp || 'Sem nome'}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {new Date(chat.last_message_at).toLocaleTimeString([], { 
+                  {new Date(chat.last_message?.created_at || chat.created_at).toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                   })}

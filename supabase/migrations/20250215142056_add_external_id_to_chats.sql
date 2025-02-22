@@ -31,3 +31,18 @@ ALTER TABLE chats ADD COLUMN profile_picture TEXT;
 
 -- Adiciona coluna profile_picture para armazenar URL da imagem de perfil em customers
 ALTER TABLE customers ADD COLUMN profile_picture TEXT;
+
+-- Adiciona coluna profile_id em organization_members referenciando profiles
+ALTER TABLE organization_members 
+ADD COLUMN profile_id UUID,
+ADD CONSTRAINT fk_organization_members_profile 
+    FOREIGN KEY (profile_id) 
+    REFERENCES profiles(id);
+
+-- Cria índice para melhorar performance de consultas que usam profile_id
+CREATE INDEX organization_members_profile_idx ON organization_members(profile_id);
+
+-- Atualiza profile_id com os valores de user_id onde profile_id está nulo
+UPDATE organization_members 
+SET profile_id = user_id 
+WHERE profile_id IS NULL;

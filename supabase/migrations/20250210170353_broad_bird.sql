@@ -41,7 +41,7 @@ CREATE TABLE chats (
   status TEXT NOT NULL CHECK (status IN ('open', 'closed')),
   channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'instagram', 'web')),
   created_at TIMESTAMPTZ DEFAULT now(),
-  last_message_at TIMESTAMPTZ DEFAULT now(),
+  -- last_message_at TIMESTAMPTZ DEFAULT now(),
   assigned_to UUID REFERENCES profiles(id)
 );
 

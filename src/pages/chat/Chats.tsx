@@ -1,30 +1,123 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, MessageSquare, Users, UserCheck, UserMinus, Loader2 } from 'lucide-react';
+import { Search, Filter, MessageSquare, Users, UserCheck, UserMinus, Loader2, Bot, Share2, Tags, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ChatList } from '../../components/chat/ChatList';
 import { ChatMessages } from '../../components/chat/ChatMessages';
 import { Chat } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useFilters';
 
+// Novos tipos para os filtros
+type FilterOption = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  type?: 'select' | 'multi-select';
+  options?: { id: string; label: string }[];
+};
 
 export default function Chats() {
   const { t } = useTranslation(['chats', 'common']);
   const { currentOrganization } = useOrganizationContext();
   const { session } = useAuthContext();
   const [selectedFilter, setSelectedFilter] = useState<string>('assigned-to-me');
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedChannel, setSelectedChannel] = useState<string>('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedFunnel, setSelectedFunnel] = useState<string>('');
+  const [selectedStage, setSelectedStage] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [isMobileView, setIsMobileView] = useState(false);
 
-  const filters = [
-    { id: 'unassigned', label: t('chats:filters.unassigned'), icon: UserMinus },
-    { id: 'assigned-to-me', label: t('chats:filters.assignedToMe'), icon: UserCheck },
-    { id: 'team', label: t('chats:filters.assignedToTeam'), icon: Users },
+  // Hooks para buscar dados dos filtros
+  const { data: agents } = useAgents(currentOrganization?.id);
+  const { data: teams } = useTeams(currentOrganization?.id);
+  const { data: channels } = useChannels(currentOrganization?.id);
+  const { data: tags } = useTags(currentOrganization?.id);
+  const { data: funnels } = useFunnels(currentOrganization?.id);
+
+  const filters: FilterOption[] = [
+    { 
+      id: 'status', 
+      label: t('chats:filters.status'),
+      icon: MessageSquare,
+      type: 'select',
+      options: [
+        { id: 'unassigned', label: t('chats:filters.unassigned') },
+        { id: 'assigned-to-me', label: t('chats:filters.assignedToMe') },
+        { id: 'team', label: t('chats:filters.assignedToTeam') },
+        { id: 'completed', label: t('chats:filters.completed') },
+        { id: 'spam', label: t('chats:filters.spam') },
+      ]
+    },
+    {
+      id: 'automation',
+      label: t('chats:filters.automation'),
+      icon: Bot,
+      type: 'select',
+      options: [
+        { id: 'active', label: t('chats:filters.automationActive') },
+        { id: 'inactive', label: t('chats:filters.automationInactive') },
+      ]
+    },
+    {
+      id: 'agent',
+      label: t('chats:filters.agent'),
+      icon: UserCheck,
+      type: 'select',
+      options: agents?.map(agent => ({
+        id: agent.id,
+        label: agent.full_name
+      })) || []
+    },
+    {
+      id: 'team',
+      label: t('chats:filters.team'),
+      icon: Users,
+      type: 'select',
+      options: teams?.map(team => ({
+        id: team.id,
+        label: team.name
+      })) || []
+    },
+    {
+      id: 'channel',
+      label: t('chats:filters.channel'),
+      icon: Share2,
+      type: 'select',
+      options: channels?.map(channel => ({
+        id: channel.id,
+        label: channel.name
+      })) || []
+    },
+    {
+      id: 'tags',
+      label: t('chats:filters.tags'),
+      icon: Tags,
+      type: 'multi-select',
+      options: tags?.map(tag => ({
+        id: tag.id,
+        label: tag.name
+      })) || []
+    },
+    {
+      id: 'funnel',
+      label: t('chats:filters.funnel'),
+      icon: Filter,
+      type: 'select',
+      options: funnels?.map(funnel => ({
+        id: funnel.id,
+        label: funnel.name
+      })) || []
+    }
   ];
 
   useEffect(() => {
@@ -34,6 +127,16 @@ export default function Chats() {
     }
   }, [currentOrganization, session?.user, selectedFilter, searchTerm]);
 
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768); // 768px é o breakpoint md do Tailwind
+    };
+
+    checkMobileView();
+    window.addEventListener('resize', checkMobileView);
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
+
   const subscribeToChats = () => {
     const subscription = supabase
       .channel('chats')
@@ -42,9 +145,49 @@ export default function Chats() {
         schema: 'public',
         table: 'messages',
         filter: `organization_id=eq.${currentOrganization?.id}`
-      }, () => {
-        // Reload chats when new messages arrive
-        loadChats();
+      }, async (payload) => {
+        // Buscar o chat atualizado quando uma mensagem é alterada
+        const { data: chatData } = await supabase
+          .from('chats')
+          .select(`
+            *,
+            customer:customers(
+              name,
+              email,
+              whatsapp
+            ),
+            last_message:messages!chats_last_message_id_fkey(
+              content,
+              status,
+              error_message,
+              created_at,
+              sender_type
+            )
+          `)
+          .eq('id', payload.new.chat_id)
+          .single();
+
+        if (chatData) {
+          const processedChat = {
+            ...chatData,
+            last_message: chatData.last_message ? {
+              content: chatData.last_message.content,
+              status: chatData.last_message.status,
+              error_message: chatData.last_message.error_message,
+              created_at: chatData.last_message.created_at,
+              sender_type: chatData.last_message.sender_type
+            } : undefined
+          };
+
+          setChats(prev => {
+            const newChats = prev.filter(chat => chat.id !== payload.new.chat_id);
+            return [processedChat, ...newChats].sort((a, b) => {
+              const dateA = a.last_message?.created_at || '';
+              const dateB = b.last_message?.created_at || '';
+              return dateB.localeCompare(dateA);
+            });
+          });
+        }
       })
       .subscribe();
 
@@ -76,11 +219,11 @@ export default function Chats() {
           )
         `)
         .eq('organization_id', currentOrganization.id)
-        .order('last_message_at', { ascending: false });
+        .order('last_message(created_at)', { ascending: false });
 
-      // Apply filter
-      let teamMembers;
-      let teamIds;
+      console.log(selectedFilter);
+
+      // Aplicar filtros
       switch (selectedFilter) {
         case 'unassigned':
           query = query.eq('status', 'pending');
@@ -90,20 +233,34 @@ export default function Chats() {
             .eq('assigned_to', session.user.id)
             .eq('status', 'in_progress');
           break;
-        case 'team': {
-          const { data } = await supabase
-            .from('service_team_members')
-            .select('team_id')
-            .eq('user_id', session.user.id);
-          
-          teamMembers = data;
-          teamIds = teamMembers?.map(tm => tm.team_id) || [];
-          
-          query = query
-            .in('team_id', teamIds)
-            .neq('assigned_to', session.user.id)
-            .eq('status', 'in_progress');
+        case 'completed':
+          query = query.eq('status', 'closed');
           break;
+        case 'spam':
+          query = query.eq('status', 'spam');
+          break;
+      }
+
+      if (selectedAgent) {
+        query = query.eq('assigned_to', selectedAgent);
+      }
+
+      if (selectedTeam) {
+        query = query.eq('team_id', selectedTeam);
+      }
+
+      if (selectedChannel) {
+        query = query.eq('channel_id', selectedChannel);
+      }
+
+      if (selectedTags.length > 0) {
+        query = query.contains('tags', selectedTags);
+      }
+
+      if (selectedFunnel) {
+        query = query.eq('funnel_id', selectedFunnel);
+        if (selectedStage) {
+          query = query.eq('funnel_stage_id', selectedStage);
         }
       }
 
@@ -138,20 +295,103 @@ export default function Chats() {
 
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
-      {/* Left Column - Chat List & Filters */}
-      <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
+      {/* Filters Sidebar */}
+      {showFilters && (
+        <div className="fixed md:relative inset-0 md:inset-auto md:w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto z-30">
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('chats:filters.title')}
+              </h3>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {filters.map((filter) => {
+                const Icon = filter.icon;
+                if (filter.type === 'select') {
+                  return (
+                    <div key={filter.id} className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                        <Icon className="w-4 h-4 mr-2" />
+                        {filter.label}
+                      </label>
+                      <select
+                        className="w-full h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-600 
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                          cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                          value={selectedFilter}
+                        onChange={(e) => {
+                          switch (filter.id) {
+                            case 'status':
+                              setSelectedFilter(e.target.value);
+                              break;
+                            case 'agent':
+                              setSelectedAgent(e.target.value);
+                              break;
+                            case 'team':
+                              setSelectedTeam(e.target.value);
+                              break;
+                            case 'channel':
+                              setSelectedChannel(e.target.value);
+                              break;
+                          }
+                        }}
+                      >
+                        <option value="" className="bg-white dark:bg-gray-700">
+                          {t('common:all')}
+                        </option>
+                        {filter.options?.map(option => (
+                          <option 
+                            key={option.id} 
+                            value={option.id}
+                            className="bg-white dark:bg-gray-700"
+                          >
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat List Column */}
+      <div className={`${
+        isMobileView && selectedChat ? 'hidden' : 'w-full md:w-80'
+      } flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full`}>
         {/* Header */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {t('chats:title')}
             </h2>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-            >
-              <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            </button>
+            <div className="flex items-center space-x-2">
+              {isMobileView && selectedChat && (
+                <button
+                  onClick={() => setSelectedChat(null)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                >
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              )}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
           </div>
           <div className="relative">
             <input
@@ -165,46 +405,8 @@ export default function Chats() {
           </div>
         </div>
 
-        {/* Filters */}
-        {showFilters && (
-          <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-              {t('chats:filters.title')}
-            </h3>
-            <div className="space-y-2">
-              {filters.map((filter) => {
-                const Icon = filter.icon;
-                return (
-                  <button
-                    key={filter.id}
-                    onClick={() => setSelectedFilter(filter.id)}
-                    className={`w-full flex items-center px-3 py-2 rounded-lg text-sm ${
-                      selectedFilter === filter.id
-                        ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mr-3" />
-                    {filter.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Chat List */}
-        <div onClick={(e) => {
-          const target = e.target as HTMLElement;
-          const chatItem = target.closest('a');
-          if (chatItem) {
-            e.preventDefault();
-            const chatId = chatItem.getAttribute('data-chat-id');
-            if (chatId) {
-              setSelectedChat(chatId);
-            }
-          }
-        }}>
+        <div className="flex-1 overflow-y-auto">
           {error ? (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <p className="text-red-500 dark:text-red-400">
@@ -226,18 +428,36 @@ export default function Chats() {
             <ChatList 
               chats={chats}
               selectedChat={selectedChat}
+              onSelectChat={setSelectedChat} 
             />
           )}
         </div>
       </div>
 
       {/* Right Column - Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 h-full">
+      <div className={`${
+        isMobileView && !selectedChat ? 'hidden' : 'flex-1'
+      } flex flex-col bg-gray-50 dark:bg-gray-900 h-full`}>
         {selectedChat ? (
-          <ChatMessages 
-            chatId={selectedChat}
-            organizationId={currentOrganization?.id || ''}
-          />
+          <div className="flex flex-col h-full">
+            {isMobileView && (
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setSelectedChat(null)}
+                  className="flex items-center text-gray-500 dark:text-gray-400"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  {t('chats:backToList')}
+                </button>
+              </div>
+            )}
+            <ChatMessages 
+              chatId={selectedChat}
+              organizationId={currentOrganization?.id || ''}
+            />
+          </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
             <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">

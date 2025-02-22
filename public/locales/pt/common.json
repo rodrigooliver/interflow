@@ -17,6 +17,7 @@
   "next": "Próximo",
   "pageOf": "Página {{current}} de {{total}}",
   "remove": "Remover",
+  "all": "Todos",
   "signup": {
     "title": "Criar uma conta",
     "subtitle": "Já tem uma conta?",

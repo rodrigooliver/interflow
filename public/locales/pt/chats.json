@@ -3,11 +3,23 @@
   "searchPlaceholder": "Buscar atendimento...",
   "resolve": "Resolver",
   "attend": "Atender",
+  "backToList": "Voltar para a lista",
   "filters": {
     "title": "Filtros",
     "unassigned": "Não atribuídos",
     "assignedToMe": "Atribuídos a mim",
-    "assignedToTeam": "Atribuídos à equipe"
+    "assignedToTeam": "Atribuídos à equipe",
+    "completed": "Concluídos",
+    "spam": "Spam",
+    "status": "Status",
+    "channel": "Canal",
+    "agent": "Agente",
+    "team": "Equipe",
+    "funnel": "Funnel",
+    "tag": "Tag",
+    "automation": "Automação",
+    "automationActive": "Ativo",
+    "automationInactive": "Inativo"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -27,7 +39,8 @@
   },
   "status": {
     "in_progress": "Em andamento",
-    "closed": "Finalizado"
+    "closed": "Finalizado",
+    "pending": "Pendente"
   },
   "messageStatus": {
     "pending": "Mensagem pendente",

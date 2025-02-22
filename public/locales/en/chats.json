@@ -7,7 +7,18 @@
     "title": "Filters",
     "unassigned": "Unassigned",
     "assignedToMe": "Assigned to me",
-    "assignedToTeam": "Assigned to team"
+    "assignedToTeam": "Assigned to team",
+    "completed": "Completed",
+    "spam": "Spam",
+    "status": "Status",
+    "channel": "Channel",
+    "agent": "Agent",
+    "team": "Team",
+    "funnel": "Funnel",
+    "tag": "Tag",
+    "automation": "Automation",
+    "automationActive": "Active",
+    "automationInactive": "Inactive"
   },
   "dateHeaders": {
     "today": "Today",
@@ -27,7 +38,8 @@
   },
   "status": {
     "in_progress": "In progress",
-    "closed": "Finished"
+    "closed": "Finished",
+    "pending": "Pending"
   },
   "messageStatus": {
     "pending": "Message pending",
@@ -68,7 +80,9 @@
     "title": "Add emoji"
   },
   "voice": {
-    "title": "Voice message"
+    "title": "Voice message",
+    "start": "Start recording",
+    "stop": "Stop recording"
   },
   "errors": {
     "loading": "Error loading messages",
@@ -98,5 +112,6 @@
       "casual": "More casual"
     }
   },
-  "noChatsFound": "No chats found"
+  "noChatsFound": "No chats found",
+  "backToList": "Back to list"
 }

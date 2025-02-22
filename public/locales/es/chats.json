@@ -7,7 +7,18 @@
     "title": "Filtros",
     "unassigned": "Sin asignar",
     "assignedToMe": "Asignados a mí",
-    "assignedToTeam": "Asignados al equipo"
+    "assignedToTeam": "Asignados al equipo",
+    "completed": "Completados",
+    "spam": "Spam",
+    "status": "Estado",
+    "channel": "Canal",
+    "agent": "Agente",
+    "team": "Equipo",
+    "funnel": "Embudo",
+    "tag": "Etiqueta",
+    "automation": "Automatización",
+    "automationActive": "Activo",
+    "automationInactive": "Inactivo"
   },
   "dateHeaders": {
     "today": "Hoy",
@@ -27,7 +38,8 @@
   },
   "status": {
     "in_progress": "En progreso",
-    "closed": "Finalizado"
+    "closed": "Finalizado",
+    "pending": "Pendiente"
   },
   "messageStatus": {
     "pending": "Mensaje pendiente",
@@ -68,7 +80,9 @@
     "title": "Añadir emoji"
   },
   "voice": {
-    "title": "Mensaje de voz"
+    "title": "Mensaje de voz",
+    "start": "Iniciar grabación",
+    "stop": "Detener grabación"
   },
   "errors": {
     "loading": "Error al cargar mensajes",
@@ -98,5 +112,6 @@
       "casual": "Más casual"
     }
   },
-  "noChatsFound": "No hay chats encontrados"
+  "noChatsFound": "No hay chats encontrados",
+  "backToList": "Volver a la lista"
 }

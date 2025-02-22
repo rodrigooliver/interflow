@@ -1,9 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Message } from '../../types/database';
+import { createPortal } from 'react-dom';
+import { Message, Customer } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
 import { MessageBubble } from './MessageBubble';
+import { CustomerEditModal } from '../customers/CustomerEditModal';
 
 interface ChatMessagesProps {
   chatId: string;
@@ -17,6 +19,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const [chat, setChat] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showEditCustomer, setShowEditCustomer] = useState(false);
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
@@ -179,7 +182,10 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     <>
       <div className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div 
+            className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
+            onClick={() => setShowEditCustomer(true)}
+          >
             <div className={`w-10 h-10 rounded-full ${getRandomColor(chat?.customer?.name || 'Anônimo')} flex items-center justify-center`}>
               <span className="text-white font-medium">
                 {getInitials(chat?.customer?.name || 'Anônimo')}
@@ -261,6 +267,18 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
             {t('chatClosed')}
           </div>
         </div>
+      )}
+
+      {showEditCustomer && chat?.customer && createPortal(
+        <CustomerEditModal
+          customer={chat.customer}
+          onClose={() => setShowEditCustomer(false)}
+          onSuccess={() => {
+            setShowEditCustomer(false);
+            loadChat(); // Recarrega os dados do chat para atualizar as informações do cliente
+          }}
+        />,
+        document.body
       )}
     </>
   );

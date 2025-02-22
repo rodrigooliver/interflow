@@ -93,8 +93,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
         const { error: updateError } = await supabase
           .from('chats')
           .update({ 
-            last_message_id: newMsg.id,
-            last_message_at: newMsg.created_at 
+            last_message_id: newMsg.id
           })
           .eq('id', chatId);
 

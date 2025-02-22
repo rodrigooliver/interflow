@@ -10,7 +10,6 @@ export interface Chat {
   arrival_time: string;
   start_time?: string;
   end_time?: string;
-  last_message_at: string;
   last_message?: Message;
   assigned_to?: string;
   external_id?: string;
@@ -121,6 +120,7 @@ export interface OrganizationMember {
   id: string;
   organization_id: Organization;
   user_id: string;
+  profile_id: string;
   role: 'owner' | 'admin' | 'agent';
   created_at: string;
 }

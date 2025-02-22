@@ -110,8 +110,9 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 bg-gray-500 bg-opacity-45 flex md:items-stretch z-50">
+      <div className="hidden md:block flex-1" onClick={onClose}></div>
+      <div className="bg-white dark:bg-gray-800 w-full md:max-w-md shadow-xl flex flex-col">
         <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             {t('customers:edit.title')}
@@ -124,121 +125,123 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
-              {error}
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-6">
+            {error && (
+              <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
+                {error}
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('customers:name')} *
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <img src="/whatsapp.svg" alt="WhatsApp" className="w-4 h-4 mr-2" />
-                WhatsApp
-              </label>
-              <div className="flex flex-wrap sm:flex-nowrap gap-2">
-                <select
-                  className="w-32 h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-                  value={formData.countryCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, countryCode: e.target.value }))}
-                >
-                  {countryCodes.map((country) => (
-                    <option key={country.code} value={country.code}>
-                      {country.dial_code}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('customers:name')} *
+                </label>
                 <input
-                  type="tel"
-                  id="whatsapp"
-                  className="flex-1 h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-                  value={formData.whatsappNumber}
-                  onChange={handleWhatsAppChange}
-                  placeholder="99 99999-9999"
+                  type="text"
+                  id="name"
+                  required
+                  className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {countryCodes.find(c => c.code === formData.countryCode)?.name}
-              </p>
+
+              <div>
+                <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                  <img src="/whatsapp.svg" alt="WhatsApp" className="w-4 h-4 mr-2" />
+                  WhatsApp
+                </label>
+                <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                  <select
+                    className="w-32 h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                    value={formData.countryCode}
+                    onChange={(e) => setFormData(prev => ({ ...prev, countryCode: e.target.value }))}
+                  >
+                    {countryCodes.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.dial_code}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    id="whatsapp"
+                    className="flex-1 h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                    value={formData.whatsappNumber}
+                    onChange={handleWhatsAppChange}
+                    placeholder="99 99999-9999"
+                  />
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {countryCodes.find(c => c.code === formData.countryCode)?.name}
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                  <Mail className="w-4 h-4 mr-2" />
+                  {t('customers:edit.email')}
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                  <img src="/facebook.svg" alt="Facebook" className="w-4 h-4 mr-2" />
+                  Facebook ID
+                </label>
+                <input
+                  type="text"
+                  id="facebook"
+                  className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                  value={formData.facebookId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, facebookId: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                  <img src="/instagram.svg" alt="Instagram" className="w-4 h-4 mr-2" />
+                  Instagram ID
+                </label>
+                <input
+                  type="text"
+                  id="instagram"
+                  className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                  value={formData.instagramId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, instagramId: e.target.value }))}
+                />
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <Mail className="w-4 h-4 mr-2" />
-                {t('customers:edit.email')}
-              </label>
-              <input
-                type="email"
-                id="email"
-                className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              />
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {t('common:back')}
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {t('common:saving')}
+              </button>
             </div>
-
-            <div>
-              <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <img src="/facebook.svg" alt="Facebook" className="w-4 h-4 mr-2" />
-                Facebook ID
-              </label>
-              <input
-                type="text"
-                id="facebook"
-                className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-                value={formData.facebookId}
-                onChange={(e) => setFormData(prev => ({ ...prev, facebookId: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <img src="/instagram.svg" alt="Instagram" className="w-4 h-4 mr-2" />
-                Instagram ID
-              </label>
-              <input
-                type="text"
-                id="instagram"
-                className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-                value={formData.instagramId}
-                onChange={(e) => setFormData(prev => ({ ...prev, instagramId: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {t('common:back')}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('common:saving')}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

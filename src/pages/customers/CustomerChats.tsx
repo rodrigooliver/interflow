@@ -176,7 +176,7 @@ export default function CustomerChats() {
                     <div className="flex items-center space-x-2">
                       {chat.last_message?.status && getStatusIcon(chat.last_message.status)}
                       <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {formatDistanceToNow(new Date(chat.last_message_at), {
+                        {formatDistanceToNow(new Date(chat.created_at), {
                           addSuffix: true,
                           locale: locales[i18n.language as keyof typeof locales] || enUS
                         })}
