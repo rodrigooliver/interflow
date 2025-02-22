@@ -74,13 +74,13 @@
   .flex.h-screen {
     height: 100%;
     height: 100dvh;
-    overflow: hidden;
+    /* overflow: hidden; */
     position: relative;
   }
 
   /* Ajuste para o container de conteúdo principal */
   .flex-1.relative {
-    overflow: hidden;
+    /* overflow: hidden; */
     position: relative;
     height: 100%;
   }
