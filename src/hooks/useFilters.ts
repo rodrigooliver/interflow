@@ -49,8 +49,6 @@ export const useAgents = (organizationId?: string) => {
         .eq('organization_id', organizationId)
         .in('role', ['agent', 'admin', 'owner']);
 
-        console.log(data)
-
       if (error) throw error;
       return data?.map(item => item.profile) as Agent[];
     },

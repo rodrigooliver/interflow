@@ -62,3 +62,33 @@ for delete using (
 -- Adiciona a coluna closure_type_id na tabela chats
 alter table public.chats
   add column closure_type_id uuid references public.closure_types(id);
+
+
+  -- Adiciona novos valores ao enum existente
+ALTER TYPE message_type ADD VALUE 'user_entered';
+ALTER TYPE message_type ADD VALUE 'user_left';
+ALTER TYPE message_type ADD VALUE 'user_transferred';
+ALTER TYPE message_type ADD VALUE 'user_closed';
+ALTER TYPE message_type ADD VALUE 'user_start';
+
+-- Atualiza o comentário da coluna type
+COMMENT ON COLUMN messages.type IS 'Tipo da mensagem (text, image, video, audio, document, sticker, email, user_entered, user_left, user_transferred, user_closed, user_start)'; 
+
+-- Remove a restrição NOT NULL da coluna color
+alter table public.messages 
+  alter column content drop not null;
+
+-- Adiciona a coluna sent_from_system na tabela messages
+ALTER TABLE messages
+  ADD COLUMN sent_from_system boolean DEFAULT false;
+
+-- Adiciona comentário explicativo na coluna
+COMMENT ON COLUMN messages.sent_from_system IS 'Indica se a mensagem foi enviada pelo sistema de atendimento';
+
+-- Atualiza as mensagens existentes para false
+UPDATE messages SET sent_from_system = false WHERE sent_from_system IS NULL;
+
+
+-- Torna a coluna NOT NULL após atualizar os dados existentes
+ALTER TABLE messages
+  ALTER COLUMN sent_from_system SET NOT NULL;

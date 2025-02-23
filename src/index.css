@@ -240,4 +240,13 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
   }
+
+  @keyframes highlight {
+    0% { background-color: rgba(59, 130, 246, 0.2); }
+    100% { background-color: transparent; }
+  }
+
+  .highlight-message {
+    animation: highlight 2s ease-out;
+  }
 }

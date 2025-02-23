@@ -20,6 +20,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
@@ -67,7 +68,22 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     try {
       const { data, error } = await supabase
         .from('messages')
-        .select('*')
+        .select(`
+          *,
+          sender_agent:messages_sender_agent_id_fkey(
+            id,
+            full_name
+          ),
+          response_to:response_message_id(
+            id,
+            content,
+            sender_type,
+            sender_agent_response:messages_sender_agent_id_fkey(
+              id,
+              full_name
+            )
+          )
+        `)
         .eq('chat_id', chatId)
         .order('created_at');
 
@@ -185,6 +201,58 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     }
   };
 
+  const handleAttend = async () => {
+    try {
+      const user = await supabase.auth.getUser();
+      
+      if (!user.data.user?.id) {
+        throw new Error(t('errors.unauthenticated'));
+      }
+
+      // Insere a mensagem de sistema
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          type: 'user_start',
+          sender_type: 'system',
+          sent_from_system: true,
+          sender_agent_id: user.data.user.id,
+          organization_id: organizationId,
+          created_at: new Date().toISOString()
+        });
+
+      if (messageError) throw messageError;
+
+      // Atualiza o status do chat
+      const { error: chatError } = await supabase
+        .from('chats')
+        .update({
+          status: 'in_progress',
+          assigned_to: user.data.user.id,
+          start_time: new Date().toISOString()
+        })
+        .eq('id', chatId);
+
+      if (chatError) throw chatError;
+
+      // Atualiza o estado local
+      setChat(prev => prev ? {
+        ...prev,
+        status: 'in_progress',
+        assigned_to: user.data.user.id,
+        start_time: new Date().toISOString()
+      } : null);
+
+      // Recarrega as mensagens
+      loadMessages();
+
+    } catch (error) {
+      console.error('Error attending chat:', error);
+      setError(error.message || t('errors.attend'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -258,6 +326,10 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
                 <MessageBubble
                   key={message.id}
                   message={message}
+                  chatStatus={chat?.status}
+                  onReply={(message) => {
+                    setReplyingTo(message);
+                  }}
                 />
               ))}
             </div>
@@ -271,13 +343,19 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           chatId={chatId}
           organizationId={organizationId}
           onMessageSent={() => {}}
+          replyTo={
+            replyingTo ? {
+              message: replyingTo,
+              onClose: () => setReplyingTo(null)
+            } : undefined
+          }
         />
       )}
 
       {chat?.status === 'pending' && (
         <div className="border-t border-gray-200 dark:border-gray-700 p-4">
           <button
-            onClick={() => {/* Adicionar lógica para atender */}}
+            onClick={handleAttend}
             className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
           >
             {t('attend')}

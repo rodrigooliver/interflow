@@ -14,6 +14,10 @@ interface MessageInputProps {
   chatId: string;
   organizationId: string;
   onMessageSent: () => void;
+  replyTo?: {
+    message: Message;
+    onClose: () => void;
+  };
 }
 
 interface EmojiData {
@@ -21,7 +25,7 @@ interface EmojiData {
   // outros campos do emoji se necessário
 }
 
-export function MessageInput({ chatId, organizationId, onMessageSent }: MessageInputProps) {
+export function MessageInput({ chatId, organizationId, onMessageSent, replyTo }: MessageInputProps) {
   const { profile } = useAuthContext();
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -68,17 +72,24 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
     }
   }, [message]);
 
-  const handleSendMessage = async (content: string, attachments?: { url: string; type: string; name: string }[]) => {
+  const handleSendMessage = async (content: string | null, attachments?: { url: string; type: string; name: string }[]) => {
     setSending(true);
     try {
+      // Validação: content só pode ser null se houver anexos
+      if (content === null && (!attachments || attachments.length === 0)) {
+        throw new Error(t('errors.emptyMessage'));
+      }
+
       const messageData = {
         chat_id: chatId,
         organization_id: organizationId,
-        content: content || '',
+        content: content,
         sender_type: 'agent',
+        sent_from_system: true,
         sender_agent_id: profile?.id,
         status: 'pending',
-        attachments: attachments || []
+        attachments: attachments || [],
+        response_message_id: replyTo?.message.id || null
       };
 
       const { data: newMsg, error } = await supabase
@@ -100,6 +111,9 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
         if (updateError) throw updateError;
         
         onMessageSent();
+        if (replyTo?.onClose) {
+          replyTo.onClose();
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -290,6 +304,27 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 pb-3 pt-2">
+      {replyTo && (
+        <div className="p-2 bg-gray-50 dark:bg-gray-800 flex items-start space-x-2">
+          <div className="flex-1 text-sm border-l-2 border-blue-500 pl-2">
+            <div className="text-blue-500 font-medium">
+              {replyTo.message.sender_type === 'agent' 
+                ? t('you') 
+                : t('customer')
+              }
+            </div>
+            <div className="text-gray-600 dark:text-gray-300 truncate">
+              {replyTo.message.content}
+            </div>
+          </div>
+          <button 
+            onClick={replyTo.onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-md">
           {error}

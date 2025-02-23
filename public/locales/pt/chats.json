@@ -5,6 +5,8 @@
   "attend": "Atender",
   "backToList": "Voltar para a lista",
   "chatClosed": "Atendimento finalizado",
+  "customer": "Cliente",
+  "you": "Você",
   "filters": {
     "title": "Filtros",
     "unassigned": "Não atribuídos",
@@ -21,6 +23,9 @@
     "automation": "Automação",
     "automationActive": "Ativo",
     "automationInactive": "Inativo"
+  },
+  "actions": {
+    "reply": "Responder"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -113,6 +118,13 @@
       "formal": "Mais formal",
       "casual": "Mais casual"
     }
+  },
+  "systemMessages": {
+    "userStart": "Atendimento iniciado por {{name}}",
+    "userEntered": "{{name}} entrou no chat",
+    "userLeft": "{{name}} saiu do chat",
+    "userTransferred": "Chat transferido para {{name}}",
+    "userClosed": "Chat encerrado por {{name}}"
   },
   "noChatsFound": "Nenhum atendimento encontrado"
 }

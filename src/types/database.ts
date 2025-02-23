@@ -81,7 +81,9 @@ export interface Message {
   chat_id: Chat;
   organization_id: Organization;
   content: string;
-  type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'email';
+  type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'email' | 
+        'user_entered' | 'user_left' | 'user_transferred' | 'user_closed' | 'user_start';
+  sent_from_system: boolean;
   sender_type: 'customer' | 'agent' | 'system';
   status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
   attachments?: { url: string; type: string; name: string }[];

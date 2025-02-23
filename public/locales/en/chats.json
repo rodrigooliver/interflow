@@ -4,6 +4,8 @@
   "resolve": "Resolve",
   "attend": "Attend",
   "chatClosed": "Chat closed",
+  "customer": "Customer",
+  "you": "You",
   "filters": {
     "title": "Filters",
     "unassigned": "Unassigned",
@@ -20,6 +22,9 @@
     "automation": "Automation",
     "automationActive": "Active",
     "automationInactive": "Inactive"
+  },
+  "actions": {
+    "reply": "Reply"
   },
   "dateHeaders": {
     "today": "Today",
@@ -112,6 +117,12 @@
       "formal": "More formal",
       "casual": "More casual"
     }
+  },  
+  "systemMessages": {
+    "userEntered": "{{name}} entered the chat",
+    "userLeft": "{{name}} left the chat",
+    "userTransferred": "Chat transferred to {{name}}",
+    "userClosed": "Chat closed by {{name}}"
   },
   "noChatsFound": "No chats found",
   "backToList": "Back to list"

@@ -221,8 +221,6 @@ export default function Chats() {
         .eq('organization_id', currentOrganization.id)
         .order('last_message(created_at)', { ascending: false });
 
-      console.log(selectedFilter);
-
       // Mover declarações para fora do switch
       let teamMembers;
       let teamIds;
@@ -493,3 +491,35 @@ export default function Chats() {
     </div>
   );
 }
+
+export const handleAtendimentoSequencial = async (chatId: string) => {
+  const user = await supabase.auth.getUser();
+  
+  if (!user.data.user?.id) {
+    throw new Error('Usuário não autenticado');
+  }
+
+  // Primeiro insere a mensagem
+  const { error: messageError } = await supabase
+    .from('messages')
+    .insert({
+      chat_id: chatId,
+      type: 'user_entered',
+      sender_type: 'system',
+      sender_agent_id: user.data.user.id
+    });
+
+  if (messageError) throw new Error(messageError.message);
+
+  // Depois atualiza o chat
+  const { error: chatError } = await supabase
+    .from('chats')
+    .update({
+      status: 'in_progress',
+      assigned_to: user.data.user.id,
+      start_time: new Date().toISOString()
+    })
+    .eq('id', chatId);
+
+  if (chatError) throw new Error(chatError.message);
+};
