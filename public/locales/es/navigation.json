@@ -11,5 +11,6 @@
   "flows": "Flujos",
   "organizations": "Organizaciones",
   "tags": "Etiquetas",
-  "prompts": "Instrucciones IA"
+  "prompts": "Instrucciones IA",
+  "closureTypes": "Tipos de Cierre"
 }

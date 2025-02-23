@@ -11,5 +11,6 @@
   "flows": "Flows",
   "organizations": "Organizations",
   "tags": "Tags",
-  "prompts": "Instructions AI"
+  "prompts": "Instructions AI",
+  "closureTypes": "Closure Types"
 }

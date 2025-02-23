@@ -93,6 +93,31 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
     }
   };
 
+  const getStatusBadge = (chat: Chat) => {
+    switch (chat.status) {
+      case 'pending':
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+            {t('status.pending')}
+          </span>
+        );
+      case 'in_progress':
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            {t('status.in_progress')}
+          </span>
+        );
+      case 'closed':
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+            {t('status.closed')}
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto">
       {chats.map((chat) => (
@@ -116,11 +141,11 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start mb-1">
-                <span className="font-medium text-gray-900 dark:text-white">
+              <div className="flex justify-between items-center w-full mb-1">
+                <span className="font-medium text-gray-900 dark:text-white truncate">
                   {chat.customer?.name || chat.customer?.whatsapp || 'Sem nome'}
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                   {new Date(chat.last_message?.created_at || chat.created_at).toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
@@ -129,7 +154,7 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
               </div>
               
               {chat.last_message && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 mb-1">
                   {chat.last_message.sender_type === 'agent' && getStatusIcon(chat)}
                   <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
                     {chat.last_message.content}
@@ -137,11 +162,14 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
                 </div>
               )}
               
-              {chat.last_message?.status && chat.last_message.sender_type === 'agent' && chat.last_message.error_message && (
-                <div className="text-xs text-red-500 mt-1">
-                  {chat.last_message.error_message}
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {getStatusBadge(chat)}
+                {chat.last_message?.status && chat.last_message.sender_type === 'agent' && chat.last_message.error_message && (
+                  <div className="text-xs text-red-500">
+                    {chat.last_message.error_message}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </a>

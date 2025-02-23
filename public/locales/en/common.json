@@ -17,6 +17,11 @@
   "next": "Next",
   "pageOf": "Page {{current}} of {{total}}",
   "remove": "Remove",
+  "delete": "Delete",
+  "delete_confirmation": {
+    "title": "Delete",
+    "message": "Are you sure you want to delete this item?"
+  },
   "all": "All",
   "signup": {
     "title": "Create an account",

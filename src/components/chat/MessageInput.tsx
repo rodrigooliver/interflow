@@ -13,7 +13,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 interface MessageInputProps {
   chatId: string;
   organizationId: string;
-  onMessageSent: (message: Message) => void;
+  onMessageSent: () => void;
 }
 
 interface EmojiData {
@@ -99,7 +99,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
 
         if (updateError) throw updateError;
         
-        onMessageSent(newMsg);
+        onMessageSent();
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -289,7 +289,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
   };
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+    <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 pb-3 pt-2">
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-md">
           {error}
@@ -352,17 +352,17 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
         </div>
       )}
 
-      <div className="flex items-center space-x-2 mb-2">
+      <div className="flex items-center space-x-2 mb-1">
         <button
           onClick={handleBoldClick}
-          className={`p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+          className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
           title={t('formatting.bold')}
         >
           <Bold className="w-5 h-5" />
         </button>
         <button
           onClick={handleItalicClick}
-          className={`p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+          className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
           title={t('formatting.italic')}
         >
           <Italic className="w-5 h-5" />
@@ -373,7 +373,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
               setShowAttachmentMenu(!showAttachmentMenu);
               setShowEmojiPicker(false);
             }}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-1 rounded-lg transition-colors ${
               showAttachmentMenu
                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
@@ -413,7 +413,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
               setShowEmojiPicker(!showEmojiPicker);
               setShowAttachmentMenu(false);
             }}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-1 rounded-lg transition-colors ${
               showEmojiPicker
                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
@@ -437,7 +437,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent }: MessageI
         </div>
         <button
           onClick={() => setShowAIModal(true)}
-          className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
+          className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
           title={t('ai.improve')}
         >
           <Sparkles className="w-5 h-5" />

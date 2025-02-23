@@ -223,6 +223,10 @@ export default function Chats() {
 
       console.log(selectedFilter);
 
+      // Mover declarações para fora do switch
+      let teamMembers;
+      let teamIds;
+
       // Aplicar filtros
       switch (selectedFilter) {
         case 'unassigned':
@@ -232,6 +236,20 @@ export default function Chats() {
           query = query
             .eq('assigned_to', session.user.id)
             .eq('status', 'in_progress');
+          break;
+        case 'team':
+          // Get user's teams first
+          teamMembers = await supabase
+            .from('service_team_members')
+            .select('team_id')
+            .eq('user_id', session.user.id);
+
+          teamIds = teamMembers?.data?.map(tm => tm.team_id) || [];
+          
+          // Filter chats by team and exclude those assigned to the current user
+          query = query
+            .in('team_id', teamIds)
+            .neq('assigned_to', session.user.id);
           break;
         case 'completed':
           query = query.eq('status', 'closed');

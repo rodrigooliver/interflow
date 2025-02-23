@@ -1,0 +1,30 @@
+{
+  "title": "Closure Types",
+  "newType": "New Type", 
+  "loading": "Loading...",
+  "saving": "Saving...",
+  "form": {
+    "title": "Title",
+    "color": "Color",
+    "flow": "Start flow automatically",
+    "select_flow": "Select Flow",
+    "no_flow": "No Flow Selected",
+    "title_placeholder": "Enter the closure type title"
+  },
+  "list": {
+    "title": "Title",
+    "color": "Color",
+    "flow": "Flow"
+  },
+  "actions": "Actions",
+  "edit": "Edit",
+  "delete": "Delete",
+  "save": "Save",
+  "confirmDelete": "Are you sure you want to delete this closure type?",
+  "editType": "Edit Type",
+  "errors": {
+    "loading": "Error loading types",
+    "saving": "Error saving type",
+    "deleting": "Error deleting type"
+  }
+}

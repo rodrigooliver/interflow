@@ -3,6 +3,7 @@
   "searchPlaceholder": "Buscar chat...",
   "resolve": "Resolver",
   "attend": "Atender",
+  "chatClosed": "Chat cerrado",
   "filters": {
     "title": "Filtros",
     "unassigned": "Sin asignar",
@@ -37,9 +38,9 @@
     "description": "Elige un chat de la lista a la izquierda para ver la conversación"
   },
   "status": {
-    "in_progress": "En progreso",
-    "closed": "Finalizado",
-    "pending": "Pendiente"
+    "in_progress": "En atendimiento",
+    "closed": "Cerrado",
+    "pending": "Esperando"
   },
   "messageStatus": {
     "pending": "Mensaje pendiente",

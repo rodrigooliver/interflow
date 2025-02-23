@@ -17,6 +17,11 @@
   "next": "Próximo",
   "pageOf": "Página {{current}} de {{total}}",
   "remove": "Remover",
+  "delete": "Excluir",
+  "delete_confirmation": {
+    "title": "Excluir",
+    "message": "Tem certeza que deseja excluir este item?"
+  },
   "all": "Todos",
   "signup": {
     "title": "Criar uma conta",

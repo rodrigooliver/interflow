@@ -13,6 +13,10 @@ export interface Chat {
   last_message?: Message;
   assigned_to?: string;
   external_id?: string;
+  title?: string;
+  flow_session_id?: FlowSession;
+  rating?: number;
+  feedback?: string;
   customer?: Customer;
   channel_details?: ChatChannel;
   team?: ServiceTeam;
@@ -20,6 +24,7 @@ export interface Chat {
   collaborators?: ChatCollaborator[];
   wait_time?: string;
   service_time?: string;
+  profile_picture?: string;
 }
 
 export interface ChatChannel {
@@ -189,6 +194,56 @@ export interface SubscriptionPlan {
   };
   max_users: number;
   max_customers: number;
+  created_at: string;
+}
+
+export interface FlowSession {
+  id: string;
+  organization_id: Organization;
+  bot_id: Flow;
+  chat_id: Chat;
+  customer_id: Customer;
+  current_node_id: string;
+  status: 'active' | 'inactive' | 'timeout';
+  variables: Record<string, any>;
+  message_history: any[];
+  created_at: string;
+  last_interaction: string;
+  timeout_at?: string;
+  debounce_timestamp?: string;
+  input_type?: 'text' | 'options';
+  selected_option?: Record<string, any>;
+}
+
+export interface Flow {
+  id: string;
+  organization_id: Organization;
+  name: string;
+  description?: string;
+  is_active?: boolean;
+  folder_path?: string;
+  nodes: any[];
+  edges: any[];
+  variables: any[];
+  created_at: string;
+  updated_at: string;
+  debounce_time: number;
+  draft_nodes?: any[];
+  draft_edges?: any[];
+  is_published?: boolean;
+  published_at?: string;
+  viewport?: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
+}
+
+export interface ClosureType {
+  id: string;
+  title: string;
+  color: string;
+  flow_id: string;
   created_at: string;
 }
 

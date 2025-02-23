@@ -1,0 +1,30 @@
+{
+  "title": "Tipos de Encerramento",
+  "newType": "Novo Tipo",
+  "loading": "Carregando...",
+  "saving": "Salvando...",
+  "form": {
+    "title": "Título",
+    "color": "Cor",
+    "flow": "Iniciar fluxo automaticamente",
+    "select_flow": "Selecionar Fluxo",
+    "no_flow": "Nenhum Fluxo Selecionado",
+    "title_placeholder": "Digite o título do tipo de encerramento"
+  },
+  "list": {
+    "title": "Título",
+    "color": "Cor",
+    "flow": "Fluxo"
+  },
+  "actions": "Ações",
+  "edit": "Editar",
+  "delete": "Excluir",
+  "save": "Salvar",
+  "confirmDelete": "Tem certeza que deseja excluir este tipo de encerramento?",
+  "editType": "Editar Tipo",
+  "errors": {
+    "loading": "Erro ao carregar tipos",
+    "saving": "Erro ao salvar tipo",
+    "deleting": "Erro ao excluir tipo"
+  }
+}

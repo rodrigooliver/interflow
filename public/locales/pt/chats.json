@@ -4,6 +4,7 @@
   "resolve": "Resolver",
   "attend": "Atender",
   "backToList": "Voltar para a lista",
+  "chatClosed": "Atendimento finalizado",
   "filters": {
     "title": "Filtros",
     "unassigned": "Não atribuídos",
@@ -38,9 +39,9 @@
     "description": "Escolha um atendimento da lista à esquerda para visualizar a conversa"
   },
   "status": {
-    "in_progress": "Em andamento",
+    "in_progress": "Em atendimento",
     "closed": "Finalizado",
-    "pending": "Pendente"
+    "pending": "Aguardando"
   },
   "messageStatus": {
     "pending": "Mensagem pendente",

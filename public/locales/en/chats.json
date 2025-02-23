@@ -3,6 +3,7 @@
   "searchPlaceholder": "Search chats...", 
   "resolve": "Resolve",
   "attend": "Attend",
+  "chatClosed": "Chat closed",
   "filters": {
     "title": "Filters",
     "unassigned": "Unassigned",
@@ -38,8 +39,8 @@
   },
   "status": {
     "in_progress": "In progress",
-    "closed": "Finished",
-    "pending": "Pending"
+    "closed": "Closed",
+    "pending": "Awaiting"
   },
   "messageStatus": {
     "pending": "Message pending",

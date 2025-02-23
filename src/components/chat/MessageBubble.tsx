@@ -81,7 +81,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[70%] rounded-lg p-3 ${
+        className={`max-w-[85%] rounded-lg p-3 ${
           isAgent
             ? 'bg-blue-600 text-white'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'

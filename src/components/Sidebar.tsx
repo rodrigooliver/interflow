@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -37,6 +37,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
     { to: '/app/settings', icon: SettingsIcon, label: t('navigation:settings') },
+    { to: '/app/closure-types', icon: CheckCircle, label: t('navigation:closureTypes') },
   ];
 
   // Super admin links

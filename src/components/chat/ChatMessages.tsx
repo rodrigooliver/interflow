@@ -160,6 +160,31 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
       .slice(0, 2);
   };
 
+  const handleResolveChat = async () => {
+    try {
+      const { error } = await supabase
+        .from('chats')
+        .update({ 
+          status: 'closed',
+          end_time: new Date().toISOString()
+        })
+        .eq('id', chatId);
+
+      if (error) throw error;
+      
+      // Atualiza o estado local do chat
+      setChat(prev => prev ? {
+        ...prev,
+        status: 'closed',
+        end_time: new Date().toISOString()
+      } : null);
+      
+    } catch (error) {
+      console.error('Erro ao resolver chat:', error);
+      setError(t('errors.resolving'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -180,7 +205,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
 
   return (
     <>
-      <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-2">
         <div className="flex items-center justify-between">
           <div 
             className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
@@ -205,7 +230,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           {chat?.status === 'in_progress' && (
             <button
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-              onClick={() => {/* Adicionar lógica para resolver */}}
+              onClick={handleResolveChat}
             >
               {t('resolve')}
             </button>
@@ -245,7 +270,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
         <MessageInput
           chatId={chatId}
           organizationId={organizationId}
-          onMessageSent={(newMsg) => setMessages(prev => [...prev, newMsg])}
+          onMessageSent={() => {}}
         />
       )}
 
@@ -265,6 +290,11 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           <div className="text-center text-gray-500 dark:text-gray-400">
             <span className="inline-block mr-2">✓</span>
             {t('chatClosed')}
+            {chat.end_time && (
+              <div className="text-sm mt-1">
+                {new Date(chat.end_time).toLocaleString()}
+              </div>
+            )}
           </div>
         </div>
       )}

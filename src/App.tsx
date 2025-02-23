@@ -46,6 +46,7 @@ import { AuthProvider, useAuthContext } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ClosureTypesPage } from './pages/ClosureTypesPage';
 
 // Criar uma instância do QueryClient
 const queryClient = new QueryClient({
@@ -188,12 +189,7 @@ function AppContent() {
                       <Route path="prompts" element={<Prompts />} />
                       <Route path="prompts/new" element={<PromptFormPage />} />
                       <Route path="prompts/edit/:id" element={<PromptFormPage />} />
-                      {profile?.is_superadmin && (
-                        <>
-                          <Route path="admin/organizations" element={<Organizations />} />
-                          <Route path="admin/organizations/add" element={<AddOrganization />} />
-                        </>
-                      )}
+                      <Route path="closure-types" element={<ClosureTypesPage />} />
                     </Routes>
                   </Suspense>
                 </div>

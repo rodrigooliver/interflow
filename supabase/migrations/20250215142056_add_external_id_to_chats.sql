@@ -46,3 +46,16 @@ CREATE INDEX organization_members_profile_idx ON organization_members(profile_id
 UPDATE organization_members 
 SET profile_id = user_id 
 WHERE profile_id IS NULL;
+
+-- Remove colunas whatsapp e email que não serão mais utilizadas
+ALTER TABLE chats DROP COLUMN whatsapp;
+ALTER TABLE chats DROP COLUMN email;
+
+-- Adiciona novas colunas
+ALTER TABLE chats ADD COLUMN title TEXT;
+ALTER TABLE chats ADD COLUMN flow_session_id UUID REFERENCES flow_sessions(id);
+ALTER TABLE chats ADD COLUMN rating INTEGER CHECK (rating >= 1 AND rating <= 5);
+ALTER TABLE chats ADD COLUMN feedback TEXT;
+
+-- Cria índice para melhorar performance de consultas que usam flow_session_id
+CREATE INDEX chats_flow_session_idx ON chats(flow_session_id);

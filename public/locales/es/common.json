@@ -18,6 +18,11 @@
   "pageOf": "Página {{current}} de {{total}}",
   "remove": "Eliminar",
   "all": "Todos",
+  "delete": "Eliminar",
+  "delete_confirmation": {
+    "title": "Eliminar",
+    "message": "¿Estás seguro de querer eliminar este elemento?"
+  },
   "signup": {
     "title": "Crear una cuenta",
     "subtitle": "¿Ya tienes una cuenta?",

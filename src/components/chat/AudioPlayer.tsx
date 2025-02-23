@@ -75,24 +75,24 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
   };
 
   return (
-    <div className={`flex items-center ${compact ? 'space-x-2' : 'space-x-4'} w-full max-w-[300px]`}>
+    <div className={`flex items-center ${compact ? 'space-x-2' : 'space-x-3'} w-full max-w-[300px] sm:max-w-[400px]`}>
       <audio ref={audioRef} src={src} />
       
       <button
         onClick={togglePlay}
-        className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
+        className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
       >
         {isPlaying ? (
-          <Pause className="w-5 h-5" />
+          <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
         ) : (
-          <Play className="w-5 h-5 ml-1" />
+          <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5 sm:ml-1" />
         )}
       </button>
 
-      <div className="flex-1 min-w-[180px]">
+      <div className="flex-1 min-w-0 sm:min-w-[100px]">
         <div className="flex items-center space-x-2">
           <div
-            className="flex-1 h-1 bg-gray-200 dark:bg-gray-600 rounded-full cursor-pointer relative"
+            className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full cursor-pointer relative"
             onClick={handleProgressClick}
           >
             <div
@@ -101,7 +101,7 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
             />
           </div>
           
-          <span className="text-xs text-gray-500 dark:text-gray-400 min-w-[40px]">
+          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 min-w-[40px] text-right">
             {formatTime(currentTime)}
           </span>
         </div>
@@ -109,7 +109,7 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
 
       <button
         onClick={togglePlaybackRate}
-        className="flex-shrink-0 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+        className="flex-shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
       >
         {playbackRate}x
       </button>

@@ -1,0 +1,30 @@
+{
+  "title": "Tipos de Cierre",
+  "newType": "Nuevo Tipo",
+  "loading": "Cargando...",
+  "saving": "Guardando...",
+  "form": {
+    "title": "Título",
+    "color": "Color",
+    "flow": "Iniciar flujo automaticamente",
+    "select_flow": "Seleccionar Flujo",
+    "no_flow": "No hay Flujo Seleccionado",
+    "title_placeholder": "Ingrese el título del tipo de cierre"
+  },
+  "list": {
+    "title": "Título",
+    "color": "Color",
+    "flow": "Flujo"
+  },
+  "actions": "Acciones",
+  "edit": "Editar",
+  "delete": "Eliminar",
+  "save": "Guardar",
+  "confirmDelete": "¿Está seguro de que desea eliminar este tipo de cierre?",
+  "editType": "Editar Tipo",
+  "errors": {
+    "loading": "Error al cargar tipos",
+    "saving": "Error al guardar tipo",
+    "deleting": "Error al eliminar tipo"
+  }
+}
