@@ -125,5 +125,12 @@
     "userClosed": "Chat encerrado por {{name}}"
   },
   "noChatsFound": "No hay chats encontrados",
-  "backToList": "Volver a la lista"
+  "backToList": "Volver a la lista",
+  "resolution": {
+    "title": "Resolver Conversa",
+    "summaryPlaceholder": "Escribe un breve resumen de la conversación..."
+  },
+  "confirm": "Confirmar",
+  "cancel": "Cancelar",
+  "loading": "Cargando..."
 }

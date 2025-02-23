@@ -92,3 +92,7 @@ UPDATE messages SET sent_from_system = false WHERE sent_from_system IS NULL;
 -- Torna a coluna NOT NULL após atualizar os dados existentes
 ALTER TABLE messages
   ALTER COLUMN sent_from_system SET NOT NULL;
+
+-- Remove a constraint unique de channel_id e external_id
+ALTER TABLE public.chats
+  DROP CONSTRAINT IF EXISTS chats_channel_external_unique;

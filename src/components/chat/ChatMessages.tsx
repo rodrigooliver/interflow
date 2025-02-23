@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Message, Customer } from '../../types/database';
+import { Message, Customer, ClosureType } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
 import { MessageBubble } from './MessageBubble';
 import { CustomerEditModal } from '../customers/CustomerEditModal';
+import { ChatResolutionModal } from './ChatResolutionModal';
 
 interface ChatMessagesProps {
   chatId: string;
@@ -21,6 +22,8 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const [error, setError] = useState('');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [showResolutionModal, setShowResolutionModal] = useState(false);
+  const [closureTypes, setClosureTypes] = useState<ClosureType[]>([]);
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
@@ -41,6 +44,10 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    loadClosureTypes();
+  }, []);
 
   const subscribeToMessages = () => {
     const subscription = supabase
@@ -176,25 +183,63 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
       .slice(0, 2);
   };
 
-  const handleResolveChat = async () => {
+  const loadClosureTypes = async () => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
+        .from('closure_types')
+        .select('*')
+        .eq('organization_id', organizationId);
+
+      if (error) throw error;
+      setClosureTypes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar tipos de fechamento:', error);
+    }
+  };
+
+  const handleResolveChat = async ({ closureTypeId, title }: { closureTypeId: string; title: string }) => {
+    try {
+      // Primeiro insere a mensagem de sistema
+      const user = await supabase.auth.getUser();
+      if (!user.data.user?.id) {
+        throw new Error(t('errors.unauthenticated'));
+      }
+
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          type: 'user_closed',
+          sender_type: 'system',
+          sender_agent_id: user.data.user.id,
+          organization_id: organizationId,
+          created_at: new Date().toISOString()
+        });
+
+      if (messageError) throw messageError;
+
+      // Depois atualiza o status do chat
+      const { error: chatError } = await supabase
         .from('chats')
         .update({ 
           status: 'closed',
-          end_time: new Date().toISOString()
+          end_time: new Date().toISOString(),
+          closure_type_id: closureTypeId,
+          title: title
         })
         .eq('id', chatId);
 
-      if (error) throw error;
+      if (chatError) throw chatError;
       
-      // Atualiza o estado local do chat
       setChat(prev => prev ? {
         ...prev,
         status: 'closed',
-        end_time: new Date().toISOString()
+        end_time: new Date().toISOString(),
+        closure_type_id: closureTypeId,
+        title: title
       } : null);
       
+      setShowResolutionModal(false);
     } catch (error) {
       console.error('Erro ao resolver chat:', error);
       setError(t('errors.resolving'));
@@ -216,7 +261,6 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           chat_id: chatId,
           type: 'user_start',
           sender_type: 'system',
-          sent_from_system: true,
           sender_agent_id: user.data.user.id,
           organization_id: organizationId,
           created_at: new Date().toISOString()
@@ -298,7 +342,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           {chat?.status === 'in_progress' && (
             <button
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-              onClick={handleResolveChat}
+              onClick={() => setShowResolutionModal(true)}
             >
               {t('resolve')}
             </button>
@@ -388,6 +432,13 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
         />,
         document.body
       )}
+
+      <ChatResolutionModal
+        isOpen={showResolutionModal}
+        onClose={() => setShowResolutionModal(false)}
+        onConfirm={handleResolveChat}
+        closureTypes={closureTypes}
+      />
     </>
   );
 }

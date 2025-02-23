@@ -126,5 +126,12 @@
     "userTransferred": "Chat transferido para {{name}}",
     "userClosed": "Chat encerrado por {{name}}"
   },
-  "noChatsFound": "Nenhum atendimento encontrado"
+  "noChatsFound": "Nenhum atendimento encontrado",
+  "resolution": {
+    "title": "Resolver Conversa",
+    "summaryPlaceholder": "Digite um breve resumo da conversa..."
+  },
+  "confirm": "Confirmar",
+  "cancel": "Cancelar",
+  "loading": "Carregando..."
 }
