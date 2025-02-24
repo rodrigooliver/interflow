@@ -59,7 +59,8 @@
     "end": "Fin"
   },
   "input": {
-    "placeholder": "Escribe tu mensaje..."
+    "placeholder": "Escribe tu mensaje...",
+    "waitingConnection": "Esperando conexión con el servidor..."
   },
   "send": "Enviar mensaje",
   "formatting": {
@@ -94,7 +95,8 @@
     "loading": "Error al cargar mensajes",
     "sending": "Error al enviar mensaje",
     "microphoneAccess": "Error al acceder al micrófono",
-    "uploadFailed": "Error al subir el archivo de audio"
+    "uploadFailed": "Error al subir el archivo de audio",
+    "waitingConnection": "Esperando conexión con el servidor..."
   },
   "ai": {
     "title": "Mejorar texto con IA",

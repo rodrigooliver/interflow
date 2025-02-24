@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { supabase } from '../../../lib/supabase';
+import api from '../../../lib/api';
 
 export default function EmailChannelForm() {
   const { t } = useTranslation(['channels', 'common']);
@@ -116,42 +117,27 @@ export default function EmailChannelForm() {
     }
     
     try {
-      // Ensure API URL is available
-      if (!API_URL) {
-        throw new Error('API URL is not configured');
-      }
-
-      const response = await fetch(`${API_URL}/api/test-email-connection`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // IMAP settings
-          host: formData.host,
-          port: formData.port,
-          secure: formData.secure,
-          username: formData.username,
-          password: formData.password,
-          
-          // SMTP settings
-          smtpHost: formData.smtpHost,
-          smtpPort: formData.smtpPort,
-          smtpSecure: formData.smtpSecure,
-          smtpUsername: formData.smtpUsername,
-          smtpPassword: formData.smtpPassword,
-          
-          // Other settings
-          fromName: formData.fromName,
-          pollingInterval: formData.pollingInterval
-        }),
+      const response = await api.post(`/api/${currentOrganization?.id}/channel/email/test`, {
+        // IMAP settings
+        host: formData.host,
+        port: formData.port,
+        secure: formData.secure,
+        username: formData.username,
+        password: formData.password,
+        
+        // SMTP settings
+        smtpHost: formData.smtpHost,
+        smtpPort: formData.smtpPort,
+        smtpSecure: formData.smtpSecure,
+        smtpUsername: formData.smtpUsername,
+        smtpPassword: formData.smtpPassword,
+        
+        // Other settings
+        fromName: formData.fromName,
+        pollingInterval: formData.pollingInterval
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to connect to email server');
-      }
+      const data = response.data;
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to establish email connection');
@@ -166,7 +152,7 @@ export default function EmailChannelForm() {
     } catch (error: any) {
       console.error('Error testing email connection:', error);
       setConnectionStatus('error');
-      setError(error.message || t('form.email.error'));
+      setError(error.response?.data?.error || error.message || t('form.email.error'));
     } finally {
       setTesting(false);
     }

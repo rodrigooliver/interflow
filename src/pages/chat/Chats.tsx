@@ -138,62 +138,127 @@ export default function Chats() {
   }, []);
 
   const subscribeToChats = () => {
-    const subscription = supabase
-      .channel('chats')
+    const messagesSubscription = supabase
+      .channel('messages-status-changes')
       .on('postgres_changes', {
-        event: '*',
+        event: 'UPDATE',
         schema: 'public',
         table: 'messages',
         filter: `organization_id=eq.${currentOrganization?.id}`
       }, async (payload) => {
-        // Buscar o chat atualizado quando uma mensagem é alterada
-        const { data: chatData } = await supabase
-          .from('chats')
-          .select(`
-            *,
-            customer:customers(
-              name,
-              email,
-              whatsapp
-            ),
-            last_message:messages!chats_last_message_id_fkey(
-              content,
-              status,
-              error_message,
-              created_at,
-              sender_type
-            )
-          `)
-          .eq('id', payload.new.chat_id)
-          .single();
+        await updateChatInList(payload.new.chat_id);
+      })
+      .subscribe();
 
-        if (chatData) {
-          const processedChat = {
-            ...chatData,
-            last_message: chatData.last_message ? {
-              content: chatData.last_message.content,
-              status: chatData.last_message.status,
-              error_message: chatData.last_message.error_message,
-              created_at: chatData.last_message.created_at,
-              sender_type: chatData.last_message.sender_type
-            } : undefined
-          };
-
-          setChats(prev => {
-            const newChats = prev.filter(chat => chat.id !== payload.new.chat_id);
-            return [processedChat, ...newChats].sort((a, b) => {
-              const dateA = a.last_message?.created_at || '';
-              const dateB = b.last_message?.created_at || '';
-              return dateB.localeCompare(dateA);
-            });
-          });
-        }
+    const chatsSubscription = supabase
+      .channel('chats-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'chats',
+        filter: `organization_id=eq.${currentOrganization?.id}`
+      }, async (payload) => {
+        await updateChatInList(payload.new.id);
       })
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      messagesSubscription.unsubscribe();
+      chatsSubscription.unsubscribe();
     };
+  };
+
+  // Função auxiliar para atualizar um chat específico na lista
+  const updateChatInList = async (chatId: string) => {
+    const { data: chatData } = await supabase
+      .from('chats')
+      .select(`
+        *,
+        customer:customers(
+          name,
+          email,
+          whatsapp
+        ),
+        last_message:messages!chats_last_message_id_fkey(
+          content,
+          status,
+          error_message,
+          created_at,
+          sender_type
+        )
+      `)
+      .eq('id', chatId)
+      .single();
+
+    if (chatData) {
+      // Verificar se o chat corresponde aos filtros atuais
+      const shouldIncludeChat = () => {
+        switch (selectedFilter) {
+          case 'unassigned':
+            return chatData.status === 'pending';
+          case 'assigned-to-me':
+            return chatData.status === 'in_progress' && chatData.assigned_to === session?.user?.id;
+          case 'team':
+            return chatData.team_id === selectedTeam && chatData.assigned_to !== session?.user?.id;
+          case 'completed':
+            return chatData.status === 'closed';
+          case 'spam':
+            return chatData.status === 'spam';
+          default:
+            return true;
+        }
+      };
+
+      // Verificar filtros adicionais
+      const matchesAdditionalFilters = () => {
+        if (selectedAgent && chatData.assigned_to !== selectedAgent) return false;
+        if (selectedTeam && chatData.team_id !== selectedTeam) return false;
+        if (selectedChannel && chatData.channel_id !== selectedChannel) return false;
+        if (selectedTags.length > 0 && !selectedTags.every(tag => chatData.tags?.includes(tag))) return false;
+        if (selectedFunnel && chatData.funnel_id !== selectedFunnel) return false;
+        if (selectedStage && chatData.funnel_stage_id !== selectedStage) return false;
+        
+        // Verificar termo de busca
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          const matchesSearch = 
+            chatData.customer?.name?.toLowerCase().includes(searchLower) ||
+            chatData.customer?.email?.toLowerCase().includes(searchLower) ||
+            chatData.customer?.whatsapp?.toLowerCase().includes(searchLower);
+          if (!matchesSearch) return false;
+        }
+        
+        return true;
+      };
+
+      setChats(prev => {
+        // Remover o chat atual da lista
+        const newChats = prev.filter(chat => chat.id !== chatId);
+        
+        // Se o chat não corresponder aos filtros, retornar a lista sem ele
+        if (!shouldIncludeChat() || !matchesAdditionalFilters()) {
+          return newChats;
+        }
+
+        // Caso contrário, adicionar o chat atualizado e ordenar
+        const processedChat = {
+          ...chatData,
+          last_message: chatData.last_message ? {
+            content: chatData.last_message.content,
+            status: chatData.last_message.status,
+            error_message: chatData.last_message.error_message,
+            created_at: chatData.last_message.created_at,
+            sender_type: chatData.last_message.sender_type
+          } : undefined
+        };
+
+        return [processedChat, ...newChats].sort((a, b) => {
+          const dateA = a.last_message?.created_at || '';
+          const dateB = b.last_message?.created_at || '';
+          return dateB.localeCompare(dateA);
+        });
+      });
+    }
   };
 
   async function loadChats() {

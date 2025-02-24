@@ -12,6 +12,7 @@ import SettingsPage from './pages/settings/Settings';
 import BillingPage from './pages/settings/Billing';
 import IntegrationsPage from './pages/settings/Integrations';
 import NotificationsPage from './pages/settings/Notifications';
+import ApiKeysPage from './pages/settings/ApiKeysPage';
 import UsagePage from './pages/settings/Usage';
 import Login from './pages/Login';
 import Organizations from './pages/admin/Organizations';
@@ -159,6 +160,7 @@ function AppContent() {
                       <Route path="settings" element={<SettingsPage />} />
                       <Route path="settings/billing" element={<BillingPage />} />
                       <Route path="settings/integrations" element={<IntegrationsPage />} />
+                      <Route path="settings/api-keys" element={<ApiKeysPage />} />
                       <Route path="settings/notifications" element={<NotificationsPage />} />
                       <Route path="settings/usage" element={<UsagePage />} />
                       <Route path="team" element={<TeamMembers />} />
@@ -232,7 +234,9 @@ function App() {
           </I18nextProvider>
         </OrganizationProvider>
       </AuthProvider>
-      <ReactQueryDevtools initialIsOpen={false} /> {/* Opcional: ferramenta de desenvolvimento */}
+      {/* Removido temporariamente:
+      <ReactQueryDevtools initialIsOpen={false} />
+      */}
     </QueryClientProvider>
   );
 }

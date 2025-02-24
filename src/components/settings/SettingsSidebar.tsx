@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Bell, Link as LinkIcon, CreditCard, HardDrive, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Link as LinkIcon, CreditCard, HardDrive, ChevronRight, ChevronLeft, KeyIcon } from 'lucide-react';
 
 export function SettingsSidebar() {
   const { t } = useTranslation(['settings']);
@@ -29,6 +29,12 @@ export function SettingsSidebar() {
       icon: Bell, 
       label: t('settings:sections.notifications'),
       href: '/app/settings/notifications'
+    },
+    {
+      id: 'api-keys', 
+      icon: KeyIcon,
+      label: t('settings:sections.apiKeys'),
+      href: '/app/settings/api-keys',
     },
     { 
       id: 'integrations', 

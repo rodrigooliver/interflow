@@ -20,6 +20,9 @@
       "title": "Título",
       "titlePlaceholderOpenAI": "Título para OpenAI",
       "titlePlaceholderS3": "Título para AWS"
+    },
+    "errors": {
+      "invalidOpenAIKey": "Chave API OpenAI inválida. Por favor, verifique a chave e tente novamente."
     }
   },
   "fileManager": {

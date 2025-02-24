@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff } from 'lucide-react';
+import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff, Settings, Zap, Trash2, ArrowRightLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { supabase } from '../../../lib/supabase';
+import api from '../../../lib/api';
+import { toast } from 'react-hot-toast';
+
+type ConnectionType = 'custom' | 'interflow' | null;
 
 export default function WhatsAppWApiForm() {
   const { t } = useTranslation(['channels', 'common', 'status']);
   const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganization } = useOrganizationContext();
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -21,6 +24,7 @@ export default function WhatsAppWApiForm() {
   const [error, setError] = useState('');
   const [subscription, setSubscription] = useState<ReturnType<typeof supabase.channel> | null>(null);
   const [waitingQrCode, setWaitingQrCode] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Form state with default values
   const [formData, setFormData] = useState({
@@ -49,6 +53,19 @@ export default function WhatsAppWApiForm() {
 
   // Adicionar novo estado
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const [creating, setCreating] = useState(false);
+  const [connectionType, setConnectionType] = useState<ConnectionType>(null);
+
+  // Adicionar novo estado
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Adicionar novos estados
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferring, setTransferring] = useState(false);
+  const [availableChannels, setAvailableChannels] = useState<Array<{id: string, name: string}>>([]);
+  const [selectedChannelId, setSelectedChannelId] = useState('');
 
   const validateApiHost = (host: string) => {
     // Remove any protocol and trailing slashes
@@ -80,6 +97,12 @@ export default function WhatsAppWApiForm() {
       loadChannel();
       const sub = subscribeToChannelUpdates();
       setSubscription(sub);
+
+      // Se vier da criação do Interflow, já mostra a espera do QR code
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('source') === 'interflow') {
+        setWaitingQrCode(true);
+      }
     } else {
       setLoading(false);
     }
@@ -90,6 +113,13 @@ export default function WhatsAppWApiForm() {
       }
     };
   }, [id, currentOrganization]);
+
+  useEffect(() => {
+    // Se for edição, já mostra o formulário direto
+    if (id) {
+      setConnectionType('custom');
+    }
+  }, [id]);
 
   const subscribeToChannelUpdates = () => {
     if (!id) return null;
@@ -164,15 +194,14 @@ export default function WhatsAppWApiForm() {
       if (error) throw error;
 
       if (data) {
-        // Ensure credentials object exists and has all required fields
+        // Ensure credentials object exists with only non-sensitive fields
         const credentials = {
           apiHost: '',
-          apiConnectionKey: '',
-          apiToken: '',
-          webhookUrl: '',
-          qrCode: '',
-          qrExpiresAt: null,
-          ...data.credentials
+          apiConnectionKey: '', // Campo sensível - não preencher
+          apiToken: '', // Campo sensível - não preencher
+          webhookUrl: data.credentials?.webhookUrl || '',
+          qrCode: data.credentials?.qrCode || '',
+          qrExpiresAt: data.credentials?.qrExpiresAt || null
         };
 
         setFormData({
@@ -204,28 +233,13 @@ export default function WhatsAppWApiForm() {
     setError('');
 
     try {
-      // Ensure API URL is available
-      if (!API_URL) {
-        throw new Error('API URL is not configured');
-      }
-
-      const response = await fetch(`${API_URL}/api/webhook/wapi/test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          apiHost: formData.credentials.apiHost,
-          apiConnectionKey: formData.credentials.apiConnectionKey,
-          apiToken: formData.credentials.apiToken
-        }),
+      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/test`, {
+        apiHost: formData.credentials.apiHost,
+        apiConnectionKey: formData.credentials.apiConnectionKey,
+        apiToken: formData.credentials.apiToken
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to connect to WApi server');
-      }
+      const data = response.data;
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to establish WApi connection');
@@ -236,11 +250,11 @@ export default function WhatsAppWApiForm() {
         ...prev,
         is_tested: true
       }));
-      setShowConnectionSettings(false); // Esconde os campos após teste bem-sucedido
+      setShowConnectionSettings(false);
     } catch (error: any) {
       console.error('Error testing WApi connection:', error);
       setConnectionStatus('error');
-      setError(error.message || t('form.whatsapp.error'));
+      setError(error.response?.data?.error || error.message || t('form.whatsapp.error'));
     } finally {
       setTesting(false);
     }
@@ -254,32 +268,18 @@ export default function WhatsAppWApiForm() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/api/webhook/wapi/${id}/qr`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to generate QR code');
-      }
+      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/qr`);
+      const data = response.data;
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to generate QR code');
       }
-
-      // Removida a atualização do estado waitingQrCode aqui
-      // O estado será atualizado quando o QR code chegar via subscription
     } catch (error: any) {
       console.error('Error generating QR code:', error);
-      setError(error.message);
+      setError(error.response?.data?.error || error.message);
       setWaitingQrCode(false);
     } finally {
       setGeneratingQr(false);
-      // Não alteramos mais o waitingQrCode aqui
     }
   };
 
@@ -298,24 +298,13 @@ export default function WhatsAppWApiForm() {
     setResetSuccess(false);
 
     try {
-      const response = await fetch(`${API_URL}/api/webhook/wapi/${id}/reset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Falha ao reiniciar conexão');
-      }
+      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/reset`);
+      const data = response.data;
 
       if (!data.success) {
         throw new Error(data.error || 'Falha ao reiniciar conexão');
       }
 
-      // Atualiza o estado do formulário
       setFormData(prev => ({
         ...prev,
         is_connected: false,
@@ -326,17 +315,13 @@ export default function WhatsAppWApiForm() {
         }
       }));
       
-      // Mostra mensagem de sucesso
       setResetSuccess(true);
-      
-      // Remove a mensagem de sucesso após 3 segundos
       setTimeout(() => {
         setResetSuccess(false);
       }, 3000);
-
     } catch (error: any) {
       console.error('Erro ao reiniciar conexão:', error);
-      setError(error.message);
+      setError(error.response?.data?.error || error.message);
     } finally {
       setResetting(false);
     }
@@ -350,24 +335,13 @@ export default function WhatsAppWApiForm() {
     setDisconnectSuccess(false);
 
     try {
-      const response = await fetch(`${API_URL}/api/webhook/wapi/${id}/disconnect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Falha ao desconectar');
-      }
+      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/disconnect`);
+      const data = response.data;
 
       if (!data.success) {
         throw new Error(data.error || 'Falha ao desconectar');
       }
 
-      // Atualiza o estado do formulário
       setFormData(prev => ({
         ...prev,
         is_connected: false,
@@ -380,15 +354,12 @@ export default function WhatsAppWApiForm() {
       
       setDisconnectSuccess(true);
       setShowDisconnectModal(false);
-      
-      // Remove a mensagem de sucesso após 3 segundos
       setTimeout(() => {
         setDisconnectSuccess(false);
       }, 3000);
-
     } catch (error: any) {
       console.error('Erro ao desconectar:', error);
-      setError(error.message);
+      setError(error.response?.data?.error || error.message);
     } finally {
       setDisconnecting(false);
     }
@@ -424,78 +395,326 @@ export default function WhatsAppWApiForm() {
     }
   };
 
+  const handleInterflowConnection = async () => {
+    if (!currentOrganization || !formData.name.trim()) return;
+    
+    setCreating(true);
+    setError('');
+
+    try {
+      const response = await api.post(`/api/${currentOrganization.id}/channel/wapi/interflow`, {
+        type: 'whatsapp_wapi',
+        name: formData.name.trim(),
+        settings: {
+          autoReply: true,
+          notifyNewTickets: true
+        },
+        status: 'inactive'
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to create Interflow channel');
+      }
+
+      // Redireciona para a página de edição com parâmetro source=interflow
+      navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi?source=interflow`);
+    } catch (error: any) {
+      console.error('Error creating Interflow channel:', error);
+      setError(error.response?.data?.error || error.message || t('common:error'));
+      setConnectionType(null); // Reset da seleção em caso de erro
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Adicionar função para deletar
+  const handleDelete = async () => {
+    if (!id || !currentOrganization) return;
+    
+    setDeleting(true);
+    setError('');
+
+    try {
+      const response = await api.delete(`/api/${currentOrganization.id}/channel/wapi/${id}`);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to delete channel');
+      }
+
+      // Redirecionar para a lista de canais
+      navigate('/app/channels');
+    } catch (error: any) {
+      console.error('Error deleting channel:', error);
+      setError(error.response?.data?.error || error.message || t('common:error'));
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!currentOrganization) return;
     
     setSaving(true);
     setError('');
+    setSaveSuccess(false);
 
     try {
-      // For new channels, require testing before creation
-      if (!id && !formData.is_tested) {
+      // Para novos canais ou ao editar credenciais, exigir teste antes de salvar
+      if ((!id || showConnectionSettings) && !formData.is_tested) {
         setError(t('channels:errors.testRequired'));
         setSaving(false);
         return;
       }
 
-      // Generate webhook URL with channel identifier
-      const webhookUrl = `${API_URL}/api/webhook/wapi/${id || 'new'}`;
-
-      const credentials = {
-        ...formData.credentials,
-        webhookUrl
+      const channelData = {
+        name: formData.name,
+        credentials: showConnectionSettings && formData.is_tested 
+          ? formData.credentials 
+          : undefined,
+        // Se estiver salvando novas credenciais testadas, marca como testado mas desconectado
+        is_tested: showConnectionSettings ? true : formData.is_tested,
+        is_connected: showConnectionSettings ? false : formData.is_connected,
+        status: formData.status
       };
 
       if (id) {
         // Update existing channel
-        const { error } = await supabase
-          .from('chat_channels')
-          .update({
-            name: formData.name,
-            credentials,
-            is_tested: formData.is_tested,
-            is_connected: formData.is_connected,
-            status: formData.status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id);
-
-        if (error) throw error;
+        const response = await api.put(`/api/${currentOrganization.id}/channel/wapi/${id}`, channelData);
         
-        // Stay on edit page
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Failed to update channel');
+        }
+
+        // Reload channel data
         await loadChannel();
+        setSaveSuccess(true);
+        
+        // Se salvou novas credenciais, reseta o estado de exibição das configurações
+        if (showConnectionSettings) {
+          setShowConnectionSettings(false);
+        }
+        
+        // Limpar mensagem de sucesso após 3 segundos
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 3000);
       } else {
         // Create new channel
-        const { data, error } = await supabase
-          .from('chat_channels')
-          .insert([{
-            organization_id: currentOrganization.id,
-            name: formData.name,
-            type: 'whatsapp_wapi',
-            credentials,
-            settings: {
-              autoReply: true,
-              notifyNewTickets: true
-            },
-            status: 'inactive',
-            is_connected: false,
-            is_tested: true
-          }])
-          .select()
-          .single();
+        const response = await api.post(`/api/${currentOrganization.id}/channel/wapi`, {
+          ...channelData,
+          type: 'whatsapp_wapi',
+          settings: {
+            autoReply: true,
+            notifyNewTickets: true
+          },
+          status: 'inactive',
+          is_connected: false,
+          is_tested: true
+        });
 
-        if (error) throw error;
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Failed to create channel');
+        }
 
+        setSaveSuccess(true);
         // Redirect to edit page for QR code generation
-        navigate(`/app/channels/${data.id}/edit/whatsapp_wapi`);
+        navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving channel:', error);
-      setError(t('common:error'));
+      setError(error.response?.data?.error || error.message || t('common:error'));
     } finally {
       setSaving(false);
     }
+  }
+
+  // Atualizar a renderização do QR code para mostrar loading quando estiver esperando
+  const renderQrCode = () => {
+    if (waitingQrCode) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <Loader2 className="w-8 h-8 text-primary-500 animate-spin mb-4" />
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t('channels:form.whatsapp.waitingQrCode')}
+          </p>
+        </div>
+      );
+    }
+
+    if (formData.credentials.qrCode) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <QRCodeSVG
+            value={formData.credentials.qrCode}
+            size={256}
+            level="H"
+            includeMargin={true}
+          />
+          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+            {t('channels:form.whatsapp.scanQrCode')}
+          </p>
+          {isQrCodeExpired() && (
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+              {t('channels:form.whatsapp.qrCodeExpired')}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // Adicionar após as outras funções de carregamento
+  const loadAvailableChannels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_channels')
+        .select('id, name')
+        .eq('type', 'whatsapp_wapi')
+        .eq('organization_id', currentOrganization?.id)
+        .neq('id', id) // Exclui o canal atual
+        .eq('status', 'active'); // Apenas canais ativos
+
+      if (error) throw error;
+      setAvailableChannels(data || []);
+    } catch (error) {
+      console.error('Error loading channels:', error);
+      setError(t('common:error'));
+    }
+  };
+
+  // Adicionar função de transferência
+  const handleTransferChats = async () => {
+    if (!selectedChannelId || !id) return;
+    
+    setTransferring(true);
+    setError('');
+
+    try {
+      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/transfer`, {
+        targetChannelId: selectedChannelId
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to transfer chats');
+      }
+
+      setShowTransferModal(false);
+      // Mostrar mensagem de sucesso temporária
+      toast.success(t('channels:form.whatsapp.transferSuccess'));
+    } catch (error: any) {
+      console.error('Error transferring chats:', error);
+      setError(error.response?.data?.error || error.message || t('common:error'));
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  if (!id && connectionType === null) {
+    return (
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            {error && (
+              <div className="mb-6 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
+                {error}
+              </div>
+            )}
+            
+            {/* Campo de nome */}
+            <div className="mb-8">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('form.name')} *
+              </label>
+              <input
+                type="text"
+                id="name"
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder={t('form.whatsapp.namePlaceholder')}
+              />
+            </div>
+
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">
+              {t('channels:form.whatsapp.selectConnectionType')}
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Opção para conexão personalizada */}
+              <button
+                onClick={() => setConnectionType('custom')}
+                disabled={creating || !formData.name.trim()}
+                className="relative border border-gray-300 dark:border-gray-600 rounded-lg p-6 hover:border-primary-500 dark:hover:border-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex items-center mb-4">
+                  <Settings className="w-6 h-6 text-primary-500 mr-2" />
+                  <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
+                    {t('channels:form.whatsapp.customConnection')}
+                  </h3>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('channels:form.whatsapp.customConnectionDescription')}
+                </p>
+              </button>
+
+              {/* Opção para conexão Interflow */}
+              <button
+                onClick={handleInterflowConnection}
+                disabled={creating || !formData.name.trim()}
+                className="relative border border-gray-300 dark:border-gray-600 rounded-lg p-6 hover:border-primary-500 dark:hover:border-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex items-center mb-4">
+                  {creating ? (
+                    <Loader2 className="w-6 h-6 text-primary-500 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="w-6 h-6 text-primary-500 mr-2" />
+                  )}
+                  <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
+                    {creating ? t('channels:form.whatsapp.creatingConnection') : t('channels:form.whatsapp.interflowConnection')}
+                  </h3>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('channels:form.whatsapp.interflowConnectionDescription')}
+                </p>
+                <span className="absolute top-2 right-2 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs font-medium px-2 py-1 rounded">
+                  {t('common:recommended')}
+                </span>
+              </button>
+            </div>
+
+            {!formData.name.trim() && (
+              <p className="mt-4 text-sm text-yellow-600 dark:text-yellow-400">
+                {t('channels:form.whatsapp.nameRequired')}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Se for conexão Interflow, redireciona para outra página ou mostra outro componente
+  if (connectionType === 'interflow') {
+    return (
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">
+              {t('channels:whatsapp.interflowSetup')}
+            </h2>
+            {/* Adicionar aqui o conteúdo para configuração do Interflow */}
+            <p className="text-gray-500 dark:text-gray-400">
+              {t('channels:whatsapp.interflowSetupDescription')}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (id && (!formData.name || loading)) {
@@ -535,34 +754,57 @@ export default function WhatsAppWApiForm() {
             </div>
           )}
 
-          {id && (
-            <button
-              onClick={handleToggleStatus}
-              disabled={updatingStatus || !formData.is_tested || !formData.is_connected}
-              className={`ml-auto inline-flex items-center px-3 py-2 rounded-md ${
-                formData.status === 'active'
-                  ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-500'
-                  : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-              title={!formData.is_tested ? t('errors.testRequired') : !formData.is_connected ? t('errors.connectionRequired') : undefined}
-            >
-              {updatingStatus ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  {t('status.updating')}
-                </>
-              ) : (
-                <>
-                  {formData.status === 'active' ? (
-                    <Power className="w-5 h-5 mr-2" />
+          {/* Botões de ação */}
+          <div className="ml-auto flex items-center space-x-2">
+            {id && (
+              <>
+                <button
+                  onClick={handleToggleStatus}
+                  disabled={updatingStatus || !formData.is_tested || !formData.is_connected}
+                  className={`inline-flex items-center px-3 py-2 rounded-md ${
+                    formData.status === 'active'
+                      ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-500'
+                      : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={!formData.is_tested ? t('errors.testRequired') : !formData.is_connected ? t('errors.connectionRequired') : undefined}
+                >
+                  {updatingStatus ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      {t('status.updating')}
+                    </>
                   ) : (
-                    <PowerOff className="w-5 h-5 mr-2" />
+                    <>
+                      {formData.status === 'active' ? (
+                        <Power className="w-5 h-5 mr-2" />
+                      ) : (
+                        <PowerOff className="w-5 h-5 mr-2" />
+                      )}
+                      {formData.status === 'active' ? t('status.deactivate') : t('status.activate')}
+                    </>
                   )}
-                  {formData.status === 'active' ? t('status.deactivate') : t('status.activate')}
-                </>
-              )}
-            </button>
-          )}
+                </button>
+
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={deleting}
+                  className="inline-flex items-center px-3 py-2 rounded-md text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      {t('common:deleting')}
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-5 h-5 mr-2" />
+                      {t('common:delete')}
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
@@ -570,6 +812,13 @@ export default function WhatsAppWApiForm() {
             {error && (
               <div className="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
                 {error}
+              </div>
+            )}
+
+            {saveSuccess && (
+              <div className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 p-4 rounded-md flex items-center">
+                <CheckCircle2 className="w-5 h-5 mr-2" />
+                {t('common:saveSuccess')}
               </div>
             )}
 
@@ -604,24 +853,24 @@ export default function WhatsAppWApiForm() {
                     onClick={() => setShowConnectionSettings(true)}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                   >
-                    {t('form.whatsapp.editConnection')}
+                    {t('form.whatsapp.newConnection')}
                   </button>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <div className="mb-2">
-                      <span className="font-medium">API Host:</span> {formData.credentials.apiHost}
-                    </div>
-                    <div>
-                      <span className="font-medium">
-                        {t('form.whatsapp.credentialsConfigured')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                
               </div>
             ) : (
               <div className="space-y-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                {showConnectionSettings && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-md mb-4">
+                    <div className="flex">
+                      <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
+                      <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                        {t('form.whatsapp.newConnectionWarning')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label htmlFor="apiHost" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     API Host
@@ -739,12 +988,12 @@ export default function WhatsAppWApiForm() {
                       </div>
                     )}
                     
-                    <div className="flex items-center p-4 bg-green-50 dark:bg-green-900/50 rounded-lg">
+                    {/* <div className="flex items-center p-4 bg-green-50 dark:bg-green-900/50 rounded-lg">
                       <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400 mr-2" />
                       <span className="text-green-700 dark:text-green-400">
                         {t('form.whatsapp.connectionSuccess')}
                       </span>
-                    </div>
+                    </div> */}
                     
                     {/* Botões de ação */}
                     <div className="flex space-x-3">
@@ -836,6 +1085,20 @@ export default function WhatsAppWApiForm() {
               </div>
             )}
 
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  loadAvailableChannels();
+                  setShowTransferModal(true);
+                }}
+                className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowRightLeft className="w-4 h-4 mr-2" />
+                {t('form.whatsapp.transferChats')}
+              </button>
+            </div>
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -897,6 +1160,96 @@ export default function WhatsAppWApiForm() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              {t('channels:form.whatsapp.deleteConfirmTitle')}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              {t('channels:form.whatsapp.deleteConfirmMessage')}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md"
+              >
+                {t('common:cancel')}
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
+              >
+                {deleting ? t('common:deleting') : t('common:delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Transferência de Chats */}
+      {showTransferModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              {t('channels:form.whatsapp.transferTitle')}
+            </h3>
+            
+            {error && (
+              <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
+                {error}
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label htmlFor="targetChannel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('channels:form.whatsapp.selectTargetChannel')}
+              </label>
+              <select
+                id="targetChannel"
+                value={selectedChannelId}
+                onChange={(e) => setSelectedChannelId(e.target.value)}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="">{t('channels:form.whatsapp.selectChannel')}</option>
+                {availableChannels.map(channel => (
+                  <option key={channel.id} value={channel.id}>
+                    {channel.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowTransferModal(false)}
+                disabled={transferring}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md"
+              >
+                {t('common:cancel')}
+              </button>
+              <button
+                onClick={handleTransferChats}
+                disabled={transferring || !selectedChannelId}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 inline-flex items-center"
+              >
+                {transferring ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {t('channels:form.whatsapp.transferring')}
+                  </>
+                ) : (
+                  t('channels:form.whatsapp.transfer')
+                )}
+              </button>
             </div>
           </div>
         </div>

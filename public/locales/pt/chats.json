@@ -60,7 +60,8 @@
     "end": "Fim"
   },
   "input": {
-    "placeholder": "Digite sua mensagem..."
+    "placeholder": "Digite sua mensagem...",
+    "waitingConnection": "Aguardando conexão com o servidor..."
   },
   "send": "Enviar mensagem",
   "formatting": {
@@ -95,7 +96,8 @@
     "loading": "Erro ao carregar mensagens",
     "sending": "Erro ao enviar mensagem",
     "microphoneAccess": "Não foi possível acessar o microfone. Verifique suas permissões.",
-    "uploadFailed": "Falha ao enviar o arquivo de áudio"
+    "uploadFailed": "Falha ao enviar o arquivo de áudio",
+    "waitingConnection": "Aguardando conexão com o servidor..."
   },
   "ai": {
     "title": "Melhorar texto com IA",
@@ -133,5 +135,8 @@
   },
   "confirm": "Confirmar",
   "cancel": "Cancelar",
-  "loading": "Carregando..."
+  "loading": "Carregando...",
+  "showAllMessages": "Mostrar todas as mensagens",
+  "showCurrentChat": "Mostrar chat atual",
+  "unnamed": "Sem nome"
 }

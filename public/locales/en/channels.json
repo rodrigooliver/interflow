@@ -51,7 +51,20 @@
       "disconnectSuccess": "WhatsApp disconnected successfully!",
       "disconnectTitle": "Disconnect WhatsApp",
       "disconnectWarning": "Are you sure you want to disconnect WhatsApp? It will require a new QR code to reconnect.",
-      "confirmDisconnect": "Yes, disconnect"
+      "confirmDisconnect": "Yes, disconnect",
+      "newConnection": "Insert new connection credentials",
+      "secureCredentials": "Credentials stored securely",
+      "newConnectionWarning": "Attention: Inserting new credentials will replace the existing ones. It is necessary to test before saving.",
+      "selectConnectionType": "Select connection type",
+      "customConnection": "Custom Connection",
+      "customConnectionDescription": "Configure your own WhatsApp connection using your API credentials.",
+      "interflowConnection": "Interflow Connection",
+      "interflowConnectionDescription": "Use our managed connection for a simpler and faster configuration.",
+      "creatingConnection": "Creating connection...",
+      "namePlaceholder": "Enter channel name. Ex: WhatsApp",
+      "nameRequired": "Enter a name to continue",
+      "deleteConfirmTitle": "Remove WhatsApp Channel",
+      "deleteConfirmMessage": "Are you sure you want to remove this channel? This action cannot be undone."
     }
   },
   "types": {

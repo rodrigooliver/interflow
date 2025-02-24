@@ -51,7 +51,20 @@
       "disconnectSuccess": "WhatsApp desconectado con éxito!",
       "disconnectTitle": "Desconectar WhatsApp",
       "disconnectWarning": "¿Está seguro de que desea desconectar WhatsApp? Será necesario escanear el código QR nuevamente para reconectarse.",
-      "confirmDisconnect": "Sí, desconectar"
+      "confirmDisconnect": "Sí, desconectar",
+      "newConnection": "Insertar nuevas credenciales de conexión",
+      "secureCredentials": "Credenciales almacenadas de forma segura",
+      "newConnectionWarning": "Atención: Insertar nuevas credenciales reemplazará las existentes. Es necesario probar antes de guardar.",
+      "selectConnectionType": "Seleccione el tipo de conexión",
+      "customConnection": "Conexión Personalizada",
+      "customConnectionDescription": "Configure su propia conexión WhatsApp usando sus credenciales de la API.",
+      "interflowConnection": "Conexión Interflow",
+      "interflowConnectionDescription": "Use nuestra conexión gestionada para una configuración más simple y rápida.",
+      "creatingConnection": "Creando conexión...",
+      "namePlaceholder": "Digite el nombre del canal. Ej: WhatsApp",
+      "nameRequired": "Digite un nombre para continuar",
+      "deleteConfirmTitle": "Eliminar canal WhatsApp",
+      "deleteConfirmMessage": "¿Está seguro de que desea eliminar este canal? Esta acción no se puede deshacer."
     }
   },
   "types": {

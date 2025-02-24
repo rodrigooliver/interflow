@@ -20,17 +20,24 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const [chat, setChat] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isSubscriptionReady, setIsSubscriptionReady] = useState(false);
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [showResolutionModal, setShowResolutionModal] = useState(false);
   const [closureTypes, setClosureTypes] = useState<ClosureType[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const MESSAGES_PER_PAGE = 20;
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
 
     if (chatId) {
+      setPage(1);
+      setHasMore(true);
       loadChat();
-      loadMessages();
+      loadMessages(1, false);
       subscription = subscribeToMessages();
     }
 
@@ -42,8 +49,10 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   }, [chatId]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (page === 1) {
+      scrollToBottom();
+    }
+  }, [messages, page]);
 
   useEffect(() => {
     loadClosureTypes();
@@ -59,6 +68,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
         filter: `chat_id=eq.${chatId}`
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
+          // console.log('payload', payload);
           setMessages(prev => [...prev, payload.new as Message]);
         } else if (payload.eventType === 'UPDATE') {
           setMessages(prev => prev.map(msg => 
@@ -66,12 +76,18 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           ));
         }
       })
-      .subscribe();
-
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+        if(status === 'SUBSCRIBED') {
+          setTimeout(() => {
+            setIsSubscriptionReady(true);
+          }, 2000);
+        }
+      });
     return subscription;
   };
 
-  const loadMessages = async () => {
+  const loadMessages = async (pageNumber = 1, append = false) => {
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -92,16 +108,26 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           )
         `)
         .eq('chat_id', chatId)
-        .order('created_at');
+        .order('created_at', { ascending: false })
+        .range((pageNumber - 1) * MESSAGES_PER_PAGE, pageNumber * MESSAGES_PER_PAGE - 1);
 
       if (error) throw error;
-      setMessages(data || []);
+
+      const newMessages = data || [];
+      setHasMore(newMessages.length === MESSAGES_PER_PAGE);
+      
+      if (append) {
+        setMessages(prev => [...newMessages.reverse(), ...prev]);
+      } else {
+        setMessages(newMessages.reverse());
+      }
     } catch (error) {
       console.error('Error loading messages:', error);
       setError(t('errors.loading'));
     } finally {
       setLoading(false);
     }
+    return;
   };
 
   const loadChat = async () => {
@@ -297,6 +323,29 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     }
   };
 
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container || !hasMore) return;
+
+    if (container.scrollTop === 0) {
+      // Salva a altura do primeiro elemento antes de carregar mais
+      const oldScrollHeight = container.scrollHeight;
+
+      setPage(prev => {
+        const newPage = prev + 1;
+        loadMessages(newPage, true).then(() => {
+          // Após o conteúdo ser carregado, mantém a posição anterior
+          if (container) {
+            requestAnimationFrame(() => {
+              container.scrollTop = container.scrollHeight - oldScrollHeight;
+            });
+          }
+        });
+        return newPage;
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -350,36 +399,63 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 relative">
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 p-3 rounded-md text-center">
-            {error}
-          </div>
-        )}
-        
-        {Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
-          <div key={date}>
-            <div className="sticky top-2 flex justify-center mb-4 z-10">
-              <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
-                {formatMessageDate(dateMessages[0].created_at)}
-              </span>
-            </div>
-            
-            <div className="space-y-4">
-              {dateMessages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  chatStatus={chat?.status}
-                  onReply={(message) => {
-                    setReplyingTo(message);
-                  }}
-                />
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+        onScroll={handleScroll}
+      >
+        {loading && page === 1 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="space-y-4 w-full max-w-lg">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-start space-x-4 animate-pulse">
+                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-        ))}
-        <div ref={messagesEndRef} />
+        ) : (
+          <>
+            {/* {hasMore && (
+              <div className="text-center py-2">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+              </div>
+            )} */}
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 p-3 rounded-md text-center">
+                {error}
+              </div>
+            )}
+            
+            {Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
+              <div key={date}>
+                <div className="sticky top-2 flex justify-center mb-4 z-10">
+                  <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
+                    {formatMessageDate(dateMessages[0].created_at)}
+                  </span>
+                </div>
+                
+                <div className="space-y-4">
+                  {dateMessages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      chatStatus={chat?.status}
+                      onReply={(message) => {
+                        setReplyingTo(message);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
 
       {chat?.status === 'in_progress' && (
@@ -393,6 +469,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
               onClose: () => setReplyingTo(null)
             } : undefined
           }
+          isSubscriptionReady={isSubscriptionReady}
         />
       )}
 

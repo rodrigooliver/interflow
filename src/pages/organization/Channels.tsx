@@ -154,7 +154,7 @@ export default function Channels() {
             canManage={membership?.role === 'owner' || membership?.role === 'admin'}
             onToggleStatus={() => handleToggleStatus(channel)}
             onEdit={() => navigate(`/app/channels/${channel.id}/edit`)}
-            onDelete={() => {
+            onDelete={channel.type === 'whatsapp_wapi' ? undefined : () => {
               setSelectedChannel(channel);
               setShowDeleteModal(true);
             }}
@@ -164,7 +164,7 @@ export default function Channels() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && selectedChannel && (
+      {showDeleteModal && selectedChannel && selectedChannel.type !== 'whatsapp_wapi' && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">

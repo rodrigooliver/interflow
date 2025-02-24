@@ -249,4 +249,19 @@ export interface ClosureType {
   created_at: string;
 }
 
+export interface ApiKey {
+  id: string;
+  organization_id: Organization;
+  profile_id?: Profile;
+  name: string;
+  key_hash: string;
+  is_active: boolean;
+  expires_at?: string;
+  created_at: string;
+  updated_at: string;
+  last_used_at?: string;
+  permissions: any[];
+  created_by?: string;
+}
+
 

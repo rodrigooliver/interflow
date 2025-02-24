@@ -18,6 +18,11 @@
   "pageOf": "Página {{current}} de {{total}}",
   "remove": "Remover",
   "delete": "Excluir",
+  "done": "Feito",
+  "expiresAt": "Expira em",
+  "createdAt": "Criado em",
+  "saveSuccess": "Alterações salvas com sucesso!",
+  "recommended": "Recomendado",
   "delete_confirmation": {
     "title": "Excluir",
     "message": "Tem certeza que deseja excluir este item?"

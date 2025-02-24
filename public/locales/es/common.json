@@ -19,6 +19,11 @@
   "remove": "Eliminar",
   "all": "Todos",
   "delete": "Eliminar",
+  "done": "Hecho",
+  "expiresAt": "Expira el",
+  "createdAt": "Creado el",
+  "saveSuccess": "Cambios guardados correctamente!",
+  "recommended": "Recomendado",
   "delete_confirmation": {
     "title": "Eliminar",
     "message": "¿Estás seguro de querer eliminar este elemento?"

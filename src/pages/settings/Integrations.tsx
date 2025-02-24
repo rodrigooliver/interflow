@@ -128,68 +128,15 @@ export default function IntegrationsPage() {
     }
   }, [currentOrganization]);
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentOrganization) return;
-
-    setSaving(true);
-    setError('');
-
-    try {
-      const { title, ...credentials } = formData;
-      const { error } = await supabase
-        .from('integrations')
-        .insert([{
-          organization_id: currentOrganization.id,
-          title,
-          type: selectedType,
-          credentials,
-          status: 'active'
-        }]);
-
-      if (error) throw error;
-
-      await loadIntegrations();
-      setShowAddModal(false);
-      setFormData({});
-    } catch (error) {
-      console.error('Error adding integration:', error);
-      setError(t('common:error'));
-    } finally {
-      setSaving(false);
-    }
+  const handleAddSuccess = async () => {
+    await loadIntegrations();
+    setShowAddModal(false);
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentOrganization || !selectedIntegration) return;
-
-    setSaving(true);
-    setError('');
-
-    try {
-      const { title, ...credentials } = formData;
-      const { error } = await supabase
-        .from('integrations')
-        .update({
-          title,
-          credentials,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedIntegration.id);
-
-      if (error) throw error;
-
-      await loadIntegrations();
-      setShowEditModal(false);
-      setSelectedIntegration(null);
-      setFormData({});
-    } catch (error) {
-      console.error('Error updating integration:', error);
-      setError(t('common:error'));
-    } finally {
-      setSaving(false);
-    }
+  const handleEditSuccess = async () => {
+    await loadIntegrations();
+    setShowEditModal(false);
+    setSelectedIntegration(null);
   };
 
   const handleDelete = async (integration: Integration) => {
@@ -353,12 +300,11 @@ export default function IntegrationsPage() {
                         type={selectedType}
                         formData={formData}
                         setFormData={setFormData}
-                        onSubmit={handleAdd}
+                        onSuccess={handleAddSuccess}
                         onCancel={() => {
                           setShowAddModal(false);
                           setFormData({});
                         }}
-                        saving={saving}
                       />
                     </div>
                   </div>
@@ -390,13 +336,12 @@ export default function IntegrationsPage() {
                         type={selectedType}
                         formData={formData}
                         setFormData={setFormData}
-                        onSubmit={handleEdit}
+                        onSuccess={handleEditSuccess}
                         onCancel={() => {
                           setShowEditModal(false);
                           setSelectedIntegration(null);
                           setFormData({});
                         }}
-                        saving={saving}
                         integrationId={selectedIntegration.id}
                       />
                     </div>

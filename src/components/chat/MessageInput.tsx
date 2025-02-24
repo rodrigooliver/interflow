@@ -18,6 +18,7 @@ interface MessageInputProps {
     message: Message;
     onClose: () => void;
   };
+  isSubscriptionReady?: boolean;
 }
 
 interface EmojiData {
@@ -25,7 +26,7 @@ interface EmojiData {
   // outros campos do emoji se necessário
 }
 
-export function MessageInput({ chatId, organizationId, onMessageSent, replyTo }: MessageInputProps) {
+export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, isSubscriptionReady = false }: MessageInputProps) {
   const { profile } = useAuthContext();
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -124,28 +125,45 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo }:
   };
 
   const handleSend = async () => {
+    if (!isSubscriptionReady) {
+      setError(t('errors.waitingConnection'));
+      return;
+    }
+
     if (!message.trim() && pendingAttachments.length === 0) return;
 
-    let formattedMessage = message;
-    if (textFormat.bold) formattedMessage = `**${formattedMessage}**`;
-    if (textFormat.italic) formattedMessage = `_${formattedMessage}_`;
+    setSending(true);
+    setError('');
 
-    // If there are pending attachments, send them as separate messages
-    if (pendingAttachments.length > 0) {
-      for (const attachment of pendingAttachments) {
-        await handleSendMessage('', [attachment]);
+    try {
+      let formattedMessage = message;
+      if (textFormat.bold) formattedMessage = `**${formattedMessage}**`;
+      if (textFormat.italic) formattedMessage = `_${formattedMessage}_`;
+
+      // If there are pending attachments, send them as separate messages
+      if (pendingAttachments.length > 0) {
+        for (const attachment of pendingAttachments) {
+          await handleSendMessage('', [attachment]);
+        }
+        setPendingAttachments([]);
       }
-      setPendingAttachments([]);
-    }
 
-    // Send text message if there is one
-    if (formattedMessage.trim()) {
-      await handleSendMessage(formattedMessage);
-    }
+      // Send text message if there is one
+      if (formattedMessage.trim()) {
+        await handleSendMessage(formattedMessage);
+      }
 
-    setMessage('');
-    setShowEmojiPicker(false);
-    setShowAttachmentMenu(false);
+      // Limpa a mensagem e outros estados após envio bem-sucedido
+      setMessage('');
+      setShowEmojiPicker(false);
+      setShowAttachmentMenu(false);
+      setError('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setError(t('errors.sending'));
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -301,6 +319,13 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo }:
   const handleItalicClick = () => {
     applyFormatting('italic');
   };
+
+  // Limpa o erro quando a subscrição fica pronta
+  useEffect(() => {
+    if (isSubscriptionReady) {
+      setError('');
+    }
+  }, [isSubscriptionReady]);
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 pb-3 pt-2">
@@ -485,7 +510,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo }:
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder={t('input.placeholder')}
+          placeholder={isSubscriptionReady ? t('input.placeholder') : t('input.waitingConnection')}
           className="flex-1 min-h-[40px] max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
         />
         <button
@@ -507,11 +532,13 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo }:
         </button>
         <button
           onClick={handleSend}
-          disabled={sending || (!message.trim() && pendingAttachments.length === 0)}
+          disabled={sending || (!message.trim() && pendingAttachments.length === 0) || !isSubscriptionReady}
           className="p-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title={t('send')}
+          title={!isSubscriptionReady ? t('waitingConnection') : t('send')}
         >
           {sending ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : !isSubscriptionReady ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
             <Send className="w-5 h-5" />

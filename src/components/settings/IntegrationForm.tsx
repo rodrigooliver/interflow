@@ -8,10 +8,8 @@ interface IntegrationFormProps {
   type: 'openai' | 'aws_s3';
   formData: Record<string, string>;
   setFormData: (data: Record<string, string>) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSuccess: () => void;
   onCancel: () => void;
-  saving: boolean;
-  showTypeSelector?: boolean;
   integrationId?: string;
 }
 
@@ -23,19 +21,21 @@ interface Field {
   required: boolean;
 }
 
+const OPENAI_API_URL = 'https://api.openai.com/v1/models';
+
 export function IntegrationForm({
   type,
   formData,
   setFormData,
-  onSubmit,
+  onSuccess,
   onCancel,
-  saving,
-  showTypeSelector = false,
   integrationId
 }: IntegrationFormProps) {
   const { t } = useTranslation(['settings', 'common']);
   const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(!!integrationId);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (integrationId && currentOrganization) {
@@ -70,6 +70,22 @@ export function IntegrationForm({
     }
   }
 
+  async function validateOpenAIKey(apiKey: string): Promise<boolean> {
+    try {
+      const response = await fetch(OPENAI_API_URL, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.status === 200;
+    } catch (error) {
+      console.error('Erro ao validar chave OpenAI:', error);
+      return false;
+    }
+  }
+
   const integrationFields: Record<'openai' | 'aws_s3', Field[]> = {
     openai: [
       {
@@ -85,13 +101,6 @@ export function IntegrationForm({
         type: 'password',
         placeholder: 'sk-...',
         required: true
-      },
-      {
-        key: 'organization_id',
-        label: 'Organization ID',
-        type: 'text',
-        placeholder: 'org-...',
-        required: false
       }
     ],
     aws_s3: [
@@ -142,8 +151,59 @@ export function IntegrationForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Chama o onSubmit diretamente com os dados do formulário
-    await onSubmit(formData);
+    if (!currentOrganization) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const { title, ...credentials } = formData;
+
+      // Validar chave OpenAI se for uma integração do tipo OpenAI
+      if (type === 'openai') {
+        const isValidKey = await validateOpenAIKey(credentials.api_key);
+        if (!isValidKey) {
+          setError(t('settings:integrations.errors.invalidOpenAIKey'));
+          setSaving(false);
+          return;
+        }
+      }
+
+      if (integrationId) {
+        // Atualização
+        const { error } = await supabase
+          .from('integrations')
+          .update({
+            title,
+            credentials,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', integrationId);
+
+        if (error) throw error;
+      } else {
+        // Cadastro
+        const { error } = await supabase
+          .from('integrations')
+          .insert([{
+            organization_id: currentOrganization.id,
+            title,
+            type,
+            credentials,
+            status: 'active'
+          }]);
+
+        if (error) throw error;
+      }
+
+      onSuccess();
+      setFormData({});
+    } catch (error) {
+      console.error('Erro ao salvar integração:', error);
+      setError(t('common:error'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -171,6 +231,12 @@ export function IntegrationForm({
           />
         </div>
       ))}
+
+      {error && (
+        <div className="text-red-500 text-sm mt-2">
+          {error}
+        </div>
+      )}
 
       <div className="mt-6 flex justify-end space-x-3">
         <button

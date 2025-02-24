@@ -59,7 +59,8 @@
     "end": "End"
   },
   "input": {
-    "placeholder": "Type your message..."
+    "placeholder": "Type your message...",
+    "waitingConnection": "Waiting for server connection..."
   },
   "send": "Send message",
   "formatting": {
@@ -94,7 +95,8 @@
     "loading": "Error loading messages",
     "sending": "Error sending message",
     "microphoneAccess": "Could not access microphone. Please check your permissions.",
-    "uploadFailed": "Failed to upload audio file"
+    "uploadFailed": "Failed to upload audio file",
+    "waitingConnection": "Waiting for server connection..."
   },
   "ai": {
     "title": "Improve text with AI",

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Power, PowerOff, Loader2, X, Pencil, CheckCircle2, XCircle as XCircle2 } from 'lucide-react';
+import { Power, PowerOff, Loader2, X, Pencil, CheckCircle2, XCircle as XCircle2, Edit2, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ChatChannel } from '../../types/database';
@@ -8,7 +8,8 @@ interface ChannelCardProps {
   channel: ChatChannel;
   canManage: boolean;
   onToggleStatus: () => void;
-  onDelete: () => void;
+  onEdit: () => void;
+  onDelete?: () => void;
   updatingStatus: boolean;
 }
 
@@ -16,6 +17,7 @@ export function ChannelCard({
   channel,
   canManage,
   onToggleStatus,
+  onEdit,
   onDelete,
   updatingStatus
 }: ChannelCardProps) {
@@ -83,12 +85,14 @@ export function ChannelCard({
               >
                 <Pencil className="w-5 h-5" />
               </button>
-              <button
-                onClick={onDelete}
-                className="p-2 rounded-full text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-500"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  className="p-2 rounded-full text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-500"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              )}
             </div>
           )}
         </div>
