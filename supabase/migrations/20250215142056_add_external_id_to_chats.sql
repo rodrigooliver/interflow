@@ -56,6 +56,10 @@ ALTER TABLE chats ADD COLUMN title TEXT;
 ALTER TABLE chats ADD COLUMN flow_session_id UUID REFERENCES flow_sessions(id);
 ALTER TABLE chats ADD COLUMN rating INTEGER CHECK (rating >= 1 AND rating <= 5);
 ALTER TABLE chats ADD COLUMN feedback TEXT;
+ALTER TABLE chats ADD COLUMN profile_updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- Cria índice para melhorar performance de consultas que usam flow_session_id
 CREATE INDEX chats_flow_session_idx ON chats(flow_session_id);
+
+-- Cria índice para melhorar performance de consultas que usam profile_updated_at
+CREATE INDEX chats_profile_updated_idx ON chats(profile_updated_at);

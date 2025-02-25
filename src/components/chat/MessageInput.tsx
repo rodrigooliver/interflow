@@ -202,10 +202,12 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Determinar o formato suportado
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : 'audio/mp4';
+      // // Determinar o formato suportado
+      // const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+      //   ? 'audio/webm'
+      //   : 'audio/mp4';
+      // Forçar o uso do formato MP4
+      const mimeType = 'audio/mp4';
 
       const recorder = new MediaRecorder(stream, { mimeType });
       
@@ -220,9 +222,10 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
         audioChunksRef.current = [];
 
         try {
-          const extension = mimeType.split('/')[1];
+          // const extension = mimeType.split('/')[1];
           const timestamp = new Date().getTime(); // Usar timestamp como número
-          const fileName = `audio-${timestamp}.${extension}`;
+          // const fileName = `audio-${timestamp}.${extension}`;
+          const fileName = `audio-${timestamp}.mp4`;
           const file = new File([audioBlob], fileName, { type: mimeType });
           
           const { error } = await supabase.storage

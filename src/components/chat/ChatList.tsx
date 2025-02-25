@@ -4,6 +4,9 @@ import { ptBR, enUS, es } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Clock, Check, CheckCheck } from 'lucide-react';
 import { Chat } from '../../types/database';
+import { handleImageError } from '../../utils/chat';
+import { getChannelIcon } from '../../utils/channel';
+import { getRandomColor } from '../../utils/chat';
 
 const locales = {
   pt: ptBR,
@@ -27,23 +30,6 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
-
-  const getRandomColor = (name: string) => {
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-yellow-500',
-      'bg-purple-500',
-      'bg-pink-500',
-      'bg-indigo-500',
-      'bg-red-500',
-      'bg-teal-500'
-    ];
-    
-    // Use name to generate consistent color
-    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[index % colors.length];
   };
 
   const formatLastMessageTime = (timestamp: string) => {
@@ -119,7 +105,7 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto"> 
       {chats.map((chat) => (
         <a
           key={chat.id}
@@ -134,10 +120,28 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
           }`}
         >
           <div className="flex items-start space-x-3">
-            <div className={`flex-shrink-0 w-10 h-10 rounded-full ${getRandomColor(chat.customer?.name || 'Anônimo')} flex items-center justify-center`}>
-              <span className="text-white font-medium">
-                {getInitials(chat.customer?.name || 'Anônimo')}
-              </span>
+            <div className="relative">
+              <div className={`flex-shrink-0 w-10 h-10 rounded-full ${!chat.customer?.profile_picture ? getRandomColor(chat.customer?.name || 'Anônimo') : ''} flex items-center justify-center overflow-hidden`}>
+                {chat.profile_picture ? (
+                  <img
+                    src={chat.profile_picture}
+                    alt={chat.customer?.name || 'Anônimo'}
+                    className="w-full h-full object-cover"
+                    onError={() => handleImageError(chat.id)}
+                  />
+                ) : (
+                  <span className="text-white font-medium">
+                    {getInitials(chat.customer?.name || 'Anônimo')}
+                  </span>
+                )}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                <img
+                  src={getChannelIcon(chat.channel_type)}
+                  alt={chat.channel_type}
+                  className="w-3 h-3"
+                />
+              </div>
             </div>
             
             <div className="flex-1 min-w-0">

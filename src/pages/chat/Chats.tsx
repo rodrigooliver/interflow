@@ -275,6 +275,9 @@ export default function Chats() {
             email,
             whatsapp
           ),
+          channel:chat_channels(
+            type
+          ),
           last_message:messages!chats_last_message_id_fkey(
             content,
             status,
@@ -356,6 +359,7 @@ export default function Chats() {
 
       const processedChats = (data || []).map(chat => ({
         ...chat,
+        channel_type: chat.channel?.type,
         last_message: chat.last_message ? {
           content: chat.last_message.content,
           status: chat.last_message.status,

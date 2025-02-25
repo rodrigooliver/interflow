@@ -75,6 +75,10 @@
       "transfer": "Transferir",
       "transferring": "Transferindo...",
       "transferSuccess": "Chats transferidos com sucesso"
+    },
+    "instagram": {
+      "saveAndContinue": "Salvar e Continuar",
+      "connect": "Conectar Instagram"
     }
   },
   "types": {

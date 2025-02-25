@@ -3,6 +3,7 @@ import { Power, PowerOff, Loader2, X, Pencil, CheckCircle2, XCircle as XCircle2,
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ChatChannel } from '../../types/database';
+import { getChannelIcon } from '../../utils/channel';
 
 interface ChannelCardProps {
   channel: ChatChannel;
@@ -26,24 +27,6 @@ export function ChannelCard({
 
   const handleEdit = () => {
     navigate(`/app/channels/${channel.id}/edit/${channel.type}`);
-  };
-
-  const getChannelIcon = (type: string) => {
-    switch (type) {
-      case 'whatsapp_official':
-      case 'whatsapp_wapi':
-      case 'whatsapp_zapi':
-      case 'whatsapp_evo':
-        return '/whatsapp.svg';
-      case 'instagram':
-        return '/instagram.svg';
-      case 'facebook':
-        return '/facebook.svg';
-      case 'email':
-        return '/email.svg';
-      default:
-        return '/whatsapp.svg';
-    }
   };
 
   return (
