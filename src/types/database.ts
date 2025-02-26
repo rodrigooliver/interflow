@@ -3,7 +3,7 @@ export interface Chat {
   ticket_number: number;
   customer_id: Customer;
   organization_id: Organization;
-  channel_id: string;
+  channel_id: ChatChannel;
   team_id?: string;
   status: 'pending' | 'in_progress' | 'closed';
   created_at: string;
@@ -239,6 +239,21 @@ export interface Flow {
     y: number;
     zoom: number;
   };
+}
+
+export interface File {
+  id: string;
+  organization_id: Organization;
+  name: string;
+  size: number;
+  public_url: string;
+  path?: string;
+  message_id?: Message;
+  integration_id?: Integration;
+  flow_id?: Flow;
+  shortcut_id?: MessageShortcut;
+  mime_type: string;
+  created_at: string;
 }
 
 export interface ClosureType {

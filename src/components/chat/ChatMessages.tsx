@@ -1,15 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Message, Customer, ClosureType } from '../../types/database';
+import { Message, ClosureType } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
 import { MessageBubble } from './MessageBubble';
 import { CustomerEditModal } from '../customers/CustomerEditModal';
 import { ChatResolutionModal } from './ChatResolutionModal';
-import { handleImageError } from '../../utils/chat';
-import { getChannelIcon } from '../../utils/channel';
-import { getRandomColor } from '../../utils/chat';
+import { ChatAvatar } from './ChatAvatar';
 
 interface ChatMessagesProps {
   chatId: string;
@@ -372,37 +370,16 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
             className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
             onClick={() => setShowEditCustomer(true)}
           >
-            <div className="relative">
-              {headerLoading ? (
-                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-              ) : (
-                <>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${
-                    !chat?.profile_picture ? getRandomColor(chat?.customer?.name || 'Anônimo') : ''
-                  }`}>
-                    {chat?.profile_picture ? (
-                      <img
-                        src={chat.profile_picture}
-                        alt={chat?.customer?.name || 'Anônimo'}
-                        className="w-full h-full object-cover"
-                        onError={() => handleImageError(chatId)}
-                      />
-                    ) : (
-                      <span className="text-white font-medium">
-                        {getInitials(chat?.customer?.name || 'Anônimo')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                    <img
-                      src={getChannelIcon(chat?.channel_details?.type)}
-                      alt={chat?.channel_details?.type}
-                      className="w-3 h-3"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
+            {headerLoading ? (
+              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            ) : (
+              <ChatAvatar 
+                id={chatId}
+                name={chat?.customer?.name || 'Anônimo'}
+                profilePicture={chat?.profile_picture}
+                channel={chat?.channel_details}
+              />
+            )}
             <div>
               {headerLoading ? (
                 <div className="space-y-2">

@@ -9,10 +9,11 @@ import { AudioPlayer } from './AudioPlayer';
 import { AIImproveModal } from './AIImproveModal';
 import { Message } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import api from '../../lib/api';
 
 interface MessageInputProps {
   chatId: string;
-  organizationId: string;
   onMessageSent: () => void;
   replyTo?: {
     message: Message;
@@ -26,7 +27,7 @@ interface EmojiData {
   // outros campos do emoji se necessário
 }
 
-export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, isSubscriptionReady = false }: MessageInputProps) {
+export function MessageInput({ chatId, onMessageSent, replyTo, isSubscriptionReady = false }: MessageInputProps) {
   const { profile } = useAuthContext();
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -41,7 +42,12 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState<'image' | 'document' | null>(null);
   const [error, setError] = useState('');
-  const [pendingAttachments, setPendingAttachments] = useState<{ url: string; type: string; name: string }[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<{ 
+    file: File; 
+    preview: string; 
+    type: string; 
+    name: string 
+  }[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -50,6 +56,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
   const timerIntervalRef = useRef<NodeJS.Timeout>();
   const [showAIModal, setShowAIModal] = useState(false);
   const [sending, setSending] = useState(false);
+  const { currentOrganization } = useOrganizationContext();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,54 +80,73 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
     }
   }, [message]);
 
-  const handleSendMessage = async (content: string | null, attachments?: { url: string; type: string; name: string }[]) => {
-    setSending(true);
+  const handleFileUploadComplete = (file: File, type: string, name: string) => {
+    let preview = '';
+    
+    try {
+      // Criar URL para arquivos de imagem e áudio
+      if (file instanceof Blob && (type.startsWith('image/') || type.startsWith('audio/'))) {
+        preview = URL.createObjectURL(file);
+      }
+    } catch (error) {
+      console.error('Erro ao criar preview:', error);
+    }
+    
+    setPendingAttachments(prev => [...prev, { 
+      file, 
+      preview, 
+      type, 
+      name 
+    }]);
+  };
+
+  const handleSendMessage = async (content: string | null, attachments?: File[]) => {
     try {
       // Validação: content só pode ser null se houver anexos
       if (content === null && (!attachments || attachments.length === 0)) {
         throw new Error(t('errors.emptyMessage'));
       }
 
-      const messageData = {
-        chat_id: chatId,
-        organization_id: organizationId,
-        content: content,
-        sender_type: 'agent',
-        sent_from_system: true,
-        sender_agent_id: profile?.id,
-        status: 'pending',
-        attachments: attachments || [],
-        response_message_id: replyTo?.message.id || null
-      };
-
-      const { data: newMsg, error } = await supabase
-        .from('messages')
-        .insert([messageData])
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Preparar FormData para envio
+      const formData = new FormData();
       
-      if (newMsg) {
-        const { error: updateError } = await supabase
-          .from('chats')
-          .update({ 
-            last_message_id: newMsg.id
-          })
-          .eq('id', chatId);
-
-        if (updateError) throw updateError;
-        
-        onMessageSent();
-        if (replyTo?.onClose) {
-          replyTo.onClose();
-        }
+      // Adicionar arquivos ao FormData
+      if (attachments && attachments.length > 0) {
+        attachments.forEach((file, index) => {
+          formData.append(`attachments`, file, file.name);
+        });
       }
-    } catch (error) {
+
+      // Adicionar outros dados da mensagem
+      if (content) {
+        formData.append('content', content);
+      }
+      
+      if (replyTo?.message.id) {
+        formData.append('replyToMessageId', replyTo.message.id);
+      }
+
+      // Enviar para a nova API de mensagens usando api
+      const response = await api.post(`/api/${currentOrganization?.id}/chat/${chatId}/message`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || t('errors.sending'));
+      }
+
+      onMessageSent();
+      if (replyTo?.onClose) {
+        replyTo.onClose();
+      }
+
+      return response.data;
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      setError(t('errors.sending'));
-    } finally {
-      setSending(false);
+      setError(error.response?.data?.error || t('errors.sending'));
+      throw error;
     }
   };
 
@@ -140,21 +166,18 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
       if (textFormat.bold) formattedMessage = `**${formattedMessage}**`;
       if (textFormat.italic) formattedMessage = `_${formattedMessage}_`;
 
-      // If there are pending attachments, send them as separate messages
-      if (pendingAttachments.length > 0) {
-        for (const attachment of pendingAttachments) {
-          await handleSendMessage('', [attachment]);
-        }
-        setPendingAttachments([]);
-      }
+      // Preparar arquivos para upload
+      const attachmentFiles = pendingAttachments.map(attachment => attachment.file);
 
-      // Send text message if there is one
-      if (formattedMessage.trim()) {
-        await handleSendMessage(formattedMessage);
-      }
+      // Enviar mensagem com possíveis anexos
+      await handleSendMessage(
+        formattedMessage.trim() || null, 
+        attachmentFiles
+      );
 
-      // Limpa a mensagem e outros estados após envio bem-sucedido
+      // Limpar estados após envio
       setMessage('');
+      setPendingAttachments([]);
       setShowEmojiPicker(false);
       setShowAttachmentMenu(false);
       setError('');
@@ -177,25 +200,8 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
     setMessage(prev => prev + emoji.native);
   };
 
-  const handleFileUploadComplete = (url: string, type: string, name: string) => {
-    setPendingAttachments(prev => [...prev, { url, type, name }]);
-  };
-
-  const handleRemoveAttachment = async (url: string) => {
-    setDeletingAttachment(url);
-    // Extract file path from URL
-    const filePath = url.split('/').pop();
-    if (filePath) {
-      try {
-        await supabase.storage
-          .from('attachments')
-          .remove([`${organizationId}/chat-attachments/${filePath}`]);
-        setPendingAttachments(prev => prev.filter(a => a.url !== url));
-      } catch (error) {
-        console.error('Error removing file:', error);
-      }
-    }
-    setDeletingAttachment(null);
+  const handleRemoveAttachment = (index: number) => {
+    setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const startRecording = async () => {
@@ -230,15 +236,15 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
           
           const { error } = await supabase.storage
             .from('attachments')
-            .upload(`${organizationId}/chat-attachments/${fileName}`, file);
+            .upload(`${currentOrganization?.id}/chat-attachments/${fileName}`, file);
 
           if (error) throw error;
 
           const { data: { publicUrl } } = supabase.storage
             .from('attachments')
-            .getPublicUrl(`${organizationId}/chat-attachments/${fileName}`);
+            .getPublicUrl(`${currentOrganization?.id}/chat-attachments/${fileName}`);
 
-          handleFileUploadComplete(publicUrl, mimeType, fileName);
+          handleFileUploadComplete(file, mimeType, fileName);
         } catch (error) {
           setError(t('errors.uploadFailed'));
           console.error('Error uploading audio:', error);
@@ -330,6 +336,18 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
     }
   }, [isSubscriptionReady]);
 
+  // Adicione esta função para limpar as URLs de preview quando o componente for desmontado
+  useEffect(() => {
+    return () => {
+      // Limpar todas as URLs de objeto criadas
+      pendingAttachments.forEach(attachment => {
+        if (attachment.preview) {
+          URL.revokeObjectURL(attachment.preview);
+        }
+      });
+    };
+  }, [pendingAttachments]);
+
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 pb-3 pt-2">
       {replyTo && (
@@ -361,54 +379,36 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
 
       {pendingAttachments.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {pendingAttachments.map((attachment) => (
+          {pendingAttachments.map((attachment, index) => (
             <div
-              key={attachment.url}
+              key={index}
               className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-2"
             >
-              {attachment.type.startsWith('image/') ? (
-                <>
-                  <a 
-                    href={attachment.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center hover:text-blue-500 dark:hover:text-blue-400"
-                  >
-                    <Image className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm truncate max-w-[180px] text-gray-700 dark:text-gray-300">{attachment.name}</span>
-                  </a>
-                </>
-              ) : attachment.type.startsWith('audio/') ? (
-                <div className="flex-1">
-                  <AudioPlayer
-                    src={attachment.url}
-                    fileName={attachment.name}
-                    compact
-                  />
-                </div>
+              {attachment.type.startsWith('image/') && attachment.preview ? (
+                <img 
+                  src={attachment.preview} 
+                  alt={attachment.name} 
+                  className="w-12 h-12 object-cover rounded-md mr-2" 
+                />
+              ) : attachment.type.startsWith('audio/') && attachment.preview ? (
+                <AudioPlayer
+                  src={attachment.preview}
+                  fileName={attachment.name}
+                  compact
+                />
               ) : (
-                <>
-                  <a 
-                    href={attachment.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center hover:text-blue-500 dark:hover:text-blue-400"
-                  >
-                    <FileText className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm truncate max-w-[180px] text-gray-700 dark:text-gray-300">{attachment.name}</span>
-                  </a>
-                </>
+                <div className="flex items-center justify-center w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-md mr-2">
+                  <FileText className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                </div>
               )}
+              <span className="text-sm truncate max-w-[180px] text-gray-700 dark:text-gray-300">
+                {attachment.name}
+              </span>
               <button
-                onClick={() => handleRemoveAttachment(attachment.url)}
+                onClick={() => handleRemoveAttachment(index)}
                 className="ml-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
-                disabled={deletingAttachment === attachment.url}
               >
-                {deletingAttachment === attachment.url ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <X className="w-4 h-4" />
-                )}
+                <X className="w-4 h-4" />
               </button>
             </div>
           ))}
@@ -552,7 +552,7 @@ export function MessageInput({ chatId, organizationId, onMessageSent, replyTo, i
       {showFileUpload && (
         <FileUpload
           type={showFileUpload}
-          organizationId={organizationId}
+          organizationId={currentOrganization?.id || ''}
           onUploadComplete={handleFileUploadComplete}
           onError={setError}
           onClose={() => setShowFileUpload(null)}

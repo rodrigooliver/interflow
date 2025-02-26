@@ -8,10 +8,13 @@
       - `name` (text) - Original file name
       - `size` (bigint) - File size in bytes
       - `public_url` (text) - Public URL for accessing the file
+      - `path` (text) - Path within the S3 storage
       - `message_id` (uuid, foreign key to messages, nullable) - Reference if file was sent in chat
+      - `integration_id` (uuid, foreign key to integrations, nullable) - Reference to integration
+      - `flow_id` (uuid, foreign key to flows, nullable) - Reference to flow
+      - `shortcut_id` (uuid, foreign key to message shortcuts, nullable) - Reference to message shortcut
       - `mime_type` (text) - MIME type of the file
       - `created_at` (timestamptz)
-      - `deleted_at` (timestamptz, nullable) - Soft delete support
 
   2. Security
     - Enable RLS on `files` table
@@ -30,15 +33,21 @@ CREATE TABLE IF NOT EXISTS files (
   name text NOT NULL,
   size bigint NOT NULL,
   public_url text NOT NULL,
+  path text,
   message_id uuid REFERENCES messages(id) ON DELETE SET NULL,
+  integration_id uuid REFERENCES integrations(id) ON DELETE SET NULL,
+  flow_id uuid REFERENCES flows(id) ON DELETE SET NULL,
+  shortcut_id uuid REFERENCES message_shortcuts(id) ON DELETE SET NULL,
   mime_type text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  deleted_at timestamptz
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS files_organization_id_idx ON files(organization_id);
 CREATE INDEX IF NOT EXISTS files_message_id_idx ON files(message_id);
+CREATE INDEX IF NOT EXISTS files_integration_id_idx ON files(integration_id);
+CREATE INDEX IF NOT EXISTS files_flow_id_idx ON files(flow_id);
+CREATE INDEX IF NOT EXISTS files_shortcut_id_idx ON files(shortcut_id);
 CREATE INDEX IF NOT EXISTS files_created_at_idx ON files(created_at);
 
 -- Enable RLS

@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 
 interface FileUploadProps {
   organizationId: string;
-  onUploadComplete: (url: string, type: string, name: string) => void;
+  onUploadComplete: (file: File, type: string, name: string) => void;
   onError: (error: string) => void;
   type: 'image' | 'document';
   onClose: () => void;
@@ -70,52 +70,23 @@ export function FileUpload({ organizationId, onUploadComplete, onError, type, on
     }
   };
 
-  const uploadFile = async (file: File) => {
+  const processFile = async (file: File) => {
     try {
       validateFile(file);
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${organizationId}/chat-attachments/${fileName}`;
-
-      setUploading(true);
-
-      const { error: uploadError } = await supabase.storage
-        .from('attachments')
-        .upload(filePath, file, {
-          metadata: {
-            size: file.size.toString()
-          }
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('attachments')
-        .getPublicUrl(filePath);
-
-      // Update local storage info
-      if (storageInfo) {
-        setStorageInfo({
-          ...storageInfo,
-          used: storageInfo.used + file.size
-        });
-      }
-
-      onUploadComplete(publicUrl, file.type, file.name);
+      
+      // Em vez de fazer upload, apenas retorna o arquivo para o componente pai
+      onUploadComplete(file, file.type, file.name);
       onClose();
     } catch (error: any) {
-      console.error('Error uploading file:', error);
+      console.error('Erro ao processar arquivo:', error);
       onError(error.message || t('attachments.errors.uploadFailed'));
-    } finally {
-      setUploading(false);
     }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      await uploadFile(files[0]);
+      await processFile(files[0]);
     }
   };
 
@@ -125,7 +96,7 @@ export function FileUpload({ organizationId, onUploadComplete, onError, type, on
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      await uploadFile(files[0]);
+      await processFile(files[0]);
     }
   };
 

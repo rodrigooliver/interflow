@@ -75,7 +75,8 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
   };
 
   return (
-    <div className={`flex items-center ${compact ? 'space-x-2' : 'space-x-3'} w-full max-w-[300px] sm:max-w-[400px]`}>
+    //${compact ? 'space-x-0' : 'space-x-2'}
+    <div className={`flex items-center  w-full max-w-[300px] sm:max-w-[400px]`}>
       <audio ref={audioRef} src={src} />
       
       <button
@@ -89,14 +90,14 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
         )}
       </button>
 
-      <div className="flex-1 min-w-0 sm:min-w-[100px]">
-        <div className="flex items-center space-x-2">
+      <div className="flex-1 min-w-[100px] sm:min-w-[150px]">
+        <div className="flex items-center">
           <div
-            className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full cursor-pointer relative"
+            className="flex-1 h-1.5 ml-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden"
             onClick={handleProgressClick}
           >
             <div
-              className="absolute h-full bg-blue-600 rounded-full"
+              className="h-full bg-blue-600 rounded-full"
               style={{ width: `${(currentTime / duration) * 100}%` }}
             />
           </div>

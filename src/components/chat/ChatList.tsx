@@ -4,9 +4,7 @@ import { ptBR, enUS, es } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Clock, Check, CheckCheck } from 'lucide-react';
 import { Chat } from '../../types/database';
-import { handleImageError } from '../../utils/chat';
-import { getChannelIcon } from '../../utils/channel';
-import { getRandomColor } from '../../utils/chat';
+import { ChatAvatar } from './ChatAvatar';
 
 const locales = {
   pt: ptBR,
@@ -23,14 +21,6 @@ interface ChatListProps {
 export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
   const { t, i18n } = useTranslation('chats');
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const formatLastMessageTime = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), {
@@ -120,29 +110,12 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
           }`}
         >
           <div className="flex items-start space-x-3">
-            <div className="relative">
-              <div className={`flex-shrink-0 w-10 h-10 rounded-full ${!chat.customer?.profile_picture ? getRandomColor(chat.customer?.name || 'Anônimo') : ''} flex items-center justify-center overflow-hidden`}>
-                {chat.profile_picture ? (
-                  <img
-                    src={chat.profile_picture}
-                    alt={chat.customer?.name || 'Anônimo'}
-                    className="w-full h-full object-cover"
-                    onError={() => handleImageError(chat.id)}
-                  />
-                ) : (
-                  <span className="text-white font-medium">
-                    {getInitials(chat.customer?.name || 'Anônimo')}
-                  </span>
-                )}
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                <img
-                  src={getChannelIcon(chat.channel_type)}
-                  alt={chat.channel_type}
-                  className="w-3 h-3"
-                />
-              </div>
-            </div>
+            <ChatAvatar 
+              id={chat.id}
+              name={chat.customer?.name || 'Anônimo'}
+              profilePicture={chat.profile_picture}
+              channel={chat.channel_id}
+            />
             
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center w-full mb-1">

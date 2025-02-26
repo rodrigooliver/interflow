@@ -233,7 +233,13 @@ export default function WhatsAppWApiForm() {
     setError('');
 
     try {
-      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/test`, {
+      // Determinar qual endpoint usar com base na existência de um ID
+      const endpoint = id 
+        ? `/api/${currentOrganization?.id}/channel/wapi/${id}/test` 
+        : `/api/${currentOrganization?.id}/channel/wapi/test`;
+      
+      // Enviar os dados de conexão em ambos os casos
+      const response = await api.post(endpoint, {
         apiHost: formData.credentials.apiHost,
         apiConnectionKey: formData.credentials.apiConnectionKey,
         apiToken: formData.credentials.apiToken
@@ -248,7 +254,8 @@ export default function WhatsAppWApiForm() {
       setConnectionStatus('success');
       setFormData(prev => ({
         ...prev,
-        is_tested: true
+        is_tested: true,
+        is_connected: data.data?.connected || false
       }));
       setShowConnectionSettings(false);
     } catch (error: any) {
