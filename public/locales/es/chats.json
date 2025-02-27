@@ -3,9 +3,12 @@
   "searchPlaceholder": "Buscar chat...",
   "resolve": "Resolver",
   "attend": "Atender",
+  "backToList": "Volver a la lista",
   "chatClosed": "Chat cerrado", 
   "customer": "Cliente",
   "you": "Tú",
+  "connected": "Conectado",
+  "disconnected": "Desconectado",
   "filters": {
     "title": "Filtros",
     "unassigned": "Sin asignar",
@@ -94,9 +97,11 @@
   "errors": {
     "loading": "Error al cargar mensajes",
     "sending": "Error al enviar mensaje",
-    "microphoneAccess": "Error al acceder al micrófono",
+    "microphoneAccess": "Error al acceder al micrófono. Por favor, verifica tus permisos.",
     "uploadFailed": "Error al subir el archivo de audio",
-    "waitingConnection": "Esperando conexión con el servidor..."
+    "waitingConnection": "Esperando conexión con el servidor...",
+    "instagram24HourWindow": "No es posible enviar mensaje a este cliente porque han pasado más de 24 horas desde su última interacción",
+    "instagramNoCustomerMessage": "No es posible enviar mensaje a este cliente porque aún no ha enviado ningún mensaje. Solo a través de plantilla."
   },
   "ai": {
     "title": "Mejorar texto con IA",
@@ -114,25 +119,28 @@
     "options": {
       "generate": "Generar respuesta",
       "expand": "Expandir",
-      "shorten": "Encurtar",
+      "shorten": "Acortar",
       "improve": "Mejorar escritura",
       "formal": "Más formal",
       "casual": "Más casual"
     }
   },
   "systemMessages": {
-    "userEntered": "{{name}} entrou no chat",
-    "userLeft": "{{name}} saiu do chat",
-    "userTransferred": "Chat transferido para {{name}}",
-    "userClosed": "Chat encerrado por {{name}}"
+    "userStart": "Chat iniciado por {{name}}",
+    "userEntered": "{{name}} entró en el chat",
+    "userLeft": "{{name}} salió del chat",
+    "userTransferred": "Chat transferido a {{name}}",
+    "userClosed": "Chat cerrado por {{name}}"
   },
-  "noChatsFound": "No hay chats encontrados",
-  "backToList": "Volver a la lista",
+  "noChatsFound": "No se encontraron chats",
   "resolution": {
-    "title": "Resolver Conversa",
+    "title": "Resolver Conversación",
     "summaryPlaceholder": "Escribe un breve resumen de la conversación..."
   },
   "confirm": "Confirmar",
   "cancel": "Cancelar",
-  "loading": "Cargando..."
+  "loading": "Cargando...",
+  "showAllMessages": "Mostrar todos los mensajes",
+  "showCurrentChat": "Mostrar chat actual",
+  "unnamed": "Sin nombre"
 }

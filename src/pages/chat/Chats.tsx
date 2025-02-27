@@ -179,6 +179,11 @@ export default function Chats() {
           email,
           whatsapp
         ),
+        channel:chat_channels(
+          type,
+          is_connected,
+          name
+        ),
         last_message:messages!chats_last_message_id_fkey(
           content,
           status,
@@ -191,6 +196,7 @@ export default function Chats() {
       .single();
 
     if (chatData) {
+      console.log('chatData', chatData);
       // Verificar se o chat corresponde aos filtros atuais
       const shouldIncludeChat = () => {
         switch (selectedFilter) {
@@ -243,6 +249,7 @@ export default function Chats() {
         // Caso contrário, adicionar o chat atualizado e ordenar
         const processedChat = {
           ...chatData,
+          channel_id: chatData.channel,
           last_message: chatData.last_message ? {
             content: chatData.last_message.content,
             status: chatData.last_message.status,

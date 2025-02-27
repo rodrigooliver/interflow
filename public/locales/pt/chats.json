@@ -99,7 +99,9 @@
     "sending": "Erro ao enviar mensagem",
     "microphoneAccess": "Não foi possível acessar o microfone. Verifique suas permissões.",
     "uploadFailed": "Falha ao enviar o arquivo de áudio",
-    "waitingConnection": "Aguardando conexão com o servidor..."
+    "waitingConnection": "Aguardando conexão com o servidor...",
+    "instagram24HourWindow": "Não é possível enviar mensagem para este cliente pois já se passaram mais de 24 horas desde a última interação dele",
+    "instagramNoCustomerMessage": "Não é possível enviar mensagem para este cliente pois ele ainda não enviou nenhuma mensagem. Somente através de template."
   },
   "ai": {
     "title": "Melhorar texto com IA",

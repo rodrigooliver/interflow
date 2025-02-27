@@ -3,9 +3,12 @@
   "searchPlaceholder": "Search chats...", 
   "resolve": "Resolve",
   "attend": "Attend",
+  "backToList": "Back to list",
   "chatClosed": "Chat closed",
   "customer": "Customer",
   "you": "You",
+  "connected": "Connected",
+  "disconnected": "Disconnected",
   "filters": {
     "title": "Filters",
     "unassigned": "Unassigned",
@@ -96,7 +99,9 @@
     "sending": "Error sending message",
     "microphoneAccess": "Could not access microphone. Please check your permissions.",
     "uploadFailed": "Failed to upload audio file",
-    "waitingConnection": "Waiting for server connection..."
+    "waitingConnection": "Waiting for server connection...",
+    "instagram24HourWindow": "Cannot send message to this customer as it has been more than 24 hours since their last interaction",
+    "instagramNoCustomerMessage": "Cannot send message to this customer as they haven't sent any messages yet. Only through template."
   },
   "ai": {
     "title": "Improve text with AI",
@@ -121,18 +126,21 @@
     }
   },  
   "systemMessages": {
+    "userStart": "Chat started by {{name}}",
     "userEntered": "{{name}} entered the chat",
     "userLeft": "{{name}} left the chat",
     "userTransferred": "Chat transferred to {{name}}",
     "userClosed": "Chat closed by {{name}}"
   },
   "noChatsFound": "No chats found",
-  "backToList": "Back to list",
   "resolution": {
     "title": "Resolve chat",
     "summaryPlaceholder": "Enter a brief summary of the conversation..."
   },
   "confirm": "Confirm",
   "cancel": "Cancel",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "showAllMessages": "Show all messages",
+  "showCurrentChat": "Show current chat",
+  "unnamed": "Unnamed"
 }

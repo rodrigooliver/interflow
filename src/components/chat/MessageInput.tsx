@@ -14,6 +14,7 @@ import api from '../../lib/api';
 
 interface MessageInputProps {
   chatId: string;
+  organizationId: string;
   onMessageSent: () => void;
   replyTo?: {
     message: Message;
@@ -27,7 +28,13 @@ interface EmojiData {
   // outros campos do emoji se necessário
 }
 
-export function MessageInput({ chatId, onMessageSent, replyTo, isSubscriptionReady = false }: MessageInputProps) {
+export function MessageInput({ 
+  chatId, 
+  organizationId,
+  onMessageSent, 
+  replyTo, 
+  isSubscriptionReady = false
+}: MessageInputProps) {
   const { profile } = useAuthContext();
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -157,7 +164,7 @@ export function MessageInput({ chatId, onMessageSent, replyTo, isSubscriptionRea
     }
 
     if (!message.trim() && pendingAttachments.length === 0) return;
-
+    
     setSending(true);
     setError('');
 
@@ -535,9 +542,17 @@ export function MessageInput({ chatId, onMessageSent, replyTo, isSubscriptionRea
         </button>
         <button
           onClick={handleSend}
-          disabled={sending || (!message.trim() && pendingAttachments.length === 0) || !isSubscriptionReady}
+          disabled={
+            sending || 
+            (!message.trim() && pendingAttachments.length === 0) || 
+            !isSubscriptionReady
+          }
           className="p-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title={!isSubscriptionReady ? t('waitingConnection') : t('send')}
+          title={
+            !isSubscriptionReady 
+              ? t('waitingConnection') 
+              : t('send')
+          }
         >
           {sending ? (
             <Loader2 className="w-5 h-5 animate-spin" />

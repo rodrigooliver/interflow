@@ -32,6 +32,8 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [headerLoading, setHeaderLoading] = useState(true);
   const [footerLoading, setFooterLoading] = useState(true);
+  const [isMessageWindowClosed, setIsMessageWindowClosed] = useState(false);
+  const [canSendMessage, setCanSendMessage] = useState(true);
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
@@ -66,6 +68,35 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   useEffect(() => {
     loadClosureTypes();
   }, []);
+
+  useEffect(() => {
+    if (!chat) return;
+    
+    const isInstagramChannel = chat?.channel_details?.type === 'instagram';
+    const lastCustomerMessageAt = chat?.last_customer_message_at;
+    
+    if (isInstagramChannel) {
+      if (!lastCustomerMessageAt) {
+        setCanSendMessage(false);
+        return;
+      }
+      
+      const lastMessageTime = new Date(lastCustomerMessageAt).getTime();
+      const currentTime = new Date().getTime();
+      const hoursDifference = (currentTime - lastMessageTime) / (1000 * 60 * 60);
+      
+      if (hoursDifference > 24) {
+        setIsMessageWindowClosed(true);
+        setCanSendMessage(false);
+      } else {
+        setIsMessageWindowClosed(false);
+        setCanSendMessage(true);
+      }
+    } else {
+      setCanSendMessage(true);
+      setIsMessageWindowClosed(false);
+    }
+  }, [chat]);
 
   const subscribeToMessages = () => {
     const subscription = supabase
@@ -196,15 +227,6 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     });
     
     return groups;
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   const loadClosureTypes = async () => {
@@ -473,7 +495,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
         </div>
       ) : (
         <>
-          {chat?.status === 'in_progress' && (
+          {chat?.status === 'in_progress' && canSendMessage && (
             <MessageInput
               chatId={chatId}
               organizationId={organizationId}
@@ -486,6 +508,17 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
               }
               isSubscriptionReady={isSubscriptionReady}
             />
+          )}
+
+          {chat?.status === 'in_progress' && !canSendMessage && (
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 rounded-md">
+                {isMessageWindowClosed 
+                  ? t('errors.instagram24HourWindow')
+                  : t('errors.instagramNoCustomerMessage')
+                }
+              </div>
+            </div>
           )}
 
           {chat?.status === 'pending' && (

@@ -4,6 +4,11 @@ import { Hero } from '../components/landing/Hero';
 import { Features } from '../components/landing/Features';
 import { Pricing } from '../components/landing/Pricing';
 import { PublicLayout } from '../layouts/PublicLayout';
+import { SocialProof } from '../components/landing/SocialProof';
+import { Demonstration } from '../components/landing/Demonstration';
+import { FAQ } from '../components/landing/FAQ';
+import { FinalCTA } from '../components/landing/FinalCTA';
+import { FloatingWhatsApp } from '../components/common/FloatingWhatsApp';
 
 export default function Home() {
   const { t } = useTranslation('landing');
@@ -14,8 +19,12 @@ export default function Home() {
         <Navbar />
         <main className="relative">
           <Hero />
+          <SocialProof />
           <Features />
+          <Demonstration />
           <Pricing />
+          <FAQ />
+          <FinalCTA />
         </main>
         <footer className="bg-gray-50 dark:bg-gray-800 py-12">
           <div className="container mx-auto px-4">
@@ -25,6 +34,7 @@ export default function Home() {
           </div>
         </footer>
       </div>
+      <FloatingWhatsApp />
     </PublicLayout>
   );
 } 

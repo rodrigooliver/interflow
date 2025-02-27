@@ -63,3 +63,9 @@ CREATE INDEX chats_flow_session_idx ON chats(flow_session_id);
 
 -- Cria índice para melhorar performance de consultas que usam profile_updated_at
 CREATE INDEX chats_profile_updated_idx ON chats(profile_updated_at);
+
+-- Adiciona coluna para rastrear quando o cliente enviou a última mensagem
+ALTER TABLE chats ADD COLUMN last_customer_message_at TIMESTAMPTZ;
+
+-- Cria índice para melhorar performance de consultas que usam last_customer_message_at
+CREATE INDEX chats_last_customer_message_idx ON chats(last_customer_message_at);

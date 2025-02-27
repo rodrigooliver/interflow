@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertCircle, Clock, Check, CheckCheck } from 'lucide-react';
 import { Chat } from '../../types/database';
 import { ChatAvatar } from './ChatAvatar';
+import { MessageStatus } from './MessageStatus';
 
 const locales = {
   pt: ptBR,
@@ -21,52 +22,11 @@ interface ChatListProps {
 export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
   const { t, i18n } = useTranslation('chats');
 
-
   const formatLastMessageTime = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), {
       addSuffix: true,
       locale: locales[i18n.language as keyof typeof locales] || enUS
     });
-  };
-
-  const getStatusIcon = (chat: Chat) => {
-    
-    if (!chat.last_message) return null;
-
-    switch (chat.last_message.status) {
-      case 'pending':
-        return (
-          <Clock 
-            className="w-4 h-4 text-gray-400 dark:text-gray-500" 
-          />
-        );
-      case 'sent':
-        return (
-          <Check 
-            className="w-4 h-4 text-gray-500 dark:text-gray-400" 
-          />
-        );
-      case 'delivered':
-        return (
-          <CheckCheck 
-            className="w-4 h-4 text-gray-500 dark:text-gray-400" 
-          />
-        );
-      case 'read':
-        return (
-          <CheckCheck 
-            className="w-4 h-4 text-blue-500 dark:text-blue-400" 
-          />
-        );
-      case 'failed':
-        return (
-          <AlertCircle 
-            className="w-4 h-4 text-red-500 dark:text-red-400" 
-          />
-        );
-      default:
-        return null;
-    }
   };
 
   const getStatusBadge = (chat: Chat) => {
@@ -132,7 +92,12 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
               
               {chat.last_message && (
                 <div className="flex items-center gap-1 mb-1">
-                  {chat.last_message.sender_type === 'agent' && getStatusIcon(chat)}
+                  {chat.last_message.sender_type === 'agent' && (
+                    <MessageStatus 
+                      status={chat.last_message.status || 'pending'} 
+                      errorMessage={chat.last_message.error_message}
+                    />
+                  )}
                   <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
                     {chat.last_message.content}
                   </div>
@@ -141,11 +106,6 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
               
               <div className="flex items-center gap-2">
                 {getStatusBadge(chat)}
-                {chat.last_message?.status && chat.last_message.sender_type === 'agent' && chat.last_message.error_message && (
-                  <div className="text-xs text-red-500">
-                    {chat.last_message.error_message}
-                  </div>
-                )}
               </div>
             </div>
           </div>

@@ -14,12 +14,12 @@ export function MessageStatus({ status, errorMessage, className = '' }: MessageS
 
   const renderIcon = () => {
     switch (status) {
-      case 'pending':
-        return <Clock className={`w-4 h-4 text-gray-400 ${className}`} />;
+      case 'pending'://className="text-gray-500 dark:text-gray-400"
+        return <Clock className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
       case 'sent':
-        return <Check className={`w-4 h-4 ${className}`} />;
+        return <Check className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
       case 'delivered':
-        return <CheckCheck className={`w-4 h-4 ${className}`} />;
+        return <CheckCheck className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
       case 'read':
         return <CheckCheck className={`w-4 h-4 text-blue-400 ${className}`} />;
       case 'failed':
