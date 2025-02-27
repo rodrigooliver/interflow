@@ -41,12 +41,13 @@ export const SocialProof = () => {
         </h2>
         
         <div className="mx-auto flex flex-wrap justify-center gap-8 mb-16">
-          {['empresa1', 'empresa2', 'empresa3', 'empresa4', 'empresa5'].map((company) => (
+        {/* , 'empresa5' */}
+          {['empresa1', 'empresa2', 'empresa3', 'empresa4'].map((company) => (
             <img
               key={company}
               src={`/images/logos/${company}.svg`}
               alt={company}
-              className="h-12 object-contain grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all"
+              className="h-30 object-contain grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all"
             />
           ))}
         </div>
