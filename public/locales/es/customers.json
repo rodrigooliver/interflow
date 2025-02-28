@@ -7,6 +7,7 @@
   "registeredAt": "Registrado el",
   "actions": "Acciones",
   "noCustomers": "No hay clientes registrados",
+  "funnel": "Embudo",
   "edit": {
     "title": "Editar Cliente",
     "phone": "Teléfono",
@@ -16,5 +17,29 @@
     "title": "Eliminar Cliente",
     "confirmation": "¿Estás seguro de que deseas eliminar el cliente {name}?",
     "warning": "Esta acción no se puede deshacer."
-  }
+  },
+  "tags": {
+    "title": "Etiquetas",
+    "addNew": "Nueva etiqueta",
+    "createNew": "Crear nueva etiqueta",
+    "name": "Nombre de etiqueta",
+    "color": "Color",
+    "noTags": "No hay etiquetas disponibles"
+  },
+  "noTags": "Sin etiquetas",
+  "noContacts": "Sin contactos",
+  "startConversation": "Iniciar conversación",
+  "configureColumns": "Configurar columnas",
+  "columns": "Columnas",
+  "filters": "Filtros",
+  "clearFilters": "Limpiar filtros",
+  "configureVisibleColumns": "Configurar columnas visibles",
+  "resetSettings": "Restablecer configuración",
+  "searchPlaceholder": "Buscar por nombre, correo o WhatsApp...",
+  "activeFilters": "Filtros activos",
+  "clearAll": "Limpiar todo",
+  "registeredOn": "Registrado el",
+  "settingsReset": "Configuración restablecida",
+  "contacts": "Contactos",
+  "noTagsAvailable": "No hay etiquetas disponibles"
 }

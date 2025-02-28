@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
-import { CRMFunnel as CRMFunnelType, CRMStage, CRMCustomerStage } from '../../types/crm';
+import { CRMFunnel as CRMFunnelType, CRMStage } from '../../types/crm';
 import { Customer } from '../../types/database';
 import { KanbanBoard } from '../../components/crm/KanbanBoard';
 import { StageModal } from '../../components/crm/StageModal';
@@ -15,6 +15,11 @@ import { RemoveCustomerModal } from '../../components/crm/RemoveCustomerModal';
 import { FunnelHeader } from '../../components/crm/FunnelHeader';
 import type { DragEndEvent } from '@dnd-kit/core';
 
+// Tipo composto para cliente com estágio
+type CustomerWithStage = Customer & {
+  stage?: CRMStage;
+};
+
 export default function CRMFunnel() {
   const { t } = useTranslation(['crm', 'common']);
   const { id } = useParams();
@@ -24,8 +29,7 @@ export default function CRMFunnel() {
   // State
   const [funnel, setFunnel] = useState<CRMFunnelType | null>(null);
   const [stages, setStages] = useState<CRMStage[]>([]);
-  const [customerStages, setCustomerStages] = useState<CRMCustomerStage[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerWithStage[]>([]);
   const [error, setError] = useState('');
 
   // Modal states
@@ -35,7 +39,7 @@ export default function CRMFunnel() {
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const [showRemoveCustomerModal, setShowRemoveCustomerModal] = useState(false);
   const [selectedStage, setSelectedStage] = useState<CRMStage | null>(null);
-  const [selectedCustomerStage, setSelectedCustomerStage] = useState<CRMCustomerStage | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithStage | null>(null);
   const [stageForm, setStageForm] = useState({
     name: '',
     description: '',
@@ -75,19 +79,6 @@ export default function CRMFunnel() {
 
         if (stagesError) throw stagesError;
         setStages(stagesData || []);
-
-        if (stagesData && stagesData.length > 0) {
-          const { data: customerStagesData, error: customerStagesError } = await supabase
-            .from('crm_customer_stages')
-            .select(`
-              *,
-              customer:customers(*)
-            `)
-            .in('stage_id', stagesData.map(s => s.id));
-
-          if (customerStagesError) throw customerStagesError;
-          setCustomerStages(customerStagesData || []);
-        }
       }
     } catch (error) {
       console.error('Error loading funnel:', error);
@@ -101,7 +92,10 @@ export default function CRMFunnel() {
     try {
       const { data, error } = await supabase
         .from('customers')
-        .select('*')
+        .select(`
+          *,
+          stage:stage_id(*)
+        `)
         .eq('organization_id', currentOrganization.id)
         .order('name');
 
@@ -118,40 +112,47 @@ export default function CRMFunnel() {
     
     if (!active || !over) return;
 
-    // Get the current customer stage
-    const customerStage = customerStages.find(cs => cs.id === active.id);
-    if (!customerStage) return;
+    // Get the customer being dragged
+    const customer = customers.find(c => c.id === active.id);
+    if (!customer) return;
 
-    // Get source and target stages
-    const sourceStage = stages.find(s => s.id === customerStage.stage_id);
+    // Get target stage
     const targetStage = stages.find(s => s.id === over.id);
-
-    // If source or target stage not found, abort
-    if (!sourceStage || !targetStage) return;
+    if (!targetStage) return;
 
     // If trying to move to the same stage, abort
-    if (sourceStage.id === targetStage.id) {
+    if (customer.stage_id === targetStage.id) {
       return;
     }
 
     try {
+      // Update customer's stage_id
       const { error } = await supabase
-        .from('crm_customer_stages')
+        .from('customers')
         .update({
-          stage_id: targetStage.id,
-          moved_at: new Date().toISOString()
+          stage_id: targetStage.id
         })
-        .eq('id', active.id);
+        .eq('id', customer.id);
 
       if (error) throw error;
 
-      setCustomerStages(prev =>
-        prev.map(cs =>
-          cs.id === active.id
-            ? { ...cs, stage_id: targetStage.id, moved_at: new Date().toISOString() }
-            : cs
+      // Update local state
+      setCustomers(prev =>
+        prev.map(c =>
+          c.id === customer.id
+            ? { ...c, stage_id: targetStage.id, stage: targetStage }
+            : c
         )
       );
+
+      // Record the stage change in history
+      await supabase
+        .from('customer_stage_history')
+        .insert({
+          customer_id: customer.id,
+          stage_id: targetStage.id,
+          organization_id: currentOrganization?.id
+        });
     } catch (error) {
       console.error('Error updating customer stage:', error);
       setError(t('common:error'));
@@ -162,17 +163,26 @@ export default function CRMFunnel() {
     if (!selectedStage) return;
     setAddingCustomer(true);
     try {
+      // Update customer's stage_id
       const { error } = await supabase
-        .from('crm_customer_stages')
-        .insert({
-          customer_id: customerId,
-          stage_id: selectedStage.id,
-          moved_at: new Date().toISOString()
-        });
+        .from('customers')
+        .update({
+          stage_id: selectedStage.id
+        })
+        .eq('id', customerId);
 
       if (error) throw error;
 
-      await loadFunnel();
+      // Record the stage change in history
+      await supabase
+        .from('customer_stage_history')
+        .insert({
+          customer_id: customerId,
+          stage_id: selectedStage.id,
+          organization_id: currentOrganization?.id
+        });
+
+      await loadCustomers();
     } catch (error) {
       console.error('Error adding customer to stage:', error);
       setError(t('common:error'));
@@ -254,7 +264,7 @@ export default function CRMFunnel() {
     if (!selectedStage) return;
     
     // Check if stage has customers
-    const stageCustomers = customerStages.filter(cs => cs.stage_id === selectedStage.id);
+    const stageCustomers = customers.filter(c => c.stage_id === selectedStage.id);
     if (stageCustomers.length > 0) {
       setError(t('crm:funnels.delete.hasCustomers'));
       return;
@@ -277,6 +287,37 @@ export default function CRMFunnel() {
       setError(t('common:error'));
     } finally {
       setDeletingStage(false);
+    }
+  }
+
+  async function handleRemoveCustomerFromFunnel() {
+    if (!selectedCustomer) return;
+    
+    try {
+      // Set customer's stage_id to null
+      const { error } = await supabase
+        .from('customers')
+        .update({
+          stage_id: null
+        })
+        .eq('id', selectedCustomer.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setCustomers(prev =>
+        prev.map(c =>
+          c.id === selectedCustomer.id
+            ? { ...c, stage_id: null, stage: undefined }
+            : c
+        )
+      );
+      
+      setShowRemoveCustomerModal(false);
+      setSelectedCustomer(null);
+    } catch (error) {
+      console.error('Error removing customer from funnel:', error);
+      setError(t('common:error'));
     }
   }
 
@@ -307,13 +348,13 @@ export default function CRMFunnel() {
           setStageForm({ name: '', description: '', color: '#3B82F6' });
           setShowStageModal(true);
         }}
-        onCustomerAdded={loadFunnel}
+        onCustomerAdded={loadCustomers}
       />
 
       <div className="flex-1 overflow-hidden">
         <KanbanBoard
           stages={stages}
-          customerStages={customerStages}
+          customers={customers}
           onDragEnd={handleDragEnd}
           onEditStage={(stage) => {
             setSelectedStage(stage);
@@ -332,12 +373,12 @@ export default function CRMFunnel() {
             setSelectedStage(stage);
             setShowAddCustomerModal(true);
           }}
-          onEditCustomer={(customerStage) => {
-            setSelectedCustomerStage(customerStage);
+          onEditCustomer={(customer) => {
+            setSelectedCustomer(customer);
             setShowEditCustomerModal(true);
           }}
-          onRemoveCustomer={(customerStage) => {
-            setSelectedCustomerStage(customerStage);
+          onRemoveCustomer={(customer) => {
+            setSelectedCustomer(customer);
             setShowRemoveCustomerModal(true);
           }}
         />
@@ -387,26 +428,26 @@ export default function CRMFunnel() {
       )}
 
       {/* Edit Customer Modal */}
-      {showEditCustomerModal && selectedCustomerStage?.customer && (
+      {showEditCustomerModal && selectedCustomer && (
         <CustomerEditModal
-          customer={selectedCustomerStage.customer}
+          customer={selectedCustomer}
           onClose={() => {
             setShowEditCustomerModal(false);
-            setSelectedCustomerStage(null);
+            setSelectedCustomer(null);
           }}
-          onSuccess={loadFunnel}
+          onSuccess={loadCustomers}
         />
       )}
 
       {/* Remove Customer Modal */}
-      {showRemoveCustomerModal && selectedCustomerStage && (
+      {showRemoveCustomerModal && selectedCustomer && (
         <RemoveCustomerModal
-          customerStage={selectedCustomerStage}
+          customer={selectedCustomer}
           onClose={() => {
             setShowRemoveCustomerModal(false);
-            setSelectedCustomerStage(null);
+            setSelectedCustomer(null);
           }}
-          onSuccess={loadFunnel}
+          onConfirm={handleRemoveCustomerFromFunnel}
         />
       )}
     </div>

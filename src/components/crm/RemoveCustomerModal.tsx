@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { CRMCustomerStage } from '../../types/crm';
-import { supabase } from '../../lib/supabase';
+import { Customer } from '../../types/database';
 
 interface RemoveCustomerModalProps {
-  customerStage: CRMCustomerStage;
+  customer: Customer;
   onClose: () => void;
-  onSuccess: () => void;
+  onConfirm: () => Promise<void>;
 }
 
-export function RemoveCustomerModal({ customerStage, onClose, onSuccess }: RemoveCustomerModalProps) {
+export function RemoveCustomerModal({ customer, onClose, onConfirm }: RemoveCustomerModalProps) {
   const { t } = useTranslation(['crm', 'common']);
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState('');
@@ -18,17 +17,10 @@ export function RemoveCustomerModal({ customerStage, onClose, onSuccess }: Remov
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const { error: removeError } = await supabase
-        .from('crm_customer_stages')
-        .delete()
-        .eq('id', customerStage.id);
-
-      if (removeError) throw removeError;
-
-      onSuccess();
+      await onConfirm();
       onClose();
     } catch (error) {
-      console.error('Error removing customer from stage:', error);
+      console.error('Error removing customer from funnel:', error);
       setError(t('common:error'));
     } finally {
       setRemoving(false);
@@ -46,7 +38,7 @@ export function RemoveCustomerModal({ customerStage, onClose, onSuccess }: Remov
             Remover Cliente do Funil
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
-            Tem certeza que deseja remover {customerStage.customer?.name} deste funil?
+            Tem certeza que deseja remover {customer.name || t('common:unnamed')} deste funil?
             <br />
             Esta ação não pode ser desfeita.
           </p>

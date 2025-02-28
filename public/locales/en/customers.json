@@ -7,6 +7,7 @@
   "registeredAt": "Registered At",
   "actions": "Actions",
   "noCustomers": "No customers registered",
+  "funnel": "Funnel",
   "edit": {
     "title": "Edit Customer",
     "phone": "Phone",
@@ -16,5 +17,29 @@
     "title": "Delete Customer",
     "confirmation": "Are you sure you want to delete customer {name}?",
     "warning": "This action cannot be undone."
-  }
+  },
+  "tags": {
+    "title": "Tags",
+    "addNew": "New tag",
+    "createNew": "Create new tag",
+    "name": "Tag name",
+    "color": "Color",
+    "noTags": "No tags available"
+  },
+  "noTags": "No tags",
+  "noContacts": "No contacts",
+  "startConversation": "Start conversation",
+  "configureColumns": "Configure columns",
+  "columns": "Columns",
+  "filters": "Filters",
+  "clearFilters": "Clear filters",
+  "configureVisibleColumns": "Configure visible columns",
+  "resetSettings": "Reset settings",
+  "searchPlaceholder": "Search by name, email or WhatsApp...",
+  "activeFilters": "Active filters",
+  "clearAll": "Clear all",
+  "registeredOn": "Registered on",
+  "settingsReset": "Settings reset",
+  "contacts": "Contacts",
+  "noTagsAvailable": "No tags available"
 }

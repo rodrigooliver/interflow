@@ -3,6 +3,7 @@
   "loading": "Cargando...",
   "saving": "Guardando...",
   "save": "Guardar",
+  "saved": "Guardado",
   "deleting": "Eliminando...",
   "confirmDelete": "Eliminar",
   "noResults": "No se encontraron resultados",
@@ -48,5 +49,12 @@
       "invalidCredentials": "Correo electrónico o contraseña incorrectos",
       "generic": "Error al iniciar sesión. Por favor, intente nuevamente."
     }
-  }
+  },
+  "unnamed": "Sin nombre",
+  "close": "Cerrar",
+  "of": "de",
+  "showing": "Mostrando",
+  "to": "hasta",
+  "results": "resultados",
+  "actions": "Acciones"
 }

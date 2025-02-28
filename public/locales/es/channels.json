@@ -1,6 +1,7 @@
 {
   "title": "Canales de Servicio",
   "newChannel": "Nuevo Canal",
+  "deleteSuccess": "Canal eliminado con éxito",
   "form": {
     "title": {
       "create": "Nuevo Canal de Servicio",
@@ -64,7 +65,24 @@
       "namePlaceholder": "Digite el nombre del canal. Ej: WhatsApp",
       "nameRequired": "Digite un nombre para continuar",
       "deleteConfirmTitle": "Eliminar canal WhatsApp",
-      "deleteConfirmMessage": "¿Está seguro de que desea eliminar este canal? Esta acción no se puede deshacer."
+      "deleteConfirmMessage": "¿Está seguro de que desea eliminar este canal? Esta acción no se puede deshacer.",
+      "resetConfirmation": "¿Está seguro de que desea reiniciar la conexión? Esto requerirá un nuevo código QR.",
+      "interflowSetup": "Configuración Interflow",
+      "interflowSetupDescription": "Configure su conexión WhatsApp usando Interflow.",
+      "transferChats": "Transferir Chats",
+      "transferTitle": "Transferir Chats a Otro Canal",
+      "selectTargetChannel": "Seleccione el canal de destino",
+      "selectChannel": "Seleccione un canal",
+      "transfer": "Transferir",
+      "transferring": "Transfiriendo...",
+      "transferSuccess": "Chats transferidos con éxito",
+      "saveAndContinue": "Guardar y Continuar",
+      "connect": "Conectar WhatsApp",
+      "connectSuccess": "WhatsApp conectado con éxito"
+    },
+    "instagram": {
+      "saveAndContinue": "Guardar y Continuar",
+      "connect": "Conectar Instagram"
     }
   },
   "types": {

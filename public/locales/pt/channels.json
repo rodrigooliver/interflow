@@ -1,6 +1,7 @@
 {
   "title": "Canais de Atendimento",
   "newChannel": "Novo Canal",
+  "deleteSuccess": "Canal removido com sucesso",
   "form": {
     "title": {
       "create": "Novo Canal de Atendimento",
@@ -74,7 +75,10 @@
       "selectChannel": "Selecione um canal",
       "transfer": "Transferir",
       "transferring": "Transferindo...",
-      "transferSuccess": "Chats transferidos com sucesso"
+      "transferSuccess": "Chats transferidos com sucesso",
+      "saveAndContinue": "Salvar e Continuar",
+      "connect": "Conectar WhatsApp",
+      "connectSuccess": "WhatsApp conectado com sucesso"
     },
     "instagram": {
       "saveAndContinue": "Salvar e Continuar",

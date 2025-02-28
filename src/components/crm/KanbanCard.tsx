@@ -2,10 +2,17 @@ import React from 'react';
 import { Mail, Phone, Clock, Pencil, X } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CRMCustomerStage } from '../../types/crm';
+import { Customer } from '../../types/database';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { ptBR, enUS, es } from 'date-fns/locale';
+import { supabase } from '../../lib/supabase';
+import { CRMStage } from '../../types/crm';
+
+// Tipo composto para cliente com estágio
+type CustomerWithStage = Customer & {
+  stage?: CRMStage;
+};
 
 const locales = {
   pt: ptBR,
@@ -14,18 +21,37 @@ const locales = {
 };
 
 interface KanbanCardProps {
-  customerStage: CRMCustomerStage;
+  customer: Customer;
   index: number;
   onEdit: () => void;
   onEditCustomer: () => void;
   onRemove: () => void;
 }
 
-export function KanbanCard({ customerStage, index, onEdit, onEditCustomer, onRemove }: KanbanCardProps) {
-  const { customer } = customerStage;
-  const { i18n } = useTranslation();
+export function KanbanCard({ customer, index, onEdit, onEditCustomer, onRemove }: KanbanCardProps) {
+  const { t, i18n } = useTranslation(['common']);
+  const [lastMoved, setLastMoved] = React.useState<string | null>(null);
   
-  if (!customer) return null;
+  React.useEffect(() => {
+    // Fetch the last time this customer was moved to this stage
+    async function fetchLastMoved() {
+      if (!customer.id || !customer.stage_id) return;
+      
+      const { data } = await supabase
+        .from('customer_stage_history')
+        .select('moved_at')
+        .eq('customer_id', customer.id)
+        .eq('stage_id', customer.stage_id)
+        .order('moved_at', { ascending: false })
+        .limit(1);
+        
+      if (data && data.length > 0) {
+        setLastMoved(data[0].moved_at);
+      }
+    }
+    
+    fetchLastMoved();
+  }, [customer.id, customer.stage_id]);
 
   const {
     attributes,
@@ -35,10 +61,10 @@ export function KanbanCard({ customerStage, index, onEdit, onEditCustomer, onRem
     transition,
     isDragging
   } = useSortable({
-    id: customerStage.id,
+    id: customer.id,
     data: {
       index,
-      stageId: customerStage.stage_id
+      stageId: customer.stage_id
     }
   });
 
@@ -59,7 +85,7 @@ export function KanbanCard({ customerStage, index, onEdit, onEditCustomer, onRem
     >
       <div className="flex justify-between items-start">
         <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-          {customer.name}
+          {customer.name || t('unnamed')}
         </h4>
         <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -92,21 +118,42 @@ export function KanbanCard({ customerStage, index, onEdit, onEditCustomer, onRem
             {customer.email}
           </div>
         )}
-        {customer.phone && (
+        {customer.whatsapp && (
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Phone className="w-4 h-4 mr-2" />
-            {customer.phone}
+            {customer.whatsapp}
           </div>
         )}
       </div>
 
-      <div className="mt-3 flex items-center text-xs text-gray-500 dark:text-gray-400">
-        <Clock className="w-3 h-3 mr-1" />
-        {formatDistanceToNow(new Date(customerStage.moved_at), {
-          addSuffix: true,
-          locale: locales[i18n.language as keyof typeof locales] || enUS
-        })}
-      </div>
+      {/* Tags */}
+      {customer.tags && customer.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {customer.tags.map(tag => (
+            <div 
+              key={tag.id}
+              className="px-1.5 py-0.5 rounded-full text-xs"
+              style={{ 
+                backgroundColor: `${tag.color}20`, // 20% opacity
+                color: tag.color,
+                border: `1px solid ${tag.color}`
+              }}
+            >
+              {tag.name}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {lastMoved && (
+        <div className="mt-3 flex items-center text-xs text-gray-500 dark:text-gray-400">
+          <Clock className="w-3 h-3 mr-1" />
+          {formatDistanceToNow(new Date(lastMoved), {
+            addSuffix: true,
+            locale: locales[i18n.language as keyof typeof locales] || enUS
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,9 @@
       "confirmation": "Are you sure you want to delete funnel {name}?",
       "warning": "This action cannot be undone.",
       "hasCustomers": "Cannot delete funnel because there are customers in some stages."
-    }
+    },
+    "select": "Select funnel",
+    "none": "No funnel"
   },
   "stages": {
     "title": "Stages",
@@ -23,11 +25,24 @@
     "editStage": "Edit Stage",
     "deleteStage": "Delete Stage",
     "stageName": "Stage Name",
-    "stageColor": "Color"
+    "stageColor": "Color",
+    "progressTitle": "Funnel Progress",
+    "select": "Select stage",
+    "currentStage": "Current stage",
+    "noStageSelected": "No funnel selected",
+    "selectStage": "Select stage",
+    "clickToSelect": "Click to select"
   },
   "customers": {
     "addCustomer": "Add Customer",
     "addToStage": "Add Customer to {stage}",
     "searchPlaceholder": "Search customers by name, email or phone..."
-  }
+  },
+  "funnel": "Funnel",
+  "allFunnels": "All funnels",
+  "stage": "Funnel Stage",
+  "allStages": "All funnel stages",
+  "stageProgress": "Funnel Progress",
+  "stageNotFound": "Stage not found",
+  "funnelNotFound": "Funnel not found"
 }

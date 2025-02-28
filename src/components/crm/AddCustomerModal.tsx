@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Customer } from '../../types/database';
-import { supabase } from '../../lib/supabase';
+import { CRMStage } from '../../types/crm';
+
+// Tipo composto para cliente com estágio
+type CustomerWithStage = Customer & {
+  stage?: CRMStage;
+};
 
 interface AddCustomerModalProps {
   onAdd: (customerId: string) => Promise<void>;
@@ -13,43 +18,42 @@ interface AddCustomerModalProps {
   funnelId: string;
 }
 
-export function AddCustomerModal({ onAdd, onClose, customers, stageName, loading, funnelId }: AddCustomerModalProps) {
+export function AddCustomerModal({ onAdd, onClose, customers, stageName, loading: propLoading, funnelId }: AddCustomerModalProps) {
   const { t } = useTranslation(['crm', 'common']);
   const [searchTerm, setSearchTerm] = useState('');
-  const [customersInFunnel, setCustomersInFunnel] = useState<string[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(true);
-  const [addedCustomers, setAddedCustomers] = useState<string[]>([]);
   const [loadingCustomerId, setLoadingCustomerId] = useState<string | null>(null);
+  const [addedCustomers, setAddedCustomers] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadCustomersInFunnel();
-  }, [funnelId]);
-
-  async function loadCustomersInFunnel() {
-    try {
-      const { data: stages } = await supabase
-        .from('crm_stages')
-        .select('id')
-        .eq('funnel_id', funnelId);
-
-      if (stages && stages.length > 0) {
-        const stageIds = stages.map(stage => stage.id);
-        
-        const { data: customerStages } = await supabase
-          .from('crm_customer_stages')
-          .select('customer_id')
-          .in('stage_id', stageIds);
-
-        if (customerStages) {
-          setCustomersInFunnel(customerStages.map(cs => cs.customer_id));
-        }
+  // Filter customers that don't have a stage_id or have a stage_id that's not in this funnel
+  const getAvailableCustomers = () => {
+    return customers.filter(customer => {
+      // If customer already has been added in this session, filter it out
+      if (addedCustomers.includes(customer.id)) {
+        return false;
       }
-    } catch (error) {
-      console.error('Error loading customers in funnel:', error);
-    } finally {
-      setLoadingCustomers(false);
-    }
-  }
+      
+      // If customer has no stage_id, it's available
+      if (!customer.stage_id) {
+        return true;
+      }
+      
+      // If customer has a stage_id, check if it's in this funnel
+      // We need to cast to CustomerWithStage to access stage property
+      const customerWithStage = customer as CustomerWithStage;
+      if (!customerWithStage.stage) {
+        return true;
+      }
+      
+      // If the stage's funnel_id is not this funnel, it's available
+      return customerWithStage.stage.funnel_id !== funnelId;
+    });
+  };
+
+  const filteredCustomers = getAvailableCustomers().filter(customer => 
+    (customer.name && customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.whatsapp && customer.whatsapp.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   const handleAddCustomer = async (customerId: string) => {
     try {
@@ -62,26 +66,6 @@ export function AddCustomerModal({ onAdd, onClose, customers, stageName, loading
       setLoadingCustomerId(null);
     }
   };
-
-  const filteredCustomers = customers.filter(customer => 
-    !customersInFunnel.includes(customer.id) &&
-    !addedCustomers.includes(customer.id) &&
-    (customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase())))
-  );
-
-  if (loadingCustomers) {
-    return (
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-          <div className="flex justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
@@ -125,11 +109,11 @@ export function AddCustomerModal({ onAdd, onClose, customers, stageName, loading
                 >
                   <div className="flex-1">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                      {customer.name}
+                      {customer.name || t('common:unnamed')}
                     </h4>
-                    {(customer.email || customer.phone) && (
+                    {(customer.email || customer.whatsapp) && (
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {customer.email || customer.phone}
+                        {customer.email || customer.whatsapp}
                       </p>
                     )}
                   </div>

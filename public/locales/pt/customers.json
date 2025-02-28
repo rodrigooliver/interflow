@@ -7,6 +7,7 @@
   "registeredAt": "Cadastrado em",
   "actions": "Ações",
   "noCustomers": "Nenhum cliente cadastrado",
+  "funnel": "Funil",
   "edit": {
     "title": "Editar Cliente",
     "phone": "Telefone",
@@ -16,5 +17,29 @@
     "title": "Excluir Cliente",
     "confirmation": "Tem certeza que deseja excluir o cliente {name}?",
     "warning": "Esta ação não pode ser desfeita."
-  }
+  },
+  "tags": {
+    "title": "Tags",
+    "addNew": "Nova tag",
+    "createNew": "Criar nova tag",
+    "name": "Nome da tag",
+    "color": "Cor",
+    "noTags": "Nenhuma tag disponível"
+  },
+  "noTags": "Sem tags",
+  "noContacts": "Sem contatos",
+  "startConversation": "Iniciar conversa",
+  "configureColumns": "Configurar colunas",
+  "columns": "Colunas",
+  "filters": "Filtros",
+  "clearFilters": "Limpar filtros",
+  "configureVisibleColumns": "Configurar colunas visíveis",
+  "resetSettings": "Resetar configurações",
+  "searchPlaceholder": "Buscar por nome, email ou WhatsApp...",
+  "activeFilters": "Filtros ativos",
+  "clearAll": "Limpar todos",
+  "registeredOn": "Registrado em",
+  "settingsReset": "Configurações resetadas",
+  "contacts": "Contatos",
+  "noTagsAvailable": "Nenhuma tag disponível"
 }

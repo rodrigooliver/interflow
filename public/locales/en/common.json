@@ -3,6 +3,7 @@
   "loading": "Loading...",
   "saving": "Saving...",
   "save": "Save",
+  "saved": "Saved",
   "deleting": "Deleting...",
   "confirmDelete": "Delete",
   "noResults": "No results found",
@@ -48,5 +49,12 @@
       "invalidCredentials": "Invalid email or password",
       "generic": "Error signing in. Please try again."
     }
-  }
+  },
+  "unnamed": "Unnamed",
+  "close": "Close",
+  "of": "of",
+  "showing": "Showing",
+  "to": "to",
+  "results": "results",
+  "actions": "Actions"
 }

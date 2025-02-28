@@ -12,7 +12,9 @@
       "confirmation": "¿Estás seguro de que deseas eliminar el embudo {name}?",
       "warning": "Esta acción no se puede deshacer.",
       "hasCustomers": "No se puede eliminar el embudo porque hay clientes en algunas etapas."
-    }
+    },
+    "select": "Seleccionar embudo",
+    "none": "Ningún embudo"
   },
   "stages": {
     "title": "Etapas",
@@ -23,11 +25,24 @@
     "editStage": "Editar Etapa",
     "deleteStage": "Eliminar Etapa",
     "stageName": "Nombre de la Etapa",
-    "stageColor": "Color"
+    "stageColor": "Color",
+    "progressTitle": "Progreso del Embudo",
+    "select": "Seleccionar etapa",
+    "currentStage": "Etapa actual",
+    "noStageSelected": "Ningún embudo seleccionado",
+    "selectStage": "Seleccionar etapa",
+    "clickToSelect": "Haz clic para seleccionar"
   },
   "customers": {
     "addCustomer": "Agregar Cliente",
     "addToStage": "Agregar Cliente a {stage}",
     "searchPlaceholder": "Buscar clientes por nombre, email o teléfono..."
-  }
+  },
+  "funnel": "Embudo",
+  "allFunnels": "Todos los embudos",
+  "stage": "Etapa de embudo",
+  "allStages": "Todas las etapas de embudo",
+  "stageProgress": "Progreso del Embudo",
+  "stageNotFound": "Etapa no encontrada",
+  "funnelNotFound": "Embudo no encontrado"
 }

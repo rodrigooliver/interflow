@@ -1,12 +1,13 @@
 {
   "search": "Buscar",
   "loading": "Carregando...",
-  "saving": "Salvar",
+  "saving": "Salvando...",
   "save": "Salvar",
+  "saved": "Salvo",
   "deleting": "Excluindo...",
-  "confirmDelete": "Excluir",
+  "confirmDelete": "Confirmar exclusão",
   "noResults": "Nenhum resultado encontrado",
-  "error": "Ocorreu um erro. Por favor, tente novamente.",
+  "error": "Ocorreu um erro. Tente novamente.",
   "back": "Voltar",
   "lightMode": "Modo Claro",
   "darkMode": "Modo Escuro",
@@ -48,5 +49,12 @@
       "invalidCredentials": "Email ou senha incorretos",
       "generic": "Erro ao fazer login. Por favor, tente novamente."
     }
-  }
+  },
+  "unnamed": "Sem nome",
+  "close": "Fechar",
+  "of": "de",
+  "showing": "Mostrando",
+  "to": "até",
+  "results": "resultados",
+  "actions": "Ações"
 }

@@ -112,14 +112,14 @@ export default function CRMFunnels() {
       if (stages && stages.length > 0) {
         const stageIds = stages.map(stage => stage.id);
         
-        const { data: customerStages, error: countError } = await supabase
-          .from('crm_customer_stages')
+        const { data: customersInStages, error: countError } = await supabase
+          .from('customers')
           .select('id')
           .in('stage_id', stageIds);
 
         if (countError) throw countError;
 
-        if (customerStages && customerStages.length > 0) {
+        if (customersInStages && customersInStages.length > 0) {
           setError(t('crm:funnels.delete.hasCustomers'));
           setDeleting(false);
           return;
@@ -338,12 +338,20 @@ export default function CRMFunnels() {
                 <br />
                 {t('crm:funnels.delete.warning')}
               </p>
+
+              {error && (
+                <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => {
                     setShowDeleteModal(false);
                     setSelectedFunnel(null);
+                    setError('');
                   }}
                   disabled={deleting}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"

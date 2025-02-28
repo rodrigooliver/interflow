@@ -3,17 +3,23 @@ import { Pencil, Trash2, MoreVertical, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CRMStage, CRMCustomerStage } from '../../types/crm';
+import { CRMStage } from '../../types/crm';
+import { Customer } from '../../types/database';
 import { KanbanCard } from './KanbanCard';
+
+// Tipo composto para cliente com estágio
+type CustomerWithStage = Customer & {
+  stage?: CRMStage;
+};
 
 interface KanbanColumnProps {
   stage: CRMStage;
-  customers: CRMCustomerStage[];
+  customers: Customer[];
   onEdit: () => void;
   onDelete: () => void;
   onAddCustomer: () => void;
-  onEditCustomer: (customerStage: CRMCustomerStage) => void;
-  onRemoveCustomer: (customerStage: CRMCustomerStage) => void;
+  onEditCustomer: (customer: Customer) => void;
+  onRemoveCustomer: (customer: Customer) => void;
 }
 
 export function KanbanColumn({
@@ -84,14 +90,14 @@ export function KanbanColumn({
         </div>
 
         <div className={`space-y-3 ${isOver ? 'opacity-50' : ''}`}>
-          {customers.map((customerStage, index) => (
+          {customers.map((customer, index) => (
             <KanbanCard
-              key={customerStage.id}
-              customerStage={customerStage}
+              key={customer.id}
+              customer={customer}
               index={index}
-              onEdit={() => onEditCustomer(customerStage)}
-              onEditCustomer={() => onEditCustomer(customerStage)}
-              onRemove={() => onRemoveCustomer(customerStage)}
+              onEdit={() => onEditCustomer(customer)}
+              onEditCustomer={() => onEditCustomer(customer)}
+              onRemove={() => onRemoveCustomer(customer)}
             />
           ))}
         </div>

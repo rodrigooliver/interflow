@@ -1,6 +1,7 @@
 {
   "title": "Service Channels",
   "newChannel": "New Channel",
+  "deleteSuccess": "Channel successfully removed",
   "form": {
     "title": {
       "create": "New Service Channel",
@@ -64,7 +65,24 @@
       "namePlaceholder": "Enter channel name. Ex: WhatsApp",
       "nameRequired": "Enter a name to continue",
       "deleteConfirmTitle": "Remove WhatsApp Channel",
-      "deleteConfirmMessage": "Are you sure you want to remove this channel? This action cannot be undone."
+      "deleteConfirmMessage": "Are you sure you want to remove this channel? This action cannot be undone.",
+      "resetConfirmation": "Are you sure you want to reset the connection? This will require a new QR code.",
+      "interflowSetup": "Interflow Setup",
+      "interflowSetupDescription": "Configure your WhatsApp connection using Interflow.",
+      "transferChats": "Transfer Chats",
+      "transferTitle": "Transfer Chats to Another Channel",
+      "selectTargetChannel": "Select target channel",
+      "selectChannel": "Select a channel",
+      "transfer": "Transfer",
+      "transferring": "Transferring...",
+      "transferSuccess": "Chats transferred successfully",
+      "saveAndContinue": "Save and Continue",
+      "connect": "Connect WhatsApp",
+      "connectSuccess": "WhatsApp connected successfully"
+    },
+    "instagram": {
+      "saveAndContinue": "Save and Continue",
+      "connect": "Connect Instagram"
     }
   },
   "types": {

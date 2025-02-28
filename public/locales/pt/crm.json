@@ -12,7 +12,9 @@
       "confirmation": "Tem certeza que deseja excluir o funil {name}?",
       "warning": "Esta ação não pode ser desfeita.",
       "hasCustomers": "Não é possível excluir o funil pois existem clientes em algum dos estágios."
-    }
+    },
+    "select": "Selecione o funil",
+    "none": "Nenhum funil"
   },
   "stages": {
     "title": "Estágios",
@@ -23,11 +25,24 @@
     "editStage": "Editar Estágio",
     "deleteStage": "Excluir Estágio",
     "stageName": "Nome do Estágio",
-    "stageColor": "Cor"
+    "stageColor": "Cor",
+    "progressTitle": "Progresso no Funil",
+    "select": "Selecione o estágio",
+    "currentStage": "Estágio atual",
+    "noStageSelected": "Nenhum funil selecionado",
+    "selectStage": "Selecione o estágio",
+    "clickToSelect": "Clique para selecionar"
   },
   "customers": {
     "addCustomer": "Adicionar Cliente",
     "addToStage": "Adicionar Cliente a {stage}",
     "searchPlaceholder": "Buscar clientes por nome, email ou telefone..."
-  }
+  },
+  "funnel": "Funil",
+  "allFunnels": "Todos os funis",
+  "stage": "Estágio de funil",
+  "allStages": "Todos os estágios de funil",
+  "stageProgress": "Progresso do Funil",
+  "stageNotFound": "Estágio não encontrado",
+  "funnelNotFound": "Funil não encontrado"
 }
