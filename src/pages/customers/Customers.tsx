@@ -771,7 +771,7 @@ export default function Customers() {
           { id: 'name', name: t('customers:name'), visible: true },
           { id: 'stage', name: t('crm:stage'), visible: true },
           { id: 'stage_progress', name: t('crm:stageProgress'), visible: true },
-          { id: 'tags', name: t('customers:tags'), visible: true },
+          { id: 'tags', name: t('customers:tags.title'), visible: true },
           { id: 'contacts', name: t('customers:contacts'), visible: true },
         ];
         
@@ -1486,7 +1486,7 @@ export default function Customers() {
               
               {selectedTagIds.length > 0 && (
                 <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200">
-                  <span className="mr-1">{t('customers:tags')}: {selectedTagIds.length}</span>
+                  <span className="mr-1">{t('customers:tags.title')}: {selectedTagIds.length}</span>
                   <button 
                     onClick={() => {
                       setSelectedTagIds([]);
