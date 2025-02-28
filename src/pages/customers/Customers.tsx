@@ -866,7 +866,7 @@ export default function Customers() {
       { id: 'name', name: t('customers:name'), visible: true },
       { id: 'stage', name: t('crm:stage'), visible: true },
       { id: 'stage_progress', name: t('crm:stageProgress'), visible: true },
-      { id: 'tags', name: t('customers:tags'), visible: true },
+      { id: 'tags', name: t('customers:tags.title'), visible: true },
       { id: 'contacts', name: t('customers:contacts'), visible: true },
     ];
     
