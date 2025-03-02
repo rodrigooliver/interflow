@@ -25,7 +25,7 @@ export const Navbar = () => {
           <div className="flex-shrink-0 hidden md:block">
             <Link to="/">
               <img 
-                src={theme === 'dark' ? '/interflow-logo-white.svg' : '/interflow-logo.svg'}
+                src={theme === 'dark' ? '/images/logos/interflow-logo-white.svg' : '/images/logos/interflow-logo.svg'}
                 alt="Logo"
                 className="hidden md:block h-8 w-auto"
               />

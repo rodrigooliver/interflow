@@ -1,28 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Edit, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Settings, Loader2, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CustomFieldFormData, CustomFieldDefinition } from '../../types/database';
 import { CustomFieldModal } from './CustomFieldModal';
-import { 
-  loadCustomFieldDefinitions, 
-  loadCustomFieldValues, 
-  formatCustomFieldsData,
-  upsertCustomFieldValue,
-  removeCustomFieldValue
-} from '../../services/customFieldsService';
+import { useCustomFieldDefinitions } from '../../hooks/useQueryes';
 
 interface CustomFieldsSectionProps {
   customerId: string;
   organizationId?: string;
   onFieldsChange?: (fields: CustomFieldFormData[]) => void;
   readOnly?: boolean;
+  preloadedFieldValues?: {
+    id: string;
+    field_definition_id: string;
+    value: string;
+    updated_at: string;
+    field_definition: CustomFieldDefinition;
+  }[];
 }
 
 export function CustomFieldsSection({ 
   customerId, 
   organizationId, 
   onFieldsChange,
-  readOnly = false
+  readOnly = false,
+  preloadedFieldValues
 }: CustomFieldsSectionProps) {
   const [customFields, setCustomFields] = useState<CustomFieldFormData[]>([]);
   const [organizationFields, setOrganizationFields] = useState<CustomFieldDefinition[]>([]);
@@ -38,39 +40,126 @@ export function CustomFieldsSection({
   });
   const [fieldSuggestions, setFieldSuggestions] = useState<CustomFieldDefinition[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [fieldDefinitions, setFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [originalValues, setOriginalValues] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (customerId && organizationId) {
-      loadCustomFields();
-      loadFieldDefinitions();
-    }
-  }, [customerId, organizationId]);
+  const { data: fieldDefinitions, isLoading: loadingDefinitions } = useCustomFieldDefinitions(organizationId);
 
-  // Carregar campos personalizados da organização e do cliente
-  const loadCustomFields = async () => {
-    if (!organizationId || !customerId) return;
-    
-    try {
+  // Efeito para processar os dados quando as definições de campos ou valores pré-carregados estiverem disponíveis
+  useEffect(() => {
+    if (customerId && organizationId && fieldDefinitions) {
       setLoadingCustomFields(true);
       
-      // 1. Carregar definições de campos da organização
-      const fieldDefinitions = await loadCustomFieldDefinitions(organizationId);
+      if (preloadedFieldValues) {
+        // Se temos valores pré-carregados, usá-los diretamente
+        processPreloadedFieldValues();
+      } else {
+        // Se não há valores pré-carregados, criar campos vazios para todas as definições
+        createEmptyFields();
+      }
+    }
+  }, [customerId, organizationId, preloadedFieldValues, fieldDefinitions]);
+
+  useEffect(() => {
+    if (fieldDefinitions) {
       setOrganizationFields(fieldDefinitions);
+      setFieldSuggestions(fieldDefinitions);
+    }
+  }, [fieldDefinitions]);
+
+  // Função para criar campos vazios para todas as definições
+  const createEmptyFields = () => {
+    if (!fieldDefinitions) return;
+    
+    try {
+      // Criar um campo vazio para cada definição
+      const emptyFields = fieldDefinitions.map(definition => {
+        return {
+          id: '', // Campo novo, sem ID
+          field_id: definition.id,
+          field_name: definition.name,
+          value: '', // Valor vazio
+          type: definition.type || 'text',
+          options: definition.options || [],
+          isNew: true
+        } as CustomFieldFormData;
+      });
       
-      // 2. Carregar valores dos campos para este cliente
-      const fieldValues = await loadCustomFieldValues(customerId);
+      setCustomFields(emptyFields);
       
-      // 3. Formatar os dados para o formulário
-      const formattedFields = formatCustomFieldsData(fieldDefinitions, fieldValues);
+      // Inicializar valores originais (todos vazios)
+      const origValues: Record<string, string> = {};
+      emptyFields.forEach(field => {
+        if (field.field_id) {
+          origValues[field.field_id as string] = '';
+        }
+      });
+      setOriginalValues(origValues);
+      
+      // Notificar o componente pai
+      if (onFieldsChange) {
+        onFieldsChange(emptyFields);
+      }
+    } catch (error) {
+      console.error('Erro ao criar campos vazios:', error);
+    } finally {
+      setLoadingCustomFields(false);
+    }
+  };
+
+  // Função para processar valores de campos pré-carregados
+  const processPreloadedFieldValues = () => {
+    if (!fieldDefinitions || !preloadedFieldValues) return;
+    
+    try {
+      // Mapear valores pré-carregados por ID de definição para acesso rápido
+      type FieldValueType = {
+        id: string;
+        field_definition_id: string;
+        value: string;
+        updated_at: string;
+        field_definition: CustomFieldDefinition;
+      };
+      
+      const valuesByDefinitionId: Record<string, FieldValueType> = {};
+      preloadedFieldValues.forEach(value => {
+        valuesByDefinitionId[value.field_definition_id] = value;
+      });
+      
+      // Criar campos para todas as definições, preenchendo valores onde existirem
+      const formattedFields = fieldDefinitions.map(definition => {
+        const existingValue = valuesByDefinitionId[definition.id];
+        
+        if (existingValue) {
+          return {
+            id: existingValue.id,
+            field_id: definition.id,
+            field_name: definition.name,
+            value: existingValue.value || '',
+            type: definition.type || 'text',
+            options: definition.options || [],
+            isNew: false
+          } as CustomFieldFormData;
+        } else {
+          // Campo definido mas sem valor para este cliente
+          return {
+            id: '',
+            field_id: definition.id,
+            field_name: definition.name,
+            value: '',
+            type: definition.type || 'text',
+            options: definition.options || [],
+            isNew: true
+          } as CustomFieldFormData;
+        }
+      });
+      
       setCustomFields(formattedFields);
       
-      // 4. Armazenar valores originais para comparação
+      // Armazenar valores originais para comparação
       const origValues: Record<string, string> = {};
       formattedFields.forEach(field => {
         if (field.field_id) {
-          origValues[field.field_id] = field.value || '';
+          origValues[field.field_id as string] = field.value || '';
         }
       });
       setOriginalValues(origValues);
@@ -79,57 +168,21 @@ export function CustomFieldsSection({
       if (onFieldsChange) {
         onFieldsChange(formattedFields);
       }
-      
     } catch (error) {
-      console.error('Erro ao carregar campos personalizados:', error);
+      console.error('Erro ao processar campos personalizados:', error);
     } finally {
       setLoadingCustomFields(false);
     }
   };
 
-  // Função para carregar as definições de campos
-  const loadFieldDefinitions = async () => {
-    if (!organizationId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('custom_fields_definition')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .order('name');
-        
-      if (error) throw error;
-      
-      setFieldSuggestions(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar definições de campos:', error);
-    }
-  };
-
-  // Função para editar um campo personalizado existente
-  const handleEditField = (field: CustomFieldFormData) => {
-    console.log('CustomFieldsSection - handleEditField chamado', field);
-    setSelectedField(field);
-    setIsCreatingField(false);
-    setIsModalOpen(true);
-  };
-
-  // Função para criar um novo campo personalizado
-  const handleCreateField = () => {
-    console.log('CustomFieldsSection - handleCreateField chamado');
-    setSelectedField(null);
-    setIsCreatingField(true);
-    setIsModalOpen(true);
-  };
-
   // Função para salvar um campo personalizado
-  const handleSaveField = async (field: CustomFieldFormData, index: number) => {
+  const handleSaveField = async (field: CustomFieldFormData) => {
     console.log('Verificando se houve alteração no campo:', field.field_name);
     
     if (!customerId || !organizationId || !field.field_id) return;
     
     // Verificar se o valor foi alterado
-    const originalValue = originalValues[field.field_id] || '';
+    const originalValue = originalValues[field.field_id as string] || '';
     const currentValue = field.value || '';
     
     if (originalValue === currentValue) {
@@ -155,12 +208,32 @@ export function CustomFieldsSection({
       
       if (error) throw error;
       
+      // Atualizar o ID do campo se for um campo novo
+      if (data && data[0] && !field.id) {
+        const updatedFields = [...customFields];
+        const fieldIndex = updatedFields.findIndex(f => f.field_id === field.field_id);
+        
+        if (fieldIndex !== -1) {
+          updatedFields[fieldIndex] = {
+            ...updatedFields[fieldIndex],
+            id: data[0].id,
+            isNew: false
+          };
+          setCustomFields(updatedFields);
+          
+          // Notificar o componente pai
+          if (onFieldsChange) {
+            onFieldsChange(updatedFields);
+          }
+        }
+      }
+      
       console.log('Campo personalizado salvo com sucesso:', field.field_name);
       
       // Atualizar o valor original após salvar
       setOriginalValues(prev => ({
         ...prev,
-        [field.field_id]: currentValue
+        [field.field_id as string]: currentValue
       }));
       
       // Mostrar feedback visual temporário
@@ -188,67 +261,6 @@ export function CustomFieldsSection({
     }
   };
 
-  // Função para remover um campo personalizado
-  const handleRemoveField = async (index: number) => {
-    const field = customFields[index];
-    
-    if (!customerId || !field || !field.field_id) return;
-    
-    try {
-      setLoadingCustomFields(true);
-      
-      // Remover o valor do campo da tabela customer_field_values
-      const { error } = await supabase
-        .from('customer_field_values')
-        .delete()
-        .eq('customer_id', customerId)
-        .eq('field_definition_id', field.field_id);
-        
-      if (error) throw error;
-      
-      // Remover o campo do estado local
-      const updatedFields = customFields.filter((_, i) => i !== index);
-      setCustomFields(updatedFields);
-      
-      // Atualizar valores originais
-      setOriginalValues(prev => {
-        const updated = { ...prev };
-        delete updated[field.field_id];
-        return updated;
-      });
-      
-      // Notificar o componente pai sobre a mudança
-      if (onFieldsChange) {
-        onFieldsChange(updatedFields);
-      }
-      
-      // Mostrar feedback visual temporário
-      const feedbackElement = document.createElement('div');
-      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      feedbackElement.textContent = `Campo "${field.field_name}" removido`;
-      document.body.appendChild(feedbackElement);
-      
-      setTimeout(() => {
-        feedbackElement.remove();
-      }, 1500);
-      
-    } catch (error) {
-      console.error('Erro ao remover campo personalizado:', error);
-      
-      // Mostrar mensagem de erro
-      const feedbackElement = document.createElement('div');
-      feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      feedbackElement.textContent = `Erro ao remover campo "${field.field_name}"`;
-      document.body.appendChild(feedbackElement);
-      
-      setTimeout(() => {
-        feedbackElement.remove();
-      }, 3000);
-    } finally {
-      setLoadingCustomFields(false);
-    }
-  };
-
   // Função para atualizar o valor de um campo no estado local
   const handleFieldValueChange = (index: number, value: string) => {
     const updatedFields = [...customFields];
@@ -265,15 +277,26 @@ export function CustomFieldsSection({
   const renderCustomField = (field: CustomFieldFormData, index: number) => {
     return (
       <div key={field.id || `new-${index}`} className="mb-4">
-        <label htmlFor={`custom-field-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {field.field_name}
-        </label>
+        <div className="flex justify-between items-center mb-1">
+          <label htmlFor={`custom-field-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {field.field_name}
+          </label>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => handleOpenEditModal(field)}
+              className="text-xs text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+            >
+              Editar
+            </button>
+          )}
+        </div>
         {field.type === 'select' && field.options && field.options.length > 0 ? (
           <select
             id={`custom-field-${index}`}
             value={field.value || ''}
             onChange={(e) => handleFieldValueChange(index, e.target.value)}
-            onBlur={() => handleSaveField(field, index)}
+            onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
           >
             <option value="">Selecione uma opção</option>
@@ -287,7 +310,7 @@ export function CustomFieldsSection({
             type="date"
             value={field.value || ''}
             onChange={(e) => handleFieldValueChange(index, e.target.value)}
-            onBlur={() => handleSaveField(field, index)}
+            onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
           />
         ) : field.type === 'number' ? (
@@ -296,7 +319,7 @@ export function CustomFieldsSection({
             type="number"
             value={field.value || ''}
             onChange={(e) => handleFieldValueChange(index, e.target.value)}
-            onBlur={() => handleSaveField(field, index)}
+            onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
           />
         ) : (
@@ -305,7 +328,7 @@ export function CustomFieldsSection({
             type="text"
             value={field.value || ''}
             onChange={(e) => handleFieldValueChange(index, e.target.value)}
-            onBlur={() => handleSaveField(field, index)}
+            onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
             placeholder="Deixe em branco para remover"
           />
@@ -424,15 +447,15 @@ export function CustomFieldsSection({
   const handleFieldNameChange = (value: string) => {
     setNewField(prev => ({ ...prev, field_name: value }));
     
-    if (value.trim().length > 0) {
+    if (value.trim().length > 0 && fieldDefinitions) {
       // Filtrar definições de campos que correspondem à pesquisa
-      const filtered = organizationFields.filter(
+      const filtered = fieldDefinitions.filter(
         def => def.name.toLowerCase().includes(value.toLowerCase())
       );
       setFieldSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     } else {
-      setFieldSuggestions([]);
+      setFieldSuggestions(fieldDefinitions || []);
       setShowSuggestions(false);
     }
   };
@@ -445,6 +468,13 @@ export function CustomFieldsSection({
       field_id: field.id
     }));
     setShowSuggestions(false);
+  };
+
+  // Função para editar um campo existente (usada nos botões de edição)
+  const handleOpenEditModal = (field: CustomFieldFormData) => {
+    setSelectedField(field);
+    setIsCreatingField(false);
+    setIsModalOpen(true);
   };
 
   return (
@@ -546,7 +576,7 @@ export function CustomFieldsSection({
       )}
       
       {/* Lista de campos personalizados */}
-      {loadingCustomFields ? (
+      {loadingCustomFields || loadingDefinitions ? (
         <div className="flex justify-center py-4">
           <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
         </div>
@@ -560,7 +590,7 @@ export function CustomFieldsSection({
         </div>
       )}
 
-      {/* Modal para criar/editar campo personalizado */}
+      {/* Modal para criar/editar campo personalizado - remover opção de remoção */}
       {isModalOpen && (
         <CustomFieldModal
           field={selectedField}
@@ -568,7 +598,6 @@ export function CustomFieldsSection({
           organizationFields={organizationFields}
           organizationId={organizationId || ''}
           onSave={handleSaveField}
-          onRemove={selectedField?.id ? () => handleRemoveField(customFields.findIndex(f => f.id === selectedField.id)) : undefined}
           onClose={() => setIsModalOpen(false)}
         />
       )}

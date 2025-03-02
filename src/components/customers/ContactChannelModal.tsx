@@ -8,12 +8,12 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 interface ContactChannelModalProps {
-  onClose: () => void;
-  contactType: 'email' | 'whatsapp';
+  contactType: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram';
   contactValue: string;
+  onClose: () => void;
 }
 
-export function ContactChannelModal({ onClose, contactType, contactValue }: ContactChannelModalProps) {
+export function ContactChannelModal({ contactType, contactValue, onClose }: ContactChannelModalProps) {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { currentOrganization } = useOrganizationContext();

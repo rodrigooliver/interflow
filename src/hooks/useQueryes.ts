@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { Profile, ServiceTeam, ChatChannel, Funnel } from '../types/database';
-
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition } from '../types/database';
 
 interface Tag {
   id: string;
@@ -12,6 +11,9 @@ interface Tag {
 interface FunnelStage {
   id: string;
   name: string;
+  color: string;
+  position: number;
+  funnel_id: string;
 }
 
 interface Funnel {
@@ -50,9 +52,21 @@ export const useAgents = (organizationId?: string) => {
         .in('role', ['agent', 'admin', 'owner']);
 
       if (error) throw error;
-      return data?.map(item => item.profile) as Agent[];
+      
+      // Corrigindo o tipo de retorno
+      return (data || []).map(item => {
+        const profile = item.profile as unknown as Profile;
+        return {
+          ...profile,
+          organization_member: {
+            role: 'agent'
+          }
+        } as Agent;
+      });
     },
-    enabled: !!organizationId
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000 // 10 minutos
   });
 };
 
@@ -71,7 +85,9 @@ export const useTeams = (organizationId?: string) => {
       if (error) throw error;
       return data as ServiceTeam[];
     },
-    enabled: !!organizationId
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000 // 10 minutos
   });
 };
 
@@ -90,7 +106,9 @@ export const useChannels = (organizationId?: string) => {
       if (error) throw error;
       return data as ChatChannel[];
     },
-    enabled: !!organizationId
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000 // 10 minutos
   });
 };
 
@@ -103,12 +121,15 @@ export const useTags = (organizationId?: string) => {
       const { data, error } = await supabase
         .from('tags')
         .select('id, name, color')
-        .eq('organization_id', organizationId);
+        .eq('organization_id', organizationId)
+        .order('name');
 
       if (error) throw error;
       return data as Tag[];
     },
-    enabled: !!organizationId
+    enabled: !!organizationId,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    gcTime: 60 * 60 * 1000 // 1 hora
   });
 };
 
@@ -125,7 +146,10 @@ export const useFunnels = (organizationId?: string) => {
           name,
           stages:crm_stages(
             id,
-            name
+            name,
+            color,
+            position,
+            funnel_id
           )
         `)
         .eq('organization_id', organizationId)
@@ -133,13 +157,38 @@ export const useFunnels = (organizationId?: string) => {
 
       if (funnelError) throw funnelError;
 
-      // Garantir que stages sempre seja um array
+      // Garantir que stages sempre seja um array e ordenar por position
       return (funnels || []).map(funnel => ({
         ...funnel,
-        stages: funnel.stages || []
+        stages: (funnel.stages || []).sort((a, b) => a.position - b.position)
       })) as Funnel[];
     },
-    enabled: !!organizationId
+    enabled: !!organizationId,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    gcTime: 60 * 60 * 1000 // 1 hora
+  });
+};
+
+// Hook para carregar definições de campos personalizados
+export const useCustomFieldDefinitions = (organizationId?: string) => {
+  return useQuery({
+    queryKey: ['custom_field_definitions', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      
+      const { data, error } = await supabase
+        .from('custom_fields_definition')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('name');
+        
+      if (error) throw error;
+      
+      return data as CustomFieldDefinition[];
+    },
+    enabled: !!organizationId,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    gcTime: 60 * 60 * 1000 // 1 hora
   });
 };
 

@@ -7,7 +7,7 @@ import { ChatMessages } from '../../components/chat/ChatMessages';
 import { Chat } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
-import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useFilters';
+import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useQueryes';
 
 // Novos tipos para os filtros
 type FilterOption = {

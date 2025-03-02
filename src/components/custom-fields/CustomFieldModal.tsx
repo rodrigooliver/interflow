@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Plus, AlertCircle } from 'lucide-react';
+import { X, Trash2, AlertCircle } from 'lucide-react';
 import { CustomFieldFormData, CustomFieldDefinition } from '../../types/database';
 import { createCustomFieldDefinition } from '../../services/customFieldsService';
 
@@ -8,7 +8,7 @@ interface CustomFieldModalProps {
   isCreating: boolean;
   organizationFields: CustomFieldDefinition[];
   organizationId: string;
-  onSave: (field: CustomFieldFormData) => void;
+  onSave: (field: CustomFieldFormData, index?: number) => void;
   onRemove?: () => void;
   onClose: () => void;
 }
@@ -147,6 +147,15 @@ export function CustomFieldModal({
     }));
   };
 
+  const handleOptionChange = (index: number, value: string) => {
+    const updatedOptions = [...(formData.options || [])];
+    updatedOptions[index] = value;
+    setFormData(prev => ({
+      ...prev,
+      options: updatedOptions
+    }));
+  };
+
   // Função para renderizar as opções do campo
   const renderOptions = () => {
     if (formData.type !== 'select' && formData.type !== 'multi_select') {
@@ -160,7 +169,7 @@ export function CustomFieldModal({
         </label>
         
         <div className="space-y-2 mb-3">
-          {formData.options.map((option, index) => (
+          {(formData.options || []).map((option, index) => (
             <div key={index} className="flex items-center">
               <input
                 type="text"

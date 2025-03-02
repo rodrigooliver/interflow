@@ -45,7 +45,7 @@ export default function Login() {
             <div className="flex justify-center">
               <img
                 className="h-12 w-auto"
-                src={theme === 'dark' ? '/interflow-logo-white.svg' : '/interflow-logo.svg'}
+                src={theme === 'dark' ? '/images/logos/interflow-logo-white.svg' : '/images/logos/interflow-logo.svg'}
                 alt="Logo"
               />
             </div>

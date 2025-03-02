@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Mail, Phone, Loader2, Pencil, Trash2, GitMerge, Search, ChevronLeft, ChevronRight, MessageSquare, Tag, Filter, X, Instagram, Facebook, Settings, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, GitMerge, Search, MessageSquare, Tag, Filter, X, Settings, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
-import { CustomerRegistrationModal } from '../../components/customers/CustomerRegistrationModal';
+import { CustomerAddModal } from '../../components/customers/CustomerAddModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { CustomerDeleteModal } from '../../components/customers/CustomerDeleteModal';
 import { ContactChannelModal } from '../../components/customers/ContactChannelModal';
-import { CRMFunnel, CRMStage } from '../../types/crm';
-import * as Tooltip from '@radix-ui/react-tooltip';
-import { CustomFieldDefinition } from '../../types/database';
+import { CRMStage } from '../../types/crm';
+import StageProgressBar from '../../components/customers/StageProgressBar';
+import CustomerTags from '../../components/customers/CustomerTags';
+import CustomerContacts from '../../components/customers/CustomerContacts';
+import { useTags, useCustomFieldDefinitions, useFunnels } from '../../hooks/useQueryes';
 
 interface ContactModalState {
   type: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram';
@@ -19,9 +21,11 @@ interface ContactModalState {
 
 interface CustomerContact {
   id: string;
-  type: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'instagramId' | 'facebook' | 'facebookId' | 'telegram' | 'other';
+  customer_id: string;
+  type: string; // 'email', 'whatsapp', 'phone', etc.
   value: string;
-  label?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CustomerTag {
@@ -30,16 +34,31 @@ interface CustomerTag {
   color: string;
 }
 
-// Estendendo a interface Customer para incluir tags
+// Interface para representar um funil de CRM
+interface CRMFunnel {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+}
+
+// Interface para representar um estágio de CRM com seu funil
+interface CRMStageWithFunnel extends CRMStage {
+  crm_funnels: CRMFunnel | null;
+}
+
+// Adaptar a interface para que seja compatível com nosso processamento
 interface Customer {
   id: string;
   organization_id: string;
   name: string;
   stage_id: string | null;
   created_at: string;
-  crm_stages: CRMStage | null;
-  tags?: CustomerTag[];
-  contacts?: CustomerContact[];
+  updated_at: string;
+  crm_stages: CRMStageWithFunnel | null;
+  tags: CustomerTag[];
+  contacts: CustomerContact[];
+  field_values: Record<string, string>;
 }
 
 // Adicionar interface para configuração de colunas
@@ -51,446 +70,36 @@ interface ColumnConfig {
   field_id?: string;
 }
 
+// Atualizar a tipagem do tagRelation para evitar o erro de lint
+interface TagRelation {
+  tags: {
+    id: string;
+    name: string;
+    color: string;
+  };
+  tag_id: string;
+}
+
+// Definir a interface para field_values
+interface CustomerFieldValue {
+  field_definition_id: string;
+  value: string;
+  id?: string;
+}
+
+// Adicionar uma interface específica para os modais
+interface CustomerWithTagRelations extends Omit<Customer, 'tags'> {
+  tags: { 
+    tag_id: string;
+    tags: {
+      id: string;
+      name: string;
+      color: string;
+    };
+  }[];
+}
+
 const ITEMS_PER_PAGE = 10;
-
-// Componente para exibir a barra de progresso do estágio
-function StageProgressBar({ 
-  customer, 
-  funnels, 
-  stages,
-  onStageChange
-}: { 
-  customer: Customer; 
-  funnels: CRMFunnel[];
-  stages: CRMStage[];
-  onStageChange?: (customerId: string, stageId: string) => void;
-}) {
-  const { t } = useTranslation(['crm', 'common']);
-  const [showFunnelList, setShowFunnelList] = useState(false);
-  
-  // Se o cliente não tem estágio, mostrar o primeiro funil disponível
-  if (!customer.stage_id && funnels.length > 0) {
-    const firstFunnel = funnels[0];
-    const firstFunnelStages = stages
-      .filter(s => s.funnel_id === firstFunnel.id)
-      .sort((a, b) => a.position - b.position);
-    
-    return (
-      <div className="w-full">
-        <div 
-          className="text-sm text-gray-700 dark:text-gray-300 mb-1 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
-          onClick={() => setShowFunnelList(!showFunnelList)}
-        >
-          <span className="font-medium">{firstFunnel.name}</span>
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className={`h-4 w-4 ml-1 transition-transform ${showFunnelList ? 'rotate-180' : ''}`}
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-        
-        {showFunnelList ? (
-          <div className="space-y-2 mt-2">
-            {funnels.map(funnel => (
-              <div key={funnel.id} className="rounded-md overflow-hidden">
-                <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {funnel.name}
-                </div>
-                <Tooltip.Provider delayDuration={200}>
-                  <div className="h-6 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex">
-                    {stages.filter(s => s.funnel_id === funnel.id).sort((a, b) => a.position - b.position).map((stage, index, filteredStages) => {
-                      const width = `${100 / filteredStages.length}%`;
-                      
-                      return (
-                        <Tooltip.Root key={stage.id}>
-                          <Tooltip.Trigger asChild>
-                            <div 
-                              className="h-full flex items-center justify-center transition-all relative group cursor-pointer"
-                              style={{ 
-                                width,
-                                backgroundColor: 'transparent'
-                              }}
-                              onClick={() => onStageChange && onStageChange(customer.id, stage.id)}
-                            >
-                              {/* Efeito de hover */}
-                              <div 
-                                className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                                style={{ backgroundColor: `${stage.color}60` }}
-                              >
-                                <span className="text-xs font-medium text-white z-10 px-1 truncate">
-                                  {stage.name}
-                                </span>
-                              </div>
-                              
-                              {/* Divisor entre estágios */}
-                              {index < filteredStages.length - 1 && (
-                                <div className="absolute right-0 top-0 h-full w-0.5 bg-white dark:bg-gray-800 z-10"></div>
-                              )}
-                            </div>
-                          </Tooltip.Trigger>
-                          <Tooltip.Portal>
-                            <Tooltip.Content
-                              className="px-2 py-1 text-xs rounded bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                              sideOffset={5}
-                            >
-                              {stage.name}
-                              <Tooltip.Arrow className="fill-gray-900 dark:fill-white" />
-                            </Tooltip.Content>
-                          </Tooltip.Portal>
-                        </Tooltip.Root>
-                      );
-                    })}
-                  </div>
-                </Tooltip.Provider>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Tooltip.Provider delayDuration={200}>
-            <div className="h-6 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex">
-              {firstFunnelStages.map((stage, index) => {
-                const width = `${100 / firstFunnelStages.length}%`;
-                
-                return (
-                  <Tooltip.Root key={stage.id}>
-                    <Tooltip.Trigger asChild>
-                      <div 
-                        className="h-full flex items-center justify-center transition-all relative group cursor-pointer"
-                        style={{ 
-                          width,
-                          backgroundColor: 'transparent'
-                        }}
-                        onClick={() => onStageChange && onStageChange(customer.id, stage.id)}
-                      >
-                        {/* Efeito de hover */}
-                        <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                          style={{ backgroundColor: `${stage.color}60` }}
-                        >
-                          <span className="text-xs font-medium text-white z-10 px-1 truncate">
-                            {stage.name}
-                          </span>
-                        </div>
-                        
-                        {/* Divisor entre estágios */}
-                        {index < firstFunnelStages.length - 1 && (
-                          <div className="absolute right-0 top-0 h-full w-0.5 bg-white dark:bg-gray-800 z-10"></div>
-                        )}
-                      </div>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="px-2 py-1 text-xs rounded bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                        sideOffset={5}
-                      >
-                        {stage.name}
-                        <Tooltip.Arrow className="fill-gray-900 dark:fill-white" />
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                );
-              })}
-            </div>
-          </Tooltip.Provider>
-        )}
-      </div>
-    );
-  }
-  
-  // Se o cliente não tem estágio e não há funis disponíveis
-  if (!customer.stage_id) {
-    return <div className="text-sm text-gray-500 dark:text-gray-400">{t('crm:stages.noStageSelected')}</div>;
-  }
-  
-  // Encontrar o estágio atual do cliente
-  const currentStage = customer.crm_stages;
-  
-  if (!currentStage) {
-    return <div className="text-sm text-gray-500 dark:text-gray-400">{t('crm:stages.stageNotFound')}</div>;
-  }
-  
-  // Encontrar o funil do estágio
-  const currentFunnel = funnels.find(f => f.id === currentStage.funnel_id);
-  
-  if (!currentFunnel) {
-    return <div className="text-sm text-gray-500 dark:text-gray-400">{t('crm:stages.funnelNotFound')}</div>;
-  }
-  
-  // Filtrar os estágios do funil atual
-  const funnelStages = stages
-    .filter(s => s.funnel_id === currentStage.funnel_id)
-    .sort((a, b) => a.position - b.position);
-  
-  return (
-    <div className="w-full">
-      <div 
-        className="text-sm text-gray-700 dark:text-gray-300 mb-1 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
-        onClick={() => setShowFunnelList(!showFunnelList)}
-      >
-        <span className="font-medium">{currentFunnel.name}</span>
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          className={`h-4 w-4 ml-1 transition-transform ${showFunnelList ? 'rotate-180' : ''}`}
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-      
-      {showFunnelList ? (
-        <div className="space-y-2 mt-2">
-          {funnels.map(funnel => (
-            <div key={funnel.id} className="rounded-md overflow-hidden">
-              <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {funnel.name}
-              </div>
-              <Tooltip.Provider delayDuration={200}>
-                <div className="h-6 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex">
-                  {stages.filter(s => s.funnel_id === funnel.id).sort((a, b) => a.position - b.position).map((stage, index, filteredStages) => {
-                    const isCurrentStage = stage.id === customer.stage_id;
-                    const width = `${100 / filteredStages.length}%`;
-                    
-                    // Determinar a posição do estágio no funil
-                    const stagePosition = filteredStages.findIndex(s => s.id === customer.stage_id);
-                    const isCompleted = funnel.id === currentFunnel.id && stagePosition > -1 && index < stagePosition;
-                    
-                    return (
-                      <Tooltip.Root key={stage.id}>
-                        <Tooltip.Trigger asChild>
-                          <div 
-                            className="h-full flex items-center justify-center transition-all relative group cursor-pointer"
-                            style={{ 
-                              width,
-                              backgroundColor: isCurrentStage 
-                                ? stage.color 
-                                : isCompleted 
-                                  ? `${stage.color}80` // Cor com opacidade para estágios completados
-                                  : 'transparent'
-                            }}
-                            onClick={() => onStageChange && onStageChange(customer.id, stage.id)}
-                          >
-                            {isCurrentStage && (
-                              <span className="text-xs font-medium text-white z-10 px-1 truncate">
-                                {stage.name}
-                              </span>
-                            )}
-                            
-                            {/* Efeito de hover */}
-                            {!isCurrentStage && (
-                              <div 
-                                className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                                style={{ backgroundColor: `${stage.color}60` }}
-                              >
-                                <span className="text-xs font-medium text-white z-10 px-1 truncate">
-                                  {stage.name}
-                                </span>
-                              </div>
-                            )}
-                            
-                            {/* Divisor entre estágios */}
-                            {index < filteredStages.length - 1 && (
-                              <div className="absolute right-0 top-0 h-full w-0.5 bg-white dark:bg-gray-800 z-10"></div>
-                            )}
-                          </div>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content
-                            className="px-2 py-1 text-xs rounded bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                            sideOffset={5}
-                          >
-                            {stage.name}
-                            <Tooltip.Arrow className="fill-gray-900 dark:fill-white" />
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    );
-                  })}
-                </div>
-              </Tooltip.Provider>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <Tooltip.Provider delayDuration={200}>
-          <div className="h-6 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex">
-            {funnelStages.map((stage, index) => {
-              const isCurrentStage = stage.id === customer.stage_id;
-              const width = `${100 / funnelStages.length}%`;
-              
-              // Determinar a posição do estágio no funil
-              const stagePosition = funnelStages.findIndex(s => s.id === customer.stage_id);
-              const isCompleted = index < stagePosition;
-              
-              return (
-                <Tooltip.Root key={stage.id}>
-                  <Tooltip.Trigger asChild>
-                    <div 
-                      className="h-full flex items-center justify-center transition-all relative group cursor-pointer"
-                      style={{ 
-                        width,
-                        backgroundColor: isCurrentStage 
-                          ? stage.color 
-                          : isCompleted 
-                            ? `${stage.color}80` // Cor com opacidade para estágios completados
-                            : 'transparent'
-                      }}
-                      onClick={() => onStageChange && onStageChange(customer.id, stage.id)}
-                    >
-                      {isCurrentStage && (
-                        <span className="text-xs font-medium text-white z-10 px-1 truncate">
-                          {stage.name}
-                        </span>
-                      )}
-                      
-                      {/* Efeito de hover */}
-                      {!isCurrentStage && (
-                        <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                          style={{ backgroundColor: `${stage.color}60` }}
-                        >
-                          <span className="text-xs font-medium text-white z-10 px-1 truncate">
-                            {stage.name}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Divisor entre estágios */}
-                      {index < funnelStages.length - 1 && (
-                        <div className="absolute right-0 top-0 h-full w-0.5 bg-white dark:bg-gray-800 z-10"></div>
-                      )}
-                    </div>
-                  </Tooltip.Trigger>
-                  <Tooltip.Portal>
-                    <Tooltip.Content
-                      className="px-2 py-1 text-xs rounded bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                      sideOffset={5}
-                    >
-                      {stage.name}
-                      <Tooltip.Arrow className="fill-gray-900 dark:fill-white" />
-                    </Tooltip.Content>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
-              );
-            })}
-          </div>
-        </Tooltip.Provider>
-      )}
-    </div>
-  );
-}
-
-// Componente para exibir as tags do cliente
-function CustomerTags({ tags }: { tags?: CustomerTag[] }) {
-  const { t } = useTranslation(['customers', 'common']);
-  
-  if (!tags || tags.length === 0) {
-    return <span className="text-gray-400 dark:text-gray-500 text-xs md:text-sm italic">{t('customers:noTags')}</span>;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {tags.map((tag) => {
-        // Verificar se a tag é válida
-        if (!tag || typeof tag !== 'object' || !('id' in tag)) {
-          return null;
-        }
-        
-        return (
-          <span
-            key={tag.id}
-            className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium truncate max-w-[100px] md:max-w-[150px]"
-            style={{ 
-              backgroundColor: `${tag.color}30`,
-              color: tag.color,
-              border: `1px solid ${tag.color}`
-            }}
-          >
-            <Tag className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1 flex-shrink-0" />
-            <span className="truncate">{tag.name}</span>
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-// Componente para exibir os contatos do cliente
-function CustomerContacts({ contacts }: { contacts?: CustomerContact[] }) {
-  const { t } = useTranslation(['customers', 'common']);
-  
-  if (!contacts || contacts.length === 0) {
-    return <span className="text-gray-400 dark:text-gray-500 text-xs md:text-sm italic">{t('customers:noContacts')}</span>;
-  }
-
-  // Função para renderizar o ícone correto para cada tipo de contato
-  const getContactIcon = (type: string) => {
-    switch (type) {
-      case 'email':
-        return <Mail className="w-4 h-4 mr-1 flex-shrink-0" />;
-      case 'whatsapp':
-      case 'phone':
-        return <Phone className="w-4 h-4 mr-1 flex-shrink-0" />;
-      case 'instagram':
-      case 'instagramId':
-        return <Instagram className="w-4 h-4 mr-1 flex-shrink-0" />;
-      case 'facebook':
-      case 'facebookId':
-        return <Facebook className="w-4 h-4 mr-1 flex-shrink-0" />;
-      default:
-        return <Mail className="w-4 h-4 mr-1 flex-shrink-0" />;
-    }
-  };
-
-  // Função para determinar se um contato pode ser clicado para iniciar conversa
-  const isClickableContact = (type: string) => {
-    return ['email', 'whatsapp', 'phone', 'telegram'].includes(type);
-  };
-
-  // Função para obter o tipo de contato para o modal
-  const getContactModalType = (type: string): 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram' => {
-    if (type === 'email') return 'email';
-    if (type === 'whatsapp') return 'whatsapp';
-    if (type === 'phone') return 'phone';
-    if (type === 'instagram' || type === 'instagramId') return 'instagram';
-    if (type === 'facebook' || type === 'facebookId') return 'facebook';
-    if (type === 'telegram') return 'telegram';
-    return 'email'; // fallback
-  };
-
-  return (
-    <div className="flex flex-col space-y-1">
-      {contacts.map((contact) => (
-        <div key={contact.id} className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-          {getContactIcon(contact.type)}
-          <span className="mr-2 truncate" title={contact.label || undefined}>
-            {contact.value}
-          </span>
-          {isClickableContact(contact.type) && (
-            <button
-              onClick={() => handleContactClick(getContactModalType(contact.type), contact.value)}
-              className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex items-center ml-auto"
-              title={t('customers:startConversation')}
-            >
-              <img 
-                src={contact.type === 'email' ? "/email.svg" : 
-                     contact.type === 'whatsapp' ? "/whatsapp.svg" : 
-                     contact.type === 'telegram' ? "/telegram.svg" : "/chat.svg"} 
-                alt={contact.type} 
-                className="w-4 h-4" 
-              />
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function Customers() {
   const { t } = useTranslation(['customers', 'common']);
@@ -508,10 +117,20 @@ export default function Customers() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCustomers, setTotalCustomers] = useState(0);
-  const [funnels, setFunnels] = useState<CRMFunnel[]>([]);
-  const [stages, setStages] = useState<CRMStage[]>([]);
-  const [loadingCRM, setLoadingCRM] = useState(true);
-  const [updatingStage, setUpdatingStage] = useState(false);
+  
+  // Usando os hooks de consulta para funis, estágios e tags
+  const { data: funnelsData, isLoading: loadingCRM } = useFunnels(currentOrganization?.id);
+  const funnels = funnelsData || [];
+  const stages = React.useMemo(() => {
+    return funnels.flatMap(funnel => funnel.stages || []);
+  }, [funnels]);
+  
+  const { data: tagsData, isLoading: loadingTags } = useTags(currentOrganization?.id);
+  const availableTags = tagsData || [];
+  
+  const { data: customFieldDefinitionsData } = useCustomFieldDefinitions(currentOrganization?.id);
+  const customFieldDefinitions = customFieldDefinitionsData || [];
+  
   // Estado para controlar a visualização em dispositivos móveis
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   // Estados para os filtros
@@ -519,15 +138,40 @@ export default function Customers() {
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<CustomerTag[]>([]);
-  const [loadingTags, setLoadingTags] = useState(false);
+  
   // Estados para gerenciar colunas personalizadas
-  const [customFieldDefinitions, setCustomFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
-  const [loadingCustomFields, setLoadingCustomFields] = useState(false);
   const [columnConfigs, setColumnConfigs] = useState<ColumnConfig[]>([]);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
-  const [customFieldValues, setCustomFieldValues] = useState<Record<string, Record<string, string>>>({});
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
+
+  // Referência para armazenar o ID da organização atual
+  const currentOrgIdRef = useRef<string | null>(null);
+  
+  // Estado para armazenar valores de campos personalizados por cliente e campo
+  const [customFieldValues, setCustomFieldValues] = useState<{
+    [customerId: string]: {
+      [fieldId: string]: string;
+    };
+  }>({});
+
+  // Efeito para carregar configurações de colunas quando a organização mudar
+  useEffect(() => {
+    if (!currentOrganization) return;
+    
+    // Se o ID da organização for o mesmo que já foi carregado, não recarregar
+    if (currentOrgIdRef.current === currentOrganization.id) return;
+    
+    // Atualizar a referência com o ID da organização atual
+    currentOrgIdRef.current = currentOrganization.id;
+    
+    // Carregar configurações de colunas
+    loadColumnConfigs();
+    
+    // Limpar a referência quando o componente for desmontado
+    return () => {
+      currentOrgIdRef.current = null;
+    };
+  }, [currentOrganization?.id]);
 
   // Implementar debounce para o termo de pesquisa
   useEffect(() => {
@@ -540,23 +184,17 @@ export default function Customers() {
     };
   }, [searchTerm]);
 
-  // Efeito para carregar clientes quando a organização, página ou termo de pesquisa com debounce mudam
+  // Efeito para carregar clientes quando a organização, página, termo de pesquisa ou filtros mudam
   useEffect(() => {
     if (currentOrganization) {
       loadCustomers();
+      
       // Resetar para a primeira página quando o termo de pesquisa mudar
       if (currentPage !== 1 && debouncedSearchTerm !== '') {
         setCurrentPage(1);
       }
     }
-  }, [currentOrganization, currentPage, debouncedSearchTerm]);
-
-  // Efeito para recarregar clientes quando os filtros mudam
-  useEffect(() => {
-    if (currentOrganization) {
-      loadCustomers();
-    }
-  }, [selectedFunnelId, selectedStageId, selectedTagIds]);
+  }, [currentOrganization, currentPage, debouncedSearchTerm, selectedFunnelId, selectedStageId, selectedTagIds, sortConfig]);
 
   useEffect(() => {
     // Função para atualizar o estado de visualização móvel
@@ -573,367 +211,110 @@ export default function Customers() {
     };
   }, []);
 
-  // Efeito separado para carregar funis e estágios apenas quando a organização muda
-  useEffect(() => {
-    if (currentOrganization) {
-      loadFunnelsAndStages();
-      loadAvailableTags();
-    }
-  }, [currentOrganization]);
-
-  const loadFunnelsAndStages = async () => {
-    try {
-      setLoadingCRM(true);
-      
-      // Carregar os funis
-      const { data: funnelsData, error: funnelsError } = await supabase
-        .from('crm_funnels')
-        .select('*')
-        .eq('organization_id', currentOrganization?.id)
-        .order('name');
-        
-      if (funnelsError) throw funnelsError;
-      
-      // Carregar os estágios
-      const { data: stagesData, error: stagesError } = await supabase
-        .from('crm_stages')
-        .select('*')
-        .order('position');
-        
-      if (stagesError) throw stagesError;
-      
-      setFunnels(funnelsData || []);
-      setStages(stagesData || []);
-    } catch (error) {
-      console.error('Erro ao carregar funis e estágios:', error);
-    } finally {
-      setLoadingCRM(false);
-    }
-  };
-
-  // Função para carregar todas as tags disponíveis
-  const loadAvailableTags = async () => {
+  // Função para carregar configurações de colunas
+  const loadColumnConfigs = () => {
     if (!currentOrganization) return;
     
-    try {
-      setLoadingTags(true);
-      
-      const { data, error } = await supabase
-        .from('tags')
-        .select('*')
-        .eq('organization_id', currentOrganization.id)
-        .order('name');
-        
-      if (error) throw error;
-      
-      setAvailableTags(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar tags:', error);
-    } finally {
-      setLoadingTags(false);
-    }
-  };
-
-  // Função para atualizar o estágio do cliente silenciosamente
-  const handleStageChange = async (customerId: string, stageId: string) => {
-    if (!currentOrganization || updatingStage) return;
+    // Verificar se já existem configurações salvas
+    const savedConfigs = localStorage.getItem(`columnConfigs_${currentOrganization.id}`);
     
-    try {
-      setUpdatingStage(true);
+    if (savedConfigs) {
+      // Usar as configurações salvas
+      const parsedConfigs = JSON.parse(savedConfigs);
       
-      // Atualizar o estágio do cliente no banco de dados
-      const { error: updateError } = await supabase
-        .from('customers')
-        .update({ stage_id: stageId })
-        .eq('id', customerId)
-        .eq('organization_id', currentOrganization.id);
-        
-      if (updateError) throw updateError;
+      // Verificar se a coluna de progresso do estágio existe
+      const hasStageProgressColumn = parsedConfigs.some((c: ColumnConfig) => c.id === 'stage_progress');
       
-      // Registrar a mudança de estágio no histórico
-      await supabase
-        .from('customer_stage_history')
-        .insert({
-          customer_id: customerId,
-          stage_id: stageId,
-          organization_id: currentOrganization.id
+      // Se não existir, adicionar
+      if (!hasStageProgressColumn) {
+        parsedConfigs.push({
+          id: 'stage_progress',
+          name: 'Progresso do Estágio',
+          visible: true
         });
+      }
       
-      // Atualizar a lista de clientes localmente
-      setCustomers(prevCustomers => 
-        prevCustomers.map(customer => {
-          if (customer.id === customerId) {
-            // Encontrar o estágio para atualizar o objeto crm_stages
-            const newStage = stages.find(s => s.id === stageId);
-            return {
-              ...customer,
-              stage_id: stageId,
-              crm_stages: newStage || null
-            };
-          }
-          return customer;
-        })
-      );
+      // Verificar se há novos campos personalizados que não estão nas configurações salvas
+      const existingCustomFieldIds = parsedConfigs
+        .filter((c: ColumnConfig) => c.isCustomField && c.field_id)
+        .map((c: ColumnConfig) => c.field_id);
       
-      // Mostrar feedback visual temporário
-      const feedbackElement = document.createElement('div');
-      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      feedbackElement.textContent = t('common:saved');
-      document.body.appendChild(feedbackElement);
-      
-      setTimeout(() => {
-        feedbackElement.remove();
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Erro ao atualizar estágio do cliente:', error);
-      
-      // Mostrar mensagem de erro
-      const errorElement = document.createElement('div');
-      errorElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      errorElement.textContent = t('common:error');
-      document.body.appendChild(errorElement);
-      
-      setTimeout(() => {
-        errorElement.remove();
-      }, 2000);
-      
-    } finally {
-      setUpdatingStage(false);
-    }
-  };
-
-  // Função para carregar definições de campos personalizados
-  const loadCustomFieldDefinitions = async () => {
-    if (!currentOrganization) return;
-    
-    try {
-      setLoadingCustomFields(true);
-      
-      const { data, error } = await supabase
-        .from('custom_fields_definition')
-        .select('*')
-        .eq('organization_id', currentOrganization.id)
-        .order('name');
-        
-      if (error) throw error;
-      
-      setCustomFieldDefinitions(data || []);
-      
-      // Verificar se já existem configurações salvas
-      const savedConfigs = localStorage.getItem(`columnConfigs_${currentOrganization.id}`);
-      
-      if (savedConfigs) {
-        // Usar as configurações salvas
-        const parsedConfigs = JSON.parse(savedConfigs);
-        
-        // Verificar se a coluna de progresso do estágio existe
-        const hasStageProgressColumn = parsedConfigs.some((c: any) => c.id === 'stage_progress');
-        
-        // Se não existir, adicionar
-        if (!hasStageProgressColumn) {
-          parsedConfigs.push({
-            id: 'stage_progress',
-            name: 'Progresso do Estágio',
-            visible: true
-          });
-        }
-        
-        // Verificar se há novos campos personalizados que não estão nas configurações salvas
-        const existingCustomFieldIds = parsedConfigs
-          .filter((c: any) => c.isCustomField && c.field_id)
-          .map((c: any) => c.field_id);
-        
-        // Adicionar apenas os novos campos personalizados
-        const newCustomColumns = (data || [])
-          .filter(field => !existingCustomFieldIds.includes(field.id))
-          .map(field => ({
-            id: `custom_${field.id}`,
-            name: field.name,
-            visible: false,
-            isCustomField: true,
-            field_id: field.id
-          }));
-        
-        if (newCustomColumns.length > 0 || !hasStageProgressColumn) {
-          // Adicionar novos campos às configurações existentes
-          const updatedConfigs = [...parsedConfigs, ...newCustomColumns];
-          setColumnConfigs(updatedConfigs);
-          // Salvar as configurações atualizadas
-          localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(updatedConfigs));
-        } else {
-          // Usar as configurações existentes sem alterações
-          setColumnConfigs(parsedConfigs);
-        }
-      } else {
-        // Não há configurações salvas, criar novas
-        const defaultColumns = [
-          { id: 'name', name: t('customers:name'), visible: true },
-          { id: 'stage', name: t('crm:stage'), visible: true },
-          { id: 'stage_progress', name: t('crm:stageProgress'), visible: true },
-          { id: 'tags', name: t('customers:tags.title'), visible: true },
-          { id: 'contacts', name: t('customers:contacts'), visible: true },
-        ];
-        
-        // Adicionar colunas personalizadas
-        const customColumns = (data || []).map(field => ({
+      // Adicionar apenas os novos campos personalizados
+      const newCustomColumns = (customFieldDefinitions || [])
+        .filter(field => !existingCustomFieldIds.includes(field.id))
+        .map(field => ({
           id: `custom_${field.id}`,
           name: field.name,
           visible: false,
           isCustomField: true,
           field_id: field.id
         }));
-        
-        const newConfigs = [...defaultColumns, ...customColumns];
-        setColumnConfigs(newConfigs);
-        // Salvar as novas configurações
-        localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(newConfigs));
+      
+      if (newCustomColumns.length > 0 || !hasStageProgressColumn) {
+        // Adicionar novos campos às configurações existentes
+        const updatedConfigs = [...parsedConfigs, ...newCustomColumns];
+        setColumnConfigs(updatedConfigs);
+        // Salvar as configurações atualizadas
+        localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(updatedConfigs));
+      } else {
+        // Usar as configurações existentes sem alterações
+        setColumnConfigs(parsedConfigs);
       }
+    } else {
+      // Não há configurações salvas, criar novas
+      const defaultColumns: ColumnConfig[] = [
+        { id: 'name', name: 'Nome', visible: true },
+        { id: 'stage', name: 'Estágio', visible: true },
+        { id: 'contact', name: 'Contato principal', visible: true },
+        { id: 'contact_email', name: 'Email', visible: true },
+        { id: 'contact_phone', name: 'Telefone', visible: true },
+      ];
       
-    } catch (error) {
-      console.error('Erro ao carregar definições de campos personalizados:', error);
-    } finally {
-      setLoadingCustomFields(false);
+      // Adicionar colunas personalizadas
+      const customColumns = (customFieldDefinitions || []).map(field => ({
+        id: `custom_${field.id}`,
+        name: field.name,
+        visible: false,
+        isCustomField: true,
+        field_id: field.id
+      }));
+      
+      const newConfigs = [...defaultColumns, ...customColumns];
+      setColumnConfigs(newConfigs);
+      // Salvar as novas configurações
+      localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(newConfigs));
     }
-  };
-  
-  // Otimizando a função loadCustomFieldValues para evitar carregamentos repetidos
-  const loadCustomFieldValues = async (customerIds: string[]) => {
-    if (!currentOrganization || customerIds.length === 0 || customFieldDefinitions.length === 0) {
-      return;
-    }
-    
-    try {
-      setLoadingCustomFields(true);
-      
-      // Armazenar IDs dos campos personalizados para a consulta
-      const fieldIds = customFieldDefinitions.map(def => def.id);
-      
-      // Consulta única para obter todos os valores de campos personalizados
-      const { data: fieldValues, error } = await supabase
-        .from('customer_field_values')
-          .select('*')
-        .in('customer_id', customerIds)
-        .in('field_definition_id', fieldIds);
-
-      if (error) {
-        console.error('Erro ao carregar valores de campos personalizados:', error);
-        return;
-      }
-
-      // Organizar os valores por cliente e campo para acesso rápido
-      const valuesByCustomerAndField: Record<string, Record<string, any>> = {};
-      
-      fieldValues?.forEach(value => {
-        if (!valuesByCustomerAndField[value.customer_id]) {
-          valuesByCustomerAndField[value.customer_id] = {};
-        }
-        valuesByCustomerAndField[value.customer_id][value.field_definition_id] = value.value;
-      });
-
-      setCustomFieldValues(valuesByCustomerAndField);
-    } catch (error) {
-      console.error('Erro ao processar valores de campos personalizados:', error);
-    } finally {
-      setLoadingCustomFields(false);
-    }
-  };
-  
-  // Função para salvar configurações de colunas
-  const saveColumnConfigs = (configs: ColumnConfig[]) => {
-    if (!currentOrganization) return;
-    localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(configs));
-    setColumnConfigs(configs);
-  };
-  
-  // Função para alternar visibilidade de uma coluna
-  const toggleColumnVisibility = (columnId: string) => {
-    const newConfigs = columnConfigs.map(col => 
-      col.id === columnId ? { ...col, visible: !col.visible } : col
-    );
-    saveColumnConfigs(newConfigs);
-  };
-  
-  // Função para resetar configurações de colunas
-  const resetColumnConfigs = () => {
-    if (!currentOrganization) return;
-    
-    // Remover configurações do localStorage
-    localStorage.removeItem(`columnConfigs_${currentOrganization.id}`);
-    
-    // Recriar configurações padrão
-    const defaultColumns = [
-      { id: 'name', name: t('customers:name'), visible: true },
-      { id: 'stage', name: t('crm:stage'), visible: true },
-      { id: 'stage_progress', name: t('crm:stageProgress'), visible: true },
-      { id: 'tags', name: t('customers:tags.title'), visible: true },
-      { id: 'contacts', name: t('customers:contacts'), visible: true },
-    ];
-    
-    // Adicionar colunas personalizadas
-    const customColumns = (customFieldDefinitions || []).map(field => ({
-      id: `custom_${field.id}`,
-      name: field.name,
-      visible: false,
-      isCustomField: true,
-      field_id: field.id
-    }));
-    
-    const newConfigs = [...defaultColumns, ...customColumns];
-    setColumnConfigs(newConfigs);
-    
-    // Mostrar feedback visual temporário
-    const feedbackElement = document.createElement('div');
-    feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-    feedbackElement.textContent = t('customers:settingsReset');
-    document.body.appendChild(feedbackElement);
-    
-    setTimeout(() => {
-      feedbackElement.remove();
-    }, 2000);
   };
   
   // Função para ordenar clientes
   const handleSort = (columnId: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     
-    if (sortConfig && sortConfig.column === columnId) {
+    if (sortConfig && sortConfig.key === columnId) {
       direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
     }
     
-    setSortConfig({ column: columnId, direction });
+    setSortConfig({ key: columnId, direction });
     
     // Resetar para a primeira página ao mudar a ordenação
     setCurrentPage(1);
     
-    // Recarregar os clientes com a nova ordenação
-    loadCustomers(false, { column: columnId, direction });
+    // A função loadCustomers será chamada automaticamente via useEffect
+    // quando sortConfig mudar, então não precisamos chamar diretamente aqui
   };
-  
-  // Função para obter o valor de um campo personalizado
-  const getCustomFieldValue = (customerId: string, fieldId: string) => {
-    return customFieldValues[customerId]?.[fieldId] || '';
-  };
-  
-  // Efeito para carregar definições de campos personalizados
-  useEffect(() => {
-    if (currentOrganization) {
-      loadCustomFieldDefinitions();
-    }
-  }, [currentOrganization]);
   
   // Ordenar clientes com base na configuração de ordenação
   const sortedCustomers = React.useMemo(() => {
     if (!sortConfig) return customers;
     
     return [...customers].sort((a, b) => {
-      if (sortConfig.column === 'name') {
+      if (sortConfig.key === 'name') {
         return sortConfig.direction === 'asc' 
           ? a.name.localeCompare(b.name)
           : b.name.localeCompare(a.name);
       }
       
-      if (sortConfig.column === 'stage') {
+      if (sortConfig.key === 'stage') {
         const stageA = a.crm_stages?.name || '';
         const stageB = b.crm_stages?.name || '';
         return sortConfig.direction === 'asc'
@@ -942,10 +323,12 @@ export default function Customers() {
       }
       
       // Ordenação para campos personalizados
-      if (sortConfig.column.startsWith('custom_')) {
-        const fieldId = columnConfigs.find(col => col.id === sortConfig.column)?.field_id || '';
-        const valueA = getCustomFieldValue(a.id, fieldId);
-        const valueB = getCustomFieldValue(b.id, fieldId);
+      if (sortConfig.key.startsWith('custom_')) {
+        const fieldId = columnConfigs.find(col => col.id === sortConfig.key)?.field_id || '';
+        
+        // Obter valores para comparação usando customFieldValues em vez de field_values
+        const valueA = customFieldValues[a.id]?.[fieldId] || '';
+        const valueB = customFieldValues[b.id]?.[fieldId] || '';
         
         return sortConfig.direction === 'asc'
           ? valueA.localeCompare(valueB)
@@ -954,202 +337,263 @@ export default function Customers() {
       
       return 0;
     });
-  }, [customers, sortConfig, customFieldValues, columnConfigs]);
+  }, [customers, sortConfig, columnConfigs, customFieldValues]);
 
-  async function loadCustomers(
-    isSilent = false, 
-    sortOptions: { column: string; direction: 'asc' | 'desc' } | null = sortConfig
-  ) {
+  // Função para atualizar o estágio do cliente
+  const handleStageChange = async (customerId: string, stageId: string) => {
     if (!currentOrganization) return;
-
-    if (!isSilent) {
-      setLoading(true);
-    }
     
     try {
+      // Atualizar o estágio do cliente no banco de dados
+      const { error } = await supabase
+        .from('customers')
+        .update({ stage_id: stageId })
+        .eq('id', customerId)
+        .eq('organization_id', currentOrganization.id);
+        
+      if (error) throw error;
+      
+      // Adicionar ao histórico de estágios
+      const { error: historyError } = await supabase
+        .from('customer_stage_history')
+        .insert({
+          customer_id: customerId,
+          stage_id: stageId,
+          organization_id: currentOrganization.id
+        });
+        
+      if (historyError) throw historyError;
+      
+      // Atualizar a lista de clientes localmente
+      setCustomers(prevCustomers => 
+        prevCustomers.map(customer => {
+          if (customer.id === customerId) {
+            // Encontrar o estágio para atualizar o objeto crm_stages
+            const newStage = stages.find(s => s.id === stageId);
+            
+            // Se estivermos usando useFunnels, precisamos adaptar o estágio para o formato esperado
+            const adaptedStage = newStage ? {
+              id: newStage.id,
+              name: newStage.name,
+              color: newStage.color,
+              position: newStage.position,
+              funnel_id: newStage.funnel_id,
+              // Adicionar apenas o campo created_at para compatibilidade com CRMStage
+              created_at: new Date().toISOString()
+            } : null;
+            
+            return {
+              ...customer,
+              stage_id: stageId,
+              crm_stages: adaptedStage
+            } as Customer; // Forçando o tipo Customer para evitar erro de tipo
+          }
+          return customer;
+        })
+      );
+      
+      // Mostrar feedback visual temporário
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = 'Estágio atualizado';
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Erro ao atualizar estágio:', error);
+      
+      // Mostrar mensagem de erro
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = 'Erro ao atualizar estágio';
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+    }
+  };
+
+  const loadCustomers = async (isSilent: boolean = false) => {
+    if (!currentOrganization) return;
+    
+    if (!isSilent) setLoading(true);
+    setError('');
+    
+    try {
+      // Construção da consulta - vamos verificar cada campo na consulta de contatos
       let query = supabase
         .from('customers')
         .select(`
           *,
-          crm_stages (
+          tags:customer_tags(tag_id, tags:tags(*)),
+          field_values:customer_field_values(id, field_definition_id, value),
+          contacts:customer_contacts(
+            id,
+            customer_id,
+            type,
+            value,
+            created_at,
+            updated_at
+          ),
+          crm_stages!inner(
             id,
             name,
             color,
+            position,
             funnel_id,
-            position
+            created_at,
+            crm_funnels!inner(
+              id,
+              name,
+              description,
+              created_at
+            )
           )
         `, { count: 'exact' })
         .eq('organization_id', currentOrganization.id);
-
-      // Apply search filter if there's a search term
+      
+      // Aplicar filtros de pesquisa se necessário
       if (debouncedSearchTerm) {
-        query = query.or(`name.ilike.%${debouncedSearchTerm}%`);
+        query = query.ilike('name', `%${debouncedSearchTerm}%`);
       }
-
+      
       // Aplicar filtro de estágio se selecionado
       if (selectedStageId) {
         query = query.eq('stage_id', selectedStageId);
-      } 
-      // Aplicar filtro de funil se selecionado (e não tiver estágio específico)
-      else if (selectedFunnelId) {
-        // Buscar todos os estágios do funil selecionado
-        const funnelStages = stages.filter(stage => stage.funnel_id === selectedFunnelId);
-        const stageIds = funnelStages.map(stage => stage.id);
-        
-        if (stageIds.length > 0) {
-          query = query.in('stage_id', stageIds);
+      }
+      
+      // Aplicar filtro de tags se houver tags selecionadas
+      if (selectedTagIds.length > 0) {
+        const { data: customerIdsWithTags } = await supabase
+          .from('customer_tags')
+          .select('customer_id')
+          .in('tag_id', selectedTagIds);
+          
+        if (customerIdsWithTags && customerIdsWithTags.length > 0) {
+          const customerIds = customerIdsWithTags.map(item => item.customer_id);
+          query = query.in('id', customerIds);
+        } else {
+          setCustomers([]);
+          setTotalCustomers(0);
+          if (!isSilent) setLoading(false);
+          return;
         }
       }
-
-      // Aplicar ordenação com base na configuração
-      if (sortOptions) {
-        if (sortOptions.column === 'name') {
-          // Ordenação direta pelo nome
-          query = query.order('name', { ascending: sortOptions.direction === 'asc' });
-        } 
-        else if (sortOptions.column === 'stage') {
-          // Ordenação pelo nome do estágio através da relação
-          query = query.order('crm_stages(name)', { ascending: sortOptions.direction === 'asc' });
+      
+      // Aplicar ordenação à query principal
+      if (sortConfig?.key) {
+        const orderColumn = sortConfig.key;
+        
+        // Ajustar a coluna de ordenação para campos personalizados
+        if (orderColumn.startsWith('custom_field_')) {
+          // Para campos personalizados, aplicamos ordenação após buscar os dados
+        } else {
+          query = query.order(orderColumn, { ascending: sortConfig.direction === 'asc' });
         }
-        // Para campos personalizados, a ordenação será aplicada após carregar os dados
-        // pois não podemos ordenar diretamente por campos em outras tabelas
       } else {
-        // Ordenação padrão por nome se não houver configuração específica
         query = query.order('name', { ascending: true });
       }
 
-      // Add pagination
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
       
-      const { data, count, error } = await query.range(from, to);
-
-      if (error) throw error;
+      // Consulta única para obter dados e contagem
+      const { data: customerData, count, error: queryError } = await query
+      .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
       
-      // Carregar as tags para cada cliente em uma única consulta
-      if (data && data.length > 0) {
-        const customerIds = data.map(customer => customer.id);
-        
-        // Consulta para obter as tags dos clientes
-        const { data: customerTagsData, error: tagsError } = await supabase
-          .from('customer_tags')
-          .select(`
-            customer_id,
-            tag_id,
-            tag:tags (
-              id,
-              name,
-              color
-            )
-          `)
-          .in('customer_id', customerIds);
+      
+      if (queryError) {
+        console.error('Erro ao buscar dados dos clientes:', queryError);
+        setError('Erro ao carregar clientes. Por favor, tente novamente.');
+        if (!isSilent) setLoading(false);
+        return;
+      }
+      
+      // Processar os dados dos clientes
+      if (customerData) {
+        const formattedCustomers: Customer[] = customerData.map(customer => {
+          // Processar tags
+          const tags = customer.tags
+            ? customer.tags
+                .filter((tagRelation: TagRelation) => tagRelation.tags)
+                .map((tagRelation: TagRelation) => ({
+                  id: tagRelation.tags.id,
+                  name: tagRelation.tags.name,
+                  color: tagRelation.tags.color
+                }))
+            : [];
           
-        if (tagsError) throw tagsError;
-        
-        // Consulta para obter os contatos dos clientes
-        const { data: customerContactsData, error: contactsError } = await supabase
-          .from('customer_contacts')
-          .select('*')
-          .in('customer_id', customerIds);
+          // Processar contatos - ajustando para a estrutura correta
+          const contacts = customer.contacts 
+            ? customer.contacts.map((contact: CustomerContact) => ({
+                id: contact.id,
+                customer_id: contact.customer_id,
+                type: contact.type,
+                value: contact.value,
+                created_at: contact.created_at,
+                updated_at: contact.updated_at
+              }))
+            : [];
           
-        if (contactsError) throw contactsError;
-        
-        // Agrupar as tags por cliente
-        const tagsByCustomer: Record<string, CustomerTag[]> = {};
-        
-        customerTagsData?.forEach(relation => {
-          if (!tagsByCustomer[relation.customer_id]) {
-            tagsByCustomer[relation.customer_id] = [];
-          }
-          
-          // Verificar se a tag existe e é um objeto válido
-          if (relation.tag && typeof relation.tag === 'object' && 'id' in relation.tag) {
-            tagsByCustomer[relation.customer_id].push({
-              id: relation.tag.id as string,
-              name: relation.tag.name as string,
-              color: relation.tag.color as string
+          // Processar valores de campos personalizados
+          const fieldValues: Record<string, string> = {};
+          if (customer.field_values) {
+            customer.field_values.forEach((fv: CustomerFieldValue) => {
+              fieldValues[fv.field_definition_id] = fv.value;
             });
           }
+          
+          // Processar funis e estágios
+          const crm_stages = customer.crm_stages ? {
+            id: customer.crm_stages.id,
+            name: customer.crm_stages.name,
+            color: customer.crm_stages.color,
+            position: customer.crm_stages.position,
+            funnel_id: customer.crm_stages.funnel_id,
+            created_at: customer.crm_stages.created_at,
+            crm_funnels: customer.crm_stages.crm_funnels ? {
+              id: customer.crm_stages.crm_funnels.id,
+              name: customer.crm_stages.crm_funnels.name,
+              description: customer.crm_stages.crm_funnels.description,
+              created_at: customer.crm_stages.crm_funnels.created_at
+            } : null
+          } : null;
+          
+          return {
+            ...customer,
+            tags,
+            contacts,
+            field_values: fieldValues,
+            crm_stages
+          };
         });
         
-        // Agrupar os contatos por cliente
-        const contactsByCustomer: Record<string, CustomerContact[]> = {};
+        setCustomers(formattedCustomers);
+        setTotalCustomers(count || 0);
         
-        customerContactsData?.forEach(contact => {
-          if (!contactsByCustomer[contact.customer_id]) {
-            contactsByCustomer[contact.customer_id] = [];
+        // Construir mapa de valores de campo personalizado
+        const newCustomFieldValues: Record<string, Record<string, string>> = {};
+        formattedCustomers.forEach(customer => {
+          if (customer.field_values) {
+            newCustomFieldValues[customer.id] = customer.field_values;
           }
-          
-          contactsByCustomer[contact.customer_id].push({
-            id: contact.id,
-            type: contact.type,
-            value: contact.value,
-            label: contact.label
-          });
         });
-        
-        // Adicionar as tags e contatos aos clientes
-        let customersWithRelations = data.map(customer => ({
-          ...customer,
-          tags: tagsByCustomer[customer.id] || [],
-          contacts: contactsByCustomer[customer.id] || []
-        }));
-        
-        // Filtrar por tags selecionadas, se houver
-        if (selectedTagIds.length > 0) {
-          customersWithRelations = customersWithRelations.filter(customer => {
-            // Verificar se o cliente tem pelo menos uma das tags selecionadas
-            return customer.tags?.some((tag: CustomerTag) => selectedTagIds.includes(tag.id));
-          });
-        }
-        
-        // Filtrar por termo de busca em contatos, se houver
-        if (debouncedSearchTerm) {
-          const searchTermLower = debouncedSearchTerm.toLowerCase();
-          const filteredByContacts = customersWithRelations.filter(customer => 
-            // Verificar se algum contato contém o termo de busca
-            customer.contacts?.some((contact: CustomerContact) => 
-              contact.value.toLowerCase().includes(searchTermLower)
-            )
-          );
-          
-          // Combinar os resultados filtrados por nome (já feito na query) com os filtrados por contato
-          const customerIdsFilteredByName = new Set(customersWithRelations.map(c => c.id));
-          const customerIdsFilteredByContacts = new Set(filteredByContacts.map(c => c.id));
-          
-          // União dos conjuntos
-          const allFilteredCustomerIds = new Set([...customerIdsFilteredByName, ...customerIdsFilteredByContacts]);
-          
-          customersWithRelations = customersWithRelations.filter(customer => 
-            allFilteredCustomerIds.has(customer.id)
-          );
-        }
-        
-        // Usar os mesmos IDs de clientes para carregar valores de campos personalizados
-        // Não redeclarar customerIds aqui, usar a variável já existente
-        if (customFieldDefinitions.length > 0) {
-          await loadCustomFieldValues(customerIds);
-        }
-        
-        setCustomers(customersWithRelations);
-        setTotalCustomers(selectedTagIds.length > 0 ? customersWithRelations.length : (count || 0));
-      } else {
-      setCustomers(data || []);
-      setTotalCustomers(count || 0);
+        setCustomFieldValues(newCustomFieldValues);
       }
-    } catch (error) {
-      console.error('Error loading customers:', error);
-      setError(t('common:error'));
-    } finally {
-      if (!isSilent) {
-        setLoading(false);
-      }
+      
+      if (!isSilent) setLoading(false);
+    } catch (err) {
+      console.error('Erro inesperado ao carregar clientes:', err);
+      setError('Ocorreu um erro inesperado. Por favor, tente novamente.');
+      if (!isSilent) setLoading(false);
     }
-  }
+  };
 
   const handleContactClick = (type: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram', value: string) => {
-      setContactModalState({ type, value });
-      setShowContactModal(true);
+    setContactModalState({ type, value });
+    setShowContactModal(true);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1157,16 +601,20 @@ export default function Customers() {
     // Não resetamos a página aqui, isso será feito no efeito do debouncedSearchTerm
   };
 
-  const totalPages = Math.ceil(totalCustomers / ITEMS_PER_PAGE);
+  // Registrar o totalPages para fins de depuração
+  const totalPages = Math.max(1, Math.ceil(totalCustomers / ITEMS_PER_PAGE));
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
+      // console.log('Navegando para página anterior:', currentPage - 1);
       setCurrentPage(prev => prev - 1);
     }
   };
 
   const handleNextPage = () => {
+    // console.log('Tentando navegar para próxima página:', currentPage + 1, 'de', totalPages);
     if (currentPage < totalPages) {
+      // console.log('Navegando para próxima página:', currentPage + 1);
       setCurrentPage(prev => prev + 1);
     }
   };
@@ -1192,6 +640,137 @@ export default function Customers() {
     setCurrentPage(1);
   };
 
+  // Configurar a função de manipulação de contato no objeto window para que o componente CustomerContacts possa acessá-la
+  useEffect(() => {
+    window.handleContactClick = handleContactClick;
+    
+    // Limpar a função ao desmontar o componente
+    return () => {
+      window.handleContactClick = undefined;
+    };
+  }, []);
+
+  // Função para salvar configurações de colunas
+  const saveColumnConfigs = (configs: ColumnConfig[]) => {
+    if (!currentOrganization) return;
+    localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(configs));
+  };
+
+  // Efeito para atualizar as definições de coluna quando as definições de campo mudarem
+  useEffect(() => {
+    if (customFieldDefinitions.length > 0 && columnConfigs.length > 0) {
+      const allFieldIds = customFieldDefinitions.map(def => def.id);
+      const configuredFieldIds = columnConfigs
+        .filter(col => col.isCustomField)
+        .map(col => col.field_id)
+        .filter(Boolean) as string[];
+      
+      // Verificar se há novos campos que precisam ser adicionados
+      const newFields = allFieldIds.filter(id => !configuredFieldIds.includes(id));
+      
+      if (newFields.length > 0) {
+        // Adicionar novas colunas para os campos novos
+        const newColumns: ColumnConfig[] = newFields.map(fieldId => {
+          const fieldDef = customFieldDefinitions.find(def => def.id === fieldId);
+          return {
+            id: `custom_field_${fieldId}`,
+            name: fieldDef?.name || 'Campo Personalizado',
+            visible: true,
+            isCustomField: true,
+            field_id: fieldId
+          };
+        });
+        
+        const updatedConfigs = [...columnConfigs, ...newColumns];
+        setColumnConfigs(updatedConfigs);
+        
+        // Salvar as configurações atualizadas
+        saveColumnConfigs(updatedConfigs);
+      }
+    }
+  }, [customFieldDefinitions, columnConfigs]);
+
+  // Esta função agora usa o mapa de valores que já foi construído durante o carregamento dos clientes
+  const getCustomFieldValue = (customerId: string, fieldId: string) => {
+    // Verificar se temos valores para este cliente
+    if (customFieldValues[customerId] && customFieldValues[customerId][fieldId]) {
+      return customFieldValues[customerId][fieldId];
+    }
+    return '';
+  };
+
+  // Função para renderizar o valor de uma coluna
+  const renderColumnValue = (column: ColumnConfig, customer: Customer) => {
+    if (column.id.startsWith('custom_field_')) {
+      const fieldId = column.id.replace('custom_field_', '');
+      const value = getCustomFieldValue(customer.id, fieldId);
+      
+      // Formatar o valor com base no tipo do campo
+      const fieldDef = customFieldDefinitions.find(def => def.id === fieldId);
+      if (fieldDef?.type === 'date' && value) {
+        try {
+          const date = new Date(value);
+          return date.toLocaleDateString();
+        } catch {
+          return value;
+        }
+      }
+      
+      return value;
+    }
+    
+    switch (column.id) {
+      case 'name':
+        return customer.name;
+      case 'stage':
+        return customer.crm_stages?.name || 'Sem estágio';
+      case 'contact': {
+        // Sem is_primary, usamos o primeiro contato como principal
+        return customer.contacts && customer.contacts.length > 0 ? customer.contacts[0].value : '';
+      }
+      case 'contact_email': {
+        // Encontrar o primeiro contato do tipo 'email'
+        const emailContact = customer.contacts?.find(c => c.type === 'email');
+        return emailContact ? emailContact.value : '';
+      }
+      case 'contact_phone': {
+        // Encontrar o primeiro contato do tipo 'phone' ou 'whatsapp'
+        const phoneContact = customer.contacts?.find(c => c.type === 'phone' || c.type === 'whatsapp');
+        return phoneContact ? phoneContact.value : '';
+      }
+      default:
+        return '';
+    }
+  };
+
+  // Função para alternar a visibilidade de uma coluna
+  const toggleColumnVisibility = (columnId: string) => {
+    const updatedConfigs = columnConfigs.map(column => {
+      if (column.id === columnId) {
+        return { ...column, visible: !column.visible };
+      }
+      return column;
+    });
+    
+    setColumnConfigs(updatedConfigs);
+    saveColumnConfigs(updatedConfigs);
+  };
+
+  // Função para converter entre os formatos de tag
+  const convertToTagRelations = (customer: Customer): CustomerWithTagRelations => {
+    return {
+      ...customer,
+      tags: customer.tags.map(tag => ({
+        tag_id: tag.id,
+        tags: {
+          id: tag.id,
+          name: tag.name,
+          color: tag.color
+        }
+      }))
+    };
+  };
+
   if (!currentOrganization) {
     return (
       <div className="p-4 md:p-6">
@@ -1211,18 +790,23 @@ export default function Customers() {
           {t('customers:title')}
         </h1>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setShowColumnSelector(!showColumnSelector)}
-            className={`inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              showColumnSelector
-                ? "border-blue-500 text-white bg-blue-500 hover:bg-blue-600"
-                : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-            }`}
-            title={t('customers:configureColumns')}
-          >
-            <Settings className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-            <span className="whitespace-nowrap">{t('customers:columns')}</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center h-9 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              {t('customers:addCustomer')}
+            </button>
+            
+            <button
+              onClick={() => setShowColumnSelector(true)}
+              className="inline-flex items-center h-9 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <Settings className="mr-1 h-4 w-4" />
+              {t('customers:columns')}
+            </button>
+          </div>
           <Link
             to="/app/crm"
             className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -1245,13 +829,6 @@ export default function Customers() {
                 {(selectedFunnelId ? 1 : 0) + (selectedStageId ? 1 : 0) + (selectedTagIds.length > 0 ? 1 : 0)}
               </span>
             )}
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Plus className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-            <span className="whitespace-nowrap">{t('customers:addCustomer')}</span>
           </button>
         </div>
       </div>
@@ -1367,12 +944,12 @@ export default function Customers() {
               onClick={() => {
                 setShowFilters(false);
               }}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
               {t('common:close')}
-          </button>
+            </button>
+          </div>
         </div>
-      </div>
       )}
 
       {/* Configurações de colunas visíveis acima da tabela */}
@@ -1383,12 +960,6 @@ export default function Customers() {
               {t('customers:configureVisibleColumns')}
             </h3>
             <div className="flex items-center gap-2">
-              <button
-                onClick={resetColumnConfigs}
-                className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-              >
-                {t('customers:resetSettings')}
-              </button>
               <button
                 onClick={() => setShowColumnSelector(false)}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -1537,7 +1108,7 @@ export default function Customers() {
                       >
                         <div className="flex items-center">
                     {t('customers:name')}
-                          {sortConfig?.column === 'name' && (
+                          {sortConfig?.key === 'name' && (
                             sortConfig.direction === 'asc' 
                               ? <ArrowUp className="w-4 h-4 ml-1" /> 
                               : <ArrowDown className="w-4 h-4 ml-1" />
@@ -1557,7 +1128,7 @@ export default function Customers() {
                           >
                             <div className="flex items-center">
                               {column.name}
-                              {sortConfig?.column === column.id && (
+                              {sortConfig?.key === column.id && (
                                 sortConfig.direction === 'asc' 
                                   ? <ArrowUp className="w-4 h-4 ml-1" /> 
                                   : <ArrowDown className="w-4 h-4 ml-1" />
@@ -1599,7 +1170,7 @@ export default function Customers() {
                               
                               {column.id === 'stage_progress' && (
                                 <div className="w-full max-w-xs">
-                                  {!loadingCRM && funnels.length > 0 && stages.length > 0 && (
+                                  {customer.crm_stages && (
                                     <StageProgressBar 
                                       customer={customer} 
                                       funnels={funnels} 
@@ -1624,7 +1195,7 @@ export default function Customers() {
                               
                               {column.isCustomField && column.field_id && (
                                 <div className="text-sm text-gray-900 dark:text-white">
-                                  {getCustomFieldValue(customer.id, column.field_id) || '-'}
+                                  {renderColumnValue(column, customer)}
                                 </div>
                               )}
                     </td>
@@ -1728,12 +1299,14 @@ export default function Customers() {
                       
                       {/* Funil e estágio */}
                       <div className="mb-3">
-                        <StageProgressBar 
-                          customer={customer} 
-                          funnels={funnels} 
-                          stages={stages}
-                          onStageChange={handleStageChange}
-                        />
+                        {customer.crm_stages && (
+                          <StageProgressBar 
+                            customer={customer} 
+                            funnels={funnels} 
+                            stages={stages}
+                            onStageChange={handleStageChange}
+                          />
+                        )}
                       </div>
                       
                       {/* Data de registro */}
@@ -1783,22 +1356,25 @@ export default function Customers() {
 
       {/* Add Customer Modal */}
       {showAddModal && (
-        <CustomerRegistrationModal
+        <CustomerAddModal
           onClose={() => setShowAddModal(false)}
-          onSuccess={() => loadCustomers(true)}
+          onSuccess={() => loadCustomers()}
         />
       )}
 
       {/* Edit Customer Modal */}
       {showEditModal && selectedCustomer && (
         <CustomerEditModal
-          customer={selectedCustomer as any}
+          customer={convertToTagRelations(selectedCustomer) as any}
           onClose={() => {
             setShowEditModal(false);
             setSelectedCustomer(null);
+            // loadCustomers(true);
           }}
-          onSuccess={() => {
-            loadCustomers(true)
+          onSuccess={(silentRefresh = false) => {
+            if (!silentRefresh) {
+              loadCustomers(true);
+            }
           }}
         />
       )}
@@ -1806,12 +1382,12 @@ export default function Customers() {
       {/* Delete Customer Modal */}
       {showDeleteModal && selectedCustomer && (
         <CustomerDeleteModal
-          customer={selectedCustomer as any}
+          customer={convertToTagRelations(selectedCustomer) as any}
           onClose={() => {
             setShowDeleteModal(false);
             setSelectedCustomer(null);
           }}
-          onSuccess={() => loadCustomers(true)}
+          onSuccess={() => loadCustomers()}
         />
       )}
 

@@ -1,42 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { CustomFieldDefinition, CustomFieldValue, CustomFieldFormData } from '../types/database';
 
-/**
- * Carrega as definições de campos personalizados de uma organização
- */
-export async function loadCustomFieldDefinitions(organizationId: string): Promise<CustomFieldDefinition[]> {
-  try {
-    const { data, error } = await supabase
-      .from('custom_fields_definition')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('name');
-      
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Erro ao carregar definições de campos personalizados:', error);
-    return [];
-  }
-}
-
-/**
- * Carrega os valores de campos personalizados de um cliente
- */
-export async function loadCustomFieldValues(customerId: string): Promise<CustomFieldValue[]> {
-  try {
-    const { data, error } = await supabase
-      .from('customer_field_values')
-      .select('*')
-      .eq('customer_id', customerId);
-      
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Erro ao carregar valores de campos personalizados:', error);
-    return [];
-  }
-}
 
 /**
  * Cria uma nova definição de campo personalizado

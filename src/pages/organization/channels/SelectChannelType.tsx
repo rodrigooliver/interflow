@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { getChannelIcon } from '../../../utils/channel';
 
 export default function SelectChannelType() {
   const { t } = useTranslation(['channels', 'common']);
@@ -12,43 +13,43 @@ export default function SelectChannelType() {
       id: 'whatsapp_official', 
       name: t('types.whatsapp_official'),
       description: t('descriptions.whatsapp_official'),
-      icon: '/whatsapp.svg'
+      icon: getChannelIcon('whatsapp_official')
     },
     { 
       id: 'whatsapp_wapi', 
       name: t('types.whatsapp_wapi'),
       description: t('descriptions.whatsapp_wapi'),
-      icon: '/whatsapp.svg'
+      icon: getChannelIcon('whatsapp_wapi')
     },
     { 
       id: 'whatsapp_zapi', 
       name: t('types.whatsapp_zapi'),
       description: t('descriptions.whatsapp_zapi'),
-      icon: '/whatsapp.svg'
+      icon: getChannelIcon('whatsapp_zapi')
     },
     { 
       id: 'whatsapp_evo', 
       name: t('types.whatsapp_evo'),
       description: t('descriptions.whatsapp_evo'),
-      icon: '/whatsapp.svg'
+      icon: getChannelIcon('whatsapp_evo')
     },
     { 
       id: 'instagram', 
       name: t('types.instagram'),
       description: t('descriptions.instagram'),
-      icon: '/instagram.svg'
+      icon: getChannelIcon('instagram')
     },
     { 
       id: 'facebook', 
       name: t('types.facebook'),
       description: t('descriptions.facebook'),
-      icon: '/facebook.svg'
+      icon: getChannelIcon('facebook')
     },
     {
       id: 'email',
       name: t('types.email'),
       description: t('descriptions.email'),
-      icon: '/email.svg'
+      icon: getChannelIcon('email')
     }
   ];
 

@@ -16,7 +16,6 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
   const { currentOrganization } = useOrganizationContext();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
-  const [hasStages, setHasStages] = useState(false);
   const [hasChats, setHasChats] = useState(false);
 
   async function handleDelete() {
@@ -24,7 +23,7 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
     
     setDeleting(true);
     try {
-      // First check if customer has any active chats
+      // Check if customer has any active chats
       const { count: chatsCount, error: chatsError } = await supabase
         .from('chats')
         .select('*', { count: 'exact', head: true })
@@ -38,28 +37,7 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
         return;
       }
 
-      // Then check if customer is in any CRM stages
-      const { count: stagesCount, error: countError } = await supabase
-        .from('crm_customer_stages')
-        .select('*', { count: 'exact', head: true })
-        .eq('customer_id', customer.id);
-
-      if (countError) throw countError;
-      
-      const hasExistingStages = stagesCount ? stagesCount > 0 : false;
-      setHasStages(hasExistingStages);
-
-      // If customer has stages, remove them first
-      if (hasExistingStages) {
-        const { error: stagesError } = await supabase
-          .from('crm_customer_stages')
-          .delete()
-          .eq('customer_id', customer.id);
-
-        if (stagesError) throw stagesError;
-      }
-
-      // Finally delete the customer
+      // Delete the customer
       const { error: deleteError } = await supabase
         .from('customers')
         .delete()
@@ -91,11 +69,6 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-2">
             {t('customers:delete.confirmation', { name: customer.name })}
           </p>
-          {hasStages && (
-            <p className="text-sm text-yellow-600 dark:text-yellow-400 text-center mb-2">
-              Este cliente está em um ou mais estágios do CRM. Ao excluir o cliente, ele será removido de todos os estágios.
-            </p>
-          )}
           {hasChats && (
             <p className="text-sm text-red-600 dark:text-red-400 text-center mb-2">
               Este cliente possui atendimentos em andamento. Finalize todos os atendimentos antes de excluir o cliente.

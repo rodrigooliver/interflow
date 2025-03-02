@@ -75,7 +75,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
       {/* Header */}
       <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <div className="flex items-center">
-          <img src="/interflow.svg" alt="Interflow" className="h-8 w-8" />
+          <img src="/images/logos/interflow.svg" alt="Interflow" className="h-8 w-8" />
           {!shouldCollapse && (
             <h1 className="ml-2 text-xl font-bold text-gray-800 dark:text-white">Interflow</h1>
           )}

@@ -129,17 +129,26 @@ import { CRMStage } from './crm';
 
 export interface Customer {
   id: string;
-  organization_id: string;
   name: string;
+  organization_id: string;
   stage_id: string | null;
   created_at: string;
   updated_at: string;
-  crm_stages?: CRMStage | null;
-  tags?: CustomerTag[];
+  tags?: { 
+    tag_id: string;
+    tags: {
+      id: string;
+      name: string;
+      color: string;
+    }
+  }[];
   contacts?: CustomerContact[];
-  custom_fields?: {
-    definition: CustomFieldDefinition;
-    value: string | null;
+  field_values?: {
+    id: string;
+    field_definition_id: string;
+    value: string;
+    updated_at: string;
+    field_definition: CustomFieldDefinition;
   }[];
 }
 

@@ -4,14 +4,16 @@ export const getChannelIcon = (type: string) => {
     case 'whatsapp_wapi':
     case 'whatsapp_zapi':
     case 'whatsapp_evo':
-      return '/whatsapp.svg';
+      return '/images/logos/whatsapp.svg';
     case 'instagram':
-      return '/instagram.svg';
+      return '/images/logos/instagram.svg';
     case 'facebook':
-      return '/facebook.svg';
+      return '/images/logos/facebook.svg';
     case 'email':
-      return '/email.svg';
+      return '/images/logos/email.svg';
+    case 'telegram':
+      return '/images/logos/telegram.svg';
     default:
-      return '/whatsapp.svg';
+      return '/images/logos/whatsapp.svg';
   }
 }; 

@@ -7,7 +7,6 @@ import Chats from './pages/chat/Chats';
 import Chat from './pages/chat/Chat';
 import Customers from './pages/customers/Customers';
 import CustomerChats from './pages/customers/CustomerChats';
-import AddCustomer from './pages/customers/AddCustomer';
 import SettingsPage from './pages/settings/Settings';
 import BillingPage from './pages/settings/Billing';
 import IntegrationsPage from './pages/settings/Integrations';
@@ -156,7 +155,6 @@ function AppContent() {
                       <Route path="chats/:id" element={<Chat />} />
                       <Route path="customers" element={<Customers />} />
                       <Route path="customers/:id/chats" element={<CustomerChats />} />
-                      <Route path="customers/add" element={<AddCustomer />} />
                       <Route path="settings" element={<SettingsPage />} />
                       <Route path="settings/billing" element={<BillingPage />} />
                       <Route path="settings/integrations" element={<IntegrationsPage />} />
@@ -234,6 +232,7 @@ function App() {
           </I18nextProvider>
         </OrganizationProvider>
       </AuthProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
       {/* Removido temporariamente:
       <ReactQueryDevtools initialIsOpen={false} />
       */}

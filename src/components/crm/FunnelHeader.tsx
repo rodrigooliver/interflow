@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { CustomerRegistrationModal } from '../customers/CustomerRegistrationModal';
+import { CustomerAddModal } from '../customers/CustomerAddModal';
 import { CRMFunnel } from '../../types/crm';
 
 interface FunnelHeaderProps {
@@ -55,9 +55,9 @@ export function FunnelHeader({ funnelName, funnel, onBack, onAddStage, onCustome
         </div>
       </div>
 
-      {/* Customer Registration Modal */}
+      {/* Customer Add Modal */}
       {showAddCustomerModal && (
-        <CustomerRegistrationModal
+        <CustomerAddModal
           onClose={() => setShowAddCustomerModal(false)}
           onSuccess={handleCustomerAdded}
           initialFunnelId={funnel.id}

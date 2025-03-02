@@ -2,43 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { CustomFieldDefinition, CustomFieldFormData } from '../../types/database';
 import { 
-  loadCustomFieldDefinitions, 
   createCustomFieldDefinition,
   updateCustomFieldDefinition
 } from '../../services/customFieldsService';
+import { useCustomFieldDefinitions } from '../../hooks/useQueryes';
 import { supabase } from '../../lib/supabase';
 import { CustomFieldModal } from './CustomFieldModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CustomFieldsManagerProps {
   organizationId: string;
 }
 
 export function CustomFieldsManager({ organizationId }: CustomFieldsManagerProps) {
-  const [fields, setFields] = useState<CustomFieldDefinition[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: fields = [], isLoading, error: queryError } = useCustomFieldDefinitions(organizationId);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<CustomFieldDefinition | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const queryClient = useQueryClient();
 
+  // Combine os erros
   useEffect(() => {
-    if (organizationId) {
-      loadFields();
-    }
-  }, [organizationId]);
-
-  const loadFields = async () => {
-    try {
-      setLoading(true);
-      const fieldDefinitions = await loadCustomFieldDefinitions(organizationId);
-      setFields(fieldDefinitions);
-    } catch (error) {
-      console.error('Erro ao carregar campos personalizados:', error);
+    if (queryError) {
       setError('Não foi possível carregar os campos personalizados');
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar campos personalizados:', queryError);
     }
-  };
+  }, [queryError]);
 
   const handleCreateField = () => {
     console.log('CustomFieldsManager - handleCreateField chamado');
@@ -74,8 +64,10 @@ export function CustomFieldsManager({ organizationId }: CustomFieldsManagerProps
         });
       }
       
-      // Recarregar a lista de campos
-      await loadFields();
+      // Recarregar a lista de campos via React Query
+      await queryClient.invalidateQueries({
+        queryKey: ['custom_field_definitions', organizationId]
+      });
       setIsModalOpen(false);
     } catch (error) {
       console.error('Erro ao salvar campo:', error);
@@ -106,8 +98,10 @@ export function CustomFieldsManager({ organizationId }: CustomFieldsManagerProps
         
       if (error) throw error;
       
-      // Atualizar a lista de campos
-      setFields(prev => prev.filter(field => field.id !== fieldId));
+      // Atualizar a lista de campos via React Query
+      await queryClient.invalidateQueries({
+        queryKey: ['custom_field_definitions', organizationId]
+      });
       setIsModalOpen(false);
     } catch (error) {
       console.error('Erro ao excluir campo:', error);
@@ -203,7 +197,7 @@ export function CustomFieldsManager({ organizationId }: CustomFieldsManagerProps
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>

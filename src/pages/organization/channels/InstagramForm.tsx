@@ -312,7 +312,7 @@ export default function InstagramForm() {
                       className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
                     >
                       <img 
-                        src="/instagram.svg" 
+                        src="/images/logos/instagram.svg" 
                         alt="Instagram" 
                         className="w-5 h-5 mr-2"
                       />
