@@ -14,11 +14,34 @@ import { CustomerEditModal } from '../../components/customers/CustomerEditModal'
 import { RemoveCustomerModal } from '../../components/crm/RemoveCustomerModal';
 import { FunnelHeader } from '../../components/crm/FunnelHeader';
 import type { DragEndEvent } from '@dnd-kit/core';
+import { useFunnels } from '../../hooks/useQueryes';
 
 // Tipo composto para cliente com estágio
 type CustomerWithStage = Customer & {
   stage?: CRMStage;
 };
+
+interface CustomerChat {
+  id: string;
+  created_at: string;
+  last_message_id?: string;
+  messages?: {
+    id: string;
+    content: string;
+    created_at: string;
+    sender_type: string;
+  };
+}
+
+interface CustomerTag {
+  id: string;
+  tag_id: string;
+  tags: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
 
 export default function CRMFunnel() {
   const { t } = useTranslation(['crm', 'common']);
@@ -27,9 +50,10 @@ export default function CRMFunnel() {
   const { currentOrganization } = useOrganizationContext();
   
   // State
-  const [funnel, setFunnel] = useState<CRMFunnelType | null>(null);
+  const [funnel, setFunnel] = useState<any>(null);
   const [stages, setStages] = useState<CRMStage[]>([]);
-  const [customers, setCustomers] = useState<CustomerWithStage[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [availableCustomers, setAvailableCustomers] = useState<Customer[]>([]);
   const [error, setError] = useState('');
 
   // Modal states
@@ -51,40 +75,23 @@ export default function CRMFunnel() {
   const [deletingStage, setDeletingStage] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
 
+  const { data: funnelData, isLoading: isFunnelLoading } = useFunnels(currentOrganization?.id);
+
+  useEffect(() => {
+    if (funnelData && id) {
+      const currentFunnel = funnelData.find((f: any) => f.id === id);
+      if (currentFunnel) {
+        setFunnel(currentFunnel);
+        setStages(currentFunnel.stages || []);
+      }
+    }
+  }, [funnelData, id]);
+
   useEffect(() => {
     if (currentOrganization && id) {
-      loadFunnel();
       loadCustomers();
     }
   }, [currentOrganization, id]);
-
-  async function loadFunnel() {
-    try {
-      const { data: funnelData, error: funnelError } = await supabase
-        .from('crm_funnels')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (funnelError) throw funnelError;
-
-      if (funnelData) {
-        setFunnel(funnelData);
-
-        const { data: stagesData, error: stagesError } = await supabase
-          .from('crm_stages')
-          .select('*')
-          .eq('funnel_id', id)
-          .order('position');
-
-        if (stagesError) throw stagesError;
-        setStages(stagesData || []);
-      }
-    } catch (error) {
-      console.error('Error loading funnel:', error);
-      setError(t('common:error'));
-    }
-  }
 
   async function loadCustomers() {
     if (!currentOrganization) return;
@@ -94,13 +101,72 @@ export default function CRMFunnel() {
         .from('customers')
         .select(`
           *,
-          stage:stage_id(*)
+          stage:stage_id(*),
+          contacts:customer_contacts(*),
+          tags:customer_tags(
+            id,
+            tag_id,
+            tags(
+              id,
+              name,
+              color
+            )
+          ),
+          chats(
+            id,
+            created_at,
+            last_message_id,
+            messages!chats_last_message_id_fkey(
+              id,
+              content,
+              created_at,
+              sender_type
+            )
+          )
         `)
         .eq('organization_id', currentOrganization.id)
         .order('name');
 
       if (error) throw error;
-      setCustomers(data || []);
+
+      // Processar os dados para extrair a última mensagem de cada cliente
+      const processedCustomers = data?.map(customer => {
+        let lastMessage = null;
+        
+        if (customer.chats && customer.chats.length > 0) {
+          // Ordenar os chats pela data de criação (mais recente primeiro)
+          const sortedChats = [...customer.chats]
+            .sort((a: CustomerChat, b: CustomerChat) => {
+              const dateA = new Date(a.created_at).getTime();
+              const dateB = new Date(b.created_at).getTime();
+              return dateB - dateA;
+            });
+          
+          // Pegar o chat mais recente que tenha uma mensagem
+          const recentChatWithMessage = sortedChats.find(
+            (chat: CustomerChat) => chat.messages && chat.last_message_id
+          );
+          
+          if (recentChatWithMessage && recentChatWithMessage.messages) {
+            lastMessage = recentChatWithMessage.messages;
+          }
+        }
+        
+        // Processar as tags para um formato mais fácil de usar
+        const processedTags = customer.tags
+          ? customer.tags
+              .filter((tagRelation: CustomerTag) => tagRelation.tags)
+              .map((tagRelation: CustomerTag) => tagRelation.tags)
+          : [];
+        
+        return {
+          ...customer,
+          last_message: lastMessage,
+          tags: processedTags
+        };
+      });
+
+      setCustomers(processedCustomers || []);
     } catch (error) {
       console.error('Error loading customers:', error);
       setError(t('common:error'));

@@ -29,6 +29,20 @@ interface Agent extends Profile {
   }
 }
 
+interface MessageShortcut {
+  id: string;
+  organization_id: string;
+  title: string;
+  content: string;
+  attachments: {
+    name: string;
+    type: string;
+    url?: string;
+  }[];
+  created_at: string;
+  updated_at: string;
+}
+
 // Hooks individuais para cada tipo de filtro
 export const useAgents = (organizationId?: string) => {
   return useQuery({
@@ -208,5 +222,32 @@ export const useFilters = (organizationId?: string) => {
     funnels,
     isLoading: agents.isLoading || teams.isLoading || channels.isLoading || tags.isLoading || funnels.isLoading,
     error: agents.error || teams.error || channels.error || tags.error || funnels.error
+  };
+};
+
+export const useMessageShortcuts = (organizationId?: string) => {
+  const { data, error, isLoading, refetch } = useQuery({
+    queryKey: ['messageShortcuts', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      
+      const { data, error } = await supabase
+        .from('message_shortcuts')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('title', { ascending: true });
+        
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  });
+
+  return {
+    messageShortcuts: data || [],
+    isLoading,
+    error,
+    refetchMessageShortcuts: refetch,
   };
 }; 

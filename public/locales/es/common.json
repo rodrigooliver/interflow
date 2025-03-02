@@ -25,6 +25,7 @@
   "createdAt": "Creado el",
   "saveSuccess": "Cambios guardados correctamente!",
   "recommended": "Recomendado",
+  "agent": "Agente",
   "delete_confirmation": {
     "title": "Eliminar",
     "message": "¿Estás seguro de querer eliminar este elemento?"

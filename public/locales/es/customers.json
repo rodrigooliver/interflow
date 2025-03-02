@@ -1,9 +1,11 @@
 {
   "title": "Clientes",
   "addCustomer": "Agregar Cliente",
+  "addContact": "Agregar contacto",
   "viewCRM": "Ver CRM",
   "name": "Nombre",
   "contact": "Contacto",
+  "contactLabel": "Nombre del contacto",
   "registeredAt": "Registrado el",
   "actions": "Acciones",
   "noCustomers": "No hay clientes registrados",

@@ -8,9 +8,9 @@ import { supabase } from '../../lib/supabase';
 import { AudioPlayer } from './AudioPlayer';
 import { AIImproveModal } from './AIImproveModal';
 import { Message } from '../../types/database';
-import { useAuthContext } from '../../contexts/AuthContext';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import api from '../../lib/api';
+import { useMessageShortcuts } from '../../hooks/useQueryes';
 
 interface MessageInputProps {
   chatId: string;
@@ -28,6 +28,17 @@ interface EmojiData {
   // outros campos do emoji se necessário
 }
 
+interface ShortcutSuggestion {
+  id: string;
+  title: string;
+  content: string;
+  attachments: {
+    name: string;
+    type: string;
+    url?: string;
+  }[];
+}
+
 export function MessageInput({ 
   chatId, 
   organizationId,
@@ -35,7 +46,6 @@ export function MessageInput({
   replyTo, 
   isSubscriptionReady = false
 }: MessageInputProps) {
-  const { profile } = useAuthContext();
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -58,12 +68,18 @@ export function MessageInput({
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const timerIntervalRef = useRef<NodeJS.Timeout>();
   const [showAIModal, setShowAIModal] = useState(false);
   const [sending, setSending] = useState(false);
   const { currentOrganization } = useOrganizationContext();
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [shortcutFilter, setShortcutFilter] = useState('');
+  const [selectedShortcutIndex, setSelectedShortcutIndex] = useState(0);
+  const shortcutsRef = useRef<HTMLDivElement>(null);
+  const { messageShortcuts, isLoading: isLoadingShortcuts } = useMessageShortcuts(organizationId);
+  const [filteredShortcuts, setFilteredShortcuts] = useState<ShortcutSuggestion[]>([]);
+  const selectedItemRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,23 +104,12 @@ export function MessageInput({
   }, [message]);
 
   const handleFileUploadComplete = (file: File, type: string, name: string) => {
-    let preview = '';
-    
-    try {
-      // Criar URL para arquivos de imagem e áudio
-      if (file instanceof Blob && (type.startsWith('image/') || type.startsWith('audio/'))) {
-        preview = URL.createObjectURL(file);
-      }
-    } catch (error) {
-      console.error('Erro ao criar preview:', error);
-    }
-    
-    setPendingAttachments(prev => [...prev, { 
-      file, 
-      preview, 
-      type, 
-      name 
-    }]);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const preview = e.target?.result as string;
+      setPendingAttachments(prev => [...prev, { file, preview, type, name }]);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSendMessage = async (content: string | null, attachments?: File[]) => {
@@ -119,7 +124,7 @@ export function MessageInput({
       
       // Adicionar arquivos ao FormData
       if (attachments && attachments.length > 0) {
-        attachments.forEach((file, index) => {
+        attachments.forEach(file => {
           formData.append(`attachments`, file, file.name);
         });
       }
@@ -150,9 +155,19 @@ export function MessageInput({
       }
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending message:', error);
-      setError(error.response?.data?.error || t('errors.sending'));
+      
+      // Melhorar o tratamento de erro
+      let errorMessage = t('errors.sending', 'Erro ao enviar mensagem');
+      if (error instanceof Error) {
+        const apiError = error as { response?: { data?: { error?: string } } };
+        if (apiError.response?.data?.error) {
+          errorMessage = apiError.response.data.error;
+        }
+      }
+      
+      setError(errorMessage);
       throw error;
     }
   };
@@ -197,6 +212,36 @@ export function MessageInput({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    // Verificar se o usuário digitou "/"
+    if (e.key === '/' && message.length === 0) {
+      // Não precisamos fazer nada aqui, pois o handleMessageChange vai detectar a mudança
+    }
+    
+    // Gerenciar navegação na lista de atalhos
+    if (showShortcuts && filteredShortcuts.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedShortcutIndex(prev => 
+          prev < filteredShortcuts.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedShortcutIndex(prev => prev > 0 ? prev - 1 : 0);
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        applyShortcut(filteredShortcuts[selectedShortcutIndex]);
+        return;
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowShortcuts(false);
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        applyShortcut(filteredShortcuts[selectedShortcutIndex]);
+        return;
+      }
+    }
+    
+    // Comportamento original para Enter
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -247,9 +292,12 @@ export function MessageInput({
 
           if (error) throw error;
 
-          const { data: { publicUrl } } = supabase.storage
+          const { data: storageData } = supabase.storage
             .from('attachments')
             .getPublicUrl(`${currentOrganization?.id}/chat-attachments/${fileName}`);
+
+          // Usar a URL pública se necessário
+          console.log('Arquivo disponível em:', storageData?.publicUrl);
 
           handleFileUploadComplete(file, mimeType, fileName);
         } catch (error) {
@@ -355,8 +403,120 @@ export function MessageInput({
     };
   }, [pendingAttachments]);
 
+  useEffect(() => {
+    // Filtrar atalhos com base no texto após a barra
+    if (showShortcuts && shortcutFilter !== '') {
+      const filtered = messageShortcuts
+        .filter(shortcut => 
+          shortcut.title.toLowerCase().includes(shortcutFilter.toLowerCase())
+        )
+        .map(shortcut => ({
+          id: shortcut.id,
+          title: shortcut.title,
+          content: shortcut.content,
+          attachments: shortcut.attachments
+        }));
+      setFilteredShortcuts(filtered);
+      setSelectedShortcutIndex(0);
+    } else if (showShortcuts) {
+      const allShortcuts = messageShortcuts.map(shortcut => ({
+        id: shortcut.id,
+        title: shortcut.title,
+        content: shortcut.content,
+        attachments: shortcut.attachments
+      }));
+      setFilteredShortcuts(allShortcuts);
+      setSelectedShortcutIndex(0);
+    }
+  }, [shortcutFilter, messageShortcuts, showShortcuts]);
+
+  // Função para aplicar o atalho selecionado
+  const applyShortcut = async (shortcut: ShortcutSuggestion) => {
+    setMessage(shortcut.content);
+    setShowShortcuts(false);
+    
+    // Se houver anexos, carregá-los
+    if (shortcut.attachments && shortcut.attachments.length > 0) {
+      try {
+        for (const attachment of shortcut.attachments) {
+          // Buscar o arquivo do storage
+          const { data, error } = await supabase.storage
+            .from('attachments')
+            .download(`${organizationId}/shortcut-attachments/${attachment.name}`);
+            
+          if (error) throw error;
+          
+          if (data) {
+            const file = new File([data], attachment.name, { type: attachment.type });
+            handleFileUploadComplete(file, attachment.type, attachment.name);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar anexos do atalho:', error);
+      }
+    }
+    
+    // Focar no textarea após aplicar o atalho
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+
+  // Simplificar a lógica de exibição da lista de atalhos
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setMessage(newValue);
+    
+    // Verificar se a mensagem começa com "/"
+    if (newValue.startsWith('/')) {
+      setShowShortcuts(true);
+      setShortcutFilter(newValue.substring(1)); // Remove a barra para filtrar
+    } else {
+      setShowShortcuts(false);
+    }
+  };
+
+  // Adicionar useEffect para rolar até o item selecionado
+  useEffect(() => {
+    if (selectedItemRef.current && shortcutsRef.current) {
+      const container = shortcutsRef.current;
+      const selectedItem = selectedItemRef.current;
+      
+      // Calcular a posição do item selecionado em relação ao container
+      const containerRect = container.getBoundingClientRect();
+      const selectedItemRect = selectedItem.getBoundingClientRect();
+      
+      // Verificar se o item está fora da área visível
+      const isAbove = selectedItemRect.top < containerRect.top;
+      const isBelow = selectedItemRect.bottom > containerRect.bottom;
+      
+      if (isAbove) {
+        // Se o item estiver acima da área visível, rolar para cima
+        selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else if (isBelow) {
+        // Se o item estiver abaixo da área visível, rolar para baixo
+        selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [selectedShortcutIndex]);
+
+  // Adicionar um log para verificar o estado dos atalhos
+  useEffect(() => {
+    console.log('Shortcuts state:', {
+      showShortcuts,
+      filteredShortcuts: filteredShortcuts.length,
+      messageShortcuts: messageShortcuts.length
+    });
+  }, [showShortcuts, filteredShortcuts, messageShortcuts]);
+
+  // Adicionar um log para verificar os dados retornados pelo hook
+  useEffect(() => {
+    console.log('Message shortcuts data:', messageShortcuts);
+    console.log('Is loading shortcuts:', isLoadingShortcuts);
+  }, [messageShortcuts, isLoadingShortcuts]);
+
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 pb-3 pt-2">
+    <div className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700">
       {replyTo && (
         <div className="p-2 bg-gray-50 dark:bg-gray-800 flex items-start space-x-2">
           <div className="flex-1 text-sm border-l-2 border-blue-500 pl-2">
@@ -518,8 +678,8 @@ export function MessageInput({
         <textarea
           ref={textareaRef}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onChange={handleMessageChange}
+          onKeyDown={handleKeyPress}
           placeholder={isSubscriptionReady ? t('input.placeholder') : t('input.waitingConnection')}
           className="flex-1 min-h-[40px] max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
         />
@@ -580,6 +740,50 @@ export function MessageInput({
           onClose={() => setShowAIModal(false)}
           onTextUpdate={(newText) => setMessage(newText)}
         />
+      )}
+
+      {/* Lista de atalhos */}
+      {showShortcuts && (
+        <div 
+          ref={shortcutsRef}
+          className="absolute bottom-full left-0 mb-2 w-full max-w-md bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700"
+          style={{ marginBottom: '8px', padding: '4px 0' }}
+        >
+          <div className="p-2">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 px-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+              {t('shortcuts.title', 'Atalhos de mensagem')}
+            </h3>
+            {isLoadingShortcuts ? (
+              <div className="px-3 py-2 text-gray-500 dark:text-gray-400">
+                {t('shortcuts.loading', 'Carregando atalhos...')}
+              </div>
+            ) : filteredShortcuts.length > 0 ? (
+              <ul className="py-1">
+                {filteredShortcuts.map((shortcut, index) => (
+                  <li 
+                    key={shortcut.id}
+                    ref={index === selectedShortcutIndex ? selectedItemRef : null}
+                    className={`px-3 py-2 cursor-pointer rounded-md mx-2 ${
+                      index === selectedShortcutIndex 
+                        ? 'bg-blue-100 dark:bg-blue-900' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    onClick={() => applyShortcut(shortcut)}
+                  >
+                    <div className="font-medium text-gray-800 dark:text-gray-200">{shortcut.title}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {shortcut.content.substring(0, 50)}{shortcut.content.length > 50 ? '...' : ''}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="px-3 py-2 text-gray-500 dark:text-gray-400">
+                {t('shortcuts.empty', 'Nenhum atalho encontrado')}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

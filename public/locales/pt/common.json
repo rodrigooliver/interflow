@@ -24,6 +24,7 @@
   "createdAt": "Criado em",
   "saveSuccess": "Alterações salvas com sucesso!",
   "recommended": "Recomendado",
+  "agent": "Agente",
   "delete_confirmation": {
     "title": "Excluir",
     "message": "Tem certeza que deseja excluir este item?"

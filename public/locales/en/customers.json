@@ -1,9 +1,11 @@
 {
   "title": "Customers",
   "addCustomer": "Add Customer",
+  "addContact": "Add contact",
   "viewCRM": "View CRM",
   "name": "Name",
   "contact": "Contact",
+  "contactLabel": "Contact name",
   "registeredAt": "Registered At",
   "actions": "Actions",
   "noCustomers": "No customers registered",

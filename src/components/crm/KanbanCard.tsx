@@ -1,18 +1,30 @@
 import React from 'react';
-import { Mail, Phone, Clock, Pencil, X } from 'lucide-react';
+import { Mail, Phone, Pencil, X, MessageSquare } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Customer } from '../../types/database';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { ptBR, enUS, es } from 'date-fns/locale';
-import { supabase } from '../../lib/supabase';
 import { CRMStage } from '../../types/crm';
 
 // Tipo composto para cliente com estágio
 type CustomerWithStage = Customer & {
   stage?: CRMStage;
+  last_message?: {
+    id: string;
+    content: string;
+    created_at: string;
+    sender_type: string;
+  };
+  tags?: Array<CustomerTag>;
 };
+
+interface CustomerTag {
+  id: string;
+  name: string;
+  color: string;
+}
 
 const locales = {
   pt: ptBR,
@@ -21,38 +33,15 @@ const locales = {
 };
 
 interface KanbanCardProps {
-  customer: Customer;
+  customer: CustomerWithStage;
   index: number;
-  onEdit: () => void;
   onEditCustomer: () => void;
   onRemove: () => void;
 }
 
-export function KanbanCard({ customer, index, onEdit, onEditCustomer, onRemove }: KanbanCardProps) {
+export function KanbanCard({ customer, index, onEditCustomer, onRemove }: KanbanCardProps) {
   const { t, i18n } = useTranslation(['common']);
-  const [lastMoved, setLastMoved] = React.useState<string | null>(null);
   
-  React.useEffect(() => {
-    // Fetch the last time this customer was moved to this stage
-    async function fetchLastMoved() {
-      if (!customer.id || !customer.stage_id) return;
-      
-      const { data } = await supabase
-        .from('customer_stage_history')
-        .select('moved_at')
-        .eq('customer_id', customer.id)
-        .eq('stage_id', customer.stage_id)
-        .order('moved_at', { ascending: false })
-        .limit(1);
-        
-      if (data && data.length > 0) {
-        setLastMoved(data[0].moved_at);
-      }
-    }
-    
-    fetchLastMoved();
-  }, [customer.id, customer.stage_id]);
-
   const {
     attributes,
     listeners,
@@ -72,8 +61,43 @@ export function KanbanCard({ customer, index, onEdit, onEditCustomer, onRemove }
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: 'grab'
   };
+
+  // Encontrar contatos específicos
+  const emailContact = customer.contacts?.find(contact => contact.type === 'email');
+  const whatsappContact = customer.contacts?.find(contact => contact.type === 'whatsapp');
+  const phoneContact = customer.contacts?.find(contact => contact.type === 'phone');
+
+  // Formatar a última mensagem
+  const formatLastMessage = () => {
+    if (!customer.last_message) return null;
+    
+    const message = customer.last_message;
+    const currentLocale = locales[i18n.language as keyof typeof locales] || locales.en;
+    
+    try {
+      const timeAgo = formatDistanceToNow(new Date(message.created_at), { 
+        addSuffix: true,
+        locale: currentLocale
+      });
+      
+      // Limitar o tamanho da mensagem
+      const truncatedContent = message.content.length > 30 
+        ? `${message.content.substring(0, 30)}...` 
+        : message.content;
+      
+      return {
+        content: truncatedContent,
+        timeAgo,
+        senderType: message.sender_type
+      };
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return null;
+    }
+  };
+
+  const lastMessage = formatLastMessage();
 
   return (
     <div
@@ -81,30 +105,24 @@ export function KanbanCard({ customer, index, onEdit, onEditCustomer, onRemove }
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow group"
+      className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 mb-2 cursor-grab"
     >
       <div className="flex justify-between items-start">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-          {customer.name || t('unnamed')}
-        </h4>
-        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div>
+          <h3 className="font-medium text-gray-900 dark:text-white">
+            {customer.name}
+          </h3>
+        </div>
+        <div className="flex space-x-1">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditCustomer();
-            }}
-            className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
-            title="Editar cliente"
+            onClick={onEditCustomer}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
           >
             <Pencil className="w-4 h-4" />
           </button>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
-            title="Remover do funil"
+            onClick={onRemove}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
           >
             <X className="w-4 h-4" />
           </button>
@@ -112,46 +130,49 @@ export function KanbanCard({ customer, index, onEdit, onEditCustomer, onRemove }
       </div>
 
       <div className="space-y-1 mt-2">
-        {customer.email && (
+        {emailContact && (
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Mail className="w-4 h-4 mr-2" />
-            {customer.email}
+            {emailContact.value}
           </div>
         )}
-        {customer.whatsapp && (
+        {(whatsappContact || phoneContact) && (
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Phone className="w-4 h-4 mr-2" />
-            {customer.whatsapp}
+            {whatsappContact?.value || phoneContact?.value}
           </div>
         )}
       </div>
 
-      {/* Tags */}
+      {lastMessage && (
+        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm">
+          <div className="flex items-start">
+            <MessageSquare className="w-4 h-4 mr-2 mt-0.5 text-gray-500 dark:text-gray-400" />
+            <div>
+              <p className="text-gray-700 dark:text-gray-300">{lastMessage.content}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {lastMessage.senderType === 'customer' ? t('common:customer') : t('common:agent')} • {lastMessage.timeAgo}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {customer.tags && customer.tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {customer.tags.map(tag => (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {customer.tags.map((tag: CustomerTag) => (
             <div 
               key={tag.id}
               className="px-1.5 py-0.5 rounded-full text-xs"
               style={{ 
-                backgroundColor: `${tag.color}20`, // 20% opacity
-                color: tag.color,
-                border: `1px solid ${tag.color}`
+                backgroundColor: `${tag.color || '#3B82F6'}20`, // 20% opacity
+                color: tag.color || '#3B82F6',
+                border: `1px solid ${tag.color || '#3B82F6'}`
               }}
             >
               {tag.name}
             </div>
           ))}
-        </div>
-      )}
-
-      {lastMoved && (
-        <div className="mt-3 flex items-center text-xs text-gray-500 dark:text-gray-400">
-          <Clock className="w-3 h-3 mr-1" />
-          {formatDistanceToNow(new Date(lastMoved), {
-            addSuffix: true,
-            locale: locales[i18n.language as keyof typeof locales] || enUS
-          })}
         </div>
       )}
     </div>

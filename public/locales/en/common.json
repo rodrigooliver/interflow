@@ -24,6 +24,7 @@
   "saveSuccess": "Changes saved successfully!",
   "recommended": "Recommended",
   "delete": "Delete",
+  "agent": "Agent",
   "delete_confirmation": {
     "title": "Delete",
     "message": "Are you sure you want to delete this item?"
