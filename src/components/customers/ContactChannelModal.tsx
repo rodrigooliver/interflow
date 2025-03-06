@@ -26,10 +26,8 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
 
   useEffect(() => {
     if (currentOrganization && session?.user) {
-      Promise.all([
-        loadChannels(),
-        loadUserTeams()
-      ]);
+      loadChannels();
+      loadUserTeams();
     }
   }, [currentOrganization, session?.user]);
 
@@ -41,11 +39,27 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
         .eq('organization_id', currentOrganization?.id)
         .eq('status', 'active');
 
-      // For WhatsApp, include both official and unofficial channels
-      if (contactType === 'whatsapp') {
-        query = query.in('type', ['whatsapp_official', 'whatsapp_unofficial']);
-      } else {
-        query = query.eq('type', 'email');
+      // Filtrar canais baseado no tipo de contato
+      switch (contactType) {
+        case 'whatsapp':
+          query = query.in('type', ['whatsapp_official', 'whatsapp_wapi', 'whatsapp_zapi', 'whatsapp_evo']);
+          break;
+        case 'email':
+          query = query.eq('type', 'email');
+          break;
+        case 'instagram':
+          query = query.eq('type', 'instagram');
+          break;
+        case 'facebook':
+          query = query.eq('type', 'facebook');
+          break;
+        case 'telegram':
+          query = query.eq('type', 'telegram');
+          break;
+        case 'phone':
+          // Para contatos do tipo telefone, mostrar canais de WhatsApp
+          query = query.in('type', ['whatsapp_official', 'whatsapp_wapi', 'whatsapp_zapi', 'whatsapp_evo']);
+          break;
       }
 
       const { data, error } = await query;
@@ -64,15 +78,21 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
     try {
       const { data: teamMembers, error: membersError } = await supabase
         .from('service_team_members')
-        .select('team:service_teams(*)')
+        .select('team:service_teams(id, organization_id, name, created_at, updated_at)')
         .eq('user_id', session?.user?.id);
 
       if (membersError) throw membersError;
 
       // Extract teams from the response and remove nulls
       const teams = teamMembers
-        ?.map(tm => tm.team)
-        .filter((team): team is ServiceTeam => team !== null) || [];
+        ?.map(tm => ({
+          id: tm.team.id,
+          organization_id: tm.team.organization_id,
+          name: tm.team.name,
+          created_at: tm.team.created_at,
+          updated_at: tm.team.updated_at
+        } as ServiceTeam))
+        .filter(Boolean) || [];
 
       setUserTeams(teams);
     } catch (error) {
@@ -85,6 +105,19 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
     
     setStartingChat(true);
     try {
+      // Formatar o valor do contato baseado no tipo de canal
+      let formattedValue = contactValue;
+      if (contactType === 'whatsapp' || contactType === 'phone') {
+        // Remover caracteres não numéricos
+        const cleanNumber = contactValue.replace(/\D/g, '');
+        
+        if (channel.type === 'whatsapp_evo') {
+          formattedValue = `${cleanNumber}@s.whatsapp.net`;
+        } else if (channel.type === 'whatsapp_official' || channel.type === 'whatsapp_wapi') {
+          formattedValue = cleanNumber;
+        }
+      }
+
       // First, find the customer by contact
       const { data: customers, error: customerError } = await supabase
         .from('customers')
@@ -121,8 +154,7 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
         .select('*')
         .eq('organization_id', currentOrganization.id)
         .eq('channel_id', channel.id)
-        .eq('status', 'in_progress')
-        .eq(contactType, contactValue);
+        .in('status', ['in_progress', 'pending']);
 
       if (chatsError) throw chatsError;
 
@@ -136,7 +168,11 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
         if (!existingChats[0].assigned_to) {
           await supabase
             .from('chats')
-            .update({ assigned_to: session.user.id })
+            .update({ 
+              assigned_to: session.user.id, 
+              status: 'in_progress', 
+              start_time: new Date().toISOString() 
+            })
             .eq('id', chatId);
         }
       } else {
@@ -150,12 +186,10 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
             organization_id: currentOrganization.id,
             channel_id: channel.id,
             customer_id: customerId,
-            channel: contactType === 'email' ? 'email' : 'whatsapp',
-            status: 'pending',
+            external_id: formattedValue, // Usar o valor formatado aqui
+            status: 'in_progress',
             assigned_to: session.user.id,
             team_id: teamId,
-            whatsapp: contactType === 'whatsapp' ? contactValue : null,
-            email: contactType === 'email' ? contactValue : null,
             arrival_time: new Date().toISOString(),
             start_time: new Date().toISOString()
           }])
@@ -189,10 +223,20 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
     switch (type) {
       case 'whatsapp_official':
         return t('channels:types.whatsapp_official');
-      case 'whatsapp_unofficial':
-        return t('channels:types.whatsapp_unofficial');
+      case 'whatsapp_wapi':
+        return t('channels:types.whatsapp_wapi');
+      case 'whatsapp_zapi':
+        return t('channels:types.whatsapp_zapi');
+      case 'whatsapp_evo':
+        return t('channels:types.whatsapp_evo');
+      case 'instagram':
+        return t('channels:types.instagram');
+      case 'facebook':
+        return t('channels:types.facebook');
       case 'email':
         return t('channels:types.email');
+      case 'telegram':
+        return t('channels:types.telegram');
       default:
         return type;
     }

@@ -288,10 +288,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
     }
   }, [currentOrganization]);
 
-  const publishFlow = useCallback(async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
-    
+  const publishFlow = useCallback(async (id: string) => {
     if (!currentOrganization || !id) return;
 
     try {

@@ -8,6 +8,9 @@ import { MessageBubble } from './MessageBubble';
 import { CustomerEditModal } from '../customers/CustomerEditModal';
 import { ChatResolutionModal } from './ChatResolutionModal';
 import { ChatAvatar } from './ChatAvatar';
+import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
+import { toast } from 'react-hot-toast';
+import api from '../../lib/api';
 
 interface ChatMessagesProps {
   chatId: string;
@@ -34,6 +37,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const [footerLoading, setFooterLoading] = useState(true);
   const [isMessageWindowClosed, setIsMessageWindowClosed] = useState(false);
   const [canSendMessage, setCanSendMessage] = useState(true);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
@@ -73,9 +77,10 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     if (!chat) return;
     
     const isInstagramChannel = chat?.channel_details?.type === 'instagram';
+    const isWhatsAppChannel = chat?.channel_details?.type === 'whatsapp_official';
     const lastCustomerMessageAt = chat?.last_customer_message_at;
     
-    if (isInstagramChannel) {
+    if (isInstagramChannel || isWhatsAppChannel) {
       if (!lastCustomerMessageAt) {
         setCanSendMessage(false);
         return;
@@ -366,6 +371,28 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     }
   };
 
+  const isWhatsAppChat = chat?.channel_details?.type === 'whatsapp_official';
+
+  const handleSendTemplate = async (template: WhatsAppTemplate, variables: { [key: string]: string }) => {
+    try {
+      // Enviar o template via API
+      const response = await api.post(`/api/${organizationId}/chat/${chatId}/send-template`, {
+        templateId: template.id,
+        variables
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.error);
+      }
+
+      toast.success(t('channels:form.whatsapp.templateSent'));
+      setShowTemplateModal(false);
+    } catch (error) {
+      console.error('Erro ao enviar template:', error);
+      toast.error(t('channels:form.whatsapp.errorSendingTemplate'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -513,10 +540,21 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           {chat?.status === 'in_progress' && !canSendMessage && (
             <div className="border-t border-gray-200 dark:border-gray-700 p-4">
               <div className="p-3 bg-yellow-50 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 rounded-md">
-                {isMessageWindowClosed 
-                  ? t('errors.instagram24HourWindow')
-                  : t('errors.instagramNoCustomerMessage')
-                }
+                {isWhatsAppChat ? (
+                  <div className="flex flex-col space-y-3">
+                    <p>{t('channels:form.whatsapp.24HourWindow')}</p>
+                    <button
+                      onClick={() => setShowTemplateModal(true)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                    >
+                      {t('channels:form.whatsapp.useTemplate')}
+                    </button>
+                  </div>
+                ) : (
+                  isMessageWindowClosed 
+                    ? t('errors.instagram24HourWindow')
+                    : t('errors.instagramNoCustomerMessage')
+                )}
               </div>
             </div>
           )}
@@ -566,6 +604,28 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
         onConfirm={handleResolveChat}
         closureTypes={closureTypes}
       />
+
+      {showTemplateModal && (
+        <WhatsAppTemplateModal
+          isOpen={showTemplateModal}
+          onClose={() => setShowTemplateModal(false)}
+          channelId={chat?.channel_details?.id || ''}
+          onSendTemplate={handleSendTemplate}
+        />
+      )}
     </>
   );
+}
+
+interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  components: {
+    type: string;
+    text?: string;
+    example?: {
+      header_text?: string[];
+      body_text?: string[][];
+    };
+  }[];
 }

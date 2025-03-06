@@ -47,6 +47,7 @@ import { OrganizationProvider } from './contexts/OrganizationContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ClosureTypesPage } from './pages/ClosureTypesPage';
+import WhatsAppTemplates from './pages/organization/channels/WhatsAppTemplates';
 
 // Criar uma instância do QueryClient
 const queryClient = new QueryClient({
@@ -179,6 +180,7 @@ function AppContent() {
                       <Route path="channels/:id/edit/whatsapp_evo" element={<WhatsAppEvoForm />} />
                       <Route path="channels/:id/edit/facebook" element={<FacebookForm />} />
                       <Route path="channels/:id/edit/instagram" element={<InstagramForm />} />
+                      <Route path="channels/:id/templates" element={<WhatsAppTemplates />} />
                       <Route path="shortcuts" element={<MessageShortcuts />} />
                       <Route path="flows" element={<FlowList />} />
                       <Route path="flows/:id" element={<FlowEditor />} />

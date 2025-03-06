@@ -105,6 +105,7 @@ export interface Trigger {
     operator: 'AND' | 'OR';
     rules: TriggerRule[];
   };
+  organization_id: string;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;

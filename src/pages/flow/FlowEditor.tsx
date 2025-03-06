@@ -63,13 +63,13 @@ function FlowEditorContent() {
   const handlePublish = useCallback(async () => {
     setPublishing(true);
     try {
-      await publishFlow();
+      await publishFlow(id);
     } catch (error) {
       console.error('Error publishing flow:', error);
     } finally {
       setPublishing(false);
     }
-  }, [publishFlow]);
+  }, [publishFlow, id]);
 
   const handleRestore = useCallback(async () => {
     setRestoring(true);

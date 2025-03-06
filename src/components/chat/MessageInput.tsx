@@ -746,7 +746,7 @@ export function MessageInput({
       {showShortcuts && (
         <div 
           ref={shortcutsRef}
-          className="absolute bottom-full left-0 mb-2 w-full max-w-md bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700"
+          className="absolute bottom-full left-2 mb-2 w-full max-w-md bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700"
           style={{ marginBottom: '8px', padding: '4px 0' }}
         >
           <div className="p-2">

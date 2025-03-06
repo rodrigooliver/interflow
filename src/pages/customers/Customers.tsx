@@ -80,13 +80,6 @@ interface TagRelation {
   tag_id: string;
 }
 
-// Definir a interface para field_values
-interface CustomerFieldValue {
-  field_definition_id: string;
-  value: string;
-  id?: string;
-}
-
 // Adicionar uma interface específica para os modais
 interface CustomerWithTagRelations extends Omit<Customer, 'tags'> {
   tags: { 
@@ -222,18 +215,6 @@ export default function Customers() {
       // Usar as configurações salvas
       const parsedConfigs = JSON.parse(savedConfigs);
       
-      // Verificar se a coluna de progresso do estágio existe
-      const hasStageProgressColumn = parsedConfigs.some((c: ColumnConfig) => c.id === 'stage_progress');
-      
-      // Se não existir, adicionar
-      if (!hasStageProgressColumn) {
-        parsedConfigs.push({
-          id: 'stage_progress',
-          name: 'Progresso do Estágio',
-          visible: true
-        });
-      }
-      
       // Verificar se há novos campos personalizados que não estão nas configurações salvas
       const existingCustomFieldIds = parsedConfigs
         .filter((c: ColumnConfig) => c.isCustomField && c.field_id)
@@ -250,7 +231,7 @@ export default function Customers() {
           field_id: field.id
         }));
       
-      if (newCustomColumns.length > 0 || !hasStageProgressColumn) {
+      if (newCustomColumns.length > 0) {
         // Adicionar novos campos às configurações existentes
         const updatedConfigs = [...parsedConfigs, ...newCustomColumns];
         setColumnConfigs(updatedConfigs);
@@ -264,10 +245,9 @@ export default function Customers() {
       // Não há configurações salvas, criar novas
       const defaultColumns: ColumnConfig[] = [
         { id: 'name', name: 'Nome', visible: true },
-        { id: 'stage', name: 'Estágio', visible: true },
-        { id: 'contact', name: 'Contato principal', visible: true },
-        { id: 'contact_email', name: 'Email', visible: true },
-        { id: 'contact_phone', name: 'Telefone', visible: true },
+        { id: 'stage_progress', name: 'Estágio', visible: true },
+        { id: 'tags', name: 'Tags', visible: true },
+        { id: 'contacts', name: 'Contatos', visible: true },
       ];
       
       // Adicionar colunas personalizadas
@@ -430,7 +410,12 @@ export default function Customers() {
         .select(`
           *,
           tags:customer_tags(tag_id, tags:tags(*)),
-          field_values:customer_field_values(id, field_definition_id, value),
+          field_values:customer_field_values(
+            id,
+            field_definition_id,
+            value,
+            updated_at
+          ),
           contacts:customer_contacts(
             id,
             customer_id,
@@ -538,10 +523,11 @@ export default function Customers() {
             : [];
           
           // Processar valores de campos personalizados
-          const fieldValues: Record<string, string> = {};
-          if (customer.field_values) {
-            customer.field_values.forEach((fv: CustomerFieldValue) => {
-              fieldValues[fv.field_definition_id] = fv.value;
+          const field_values = customer.field_values || [];
+          const fieldValuesMap: Record<string, string> = {};
+          if (Array.isArray(field_values)) {
+            field_values.forEach((fv: { field_definition_id: string; value: string }) => {
+              fieldValuesMap[fv.field_definition_id] = fv.value;
             });
           }
           
@@ -565,7 +551,7 @@ export default function Customers() {
             ...customer,
             tags,
             contacts,
-            field_values: fieldValues,
+            field_values: fieldValuesMap,
             crm_stages
           };
         });
@@ -675,7 +661,7 @@ export default function Customers() {
           return {
             id: `custom_field_${fieldId}`,
             name: fieldDef?.name || 'Campo Personalizado',
-            visible: true,
+            visible: false,
             isCustomField: true,
             field_id: fieldId
           };
@@ -693,20 +679,20 @@ export default function Customers() {
   // Esta função agora usa o mapa de valores que já foi construído durante o carregamento dos clientes
   const getCustomFieldValue = (customerId: string, fieldId: string) => {
     // Verificar se temos valores para este cliente
-    if (customFieldValues[customerId] && customFieldValues[customerId][fieldId]) {
-      return customFieldValues[customerId][fieldId];
+    const customer = customers.find(c => c.id === customerId);
+    if (customer?.field_values) {
+      return customer.field_values[fieldId] || '';
     }
     return '';
   };
 
   // Função para renderizar o valor de uma coluna
   const renderColumnValue = (column: ColumnConfig, customer: Customer) => {
-    if (column.id.startsWith('custom_field_')) {
-      const fieldId = column.id.replace('custom_field_', '');
-      const value = getCustomFieldValue(customer.id, fieldId);
+    if (column.isCustomField && column.field_id) {
+      const value = getCustomFieldValue(customer.id, column.field_id);
       
       // Formatar o valor com base no tipo do campo
-      const fieldDef = customFieldDefinitions.find(def => def.id === fieldId);
+      const fieldDef = customFieldDefinitions.find(def => def.id === column.field_id);
       if (fieldDef?.type === 'date' && value) {
         try {
           const date = new Date(value);
@@ -769,6 +755,30 @@ export default function Customers() {
         }
       }))
     };
+  };
+
+  // Função para resetar as configurações de colunas
+  const handleResetColumnConfigs = () => {
+    if (!currentOrganization) return;
+    
+    // Remover as configurações do localStorage
+    localStorage.removeItem(`columnConfigs_${currentOrganization.id}`);
+    
+    // Recarregar as configurações padrão
+    loadColumnConfigs();
+    
+    // Fechar o modal
+    setShowColumnSelector(false);
+
+    // Mostrar notificação de sucesso
+    const feedbackElement = document.createElement('div');
+    feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+    feedbackElement.textContent = t('customers:settingsReset');
+    document.body.appendChild(feedbackElement);
+    
+    setTimeout(() => {
+      feedbackElement.remove();
+    }, 3000);
   };
 
   if (!currentOrganization) {
@@ -960,6 +970,12 @@ export default function Customers() {
               {t('customers:configureVisibleColumns')}
             </h3>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleResetColumnConfigs}
+                className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+              >
+                {t('customers:resetSettings')}
+              </button>
               <button
                 onClick={() => setShowColumnSelector(false)}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"

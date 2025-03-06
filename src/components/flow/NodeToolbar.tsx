@@ -26,7 +26,7 @@ interface NodeCategory {
 // Adicionar componente do logo
 const OpenAILogo = () => (
   <img 
-    src="/openai.svg" 
+    src="/images/logos/openai.svg" 
     alt="OpenAI Logo" 
     className="w-5 h-5 mr-3 transition-all dark:invert dark:brightness-200 flex-shrink-0"
   />
