@@ -46,7 +46,7 @@
     "description": "Elige un chat de la lista a la izquierda para ver la conversación"
   },
   "status": {
-    "in_progress": "En atendimiento",
+    "in_progress": "En atención",
     "closed": "Cerrado",
     "pending": "Esperando"
   },
@@ -83,7 +83,9 @@
     "errors": {
       "invalidType": "Tipo de archivo inválido",
       "tooLarge": "Archivo demasiado grande (máx 10MB)",
-      "uploadFailed": "Error al subir archivo"
+      "uploadFailed": "Error al subir archivo",
+      "deleteFailed": "Error al eliminar archivo",
+      "readFailed": "Error al leer archivo"
     }
   },
   "emoji": {

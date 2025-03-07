@@ -10,9 +10,9 @@
   "editFlow": "Editar Flujo",
   "flowDescription": "Descripción del Flujo",
   "flowName": "Nombre del Flujo",
-  "resetConfirmTitle": "Limpar Flujo",
-  "resetConfirmMessage": "Tem certeza que deseja limpar todo o fluxo?",
-  "reset": "Limpar",
+  "resetConfirmTitle": "Limpiar Flujo",
+  "resetConfirmMessage": "¿Estás seguro de que deseas limpiar todo el flujo?",
+  "reset": "Limpiar",
   "variables": {
     "title": "Variables",
     "add": "Agregar Variable"
@@ -55,6 +55,11 @@
       "valuePlaceholder": "Valor",
       "selectVariable": "Selecciona una variable"
     },
+    "uploadFile": "Subir archivo",
+    "openFile": "Abrir archivo",
+    "useExternalUrl": "Usar URL externa",
+    "deleteFile": "Eliminar archivo",
+    "mediaUrlPlaceholder": "URL del archivo",
     "condition": {
       "title": "Condición",
       "if": "Si",
@@ -66,8 +71,6 @@
       "operators": {
         "equalTo": "es igual a",
         "notEqual": "no es igual a",
-        "equalToMultiple": "es igual a uno de (separado por comas)",
-        "notEqualToMultiple": "no es igual a uno de (separado por comas)",
         "contains": "contiene",
         "doesNotContain": "no contiene",
         "greaterThan": "es mayor que",
@@ -91,6 +94,7 @@
       "type": "Tipo",
       "variable": "Variable",
       "clientData": {
+        "title": "Datos del cliente",
         "name": "Nombre del cliente",
         "surname": "Apellido del cliente",
         "phone": "Teléfono del cliente",
@@ -110,7 +114,8 @@
       "selectFunnel": "Seleccionar Embudo",
       "selectStage": "Seleccionar Etapa",
       "selectTeam": "Seleccionar Equipo",
-      "selectAttendant": "Seleccionar Atendente"
+      "selectAttendant": "Seleccionar Atendente",
+      "separateByComma": "Separar por coma"
     },
     "input": {
       "title": "Esperar Respuesta",
@@ -128,15 +133,16 @@
     "options": {
       "title": "Opciones",
       "textPlaceholder": "Texto de la opción",
-      "valuePlaceholder": "Valor",
-      "selectVariable": "Selecciona una variable"
+      "valuePlaceholder": "Valor"
     },
-    "mediaUrlPlaceholder": "URL del archivo",
     "openai": {
       "title": "OpenAI",
       "model": "Modelo",
       "prompt": "Instrucción IA",
       "promptPlaceholder": "Escribe tu instrucción IA...",
+      "promptType": "Tipo de Instrucción IA",
+      "customPrompt": "Instrucción IA Personalizada",
+      "enterCustomPrompt": "Ingrese su instrucción IA personalizada...",
       "temperature": "Temperatura",
       "maxTokens": "Máx. Tokens",
       "saveResponse": "Guardar respuesta en",
@@ -146,17 +152,18 @@
       "selectPrompt": "Selecciona una Instrucción IA",
       "selectModel": "Selecciona un Modelo",
       "apiType": "Tipo de API",
+      "selectApiType": "Seleccione el Tipo de API",
       "voice": "Voz",
       "apiTypes": {
         "textGeneration": "Generar texto",
         "audioGeneration": "Generar audio",
         "textToSpeech": "Transformar texto en voz"
       },
-      "settings": "Configurações",
+      "settings": "Configuraciones",
       "messages": {
         "type": "Tipo de mensaje",
         "chatMessages": "Mensajes del chat",
-        "allClientMessages": "Todas las mensagens del cliente"
+        "allClientMessages": "Todos los mensajes del cliente"
       },
       "tabs": {
         "messages": "Mensajes",
@@ -178,14 +185,10 @@
         "noVariables": "Ninguna variable disponible",
         "createVariable": "Crear variable",
         "noParameters": "Ningún parámetro adicionado",
+        "required": "Obligatorio",
         "targetNode": "Nodo de destino",
-        "selectTargetNode": "Selecciona un nodo de destino",
-        "required": "Obligatorio"
-      },
-      "promptType": "Tipo de Instrucción IA",
-      "customPrompt": "Instrucción IA Personalizada",
-      "enterCustomPrompt": "Ingrese su instrucción IA personalizada...",
-      "selectApiType": "Seleccione el Tipo de API"
+        "selectTargetNode": "Selecciona un nodo de destino"
+      }
     },
     "updateCustomer": {
       "title": "Actualizar Cliente",
@@ -193,16 +196,16 @@
       "value": "Nuevo Valor",
       "selectField": "Selecciona el campo",
       "valuePlaceholder": "Escribe el nuevo valor",
-      "funnel": "Funnel",
-      "stage": "Estágio",
+      "funnel": "Embudo",
+      "stage": "Etapa",
       "team": "Equipo",
       "user": "Usuario",
-      "selectFunnel": "Selecciona el funil",
-      "selectStage": "Selecciona el estágio",
+      "selectFunnel": "Selecciona el embudo",
+      "selectStage": "Selecciona la etapa",
       "selectTeam": "Selecciona el equipo",
       "selectUser": "Selecciona el usuario",
       "fields": {
-        "funnel": "Funnel de Ventas",
+        "funnel": "Embudo de Ventas",
         "team": "Equipo de Atención",
         "user": "Usuario Atendente",
         "email": "Email",
@@ -223,10 +226,10 @@
     "warning": "Esta acción no se puede deshacer. Todos los flujos dentro de esta carpeta se moverán a la raíz."
   },
   "triggers": {
-    "title": "Gatilhos de Automação",
-    "configure": "Configurar Gatilhos",
-    "add": "Agregar Gatilho",
-    "selectType": "Selecciona el tipo de gatilho",
+    "title": "Disparadores de Automatización",
+    "configure": "Configurar Disparadores",
+    "add": "Agregar Disparador",
+    "selectType": "Selecciona el tipo de disparador",
     "firstContact": "Primer Contacto",
     "firstContactDescription": "Activar cuando un cliente entre en contacto por primera vez",
     "inactivity": "Inactividad",
@@ -234,24 +237,24 @@
     "schedule": "Primer contacto en horarios específicos",
     "scheduleDescription": "Activar en horarios específicos",
     "channels": "Canales",
-    "requireNoActiveChat": "Apenas cuando no hay chat activo",
-    "useSchedule": "Apenas en horarios específicos",
+    "requireNoActiveChat": "Solo cuando no hay chat activo",
+    "useSchedule": "Solo en horarios específicos",
     "addTimeSlot": "Agregar horario",
     "inactivitySource": "Fuente de inactividad",
     "customer": "Cliente",
-    "agent": "Atendente",
+    "agent": "Agente",
     "inactivityMinutes": "Minutos de inactividad",
     "days": "Días de la semana",
     "startTime": "Hora inicial",
     "endTime": "Hora final",
-    "timezone": "Fuso horario",
+    "timezone": "Zona horaria",
     "selectChannels": "Selecciona los canales",
     "noChannels": "Ningún canal encontrado",
     "timeSlot": {
       "day": "Día de la semana",
       "startTime": "Hora inicial",
       "endTime": "Hora final",
-      "remove": "Remover horario"
+      "remove": "Eliminar horario"
     }
   },
   "rules": {

@@ -55,6 +55,11 @@
       "valuePlaceholder": "Value",
       "selectVariable": "Select Variable"
     },
+    "uploadFile": "Upload file",
+    "openFile": "Open file",
+    "useExternalUrl": "Use external URL",
+    "deleteFile": "Delete file",
+    "mediaUrlPlaceholder": "File URL",
     "condition": {
       "title": "Condition",
       "if": "If",
@@ -89,6 +94,7 @@
       "type": "Type",
       "variable": "Variable",
       "clientData": {
+        "title": "Client data",
         "name": "Client name",
         "surname": "Client surname",
         "phone": "Client phone",
@@ -108,7 +114,8 @@
       "selectFunnel": "Select Funnel",
       "selectStage": "Select Stage",
       "selectTeam": "Select Team",
-      "selectAttendant": "Select Attendant"
+      "selectAttendant": "Select Attendant",
+      "separateByComma": "Separate by comma"
     },
     "input": {
       "title": "Wait for Response",
@@ -128,12 +135,14 @@
       "textPlaceholder": "Option text",
       "valuePlaceholder": "Value"
     },
-    "mediaUrlPlaceholder": "File URL",
     "openai": {
       "title": "OpenAI",
       "model": "Model",
       "prompt": "AI Instruction",
       "promptPlaceholder": "Type your AI instruction...",
+      "promptType": "AI Instruction Type",
+      "customPrompt": "Custom AI Instruction",
+      "enterCustomPrompt": "Enter your custom AI instruction...",
       "temperature": "Temperature",
       "maxTokens": "Max. Tokens",
       "saveResponse": "Save response in",
@@ -142,8 +151,9 @@
       "systemPrompt": "System AI Instruction",
       "selectPrompt": "Select AI Instruction",
       "selectModel": "Select Model",
-      "voice": "Voice",
       "apiType": "API Type",
+      "selectApiType": "Select API Type",
+      "voice": "Voice",
       "apiTypes": {
         "textGeneration": "Generate text",
         "audioGeneration": "Generate audio",
@@ -175,14 +185,10 @@
         "noVariables": "No variables available",
         "createVariable": "Create variable",
         "noParameters": "No parameters added",
+        "required": "Required",
         "targetNode": "Target node",
-        "selectTargetNode": "Select a target node",
-        "required": "Required"
-      },
-      "promptType": "AI Instruction Type",
-      "customPrompt": "Custom AI Instruction",
-      "enterCustomPrompt": "Enter your custom AI instruction...",
-      "selectApiType": "Select API Type"
+        "selectTargetNode": "Select a target node"
+      }
     },
     "updateCustomer": {
       "title": "Update Customer",

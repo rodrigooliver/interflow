@@ -15,7 +15,7 @@ import ReactFlow, {
   applyEdgeChanges,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { FlowNode, FlowConnection, NodeType } from '../../types/flow';
+import { NodeType } from '../../types/flow';
 import { NodeToolbar } from './NodeToolbar';
 import { TextNode } from './nodes/TextNode';
 import { MediaNode } from './nodes/MediaNode';
@@ -388,7 +388,7 @@ export function FlowBuilder() {
           selectionOnDrag={false}
           onError={handleFlowError}
           onNodeDragStop={(event, node) => {
-            console.log('On node drag stop...', event, node);
+            // console.log('On node drag stop...', event, node);
             onNodeUpdate(node.id, { ...node.data, position: node.position });
           }}
         >

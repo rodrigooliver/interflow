@@ -8,7 +8,7 @@ import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 interface DelayNodeProps {
   id: string;
   data: {
-    delaySeconds?: number;
+    delaySeconds?: number|string;
     label?: string;
   };
   isConnectable: boolean;
@@ -24,7 +24,7 @@ export function DelayNode({ id, data, isConnectable }: DelayNodeProps) {
   }, [id, data, delay, updateNodeData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === '' ? 0 : Number(e.target.value);
+    const value = e.target.value === '' ? '' : Number(e.target.value);
     setDelay(value);
   };
 

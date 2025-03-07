@@ -1,16 +1,18 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { Music, Image, Video, FileText, Upload, X, Loader2 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { Music, Image, Video, FileText, Upload, X, Loader2, Trash2, Link, ExternalLink } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
+import api from '../../../lib/api';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 
 interface MediaNodeProps {
   id: string;
   type: 'audio' | 'image' | 'video' | 'document';
   data: {
     mediaUrl?: string;
+    fileId?: string;  // ID do arquivo para exclusão direta
   };
   isConnectable: boolean;
 }
@@ -46,22 +48,88 @@ const typeConfig = {
   }
 };
 
+// Definir interface para erros de API
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+  message?: string;
+}
+
 export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
   const { t } = useTranslation('flows');
-  const { updateNodeData } = useFlowEditor();
+  const { updateNodeData, id: flowId } = useFlowEditor();
   const [url, setUrl] = useState(data.mediaUrl || '');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [showUrlInput, setShowUrlInput] = useState(!data.mediaUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const Icon = typeConfig[type].icon;
+
+  const { currentOrganization }  = useOrganizationContext();
+  // Extrair o nome do arquivo da URL
+  const getFileNameFromUrl = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      return pathParts[pathParts.length - 1];
+    } catch {
+      return 'arquivo';
+    }
+  };
+
+  useEffect(() => {
+    // Atualizar o estado showUrlInput quando data.mediaUrl mudar
+    setShowUrlInput(!data.mediaUrl);
+  }, [data.mediaUrl]);
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
   };
 
   const handleUrlBlur = () => {
-    updateNodeData(id, { ...data, mediaUrl: url });
+    if (url) {
+      updateNodeData(id, { ...data, mediaUrl: url, fileId: undefined });
+      setShowUrlInput(false);
+    }
+  };
+
+  const handleDeleteFile = async () => {
+    if (!data.fileId) return;
+    
+    setDeleting(true);
+    setError('');
+    
+    try {
+      // Chamar a API para excluir o arquivo usando o ID
+      const response = await api.delete(`/api/${currentOrganization?.id}/flow/${flowId}/file`, {
+        data: { fileId: data.fileId }
+      });
+      
+      if (response.data.success) {
+        // Limpar a URL e o ID do arquivo nos dados do nó
+        setUrl('');
+        updateNodeData(id, { ...data, mediaUrl: '', fileId: undefined });
+        setShowUrlInput(true);
+      } else {
+        throw new Error(response.data.error || 'Falha ao excluir arquivo');
+      }
+    } catch (err: unknown) {
+      console.error('Erro ao excluir arquivo:', err);
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || apiError.message || t('chats:attachments.errors.deleteFailed'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleShowUrlInput = () => {
+    setShowUrlInput(true);
+    setUrl('');
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,29 +146,37 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
     setError('');
 
     try {
-      // Generate a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${typeConfig[type].bucket}/${fileName}`;
-
-      // Upload file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from(typeConfig[type].bucket)
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from(typeConfig[type].bucket)
-        .getPublicUrl(filePath);
-
-      setUrl(publicUrl);
-      updateNodeData(id, { ...data, mediaUrl: publicUrl });
-      setShowUploadModal(false);
-    } catch (err) {
+      // Preparar FormData para envio
+      const formData = new FormData();
+      
+      // Adicionar o arquivo ao FormData
+      formData.append('file', file, file.name);
+      
+      // Enviar o arquivo para o backend usando FormData
+      const response = await api.post(`/api/${currentOrganization?.id}/flow/${flowId}/file`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (response.data.success) {
+        const fileUrl = response.data.fileUrl;
+        const fileId = response.data.fileId; // Obter o ID do arquivo retornado pelo backend
+        setUrl(fileUrl);
+        updateNodeData(id, { 
+          ...data, 
+          mediaUrl: fileUrl,
+          fileId: fileId // Armazenar o ID do arquivo para exclusão direta
+        });
+        setShowUploadModal(false);
+        setShowUrlInput(false);
+      } else {
+        throw new Error(response.data.error || 'Upload failed');
+      }
+    } catch (err: unknown) {
       console.error('Upload error:', err);
-      setError(t('chats:attachments.errors.uploadFailed'));
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || apiError.message || t('chats:attachments.errors.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -115,21 +191,71 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
       />
 
       <div className="flex items-center space-x-2">
-        <input
-          type="text"
-          value={url}
-          onChange={handleUrlChange}
-          onBlur={handleUrlBlur}
-          placeholder={t('nodes.mediaUrlPlaceholder')}
-          className="flex-1 p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-        />
-        <button 
-          onClick={() => setShowUploadModal(true)}
-          className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        >
-          <Upload className="w-5 h-5" />
-        </button>
+        {showUrlInput ? (
+          <>
+            <input
+              type="text"
+              value={url}
+              onChange={handleUrlChange}
+              onBlur={handleUrlBlur}
+              placeholder={t('nodes.mediaUrlPlaceholder')}
+              className="flex-1 p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
+            />
+            <button 
+              onClick={() => setShowUploadModal(true)}
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              title={t('nodes.uploadFile')}
+            >
+              <Upload className="w-5 h-5" />
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+            <div className="flex-1 flex items-center text-gray-900 dark:text-white overflow-hidden">
+              <Icon className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate" title={data.mediaUrl}>
+                {getFileNameFromUrl(data.mediaUrl || '')}
+              </span>
+            </div>
+            <div className="flex space-x-1">
+              <a 
+                href={data.mediaUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                title={t('nodes.openFile')}
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+              {!data.fileId && (
+                <button 
+                  onClick={handleShowUrlInput}
+                  className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  title={t('nodes.useExternalUrl')}
+                >
+                  <Link className="w-4 h-4" />
+                </button>
+              )}
+              {data.fileId && (
+                <button 
+                  onClick={handleDeleteFile}
+                  disabled={deleting}
+                  className="p-1 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
+                  title={t('nodes.deleteFile')}
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {error && (
+        <div className="mt-2 p-2 rounded-md bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 text-xs">
+          {error}
+        </div>
+      )}
 
       <Handle
         type="target"

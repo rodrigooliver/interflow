@@ -55,6 +55,11 @@
       "valuePlaceholder": "Valor",
       "selectVariable": "Selecione uma variável"
     },
+    "uploadFile": "Fazer upload de arquivo",
+    "openFile": "Abrir arquivo",
+    "useExternalUrl": "Usar URL externa",
+    "deleteFile": "Excluir arquivo",
+    "mediaUrlPlaceholder": "URL do arquivo",
     "condition": {
       "title": "Condição",
       "if": "Se",
@@ -130,7 +135,6 @@
       "textPlaceholder": "Texto da opção",
       "valuePlaceholder": "Valor"
     },
-    "mediaUrlPlaceholder": "URL do arquivo",
     "openai": {
       "title": "OpenAI",
       "model": "Modelo",

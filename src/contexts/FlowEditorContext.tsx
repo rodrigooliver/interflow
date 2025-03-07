@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../lib/supabase';
 import { Integration, Prompt } from '../types/database';
 import { Variable } from '../types/flow';
-import { Node, Connection, ReactFlowInstance } from 'reactflow';
+import { Node } from 'reactflow';
 import { useOrganizationContext } from './OrganizationContext';
 import { useParams } from 'react-router-dom';
 
@@ -70,6 +70,7 @@ interface FlowEditorContextType {
   restoreFlow: () => Promise<void>;
   setFlowName: (name: string) => Promise<void>;
   getViewport: () => any;
+  id: string;
 }
 
 const FlowEditorContext = createContext<FlowEditorContextType | undefined>(undefined);
@@ -403,6 +404,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       publishFlow,
       restoreFlow,
       setFlowName: updateFlowName,
+      id
     }}>
       {children}
     </FlowEditorContext.Provider>

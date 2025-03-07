@@ -83,7 +83,9 @@
     "errors": {
       "invalidType": "Tipo de arquivo inválido",
       "tooLarge": "Arquivo muito grande (máx 10MB)",
-      "uploadFailed": "Falha ao enviar arquivo"
+      "uploadFailed": "Falha ao enviar arquivo",
+      "deleteFailed": "Falha ao excluir arquivo",
+      "readFailed": "Falha ao ler arquivo"
     }
   },
   "emoji": {
