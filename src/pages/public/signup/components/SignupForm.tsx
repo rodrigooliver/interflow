@@ -87,7 +87,21 @@ export default function SignupForm() {
 
       if (memberError) throw memberError;
 
-      // 5. Criar customer para iniciar chat
+      // 5. Criar subscription trial
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert({
+          organization_id: orgData.id,
+          plan_id: '2dca5696-fab0-4cea-8db6-9d53c22b3c5a',
+          status: 'trialing',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias de trial
+          cancel_at_period_end: false
+        });
+
+      if (subscriptionError) throw subscriptionError;
+
+      // 6. Criar customer para iniciar chat
       if(referral?.organization_id) {
         const { error: customerError } = await supabase
           .from('customers')
@@ -103,13 +117,13 @@ export default function SignupForm() {
       }
      
 
-      // 6. Disparar evento de tracking
+      // 7. Disparar evento de tracking
       await trackEvent('SignUp', {
         method: 'email',
         organization_name: formData.organizationName
       });
 
-      // 7. Redirecionar para o app
+      // 8. Redirecionar para o app
       setTimeout(() => {
         navigate('/app');
       }, 1500);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -48,7 +48,6 @@ interface Subscription {
 export function BillingSettings() {
   const { t, i18n } = useTranslation(['settings', 'common']);
   const { currentOrganization } = useOrganizationContext();
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const { plans: subscriptionPlans, isLoading: plansLoading } = useSubscriptionPlans();
@@ -75,7 +74,7 @@ export function BillingSettings() {
     try {
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('*, subscription_plans(*)')
+        .select('*')
         .eq('organization_id', currentOrganization?.id)
         .single();
 
