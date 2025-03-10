@@ -2,11 +2,14 @@
   "title": "Settings",
   "sections": {
     "general": "General",
-    "notifications": "Notifications", 
-    "integrations": "Integrations",
+    "profile": "Profile",
     "billing": "Billing",
+    "notifications": "Notifications",
+    "apiKeys": "API Keys",
+    "integrations": "Integrations",
+    "marketing": "Marketing",
     "usage": "Usage",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming Soon"
   },
   "integrations": {
     "title": "Integrations",
@@ -16,10 +19,14 @@
     "deleteConfirmation": "Are you sure you want to delete this integration?",
     "type": "Integration Type",
     "lastUpdated": "Last updated",
+    "noIntegrations": "No integrations found",
     "form": {
       "title": "Title",
       "titlePlaceholderOpenAI": "Title for OpenAI",
       "titlePlaceholderS3": "Title for AWS"
+    },
+    "errors": {
+      "invalidOpenAIKey": "Invalid OpenAI API key. Please check the key and try again."
     }
   },
   "fileManager": {
@@ -34,28 +41,92 @@
     "deleteConfirmation": "Are you sure you want to delete {name}?",
     "deleteWarning": "This action cannot be undone. If this file is used in any messages, they will no longer display the file."
   },
+  "profile": {
+    "title": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "billing": {
+    "title": "Billing",
     "currentPlan": "Current Plan",
+    "subscribe": "Subscribe",
+    "maxUsers": "Users",
+    "maxCustomers": "Customers",
+    "maxChannels": "Channels",
+    "maxFlows": "Flows",
+    "maxTeams": "Teams",
+    "storage": "Storage",
+    "additionalUser": "Additional user",
+    "additionalChannel": "Additional channel",
+    "additionalFlow": "Additional flow",
+    "additionalTeam": "Additional team",
     "trialEnds": "Trial ends on {{date}}",
     "renewsOn": "Renews on {{date}}",
     "manageBilling": "Manage Billing",
-    "selectPlan": "Select Plan",
-    "paymentMethods": "Payment Methods",
-    "edit": "Edit",
-    "addPaymentMethod": "Add Payment Method",
-    "history": "Billing History",
+    "paymentHistory": "Payment History",
     "date": "Date",
     "description": "Description",
     "amount": "Amount",
     "status": "Status",
-    "download": "Download",
+    "noPayments": "No payments found",
+    "paymentMethods": "Payment Methods",
+    "edit": "Edit",
+    "addPaymentMethod": "Add Payment Method",
+    "history": "History",
     "paid": "Paid",
-    "features": {
-      "users": "{{count}} users",
-      "storage": "{{size}} storage",
-      "channels": "{{count}} channels",
-      "concurrentChats": "{{count}} concurrent chats"
+    "statuses": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "failed": "Failed"
     }
   },
-  "expand": "Expand"
+  "notifications": {
+    "title": "Notifications"
+  },
+  "apiKeys": {
+    "title": "API Keys"
+  },
+  "usage": {
+    "title": "Usage",
+    "storage": "Storage",
+    "users": "Users",
+    "channels": "Channels",
+    "flows": "Flows",
+    "teams": "Teams",
+    "customers": "Customers",
+    "noData": "No usage data available",
+    "limitWarning": "Limit nearly reached",
+    "limitReached": "Limit reached",
+    "almostFull": "Almost full"
+  },
+  "expand": "Expand",
+  "collapse": "Collapse",
+  "marketing": {
+    "title": "Marketing",
+    "referrals": "Referral Codes",
+    "referralsDescription": "Create and manage referral codes to share with your contacts. When someone signs up using your code, you can track the origin.",
+    "trackingPixels": "Tracking Pixels",
+    "trackingPixelsDescription": "Configure tracking pixels to track conversions and events on your website.",
+    "code": "Code",
+    "status": "Status",
+    "createdAt": "Created At",
+    "actions": "Actions",
+    "type": "Type",
+    "pixelId": "Pixel ID",
+    "createReferral": "Create Code",
+    "createPixel": "Create Pixel",
+    "referralCodePlaceholder": "Enter a custom code or leave blank to generate automatically",
+    "pixelIdPlaceholder": "Pixel ID (e.g. 123456789012345)",
+    "pixelConfiguration": "Pixel Configuration (JSON)",
+    "noReferrals": "No referral codes found",
+    "noPixels": "No tracking pixels found",
+    "commissionRate": "Commission Rate",
+    "commissionRatePlaceholder": "Commission rate in %",
+    "selectReferralFirst": "Select a referral code to manage its tracking pixels"
+  }
 }

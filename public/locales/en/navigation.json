@@ -5,12 +5,13 @@
   "crm": "CRM",
   "shortcuts": "Shortcuts",
   "settings": "Settings",
-  "team": "Users",
-  "serviceTeams": "Teams",
+  "team": "Team",
+  "serviceTeams": "Service Teams",
   "channels": "Channels",
   "flows": "Flows",
   "organizations": "Organizations",
   "tags": "Tags",
-  "prompts": "Instructions AI",
-  "closureTypes": "Closure Types"
+  "prompts": "Prompts",
+  "closureTypes": "Closure Types",
+  "subscriptionPlans": "Subscription Plans"
 }

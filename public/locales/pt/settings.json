@@ -2,8 +2,11 @@
   "title": "Configurações",
   "sections": {
     "general": "Geral",
+    "profile": "Perfil",
     "notifications": "Notificações",
+    "apiKeys": "Chaves de API",
     "integrations": "Integrações",
+    "marketing": "Marketing",
     "billing": "Faturamento",
     "usage": "Uso",
     "comingSoon": "Em breve"
@@ -16,6 +19,7 @@
     "deleteConfirmation": "Tem certeza que deseja excluir esta integração?",
     "type": "Tipo de Integração",
     "lastUpdated": "Última atualização",
+    "noIntegrations": "Nenhuma integração encontrada",
     "form": {
       "title": "Título",
       "titlePlaceholderOpenAI": "Título para OpenAI",
@@ -37,28 +41,92 @@
     "deleteConfirmation": "Tem certeza que deseja excluir {name}?",
     "deleteWarning": "Esta ação não pode ser desfeita. Se este arquivo for usado em alguma mensagem, ela não exibirá mais o arquivo."
   },
+  "profile": {
+    "title": "Perfil",
+    "name": "Nome",
+    "email": "E-mail",
+    "language": "Idioma",
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema"
+  },
   "billing": {
+    "title": "Faturamento",
     "currentPlan": "Plano Atual",
-    "trialEnds": "Período de teste termina em {{date}}",
+    "subscribe": "Assinar",
+    "maxUsers": "Usuários",
+    "maxCustomers": "Clientes",
+    "maxChannels": "Canais",
+    "maxFlows": "Fluxos",
+    "maxTeams": "Equipes",
+    "storage": "Armazenamento",
+    "additionalUser": "Usuário adicional",
+    "additionalChannel": "Canal adicional",
+    "additionalFlow": "Fluxo adicional",
+    "additionalTeam": "Equipe adicional",
+    "trialEnds": "Teste termina em {{date}}",
     "renewsOn": "Renova em {{date}}",
-    "manageBilling": "Gerenciar Cobrança",
-    "selectPlan": "Selecionar Plano",
-    "paymentMethods": "Métodos de Pagamento",
-    "edit": "Editar",
-    "addPaymentMethod": "Adicionar método de pagamento",
-    "history": "Histórico de Cobranças",
+    "manageBilling": "Gerenciar Faturamento",
+    "paymentHistory": "Histórico de Pagamentos",
     "date": "Data",
     "description": "Descrição",
     "amount": "Valor",
     "status": "Status",
-    "download": "Download",
+    "noPayments": "Nenhum pagamento encontrado",
+    "paymentMethods": "Métodos de Pagamento",
+    "edit": "Editar",
+    "addPaymentMethod": "Adicionar Método de Pagamento",
+    "history": "Histórico",
     "paid": "Pago",
-    "features": {
-      "users": "{{count}} usuários",
-      "storage": "{{size}} de armazenamento",
-      "channels": "{{count}} canais de chat",
-      "concurrentChats": "{{count}} chats simultâneos"
+    "statuses": {
+      "paid": "Pago",
+      "pending": "Pendente",
+      "failed": "Falhou"
     }
   },
-  "expand": "Expandir"
+  "notifications": {
+    "title": "Notificações"
+  },
+  "apiKeys": {
+    "title": "Chaves de API"
+  },
+  "usage": {
+    "title": "Uso",
+    "storage": "Armazenamento",
+    "users": "Usuários",
+    "channels": "Canais",
+    "flows": "Fluxos",
+    "teams": "Equipes",
+    "customers": "Clientes",
+    "noData": "Nenhum dado de uso disponível",
+    "limitWarning": "Limite próximo de ser atingido",
+    "limitReached": "Limite atingido",
+    "almostFull": "Quase cheio"
+  },
+  "expand": "Expandir",
+  "collapse": "Recolher",
+  "marketing": {
+    "title": "Marketing",
+    "referrals": "Códigos de Indicação",
+    "referralsDescription": "Crie e gerencie códigos de indicação para compartilhar com seus contatos. Quando alguém se cadastrar usando seu código, você poderá rastrear a origem.",
+    "trackingPixels": "Pixels de Rastreamento",
+    "trackingPixelsDescription": "Configure pixels de rastreamento para acompanhar conversões e eventos em seu site.",
+    "code": "Código",
+    "status": "Status",
+    "createdAt": "Criado em",
+    "actions": "Ações",
+    "type": "Tipo",
+    "pixelId": "ID do Pixel",
+    "createReferral": "Criar Código",
+    "createPixel": "Criar Pixel",
+    "referralCodePlaceholder": "Digite um código personalizado ou deixe em branco para gerar automaticamente",
+    "pixelIdPlaceholder": "ID do pixel (ex: 123456789012345)",
+    "pixelConfiguration": "Configuração do Pixel (JSON)",
+    "noReferrals": "Nenhum código de indicação encontrado",
+    "noPixels": "Nenhum pixel de rastreamento encontrado",
+    "commissionRate": "Taxa de Comissão",
+    "commissionRatePlaceholder": "Taxa de comissão em %",
+    "selectReferralFirst": "Selecione um código de indicação para gerenciar seus pixels de rastreamento"
+  }
 }

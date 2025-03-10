@@ -1,0 +1,14 @@
+{
+  "title": "API Keys",
+  "newKey": "New Key",
+  "searchPlaceholder": "Search keys...",
+  "noKeys": "No API keys found",
+  "noSearchResults": "No keys found for this search",
+  "name": "Name",
+  "generate": "Generate Key",
+  "copyKeyWarning": "Copy your API key now. You won't be able to see it again.",
+  "delete": {
+    "title": "Delete API Key",
+    "confirmation": "Are you sure you want to delete the key '{{name}}'?"
+  }
+} 

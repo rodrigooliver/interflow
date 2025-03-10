@@ -1,0 +1,53 @@
+{
+  "title": "Códigos de Indicação",
+  "table": {
+    "code": "Código",
+    "status": "Status",
+    "created": "Criado em",
+    "actions": "Ações",
+    "pixels": "Pixels"
+  },
+  "status": {
+    "active": "Ativo",
+    "inactive": "Inativo"
+  },
+  "actions": {
+    "create": "Criar novo código",
+    "edit": "Editar código",
+    "delete": "Excluir código",
+    "copy": "Copiar código",
+    "managePixels": "Gerenciar Pixels"
+  },
+  "create": {
+    "title": "Criar Código de Indicação"
+  },
+  "edit": {
+    "title": "Editar Código de Indicação"
+  },
+  "delete": {
+    "title": "Excluir Código de Indicação",
+    "confirmation": "Tem certeza que deseja excluir o código \"{code}\"?"
+  },
+  "form": {
+    "code": "Código",
+    "status": "Status"
+  },
+  "pixels": {
+    "title": "Pixels de Rastreamento",
+    "list": "Lista de Pixels",
+    "add": "Adicionar Pixel",
+    "addNew": "Novo Pixel de Rastreamento",
+    "empty": "Nenhum pixel cadastrado",
+    "name": "Nome",
+    "type": "Tipo",
+    "id": "ID do Pixel",
+    "status": "Status",
+    "actions": "Ações",
+    "types": {
+      "facebook": "Facebook",
+      "google": "Google",
+      "tiktok": "TikTok",
+      "custom": "Personalizado"
+    }
+  }
+} 

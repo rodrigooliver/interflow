@@ -1,0 +1,53 @@
+{
+  "title": "Códigos de Referencia",
+  "table": {
+    "code": "Código",
+    "status": "Estado",
+    "created": "Creado en",
+    "actions": "Acciones",
+    "pixels": "Píxeles"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo"
+  },
+  "actions": {
+    "create": "Crear nuevo código",
+    "edit": "Editar código",
+    "delete": "Eliminar código",
+    "copy": "Copiar código",
+    "managePixels": "Gestionar Píxeles"
+  },
+  "create": {
+    "title": "Crear Código de Referencia"
+  },
+  "edit": {
+    "title": "Editar Código de Referencia"
+  },
+  "delete": {
+    "title": "Eliminar Código de Referencia",
+    "confirmation": "¿Estás seguro que deseas eliminar el código \"{code}\"?"
+  },
+  "form": {
+    "code": "Código",
+    "status": "Estado"
+  },
+  "pixels": {
+    "title": "Píxeles de Seguimiento",
+    "list": "Lista de Píxeles",
+    "add": "Agregar Píxel",
+    "addNew": "Nuevo Píxel de Seguimiento",
+    "empty": "No hay píxeles registrados",
+    "name": "Nombre",
+    "type": "Tipo",
+    "id": "ID del Píxel",
+    "status": "Estado",
+    "actions": "Acciones",
+    "types": {
+      "facebook": "Facebook",
+      "google": "Google",
+      "tiktok": "TikTok",
+      "custom": "Personalizado"
+    }
+  }
+} 

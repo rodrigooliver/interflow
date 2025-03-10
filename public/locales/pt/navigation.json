@@ -1,16 +1,17 @@
 {
-  "dashboard": "Painel",
-  "chats": "Atendimentos",
+  "dashboard": "Dashboard",
+  "chats": "Conversas",
   "customers": "Clientes",
   "crm": "CRM",
   "shortcuts": "Atalhos",
   "settings": "Configurações",
-  "team": "Usuários",
-  "serviceTeams": "Equipes",
+  "team": "Equipe",
+  "serviceTeams": "Times de Atendimento",
   "channels": "Canais",
   "flows": "Fluxos",
   "organizations": "Organizações",
   "tags": "Tags",
-  "prompts": "Instruções IA",
-  "closureTypes": "Tipos de Encerramento"
+  "prompts": "Prompts",
+  "closureTypes": "Tipos de Encerramento",
+  "subscriptionPlans": "Planos de Assinatura"
 }

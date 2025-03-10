@@ -1,17 +1,18 @@
-import { Navbar } from '../components/landing/Navbar';
 import { ReactNode } from 'react';
-
+import { Navbar } from '../components/landing/Navbar';
+import { Footer } from '../components/common/Footer';
+import { FloatingWhatsApp } from '../components/common/FloatingWhatsApp';
 interface PublicLayoutProps {
   children: ReactNode;
 }
 
 export const PublicLayout = ({ children }: PublicLayoutProps) => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen mobile-container">
       <Navbar />
-      <div className="pt-20">
-        {children}
-      </div>
+      {children}
+      <Footer />
+      <FloatingWhatsApp />
     </div>
   );
 }; 

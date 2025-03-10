@@ -29,18 +29,50 @@ interface Agent extends Profile {
   }
 }
 
-interface MessageShortcut {
+// Remover a interface MessageShortcut se não estiver sendo usada
+// interface MessageShortcut {
+//   id: string;
+//   organization_id: string;
+//   title: string;
+//   content: string;
+//   attachments: {
+//     name: string;
+//     type: string;
+//     url?: string;
+//   }[];
+//   created_at: string;
+//   updated_at: string;
+// }
+
+interface SubscriptionPlan {
   id: string;
-  organization_id: string;
-  title: string;
-  content: string;
-  attachments: {
-    name: string;
-    type: string;
-    url?: string;
-  }[];
-  created_at: string;
-  updated_at: string;
+  name_pt: string;
+  name_en: string;
+  name_es: string;
+  description_pt: string;
+  description_en: string;
+  description_es: string;
+  price_brl: number;
+  price_usd: number;
+  default_currency: 'BRL' | 'USD';
+  max_users: number;
+  max_customers: number;
+  max_channels: number;
+  max_flows: number;
+  max_teams: number;
+  storage_limit: number;
+  additional_user_price_brl: number;
+  additional_user_price_usd: number;
+  additional_channel_price_brl: number;
+  additional_channel_price_usd: number;
+  additional_flow_price_brl: number;
+  additional_flow_price_usd: number;
+  additional_team_price_brl: number;
+  additional_team_price_usd: number;
+  features_pt: string[] | Record<string, string>;
+  features_en: string[] | Record<string, string>;
+  features_es: string[] | Record<string, string>;
+  stripe_price_id?: string;
 }
 
 // Hooks individuais para cada tipo de filtro
@@ -249,5 +281,31 @@ export const useMessageShortcuts = (organizationId?: string) => {
     isLoading,
     error,
     refetchMessageShortcuts: refetch,
+  };
+};
+
+/**
+ * Hook para buscar os planos de assinatura
+ */
+export const useSubscriptionPlans = () => {
+  const { data: plans, isLoading, error, refetch } = useQuery({
+    queryKey: ['subscription-plans'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .order('price_brl', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    refetchOnWindowFocus: false
+  });
+
+  return {
+    plans: plans as SubscriptionPlan[],
+    isLoading,
+    error,
+    refetch,
   };
 }; 

@@ -51,36 +51,33 @@
     --select-tag-remove-hover-text: white;
   }
 
-  /* Substituir as regras anteriores por estas mais específicas */
+  /* Estilos corrigidos para o scroll */
   html, body {
     @apply m-0 p-0;
     height: 100%;
-    height: 100dvh; /* Dynamic viewport height */
-    /* overflow: hidden; */
-    position: fixed;
+    height: 100dvh; /* Dynamic viewport height para mobile */
     width: 100%;
-    touch-action: none;
+    overflow-x: hidden;
   }
 
   #root {
     height: 100%;
     height: 100dvh;
-    overflow: scroll;
-    position: relative;
     width: 100%;
+    position: relative;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Ajuste para o container principal do app */
   .flex.h-screen {
     height: 100%;
     height: 100dvh;
-    /* overflow: hidden; */
     position: relative;
   }
 
   /* Ajuste para o container de conteúdo principal */
   .flex-1.relative {
-    /* overflow: hidden; */
     position: relative;
     height: 100%;
   }
@@ -90,22 +87,17 @@
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
   }
 
   .h-screen {
-    height: 100vh; /* Fallback */
-    height: calc(var(--vh, 1vh) * 100);
+    height: 100vh;
+    height: 100dvh;
     height: -webkit-fill-available;
   }
 
   .min-h-screen {
-    min-height: 100vh; /* Fallback */
-    min-height: calc(var(--vh, 1vh) * 100);
+    min-height: 100vh;
+    min-height: 100dvh;
     min-height: -webkit-fill-available;
   }
 }

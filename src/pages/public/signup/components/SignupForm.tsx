@@ -1,109 +1,210 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '../../../../lib/supabase';
+import { useReferral } from '../../../../hooks/useReferral';
+import { useTrackingPixel } from '../../../../hooks/useTrackingPixel';
+import { generateSlug } from '../../../../utils/string';
+
+interface SignupFormData {
+  fullName: string;
+  email: string;
+  password: string;
+  organizationName: string;
+}
 
 export default function SignupForm() {
-  const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const { t } = useTranslation(['auth', 'common']);
+  const navigate = useNavigate();
+  const { referral } = useReferral();
+  const { trackEvent } = useTrackingPixel();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState<SignupFormData>({
+    fullName: '',
+    email: '',
+    password: '',
+    organizationName: ''
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    // Implementar lógica de cadastro aqui
-    setIsLoading(false);
+    setLoading(true);
+    setError('');
+
+    try {
+      // 1. Criar usuário no Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName
+          }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+      if (!authData.user) throw new Error('No user data');
+
+      // 2. Criar profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: formData.email,
+          full_name: formData.fullName,
+          role: 'admin'
+        });
+
+      if (profileError) throw profileError;
+
+      // 3. Criar organização
+      const organizationSlug = generateSlug(formData.organizationName);
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .insert({
+          name: formData.organizationName,
+          slug: organizationSlug,
+          referrer_id: referral?.id || null,
+          indication_id: referral?.user_id || null
+        })
+        .select()
+        .single();
+
+      if (orgError) throw orgError;
+
+      // 4. Adicionar usuário como membro da organização
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({
+          organization_id: orgData.id,
+          user_id: authData.user.id,
+          profile_id: authData.user.id,
+          role: 'owner'
+        });
+
+      if (memberError) throw memberError;
+
+      // 5. Criar customer para iniciar chat
+      if(referral?.organization_id) {
+        const { error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            name: formData.fullName,
+            email: formData.email,
+            organization_id: referral?.organization_id || null,
+            referrer_id: referral?.id || null,
+            indication_id: referral?.user_id || null
+          });
+
+        if (customerError) throw customerError;
+      }
+     
+
+      // 6. Disparar evento de tracking
+      await trackEvent('SignUp', {
+        method: 'email',
+        organization_name: formData.organizationName
+      });
+
+      // 7. Redirecionar para o app
+      setTimeout(() => {
+        navigate('/app');
+      }, 1500);
+    } catch (err) {
+      console.error('Erro no cadastro:', err);
+      setError(t('auth:signup.errors.generic'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="mt- sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow rounded-lg sm:px-8">
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-              {t('signup.name')}
-            </label>
-            <div className="mt-1">
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 dark:bg-gray-700 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-              {t('signup.email')}
-            </label>
-            <div className="mt-1">
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 dark:bg-gray-700 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-              {t('signup.password')}
-            </label>
-            <div className="mt-1">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 dark:bg-gray-700 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? t('signup.loading') : t('signup.submit')}
-            </button>
-          </div>
-        </form>
-
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400">
-                {t('signup.or_continue_with')}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
-            >
-              <img className="h-5 w-5" src="/google-icon.svg" alt="Google" />
-              Google
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
-            >
-              <img className="h-5 w-5" src="/github-icon.svg" alt="GitHub" />
-              GitHub
-            </button>
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-6 p-6">
+      {error && (
+        <div className="p-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/50 dark:text-red-400 rounded-lg">
+          {error}
         </div>
+      )}
+
+      <div>
+        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('auth:signup.fields.fullName')}
+        </label>
+        <input
+          id="fullName"
+          name="fullName"
+          type="text"
+          required
+          value={formData.fullName}
+          onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+        />
       </div>
-    </div>
+
+      <div>
+        <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('auth:signup.fields.organizationName')}
+        </label>
+        <input
+          id="organizationName"
+          name="organizationName"
+          type="text"
+          required
+          value={formData.organizationName}
+          onChange={(e) => setFormData(prev => ({ ...prev, organizationName: e.target.value }))}
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('auth:signup.fields.email')}
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={formData.email}
+          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('auth:signup.fields.password')}
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          required
+          value={formData.password}
+          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            {t('common:loading')}
+          </>
+        ) : (
+          t('auth:signup.submit')
+        )}
+      </button>
+    </form>
   );
 } 

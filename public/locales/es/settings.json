@@ -2,9 +2,12 @@
   "title": "Configuración",
   "sections": {
     "general": "General",
-    "notifications": "Notificaciones",
-    "integrations": "Integraciones",
+    "profile": "Perfil",
     "billing": "Facturación",
+    "notifications": "Notificaciones",
+    "apiKeys": "Claves de API",
+    "integrations": "Integraciones",
+    "marketing": "Marketing",
     "usage": "Uso",
     "comingSoon": "Próximamente"
   },
@@ -16,10 +19,14 @@
     "deleteConfirmation": "¿Estás seguro de que deseas eliminar esta integración?",
     "type": "Tipo de Integración",
     "lastUpdated": "Última actualización",
+    "noIntegrations": "No se encontraron integraciones",
     "form": {
       "title": "Título",
       "titlePlaceholderOpenAI": "Título para OpenAI",
       "titlePlaceholderS3": "Título para AWS"
+    },
+    "errors": {
+      "invalidOpenAIKey": "Clave de API de OpenAI inválida. Por favor, verifica la clave e intenta nuevamente."
     }
   },
   "fileManager": {
@@ -34,28 +41,92 @@
     "deleteConfirmation": "¿Estás seguro de que deseas eliminar {name}?",
     "deleteWarning": "Esta acción no se puede deshacer. Si este archivo se usa en algún mensaje, ya no mostrará el archivo."
   },
+  "profile": {
+    "title": "Perfil",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "language": "Idioma",
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
   "billing": {
+    "title": "Facturación",
     "currentPlan": "Plan Actual",
-    "trialEnds": "El período de prueba termina el {{date}}",
-    "renewsOn": "Renueva el {{date}}",
-    "manageBilling": "Administrar Facturación",
-    "selectPlan": "Seleccionar Plan",
-    "paymentMethods": "Métodos de Pago",
-    "edit": "Editar",
-    "addPaymentMethod": "Agregar método de pago",
-    "history": "Historial de Cobros",
+    "subscribe": "Suscribirse",
+    "maxUsers": "Usuarios",
+    "maxCustomers": "Clientes",
+    "maxChannels": "Canales",
+    "maxFlows": "Flujos",
+    "maxTeams": "Equipos",
+    "storage": "Almacenamiento",
+    "additionalUser": "Usuario adicional",
+    "additionalChannel": "Canal adicional",
+    "additionalFlow": "Flujo adicional",
+    "additionalTeam": "Equipo adicional",
+    "trialEnds": "Prueba termina el {{date}}",
+    "renewsOn": "Se renueva el {{date}}",
+    "manageBilling": "Gestionar Facturación",
+    "paymentHistory": "Historial de Pagos",
     "date": "Fecha",
     "description": "Descripción",
-    "amount": "Cantidad",
+    "amount": "Monto",
     "status": "Estado",
-    "download": "Descargar",
+    "noPayments": "No se encontraron pagos",
+    "paymentMethods": "Métodos de Pago",
+    "edit": "Editar",
+    "addPaymentMethod": "Agregar Método de Pago",
+    "history": "Historial",
     "paid": "Pagado",
-    "features": {
-      "users": "{{count}} usuarios",
-      "storage": "{{size}} de almacenamiento",
-      "channels": "{{count}} canales de chat",
-      "concurrentChats": "{{count}} chats simultáneos"
+    "statuses": {
+      "paid": "Pagado",
+      "pending": "Pendiente",
+      "failed": "Fallido"
     }
   },
-  "expand": "Expandir"
+  "notifications": {
+    "title": "Notificaciones"
+  },
+  "apiKeys": {
+    "title": "Claves de API"
+  },
+  "usage": {
+    "title": "Uso",
+    "storage": "Almacenamiento",
+    "users": "Usuarios",
+    "channels": "Canales",
+    "flows": "Flujos",
+    "teams": "Equipos",
+    "customers": "Clientes",
+    "noData": "No hay datos de uso disponibles",
+    "limitWarning": "Límite casi alcanzado",
+    "limitReached": "Límite alcanzado",
+    "almostFull": "Casi lleno"
+  },
+  "expand": "Expandir",
+  "collapse": "Contraer",
+  "marketing": {
+    "title": "Marketing",
+    "referrals": "Códigos de Referencia",
+    "referralsDescription": "Crea y gestiona códigos de referencia para compartir con tus contactos. Cuando alguien se registre usando tu código, podrás rastrear el origen.",
+    "trackingPixels": "Píxeles de Seguimiento",
+    "trackingPixelsDescription": "Configura píxeles de seguimiento para rastrear conversiones y eventos en tu sitio web.",
+    "code": "Código",
+    "status": "Estado",
+    "createdAt": "Creado el",
+    "actions": "Acciones",
+    "type": "Tipo",
+    "pixelId": "ID del Píxel",
+    "createReferral": "Crear Código",
+    "createPixel": "Crear Píxel",
+    "referralCodePlaceholder": "Ingresa un código personalizado o deja en blanco para generar automáticamente",
+    "pixelIdPlaceholder": "ID del píxel (ej: 123456789012345)",
+    "pixelConfiguration": "Configuración del Píxel (JSON)",
+    "noReferrals": "No se encontraron códigos de referencia",
+    "noPixels": "No se encontraron píxeles de seguimiento",
+    "commissionRate": "Tasa de Comisión",
+    "commissionRatePlaceholder": "Tasa de comisión en %",
+    "selectReferralFirst": "Selecciona un código de referencia para gestionar sus píxeles de seguimiento"
+  }
 }

@@ -1,0 +1,87 @@
+{
+  "title": "Términos de Servicio",
+  "effectiveDate": "Fecha de Vigencia: 31/12/2024",
+  "intro": "¡Bienvenido a Interflow! Estos Términos de Servicio rigen el uso de nuestra plataforma, disponible en interflow.chat (\"Plataforma\"). Al utilizar nuestros servicios, usted acepta estos Términos. Léalos detenidamente.",
+  "sections": {
+    "usage": {
+      "title": "1. Uso de la Plataforma",
+      "subsections": [
+        {
+          "title": "1.1 Elegibilidad",
+          "content": "Al acceder y utilizar la Plataforma, usted confirma que tiene al menos 18 años y posee la autoridad para aceptar estos Términos en nombre de la empresa que representa."
+        },
+        {
+          "title": "1.2 Registro de Cuenta",
+          "content": "Para utilizar ciertos servicios, debe crear una cuenta proporcionando información precisa y completa. Usted es responsable de mantener la confidencialidad de sus credenciales de acceso y de todas las actividades realizadas en su cuenta."
+        }
+      ]
+    },
+    "services": {
+      "title": "2. Servicios Ofrecidos",
+      "content": "Interflow ofrece una plataforma SaaS de comunicación que integra diversos canales, incluyendo WhatsApp, Instagram, entre otros. Los servicios incluyen, pero no se limitan a:",
+      "items": [
+        "Integración con múltiples canales de comunicación",
+        "Gestión de atención al cliente con múltiples agentes",
+        "Automatización de flujos de atención",
+        "Transcripción de audio y organización por etiquetas/marcadores"
+      ]
+    },
+    "obligations": {
+      "title": "3. Obligaciones del Usuario",
+      "subsections": [
+        {
+          "title": "3.1 Conducta del Usuario",
+          "content": "Usted se compromete a utilizar la Plataforma de manera legal, ética y conforme a los propósitos de su empresa, respetando todas las leyes y regulaciones aplicables."
+        },
+        {
+          "title": "3.2 Prohibiciones",
+          "content": "Está prohibido, entre otras acciones, usar la Plataforma para:",
+          "items": [
+            "Distribuir spam o contenido ilegal",
+            "Violar derechos de terceros, incluyendo propiedad intelectual",
+            "Interferir o comprometer la seguridad de la Plataforma"
+          ]
+        }
+      ]
+    },
+    "payments": {
+      "title": "4. Pagos y Facturación",
+      "content": "Al contratar nuestros servicios, usted acepta pagar las tarifas especificadas en el momento de la contratación. Nos reservamos el derecho de ajustar los precios periódicamente, notificando a los clientes antes de cualquier cambio de precio aplicable."
+    },
+    "intellectualProperty": {
+      "title": "5. Propiedad Intelectual",
+      "content": "Interflow posee todos los derechos de propiedad intelectual sobre la Plataforma y sus contenidos, incluyendo, pero no limitándose a marcas, logotipos, diseño y funcionalidades. Estos Términos no conceden al usuario ninguna licencia o derecho sobre estos activos."
+    },
+    "liability": {
+      "title": "6. Limitación de Responsabilidad",
+      "content": "La Plataforma se proporciona \"tal cual\" y \"según disponibilidad\". Interflow no se responsabiliza por daños indirectos, incidentales o consecuentes derivados del uso de la Plataforma, salvo cuando lo exija la ley."
+    },
+    "termination": {
+      "title": "7. Rescisión",
+      "subsections": [
+        {
+          "title": "7.1 Rescisión por Iniciativa del Usuario",
+          "content": "Puede cerrar su cuenta en cualquier momento contactando a nuestro equipo de soporte. Sin embargo, las tarifas pagadas por adelantado no son reembolsables, salvo disposición expresa en contrario."
+        },
+        {
+          "title": "7.2 Rescisión por Iniciativa de Interflow",
+          "content": "Interflow puede suspender o cerrar su cuenta por violación de estos Términos, abuso del servicio o en caso de impago. En casos graves, podemos adoptar medidas adicionales según lo permitido por la ley."
+        }
+      ]
+    },
+    "changes": {
+      "title": "8. Cambios en los Términos",
+      "content": "Podemos actualizar estos Términos periódicamente. Cualquier cambio material será comunicado a los usuarios, y el uso continuado de la Plataforma después de los cambios implicará la aceptación de los Términos revisados."
+    },
+    "law": {
+      "title": "9. Ley Aplicable y Jurisdicción",
+      "content": "Estos Términos se rigen por las leyes brasileñas, y cualquier disputa deberá resolverse en la jurisdicción de São Paulo/SP."
+    },
+    "contact": {
+      "title": "10. Contacto",
+      "content": "Para más información o dudas sobre estos Términos de Servicio, contáctenos:",
+      "email": "Email: contato@interflow.chat",
+      "address": "Dirección: Av. Marq de São Vicente, 2219, Conj. 812 Letra WE0097, Água Branca - São Paulo/SP"
+    }
+  }
+} 

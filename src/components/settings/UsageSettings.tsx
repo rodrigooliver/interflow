@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HardDrive, Users, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react';
+import { HardDrive, Users, MessageSquare, GitBranch, Users2, AlertTriangle, Loader2 } from 'lucide-react';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 
@@ -13,7 +13,19 @@ interface UsageStats {
     active: number;
     limit: number;
   };
-  chats: {
+  channels: {
+    active: number;
+    limit: number;
+  };
+  flows: {
+    active: number;
+    limit: number;
+  };
+  teams: {
+    active: number;
+    limit: number;
+  };
+  customers: {
     active: number;
     limit: number;
   };
@@ -51,31 +63,68 @@ export function UsageSettings() {
 
       if (usersError) throw usersError;
 
-      // Load active chats count
-      const { count: activeChats, error: chatsError } = await supabase
-        .from('chats')
+      // Load active channels count
+      const { count: activeChannels, error: channelsError } = await supabase
+        .from('chat_channels')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', currentOrganization?.id)
-        .eq('status', 'in_progress');
+        .eq('status', 'active');
 
-      if (chatsError) throw chatsError;
+      if (channelsError) throw channelsError;
+
+      // Load active flows count
+      const { count: activeFlows, error: flowsError } = await supabase
+        .from('flows')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', currentOrganization?.id)
+        .eq('is_active', true);
+
+      if (flowsError) throw flowsError;
+
+      // Load active teams count
+      const { count: activeTeams, error: teamsError } = await supabase
+        .from('service_teams')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', currentOrganization?.id);
+
+      if (teamsError) throw teamsError;
+
+      // Load active customers count
+      const { count: activeCustomers, error: customersError } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', currentOrganization?.id);
+
+      if (customersError) throw customersError;
 
       setStats({
         storage: {
-          used: orgData.storage_used,
-          limit: orgData.storage_limit
+          used: orgData.storage_used || 0,
+          limit: subscription?.subscription_plans?.storage_limit || 0
         },
         users: {
           active: activeUsers || 0,
-          limit: subscription?.plan?.max_users || 0
+          limit: subscription?.subscription_plans?.max_users || 0
         },
-        chats: {
-          active: activeChats || 0,
-          limit: subscription?.plan?.features?.max_concurrent_chats || 0
+        channels: {
+          active: activeChannels || 0,
+          limit: subscription?.subscription_plans?.max_channels || 0
+        },
+        flows: {
+          active: activeFlows || 0,
+          limit: subscription?.subscription_plans?.max_flows || 0
+        },
+        teams: {
+          active: activeTeams || 0,
+          limit: subscription?.subscription_plans?.max_teams || 0
+        },
+        customers: {
+          active: activeCustomers || 0,
+          limit: subscription?.subscription_plans?.max_customers || 0
         }
       });
     } catch (error) {
-      console.error('Error loading usage stats:', error);
+      console.error('Erro ao carregar estatísticas de uso:', error);
       setError(t('common:error'));
     } finally {
       setLoading(false);
@@ -121,108 +170,98 @@ export function UsageSettings() {
     );
   }
 
+  const usageItems = [
+    {
+      icon: HardDrive,
+      title: t('settings:billing.storage'),
+      used: formatStorageSize(stats.storage.used),
+      limit: formatStorageSize(stats.storage.limit),
+      percentage: getUsagePercentage(stats.storage.used, stats.storage.limit)
+    },
+    {
+      icon: Users,
+      title: t('settings:billing.maxUsers'),
+      used: stats.users.active,
+      limit: stats.users.limit,
+      percentage: getUsagePercentage(stats.users.active, stats.users.limit)
+    },
+    {
+      icon: MessageSquare,
+      title: t('settings:billing.maxChannels'),
+      used: stats.channels.active,
+      limit: stats.channels.limit,
+      percentage: getUsagePercentage(stats.channels.active, stats.channels.limit)
+    },
+    {
+      icon: GitBranch,
+      title: t('settings:billing.maxFlows'),
+      used: stats.flows.active,
+      limit: stats.flows.limit,
+      percentage: getUsagePercentage(stats.flows.active, stats.flows.limit)
+    },
+    {
+      icon: Users2,
+      title: t('settings:billing.maxTeams'),
+      used: stats.teams.active,
+      limit: stats.teams.limit,
+      percentage: getUsagePercentage(stats.teams.active, stats.teams.limit)
+    },
+    {
+      icon: Users,
+      title: t('settings:billing.maxCustomers'),
+      used: stats.customers.active,
+      limit: stats.customers.limit,
+      percentage: getUsagePercentage(stats.customers.active, stats.customers.limit)
+    }
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Storage Usage */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <HardDrive className="w-6 h-6 text-gray-400 mr-2" />
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-              {t('settings:usage.storage')}
-            </h2>
-          </div>
-          {getUsagePercentage(stats.storage.used, stats.storage.limit) >= 90 && (
-            <div className="flex items-center text-red-600 dark:text-red-400">
-              <AlertTriangle className="w-4 h-4 mr-1" />
-              <span className="text-sm">{t('settings:usage.almostFull')}</span>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {usageItems.map((item, index) => {
+          const Icon = item.icon;
+          const usageColor = getUsageColor(item.percentage);
+          
+          return (
+            <div key={index} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Icon className="h-6 w-6 text-gray-400" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                    {item.title}
+                  </h3>
+                  <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {item.used} / {item.limit}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="relative pt-1">
+                  <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
+                    <div
+                      style={{ width: `${item.percentage}%` }}
+                      className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
+                        usageColor === 'red'
+                          ? 'bg-red-500'
+                          : usageColor === 'yellow'
+                          ? 'bg-yellow-500'
+                          : 'bg-blue-500'
+                      }`}
+                    />
+                  </div>
+                </div>
+                {item.percentage >= 90 && (
+                  <div className="mt-2 flex items-center text-sm text-red-600">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {t('settings:usage.limitWarning')}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-        <div className="mb-2">
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-            <span>{formatStorageSize(stats.storage.used)} used</span>
-            <span>{formatStorageSize(stats.storage.limit)} total</span>
-          </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full bg-${getUsageColor(
-                getUsagePercentage(stats.storage.used, stats.storage.limit)
-              )}-500 transition-all duration-300`}
-              style={{
-                width: `${getUsagePercentage(stats.storage.used, stats.storage.limit)}%`
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Users Usage */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Users className="w-6 h-6 text-gray-400 mr-2" />
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-              {t('settings:usage.users')}
-            </h2>
-          </div>
-          {getUsagePercentage(stats.users.active, stats.users.limit) >= 90 && (
-            <div className="flex items-center text-red-600 dark:text-red-400">
-              <AlertTriangle className="w-4 h-4 mr-1" />
-              <span className="text-sm">{t('settings:usage.limitReached')}</span>
-            </div>
-          )}
-        </div>
-        <div className="mb-2">
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-            <span>{stats.users.active} active users</span>
-            <span>{stats.users.limit} total</span>
-          </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full bg-${getUsageColor(
-                getUsagePercentage(stats.users.active, stats.users.limit)
-              )}-500 transition-all duration-300`}
-              style={{
-                width: `${getUsagePercentage(stats.users.active, stats.users.limit)}%`
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Active Chats */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <MessageSquare className="w-6 h-6 text-gray-400 mr-2" />
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-              {t('settings:usage.activeChats')}
-            </h2>
-          </div>
-          {getUsagePercentage(stats.chats.active, stats.chats.limit) >= 90 && (
-            <div className="flex items-center text-red-600 dark:text-red-400">
-              <AlertTriangle className="w-4 h-4 mr-1" />
-              <span className="text-sm">{t('settings:usage.limitReached')}</span>
-            </div>
-          )}
-        </div>
-        <div className="mb-2">
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-            <span>{stats.chats.active} active chats</span>
-            <span>{stats.chats.limit} maximum</span>
-          </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full bg-${getUsageColor(
-                getUsagePercentage(stats.chats.active, stats.chats.limit)
-              )}-500 transition-all duration-300`}
-              style={{
-                width: `${getUsagePercentage(stats.chats.active, stats.chats.limit)}%`
-              }}
-            />
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );

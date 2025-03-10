@@ -248,6 +248,7 @@ export interface Subscription {
   cancel_at_period_end: boolean;
   created_at: string;
   updated_at: string;
+  subscription_plans: SubscriptionPlan;
 }
 
 /**
@@ -256,15 +257,33 @@ export interface Subscription {
  */
 export interface SubscriptionPlan {
   id: string;
-  name: string;
-  description?: string;
-  price: number;
-  features: {
-    chat_channels: string[];
-    max_concurrent_chats: number;
-  };
+  name_pt: string;
+  name_en: string;
+  name_es: string;
+  description_pt?: string;
+  description_en?: string;
+  description_es?: string;
+  price_brl: number;
+  price_usd: number;
+  default_currency: 'BRL' | 'USD';
   max_users: number;
   max_customers: number;
+  max_channels: number;
+  max_flows: number;
+  max_teams: number;
+  storage_limit: number;
+  additional_user_price_brl: number;
+  additional_user_price_usd: number;
+  additional_channel_price_brl: number;
+  additional_channel_price_usd: number;
+  additional_flow_price_brl: number;
+  additional_flow_price_usd: number;
+  additional_team_price_brl: number;
+  additional_team_price_usd: number;
+  features_pt: string[] | Record<string, string>;
+  features_en: string[] | Record<string, string>;
+  features_es: string[] | Record<string, string>;
+  stripe_price_id?: string;
   created_at: string;
   is_active?: boolean;
   updated_at?: string;

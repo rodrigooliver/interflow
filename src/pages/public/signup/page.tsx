@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import SignupForm from './components/SignupForm';
-import { useTheme } from '../../../providers/ThemeProvider';
 import { PublicLayout } from '../../../layouts/PublicLayout';
 
 export default function SignupPage() {
-  const { theme } = useTheme();
   const { t } = useTranslation();
   
   return (

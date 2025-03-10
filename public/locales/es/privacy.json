@@ -1,0 +1,88 @@
+{
+  "title": "Política de Privacidad",
+  "effectiveDate": "Fecha de Vigencia: 31/12/2024",
+  "intro": "Interflow valora su privacidad y está comprometida a proteger la información personal de nuestros clientes y sus usuarios finales. Esta Política de Privacidad describe cómo recopilamos, usamos, compartimos y protegemos la información obtenida a través de nuestra plataforma, accesible en interflow.chat ('Plataforma').",
+  "sections": {
+    "informationWeCollect": {
+      "title": "1. Información que Recopilamos",
+      "clientInfo": {
+        "title": "1.1 Información del Cliente",
+        "content": "Cuando te registras en nuestra Plataforma, recopilamos información para proporcionar y mejorar nuestros servicios, como:",
+        "items": [
+          "Nombre e información de contacto, incluyendo dirección de correo electrónico, teléfono e información de facturación.",
+          "Información de autenticación, como nombres de usuario y contraseñas."
+        ]
+      },
+      "endUserData": {
+        "title": "1.2 Datos de Usuarios Finales",
+        "content": "Nuestra Plataforma permite que las empresas integren diversos canales de comunicación, incluyendo WhatsApp e Instagram. Durante el uso, podemos procesar:",
+        "items": [
+          "Mensajes de texto y transcripciones de audio de conversaciones entre usuarios finales y agentes.",
+          "Identificadores de usuarios finales (ej., número de teléfono o ID de perfil).",
+          "Etiquetado de conversaciones para fines de organización interna."
+        ]
+      },
+      "navigationData": {
+        "title": "1.3 Datos de Navegación y Uso",
+        "content": "Recopilamos automáticamente información sobre el uso de la Plataforma para mejorar la experiencia del usuario y la seguridad del sistema, incluyendo:",
+        "items": [
+          "Datos de registro y registros de navegación, como dirección IP, tipo de navegador, páginas visitadas y acciones realizadas.",
+          "Datos de rendimiento para monitorear y mejorar nuestros servicios."
+        ]
+      }
+    },
+    "dataUsage": {
+      "title": "2. Uso de la Información",
+      "content": "Utilizamos la información recopilada para:",
+      "items": [
+        "Proporcionar y Gestionar la Plataforma: Incluyendo autenticación de usuarios, soporte al cliente y procesamiento de transacciones.",
+        "Personalización y Mejora de Servicios: Análisis de datos de uso para mejorar funcionalidades, experiencia del usuario e implementar nuevas características.",
+        "Seguridad y Cumplimiento Legal: Protección contra fraudes y para asegurar el cumplimiento de las regulaciones aplicables."
+      ]
+    },
+    "dataSharing": {
+      "title": "3. Compartir Información",
+      "content": "Interflow puede compartir información personal en los siguientes casos:",
+      "items": [
+        "Con Proveedores Terceros: Para proporcionar servicios complementarios, como procesamiento de pagos y servicios en la nube, siempre bajo obligaciones de confidencialidad.",
+        "Para Cumplir Obligaciones Legales: Cuando lo requiera la ley, regulación o para responder a procesos legales.",
+        "En Casos de Fusiones o Adquisiciones: En caso de cambio de control o venta de activos, la información de los usuarios puede ser transferida según sea necesario."
+      ]
+    },
+    "dataSecurity": {
+      "title": "4. Seguridad de los Datos",
+      "content": "Implementamos medidas de seguridad técnicas y organizativas adecuadas para proteger la información personal contra acceso no autorizado, uso indebido, pérdida o alteración. Sin embargo, ningún sistema es completamente seguro, y no podemos garantizar la seguridad absoluta de la información."
+    },
+    "dataRetention": {
+      "title": "5. Retención de Datos",
+      "content": "La información recopilada se conservará mientras sea necesaria para cumplir los propósitos descritos en esta política o según lo exija la ley. Después de que finalice este período, los datos serán anonimizados o eliminados de forma segura."
+    },
+    "userRights": {
+      "title": "6. Derechos de los Usuarios",
+      "content": "Según las leyes de protección de datos aplicables, puedes:",
+      "items": [
+        "Solicitar acceso, corrección o eliminación de tu información personal.",
+        "Revocar el consentimiento para el procesamiento de datos, cuando corresponda."
+      ],
+      "contact": "Para ejercer estos derechos, contáctanos en contacto@interflow.chat."
+    },
+    "internationalTransfers": {
+      "title": "7. Transferencias Internacionales de Datos",
+      "content": "Si hay transferencia de datos fuera del país, garantizamos que tu información personal estará protegida por medidas adecuadas, como cláusulas contractuales estándar, según lo exigen las regulaciones de protección de datos."
+    },
+    "cookies": {
+      "title": "8. Cookies y Tecnologías de Seguimiento",
+      "content": "La Plataforma puede utilizar cookies y tecnologías similares para mejorar la experiencia del usuario. Puedes ajustar la configuración del navegador para rechazar cookies, aunque esto puede afectar algunas funcionalidades de la Plataforma."
+    },
+    "changes": {
+      "title": "9. Cambios en esta Política de Privacidad",
+      "content": "Interflow puede actualizar esta Política de Privacidad periódicamente. Cuando se realicen cambios significativos, notificaremos a los usuarios a través de la Plataforma u otros medios apropiados. Recomendamos revisar regularmente esta Política para estar al tanto de nuestras prácticas de privacidad más recientes."
+    },
+    "contact": {
+      "title": "10. Contacto",
+      "content": "Si tienes alguna pregunta sobre esta Política de Privacidad o sobre cómo manejamos tu información, contáctanos:",
+      "email": "Email: contacto@interflow.chat",
+      "address": "Dirección: Av. Marq de São Vicente, 2219, Conj. 812 Letra WE0097, Água Branca - São Paulo/SP"
+    }
+  }
+} 

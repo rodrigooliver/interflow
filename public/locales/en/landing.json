@@ -8,12 +8,13 @@
     "startFree": "Start Free"
   },
   "hero": {
-    "title": "Transform Your Customer Service into Real Results!",
-    "subtitle": "Connect with your customers across all channels with the smartest multichannel platform on the market. Increase sales and satisfaction with AI automation!",
-    "cta": "Start your free trial now!",
-    "demo": "Request a demo",
+    "title": "Customer service simplified",
+    "subtitle": "Manage all your communication channels in one place",
+    "cta": "Get started",
+    "secondary": "Learn more",
+    "demo": "Schedule a demo",
     "noCard": "No credit card required",
-    "newAI": "New AI!"
+    "newAI": "New: Advanced AI"
   },
   "socialProof": {
     "title": "Companies that trust InterFlow Chat",
@@ -29,7 +30,7 @@
       "author": "Carlos Mendes",
       "role": "Commercial Director",
       "company": "Nexus Group",
-      "result": "Result: $3,000/month savings"
+      "result": "Result: $15,000/month savings"
     },
     "testimonial3": {
       "content": "The integration between WhatsApp and Instagram revolutionized our customer service. Everything centralized and organized.",
@@ -40,32 +41,50 @@
     }
   },
   "features": {
-    "title": "Everything you need for exceptional customer service",
+    "title": "Features",
     "subtitle": "Exclusive features",
-    "description": "Our platform was developed to maximize efficiency, automation, and conversion across all your service channels.",
+    "description": "Our platform was developed to maximize efficiency, automation and conversion across all your service channels.",
+    "items": [
+      {
+        "title": "Multichannel",
+        "description": "Integrate WhatsApp, Instagram, Facebook, Email and more into a single platform."
+      },
+      {
+        "title": "Smart Automation",
+        "description": "Create automated service flows with our powerful automation tool."
+      },
+      {
+        "title": "Advanced AI",
+        "description": "Use artificial intelligence to answer frequently asked questions and optimize service."
+      },
+      {
+        "title": "Integrated CRM",
+        "description": "Manage your customers and track all interaction history in one place."
+      }
+    ],
     "feature1": {
-      "title": "Multiple agents, one number",
-      "description": "Organize your team with multiple agents working simultaneously on the same WhatsApp number."
+      "description": "Organize your team with multiple agents working simultaneously on the same WhatsApp number.",
+      "title": "Multiple agents, one number"
     },
     "feature2": {
-      "title": "Multichannel integration",
-      "description": "Connect WhatsApp, Instagram, and other channels in a single centralized platform."
+      "description": "Connect WhatsApp, Instagram and other channels in a single centralized platform.",
+      "title": "Multichannel integration"
     },
     "feature3": {
-      "title": "Advanced AI automation",
-      "description": "Create intelligent automated flows that learn from each interaction and improve over time."
+      "description": "Create intelligent automated flows that learn from each interaction and improve over time.",
+      "title": "Advanced AI automation"
     },
     "feature4": {
-      "title": "Organization by tags and teams",
-      "description": "Categorize conversations, create departments, and route customer service automatically."
+      "description": "Categorize conversations, create departments and route service automatically.",
+      "title": "Organization by tags and teams"
     },
     "feature5": {
-      "title": "24/7 service",
-      "description": "Keep your business running even when you're not, with intelligent automated responses."
+      "description": "Keep your business running even when you're not around, with intelligent automated responses.",
+      "title": "24/7 service"
     },
     "feature6": {
-      "title": "Detailed reports",
-      "description": "Analyze performance, response time, and conversion rate to optimize results."
+      "description": "Analyze performance, response time and conversion rate to optimize results.",
+      "title": "Detailed reports"
     }
   },
   "demonstration": {
@@ -86,21 +105,46 @@
     }
   },
   "pricing": {
-    "title": "Plans & Pricing"
+    "title": "Plans",
+    "subtitle": "Choose the ideal plan for your business",
+    "description": "We offer flexible plans that adapt to the size and needs of your company. All plans include technical support and free updates.",
+    "popular": "Most popular",
+    "month": "month",
+    "subscribe": "Subscribe now",
+    "users": "Users",
+    "customers": "Customers",
+    "channels": "Channels",
+    "flows": "Flows",
+    "teams": "Teams",
+    "storage": "Storage",
+    "havingQuestions": "Have questions? Check our frequently asked questions"
+  },
+  "testimonials": {
+    "title": "What our customers say",
+    "subtitle": "Success stories"
+  },
+  "cta": {
+    "title": "Ready to transform your customer service?",
+    "description": "Start today and see the difference our platform can make for your business.",
+    "button": "Start for free"
   },
   "faq": {
     "title": "Frequently Asked Questions",
-    "subtitle": "Get your questions about InterFlow Chat answered",
+    "subtitle": "Get answers to your questions about InterFlow Chat",
     "question1": "How long does it take to implement InterFlow Chat?",
-    "answer1": "Implementation is quick and can be completed right now. Our team offers complete support throughout the process.",
-    "question2": "Do I need to install any application?",
-    "answer2": "No, InterFlow Chat is 100% cloud-based. You access it through your browser, with no installations needed.",
-    "question3": "How does the WhatsApp and Instagram integration work?",
-    "answer3": "Integration is simple and official. For WhatsApp, we use Meta's official API but also unofficial methods. For Instagram and Facebook, we connect directly to your business account.",
+    "answer1": "Implementation is quick and can be completed right away. Our team provides full support throughout the process.",
+    "question2": "Do I need to install any applications?",
+    "answer2": "No, InterFlow Chat is 100% cloud-based. You access it through your browser, with no installations required.",
+    "question3": "How does the integration with WhatsApp and Instagram work?",
+    "answer3": "The integration is simple and official. For WhatsApp, we use Meta's official API but also unofficial methods. For Instagram and Facebook, we connect directly to your business account.",
     "question4": "Can I test before subscribing?",
-    "answer4": "Yes! We offer a 7-day free trial with all features available, no commitment required.",
+    "answer4": "Yes! We offer a 7-day free trial with all features available, no commitment and no credit card required.",
     "question5": "Is there a limit on agents or messages?",
-    "answer5": "Each plan has its specifications. We have options from small businesses to large corporations with large-scale service."
+    "answer5": "Each plan has its specifications. We have options from small businesses to large corporations with large-scale service.",
+    "question6": "Can I change plans at any time?",
+    "answer6": "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately and the value is adjusted proportionally.",
+    "question7": "How does technical support work?",
+    "answer7": "All plans include email support. More advanced plans also include chat and phone support with priority response times."
   },
   "finalCTA": {
     "title": "Special offer for a limited time!",
@@ -116,6 +160,8 @@
     "message": "Hello! I'd like to know more about InterFlow Chat."
   },
   "footer": {
-    "copyright": "© 2024 InterFlow Chat. All rights reserved."
+    "copyright": "InterFlow Chat. All rights reserved.",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
   }
 } 

@@ -8,12 +8,13 @@
     "startFree": "Comenzar Gratis"
   },
   "hero": {
-    "title": "¡Transforma tu Atención al Cliente en Resultados Reales!",
-    "subtitle": "Conéctate con tus clientes en todos los canales con la plataforma multicanal más inteligente del mercado. ¡Aumenta ventas y satisfacción con automatización por IA!",
-    "cta": "¡Comienza tu prueba gratis ahora!",
-    "demo": "Solicitar demostración",
-    "noCard": "No necesitas tarjeta de crédito",
-    "newAI": "¡Nueva IA!"
+    "title": "Atención al cliente simplificada",
+    "subtitle": "Gestiona todos tus canales de comunicación en un solo lugar",
+    "cta": "Comenzar ahora",
+    "secondary": "Saber más",
+    "demo": "Programar una demo",
+    "noCard": "No se requiere tarjeta de crédito",
+    "newAI": "Nuevo: IA avanzada"
   },
   "socialProof": {
     "title": "Empresas que confían en InterFlow Chat",
@@ -29,7 +30,7 @@
       "author": "Carlos Mendes",
       "role": "Director Comercial",
       "company": "Grupo Nexus",
-      "result": "Resultado: Ahorro de $3.000/mes"
+      "result": "Resultado: Ahorro de $15.000/mes"
     },
     "testimonial3": {
       "content": "La integración entre WhatsApp e Instagram revolucionó nuestra atención al cliente. Todo centralizado y organizado.",
@@ -40,32 +41,50 @@
     }
   },
   "features": {
-    "title": "Todo lo que necesitas para una atención excepcional",
-    "subtitle": "Características exclusivas",
-    "description": "Nuestra plataforma fue desarrollada para maximizar la eficiencia, automatización y conversión en todos tus canales de atención.",
+    "title": "Características",
+    "subtitle": "Funciones exclusivas",
+    "description": "Nuestra plataforma fue desarrollada para maximizar la eficiencia, automatización y conversión en todos sus canales de atención.",
+    "items": [
+      {
+        "title": "Multicanal",
+        "description": "Integra WhatsApp, Instagram, Facebook, Email y más en una única plataforma."
+      },
+      {
+        "title": "Automatización Inteligente",
+        "description": "Crea flujos de atención automatizados con nuestra potente herramienta de automatización."
+      },
+      {
+        "title": "IA Avanzada",
+        "description": "Utiliza inteligencia artificial para responder preguntas frecuentes y optimizar la atención."
+      },
+      {
+        "title": "CRM Integrado",
+        "description": "Gestiona tus clientes y sigue todo el historial de interacciones en un solo lugar."
+      }
+    ],
     "feature1": {
-      "title": "Múltiples agentes, un solo número",
-      "description": "Organiza tu equipo con varios agentes trabajando simultáneamente en el mismo número de WhatsApp."
+      "description": "Organiza tu equipo con varios agentes trabajando simultáneamente en el mismo número de WhatsApp.",
+      "title": "Múltiples agentes, un número"
     },
     "feature2": {
-      "title": "Integración multicanal",
-      "description": "Conecta WhatsApp, Instagram y otros canales en una única plataforma centralizada."
+      "description": "Conecta WhatsApp, Instagram y otros canales en una única plataforma centralizada.",
+      "title": "Integración multicanal"
     },
     "feature3": {
-      "title": "Automatización con IA avanzada",
-      "description": "Crea flujos automáticos inteligentes que aprenden con cada interacción y mejoran con el tiempo."
+      "description": "Crea flujos automáticos inteligentes que aprenden de cada interacción y mejoran con el tiempo.",
+      "title": "Automatización con IA avanzada"
     },
     "feature4": {
-      "title": "Organización por etiquetas y equipos",
-      "description": "Categoriza conversaciones, crea departamentos y dirige atenciones automáticamente."
+      "description": "Categoriza conversaciones, crea departamentos y dirige la atención automáticamente.",
+      "title": "Organización por etiquetas y equipos"
     },
     "feature5": {
-      "title": "Atención 24/7",
-      "description": "Mantén tu negocio funcionando incluso cuando no estás, con respuestas automáticas inteligentes."
+      "description": "Mantén tu negocio funcionando incluso cuando no estás, con respuestas automáticas inteligentes.",
+      "title": "Atención 24/7"
     },
     "feature6": {
-      "title": "Informes detallados",
-      "description": "Analiza rendimiento, tiempo de respuesta y tasa de conversión para optimizar resultados."
+      "description": "Analiza el rendimiento, tiempo de respuesta y tasa de conversión para optimizar resultados.",
+      "title": "Informes detallados"
     }
   },
   "demonstration": {
@@ -86,21 +105,46 @@
     }
   },
   "pricing": {
-    "title": "Planes y Precios"
+    "title": "Planes",
+    "subtitle": "Elige el plan ideal para tu negocio",
+    "description": "Ofrecemos planes flexibles que se adaptan al tamaño y las necesidades de tu empresa. Todos los planes incluyen soporte técnico y actualizaciones gratuitas.",
+    "popular": "Más popular",
+    "month": "mes",
+    "subscribe": "Suscribirse ahora",
+    "users": "Usuarios",
+    "customers": "Clientes",
+    "channels": "Canales",
+    "flows": "Flujos",
+    "teams": "Equipos",
+    "storage": "Almacenamiento",
+    "havingQuestions": "¿Tienes preguntas? Consulta nuestras preguntas frecuentes"
+  },
+  "testimonials": {
+    "title": "Lo que dicen nuestros clientes",
+    "subtitle": "Historias de éxito"
+  },
+  "cta": {
+    "title": "¿Listo para transformar tu atención al cliente?",
+    "description": "Comienza hoy mismo y ve la diferencia que nuestra plataforma puede hacer para tu negocio.",
+    "button": "Comenzar gratis"
   },
   "faq": {
     "title": "Preguntas Frecuentes",
     "subtitle": "Resuelve tus dudas sobre InterFlow Chat",
     "question1": "¿Cuánto tiempo lleva implementar InterFlow Chat?",
-    "answer1": "La implementación es rápida y puede completarse ahora mismo. Nuestro equipo ofrece soporte completo durante todo el proceso.",
+    "answer1": "La implementación es rápida y puede completarse de inmediato. Nuestro equipo ofrece soporte completo durante todo el proceso.",
     "question2": "¿Necesito instalar alguna aplicación?",
     "answer2": "No, InterFlow Chat es 100% basado en la nube. Accedes a través del navegador, sin necesidad de instalaciones.",
     "question3": "¿Cómo funciona la integración con WhatsApp e Instagram?",
-    "answer3": "La integración es simple y oficial. Para WhatsApp, utilizamos la API oficial de Meta pero también no oficial. Para Instagram y Facebook, conectamos directamente a tu cuenta comercial.",
+    "answer3": "La integración es simple y oficial. Para WhatsApp, utilizamos la API oficial de Meta pero también métodos no oficiales. Para Instagram y Facebook, nos conectamos directamente a tu cuenta comercial.",
     "question4": "¿Puedo probar antes de suscribirme?",
-    "answer4": "¡Sí! Ofrecemos 7 días de prueba gratuita con todas las funcionalidades disponibles, sin compromiso.",
-    "question5": "¿Existe límite de agentes o mensajes?",
-    "answer5": "Cada plan tiene sus especificaciones. Tenemos opciones desde pequeñas empresas hasta grandes corporaciones con atención a gran escala."
+    "answer4": "¡Sí! Ofrecemos 7 días de prueba gratuita con todas las funcionalidades disponibles, sin compromiso y sin necesidad de tarjeta de crédito.",
+    "question5": "¿Existe un límite de agentes o mensajes?",
+    "answer5": "Cada plan tiene sus especificaciones. Tenemos opciones desde pequeñas empresas hasta grandes corporaciones con atención a gran escala.",
+    "question6": "¿Puedo cambiar de plan en cualquier momento?",
+    "answer6": "Sí, puedes hacer upgrade o downgrade de tu plan en cualquier momento. Los cambios entran en vigor inmediatamente y el valor se ajusta proporcionalmente.",
+    "question7": "¿Cómo funciona el soporte técnico?",
+    "answer7": "Todos los planes incluyen soporte por email. Los planes más avanzados también incluyen soporte por chat y teléfono con tiempos de respuesta prioritarios."
   },
   "finalCTA": {
     "title": "¡Oferta especial por tiempo limitado!",
@@ -116,6 +160,8 @@
     "message": "¡Hola! Me gustaría saber más sobre InterFlow Chat."
   },
   "footer": {
-    "copyright": "© 2024 InterFlow Chat. Todos los derechos reservados."
+    "copyright": "© 2024 InterFlow Chat. Todos los derechos reservados.",
+    "privacyPolicy": "Política de Privacidad",
+    "termsOfService": "Términos de Servicio"
   }
 } 

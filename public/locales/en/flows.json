@@ -292,5 +292,8 @@
     "thursday": "Thursday",
     "friday": "Friday",
     "saturday": "Saturday"
-  }
+  },
+  "description": "Description",
+  "name": "Name",
+  "settings": "Settings"
 }

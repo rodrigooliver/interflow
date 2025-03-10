@@ -6,6 +6,7 @@ export const FAQ = () => {
   const { t } = useTranslation('landing');
   const [openItem, setOpenItem] = useState<number | null>(0);
 
+  // Objeto local com as perguntas e respostas
   const faqs = [
     {
       question: t('faq.question1'),
@@ -26,6 +27,14 @@ export const FAQ = () => {
     {
       question: t('faq.question5'),
       answer: t('faq.answer5')
+    },
+    {
+      question: t('faq.question6'),
+      answer: t('faq.answer6')
+    },
+    {
+      question: t('faq.question7'),
+      answer: t('faq.answer7')
     }
   ];
 
@@ -34,7 +43,7 @@ export const FAQ = () => {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 py-24">
+    <div className="bg-gray-50 dark:bg-gray-800 py-24" id="faq">
       <div className="mx-auto max-w-4xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">

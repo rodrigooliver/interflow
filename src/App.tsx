@@ -48,13 +48,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ClosureTypesPage } from './pages/ClosureTypesPage';
 import WhatsAppTemplates from './pages/organization/channels/WhatsAppTemplates';
+import PrivacyPolicy from './pages/public/privacy-policy';
+import TermsOfService from './pages/public/terms-of-service';
+import SubscriptionPlans from './pages/admin/SubscriptionPlans';
+import SubscriptionPlanForm from './pages/admin/SubscriptionPlanForm';
+import Referrals from './pages/organization/Referrals';
 
 // Criar uma instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutos
-      cacheTime: 1000 * 60 * 30, // 30 minutos
+      gcTime: 1000 * 60 * 30, // 30 minutos (anteriormente cacheTime)
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -83,6 +88,8 @@ function AppContent() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         {/* Redireciona qualquer outra rota para a home */}
         <Route path="*" element={<Navigate to="/" replace state={{ from: location }} />} />
       </Routes>
@@ -94,6 +101,8 @@ function AppContent() {
     <Routes>
       {/* Rota pública mesmo quando logado */}
       <Route path="/" element={<Home />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
 
       {/* Redireciona /login e /signup para /app quando já estiver logado */}
       <Route path="/login" element={<Navigate to="/app" replace />} />
@@ -163,6 +172,7 @@ function AppContent() {
                       <Route path="settings/notifications" element={<NotificationsPage />} />
                       <Route path="settings/usage" element={<UsagePage />} />
                       <Route path="team" element={<TeamMembers />} />
+                      <Route path="team/referrals/:profileId" element={<Referrals />} />
                       <Route path="service-teams" element={<ServiceTeams />} />
                       <Route path="channels" element={<Channels />} />
                       <Route path="channels/new" element={<SelectChannelType />} />
@@ -192,6 +202,15 @@ function AppContent() {
                       <Route path="prompts/new" element={<PromptFormPage />} />
                       <Route path="prompts/edit/:id" element={<PromptFormPage />} />
                       <Route path="closure-types" element={<ClosureTypesPage />} />
+                      {profile?.is_superadmin && (
+                        <>
+                          <Route path="admin/organizations" element={<Organizations />} />
+                          <Route path="admin/organizations/add" element={<AddOrganization />} />
+                          <Route path="admin/subscription-plans" element={<SubscriptionPlans />} />
+                          <Route path="admin/subscription-plans/new" element={<SubscriptionPlanForm />} />
+                          <Route path="admin/subscription-plans/:id" element={<SubscriptionPlanForm />} />
+                        </>
+                      )}
                     </Routes>
                   </Suspense>
                 </div>

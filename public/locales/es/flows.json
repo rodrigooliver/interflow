@@ -15,7 +15,9 @@
   "reset": "Limpiar",
   "variables": {
     "title": "Variables",
-    "add": "Agregar Variable"
+    "add": "Agregar Variable",
+    "noVariables": "Ninguna variable encontrada",
+    "valueDefault": "Valor inicial"
   },
   "categories": {
     "send": "Enviar",
@@ -26,7 +28,12 @@
   "nodes": {
     "start": "Inicio",
     "sendText": {
-      "title": "Enviar Texto"
+      "title": "Enviar Texto",
+      "edit": "Editar Texto",
+      "splitParagraphs": "Separar párrafos en mensajes diferentes",
+      "splitParagraphsDescription": "Cada párrafo separado por una línea en blanco será enviado como un mensaje individual.",
+      "messages": "mensajes",
+      "longText": "Texto largo"
     },
     "sendAudio": {
       "title": "Enviar Audio"
@@ -187,7 +194,19 @@
         "noParameters": "Ningún parámetro adicionado",
         "required": "Obligatorio",
         "targetNode": "Nodo de destino",
-        "selectTargetNode": "Selecciona un nodo de destino"
+        "selectTargetNode": "Selecciona un nodo de destino",
+        "enumValues": "Valores predefinidos",
+        "addEnumValue": "Agregar valor",
+        "noEnumValues": "Ningún valor predefinido agregado",
+        "conditions": "Condiciones",
+        "addCondition": "Agregar condición",
+        "ifParameter": "Si el parámetro",
+        "equals": "es igual a",
+        "goTo": "ir a",
+        "defaultRoute": "Ruta predeterminada",
+        "noConditions": "Ninguna condición agregada",
+        "removeCondition": "Eliminar condición",
+        "addEnumFirst": "Agregue valores predefinidos a los parámetros para crear condiciones"
       }
     },
     "updateCustomer": {
@@ -271,5 +290,10 @@
     "thursday": "Jueves",
     "friday": "Viernes",
     "saturday": "Sábado"
-  }
+  },
+  "description": "Descripción",
+  "name": "Nombre",
+  "settings": "Configuraciones",
+  "debounce_time": "Tiempo de Debounce",
+  "debounce_time_description": "Tiempo en milisegundos para esperar antes de procesar mensajes consecutivos. Útil para combinar múltiples mensajes en una única respuesta."
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -36,13 +36,14 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     { to: '/app/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
-    { to: '/app/settings', icon: SettingsIcon, label: t('navigation:settings') },
+    { to: '/app/settings/billing', icon: SettingsIcon, label: t('navigation:settings') },
     { to: '/app/closure-types', icon: CheckCircle, label: t('navigation:closureTypes') },
   ];
 
   // Super admin links
   const superAdminLinks = [
     { to: '/app/admin/organizations', icon: Building2, label: t('navigation:organizations') },
+    { to: '/app/admin/subscription-plans', icon: CreditCard, label: t('navigation:subscriptionPlans') },
   ];
 
   // Combine links based on user role

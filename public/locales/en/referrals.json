@@ -1,0 +1,53 @@
+{
+  "title": "Referral Codes",
+  "table": {
+    "code": "Code",
+    "status": "Status",
+    "created": "Created at",
+    "actions": "Actions",
+    "pixels": "Pixels"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "actions": {
+    "create": "Create new code",
+    "edit": "Edit code",
+    "delete": "Delete code",
+    "copy": "Copy code",
+    "managePixels": "Manage Pixels"
+  },
+  "create": {
+    "title": "Create Referral Code"
+  },
+  "edit": {
+    "title": "Edit Referral Code"
+  },
+  "delete": {
+    "title": "Delete Referral Code",
+    "confirmation": "Are you sure you want to delete the code \"{code}\"?"
+  },
+  "form": {
+    "code": "Code",
+    "status": "Status"
+  },
+  "pixels": {
+    "title": "Tracking Pixels",
+    "list": "Pixels List",
+    "add": "Add Pixel",
+    "addNew": "New Tracking Pixel",
+    "empty": "No pixels registered",
+    "name": "Name",
+    "type": "Type",
+    "id": "Pixel ID",
+    "status": "Status",
+    "actions": "Actions",
+    "types": {
+      "facebook": "Facebook",
+      "google": "Google",
+      "tiktok": "TikTok",
+      "custom": "Custom"
+    }
+  }
+} 

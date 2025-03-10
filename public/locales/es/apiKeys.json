@@ -1,0 +1,14 @@
+{
+  "title": "Claves de API",
+  "newKey": "Nueva Clave",
+  "searchPlaceholder": "Buscar claves...",
+  "noKeys": "No se encontraron claves de API",
+  "noSearchResults": "No se encontraron claves para esta búsqueda",
+  "name": "Nombre",
+  "generate": "Generar Clave",
+  "copyKeyWarning": "Copia tu clave de API ahora. No podrás verla nuevamente.",
+  "delete": {
+    "title": "Eliminar Clave de API",
+    "confirmation": "¿Estás seguro que deseas eliminar la clave '{{name}}'?"
+  }
+} 
