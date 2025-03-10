@@ -27,7 +27,7 @@ const integrationConfigs: IntegrationConfig[] = [
         name: 'OpenAI',
         icon: () => (
           <img 
-            src="/openai.svg" 
+            src="/images/logos/openai.svg" 
             alt="OpenAI Logo" 
             className="w-8 h-8 transition-all dark:invert dark:brightness-200"
           />

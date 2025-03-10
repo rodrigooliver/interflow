@@ -6,23 +6,28 @@ interface BaseNodeProps {
   id: string;
   data: {
     label?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   icon: React.ReactNode;
+  onLabelChange?: (newLabel: string) => void;
 }
 
-export function BaseNode({ id, data, icon }: BaseNodeProps) {
+export function BaseNode({ id, data, icon, onLabelChange }: BaseNodeProps) {
   const { updateNodeData } = useFlowEditor();
   const [isEditing, setIsEditing] = useState(false);
   const [editedLabel, setEditedLabel] = useState(data.label || '');
 
   const handleLabelChange = useCallback(async (newLabel: string) => {
     try {
-      await updateNodeData(id, { ...data, label: newLabel });
+      if (onLabelChange) {
+        onLabelChange(newLabel);
+      } else {
+        await updateNodeData(id, { ...data, label: newLabel });
+      }
     } catch (error) {
       console.error('Error updating node label:', error);
     }
-  }, [id, data, updateNodeData]);
+  }, [id, data, updateNodeData, onLabelChange]);
 
   return (
     <div className="px-1 pb-2 pt-1 border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -54,20 +59,22 @@ export function BaseNode({ id, data, icon }: BaseNodeProps) {
               handleLabelChange(editedLabel);
               setIsEditing(false);
             }}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <Check className="w-4 h-4" />
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2 group">
-          {icon}
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {editedLabel || data.label || id}
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center">
+            {icon}
+            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              {data.label || ''}
+            </span>
+          </div>
           <button
             onClick={() => setIsEditing(true)}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <Pencil className="w-4 h-4" />
           </button>

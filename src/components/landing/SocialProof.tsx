@@ -10,7 +10,7 @@ export const SocialProof = () => {
       author: t('socialProof.testimonial1.author'),
       role: t('socialProof.testimonial1.role'),
       company: t('socialProof.testimonial1.company'),
-      image: '/images/testimonial1.jpg',
+      image: '/images/testimonials/testimonial1.png',
       result: t('socialProof.testimonial1.result')
     },
     {
@@ -19,7 +19,7 @@ export const SocialProof = () => {
       author: t('socialProof.testimonial2.author'),
       role: t('socialProof.testimonial2.role'),
       company: t('socialProof.testimonial2.company'),
-      image: '/images/testimonial2.jpg',
+      image: '/images/testimonials/testimonial3.png',
       result: t('socialProof.testimonial2.result')
     },
     {
@@ -28,7 +28,7 @@ export const SocialProof = () => {
       author: t('socialProof.testimonial3.author'),
       role: t('socialProof.testimonial3.role'),
       company: t('socialProof.testimonial3.company'),
-      image: '/images/testimonial3.jpg',
+      image: '/images/testimonials/testimonial2.png',
       result: t('socialProof.testimonial3.result')
     }
   ];

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -29,21 +29,28 @@ interface OpenAINodeProps {
           properties: Record<string, {
             type: string;
             description: string;
+            enum?: string[];
           }>;
           required?: string[];
         };
         targetNodeId?: string;
+        conditions?: {
+          paramName: string;
+          value: string;
+          targetNodeId: string;
+        }[];
+        defaultTargetNodeId?: string;
       }[];
     };
     variables: { id: string; name: string }[];
-    nodes: { id: string; type: string; data: any; label: string }[];
+    nodes: { id: string; type: string; data: unknown; label: string }[];
     label?: string;
   };
   isConnectable: boolean;
   id: string;
 }
 
-const Portal = ({ children }) => {
+const Portal = ({ children }: { children: React.ReactNode }) => {
   return createPortal(children, document.body);
 };
 
@@ -590,6 +597,7 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                                               const newTools = [...localConfig.tools];
                                               newTools[index] = { ...tool, parameters: currentParams };
                                               handleConfigChange({ tools: newTools });
+                                              handleConfigBlur(); // Salva as alterações ao adicionar um novo valor
                                             } catch (error) {
                                               console.error('Error updating parameters:', error);
                                             }
@@ -616,12 +624,15 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                                       {t('nodes.openai.tools.noParameters')}
                                     </p>
                                   ) : (
-                                    Object.entries(tool.parameters?.properties || {}).map(([paramName, paramConfig]: [string, any]) => (
+                                    Object.entries(tool.parameters?.properties || {}).map(([paramName, paramConfig]: [string, {
+                                      type: string;
+                                      description: string;
+                                      enum?: string[];
+                                    }]) => (
                                       <div 
                                         key={paramName}
-                                        className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                        className="flex flex-col p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                                       >
-                                        <div className="flex-1 space-y-2">
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
                                               <svg 
@@ -672,7 +683,8 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                                             <button
                                               onClick={() => {
                                                 try {
-                                                  const newProperties = { ...tool.parameters?.properties } || {};
+                                                const newProperties = { ...tool.parameters?.properties };
+                                                if (newProperties) {
                                                   delete newProperties[paramName];
                                                   
                                                   const currentParams = {
@@ -692,50 +704,164 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                                                   });
                                                   
                                                   handleConfigChange({ tools: newTools });
+                                                }
                                                 } catch (error) {
                                                   console.error('Error removing parameter:', error);
                                                 }
                                               }}
                                               className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full transition-colors"
                                             >
-                                              <svg 
-                                                className="h-4 w-4 text-blue-500 dark:text-blue-400" 
-                                                fill="none" 
-                                                viewBox="0 0 24 24" 
-                                                stroke="currentColor"
-                                              >
-                                                <path 
-                                                  strokeLinecap="round" 
-                                                  strokeLinejoin="round" 
-                                                  strokeWidth={2} 
-                                                  d="M6 18L18 6M6 6l12 12" 
-                                                />
+                                            <svg className="h-4 w-4 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                               </svg>
                                             </button>
                                           </div>
                                           
-                                          <input
-                                            type="text"
-                                            defaultValue={paramConfig?.description ?? ''}
+                                        <div className="mt-2">
+                                          <textarea
+                                            defaultValue={paramConfig.description}
                                             onChange={(e) => {
                                               try {
                                                 const currentParams = { ...tool.parameters };
-                                                currentParams.properties[paramName] = {
-                                                  ...currentParams.properties[paramName],
-                                                  type: 'string',
-                                                  description: e.target.value
-                                                };
+                                                if (currentParams.properties && currentParams.properties[paramName]) {
+                                                  currentParams.properties[paramName].description = e.target.value;
+                                                  
                                                 const newTools = [...localConfig.tools];
                                                 newTools[index] = { ...tool, parameters: currentParams };
                                                 handleConfigChange({ tools: newTools });
+                                                }
                                               } catch (error) {
                                                 console.error('Error updating parameter description:', error);
                                               }
                                             }}
                                             onBlur={handleConfigBlur}
+                                            rows={2}
+                                            className="w-full p-2 text-xs border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                             placeholder={t('nodes.openai.tools.parameterDescription')}
-                                            className="w-full text-xs p-1.5 border rounded border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                                           />
+                                        </div>
+                                        
+                                        {/* Seção de Enum */}
+                                        <div className="mt-2">
+                                          <div className="flex items-center justify-between">
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                              {t('nodes.openai.tools.enumValues')}
+                                            </label>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                try {
+                                                  // Cria uma cópia profunda dos parâmetros para evitar modificar o objeto original
+                                                  const currentParams = { ...tool.parameters };
+                                                  
+                                                  if (currentParams.properties && currentParams.properties[paramName]) {
+                                                    // Inicializar o array enum se não existir
+                                                    if (!currentParams.properties[paramName].enum) {
+                                                      currentParams.properties[paramName].enum = [];
+                                                    }
+                                                    
+                                                    // Adicionar um novo valor vazio ao enum
+                                                    currentParams.properties[paramName].enum = [
+                                                      ...(currentParams.properties[paramName].enum || []),
+                                                      ''
+                                                    ];
+                                                    
+                                                    // Atualiza as ferramentas com os novos parâmetros
+                                                    const newTools = [...localConfig.tools];
+                                                    newTools[index] = { ...tool, parameters: currentParams };
+                                                    handleConfigChange({ tools: newTools });
+                                                    handleConfigBlur(); // Salva as alterações ao adicionar um novo valor enum
+                                                  }
+                                                } catch (error) {
+                                                  console.error('Error adding enum value:', error);
+                                                }
+                                              }}
+                                              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                                            >
+                                              + {t('nodes.openai.tools.addEnumValue')}
+                                            </button>
+                                          </div>
+                                          
+                                          {paramConfig.enum && paramConfig.enum.length > 0 ? (
+                                            <div className="mt-1 space-y-1">
+                                              {paramConfig.enum.map((enumValue, enumIndex) => (
+                                                <div key={enumIndex} className="flex items-center space-x-2">
+                                                  <input
+                                                    type="text"
+                                                    value={enumValue}
+                                                    onChange={(e) => {
+                                                      try {
+                                                        // Cria uma cópia profunda dos parâmetros para evitar modificar o objeto original
+                                                        const currentParams = { ...tool.parameters };
+                                                        
+                                                        if (currentParams.properties && 
+                                                            currentParams.properties[paramName] && 
+                                                            currentParams.properties[paramName].enum) {
+                                                          
+                                                          // Cria uma cópia do array enum
+                                                          const newEnumValues = [...currentParams.properties[paramName].enum];
+                                                          
+                                                          // Atualiza o valor no índice especificado
+                                                          newEnumValues[enumIndex] = e.target.value;
+                                                          
+                                                          // Atualiza o array enum com os novos valores
+                                                          currentParams.properties[paramName].enum = newEnumValues;
+                                                          
+                                                          // Atualiza as ferramentas com os novos parâmetros
+                                                          const newTools = [...localConfig.tools];
+                                                          newTools[index] = { ...tool, parameters: currentParams };
+                                                          handleConfigChange({ tools: newTools });
+                                                        }
+                                                      } catch (error) {
+                                                        console.error('Error updating enum value:', error);
+                                                      }
+                                                    }}
+                                                    onBlur={handleConfigBlur}
+                                                    className="flex-1 p-1 text-xs border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      try {
+                                                        // Cria uma cópia profunda dos parâmetros para evitar modificar o objeto original
+                                                        const currentParams = { ...tool.parameters };
+                                                        
+                                                        if (currentParams.properties && 
+                                                            currentParams.properties[paramName] && 
+                                                            currentParams.properties[paramName].enum) {
+                                                          
+                                                          // Filtra o array enum para remover o valor no índice especificado
+                                                          const newEnumValues = currentParams.properties[paramName].enum.filter(
+                                                            (_, i) => i !== enumIndex
+                                                          );
+                                                          
+                                                          // Atualiza o array enum com os novos valores
+                                                          currentParams.properties[paramName].enum = newEnumValues;
+                                                          
+                                                          // Atualiza as ferramentas com os novos parâmetros
+                                                          const newTools = [...localConfig.tools];
+                                                          newTools[index] = { ...tool, parameters: currentParams };
+                                                          handleConfigChange({ tools: newTools });
+                                                          handleConfigBlur(); // Salva as alterações ao remover um valor enum
+                                                        }
+                                                      } catch (error) {
+                                                        console.error('Error removing enum value:', error);
+                                                      }
+                                                    }}
+                                                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"
+                                                  >
+                                                    <svg className="h-3 w-3 text-red-500 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                  </button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-1">
+                                              {t('nodes.openai.tools.noEnumValues')}
+                                            </p>
+                                          )}
                                         </div>
                                       </div>
                                     ))
@@ -745,13 +871,278 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                             </div>
                           </div>
 
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              {t('nodes.openai.tools.targetNode')}
+                          {/* Seção de Condições */}
+                          <div className="mt-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {t('nodes.openai.tools.conditions')}
+                              </h4>
+                              {(() => {
+                                // Verifica se existem parâmetros com enum
+                                const hasEnumParams = tool.parameters?.properties 
+                                  ? Object.values(tool.parameters.properties).some(
+                                      param => param.enum && Array.isArray(param.enum) && param.enum.length > 0
+                                    )
+                                  : false;
+                                
+                                return hasEnumParams ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newTools = [...localConfig.tools];
+                                      const toolCopy = { ...newTools[index] };
+                                      
+                                      // Inicializa o array de condições se não existir
+                                      if (!toolCopy.conditions) {
+                                        toolCopy.conditions = [];
+                                      }
+                                      
+                                      // Encontra o primeiro parâmetro com enum
+                                      let firstEnumParam = '';
+                                      let firstEnumValue = '';
+                                      
+                                      if (toolCopy.parameters && toolCopy.parameters.properties) {
+                                        for (const [paramName, paramConfig] of Object.entries(toolCopy.parameters.properties)) {
+                                          if (paramConfig.enum && paramConfig.enum.length > 0) {
+                                            firstEnumParam = paramName;
+                                            firstEnumValue = paramConfig.enum[0];
+                                            break;
+                                          }
+                                        }
+                                      }
+                                      
+                                      // Adiciona uma nova condição
+                                      toolCopy.conditions.push({
+                                        paramName: firstEnumParam,
+                                        value: firstEnumValue,
+                                        targetNodeId: ''
+                                      });
+                                      
+                                      newTools[index] = toolCopy;
+                                      handleConfigChange({ tools: newTools });
+                                      handleConfigBlur(); // Salva as alterações ao adicionar uma nova condição
+                                    }}
+                                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                                  >
+                                    + {t('nodes.openai.tools.addCondition')}
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                    {t('nodes.openai.tools.addEnumFirst')}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                            
+                            {tool.conditions && tool.conditions.length > 0 ? (
+                              <div className="space-y-2">
+                                {tool.conditions.map((condition, conditionIndex) => {
+                                  // Encontra os parâmetros com enum
+                                  const enumParams = [];
+                                  const selectedParamValues = [];
+                                  
+                                  if (tool.parameters && tool.parameters.properties) {
+                                    for (const [paramName, paramConfig] of Object.entries(tool.parameters.properties)) {
+                                      if (paramConfig.enum && paramConfig.enum.length > 0) {
+                                        enumParams.push({
+                                          name: paramName,
+                                          values: paramConfig.enum
+                                        });
+                                        
+                                        if (paramName === condition.paramName) {
+                                          selectedParamValues.push(...paramConfig.enum);
+                                        }
+                                      }
+                                    }
+                                  }
+                                  
+                                  return (
+                                    <div 
+                                      key={conditionIndex}
+                                      className="p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md"
+                                    >
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {t('nodes.openai.tools.ifParameter')}
+                                          </span>
+                                          
+                                          {/* Seletor de Parâmetro */}
+                                          <select
+                                            value={condition.paramName}
+                                            onChange={(e) => {
+                                              const newTools = [...localConfig.tools];
+                                              const toolCopy = { ...newTools[index] };
+                                              const conditionsCopy = [...(toolCopy.conditions || [])];
+                                              
+                                              // Encontra o primeiro valor do enum para o novo parâmetro
+                                              let firstValue = '';
+                                              if (tool.parameters && tool.parameters.properties) {
+                                                const paramConfig = tool.parameters.properties[e.target.value];
+                                                if (paramConfig && paramConfig.enum && paramConfig.enum.length > 0) {
+                                                  firstValue = paramConfig.enum[0];
+                                                }
+                                              }
+                                              
+                                              conditionsCopy[conditionIndex] = {
+                                                ...conditionsCopy[conditionIndex],
+                                                paramName: e.target.value,
+                                                value: firstValue
+                                              };
+                                              
+                                              toolCopy.conditions = conditionsCopy;
+                                              newTools[index] = toolCopy;
+                                              handleConfigChange({ tools: newTools });
+                                            }}
+                                            onBlur={handleConfigBlur}
+                                            className="text-xs p-1 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          >
+                                            {enumParams.map((param) => (
+                                              <option key={param.name} value={param.name}>
+                                                {param.name}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {t('nodes.openai.tools.equals')}
+                                          </span>
+                                          
+                                          {/* Seletor de Valor */}
+                                          <select
+                                            value={condition.value}
+                                            onChange={(e) => {
+                                              const newTools = [...localConfig.tools];
+                                              const toolCopy = { ...newTools[index] };
+                                              const conditionsCopy = [...(toolCopy.conditions || [])];
+                                              
+                                              conditionsCopy[conditionIndex] = {
+                                                ...conditionsCopy[conditionIndex],
+                                                value: e.target.value
+                                              };
+                                              
+                                              toolCopy.conditions = conditionsCopy;
+                                              newTools[index] = toolCopy;
+                                              handleConfigChange({ tools: newTools });
+                                            }}
+                                            onBlur={handleConfigBlur}
+                                            className="text-xs p-1 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          >
+                                            {selectedParamValues.map((value) => (
+                                              <option key={value} value={value}>
+                                                {value}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {t('nodes.openai.tools.goTo')}
+                                          </span>
+                                        </div>
+                                        
+                                        {/* Botão de Remover */}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newTools = [...localConfig.tools];
+                                            const toolCopy = { ...newTools[index] };
+                                            const conditionsCopy = [...(toolCopy.conditions || [])];
+                                            
+                                            conditionsCopy.splice(conditionIndex, 1);
+                                            
+                                            toolCopy.conditions = conditionsCopy;
+                                            newTools[index] = toolCopy;
+                                            handleConfigChange({ tools: newTools });
+                                            handleConfigBlur(); // Salva as alterações ao remover uma condição
+                                          }}
+                                          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"
+                                        >
+                                          <svg className="h-3 w-3 text-red-500 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        </button>
+                                      </div>
+                                      
+                                      {/* Seletor de Nó de Destino */}
+                                      <Select
+                                        value={nodes
+                                          .filter(node => node.id === condition.targetNodeId)
+                                          .map(node => ({
+                                            value: node.id,
+                                            label: `${node.data?.label || node.type}`
+                                          }))[0]}
+                                        onChange={(selected) => {
+                                          const newTools = [...localConfig.tools];
+                                          const toolCopy = { ...newTools[index] };
+                                          const conditionsCopy = [...(toolCopy.conditions || [])];
+                                          
+                                          conditionsCopy[conditionIndex] = {
+                                            ...conditionsCopy[conditionIndex],
+                                            targetNodeId: selected ? selected.value : ''
+                                          };
+                                          
+                                          toolCopy.conditions = conditionsCopy;
+                                          newTools[index] = toolCopy;
+                                          handleConfigChange({ tools: newTools });
+                                        }}
+                                        onBlur={handleConfigBlur}
+                                        options={nodes
+                                          .filter(node => node.id !== id && node.type !== 'start')
+                                          .map(node => ({
+                                            value: node.id,
+                                            label: `${node.data?.label || node.type}`
+                                          }))}
+                                        className="react-select-container"
+                                        classNamePrefix="react-select"
+                                        placeholder={t('nodes.openai.tools.selectTargetNode')}
+                                        isClearable
+                                        styles={{
+                                          control: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: 'var(--select-bg)',
+                                            borderColor: 'var(--select-border)',
+                                            boxShadow: state.isFocused ? '0 0 0 1px var(--select-focus)' : 'none',
+                                            '&:hover': {
+                                              borderColor: 'var(--select-border-hover)'
+                                            }
+                                          }),
+                                          menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: 'var(--select-bg)',
+                                            zIndex: 9999
+                                          }),
+                                          option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected
+                                              ? 'var(--select-option-selected-bg)'
+                                              : state.isFocused
+                                                ? 'var(--select-option-focus-bg)'
+                                                : 'var(--select-bg)',
+                                            color: state.isSelected
+                                              ? 'var(--select-option-selected-text)'
+                                              : 'var(--select-text)'
+                                          })
+                                        }}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                {t('nodes.openai.tools.noConditions')}
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Rota Padrão */}
+                          <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              {t('nodes.openai.tools.defaultRoute')}
                             </label>
                             <Select
                               value={nodes
-                                .filter(node => node.id === tool.targetNodeId)
+                                .filter(node => node.id === (tool.defaultTargetNodeId || tool.targetNodeId))
                                 .map(node => ({
                                   value: node.id,
                                   label: `${node.data?.label || node.type}`
@@ -760,6 +1151,8 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                                 const newTools = [...localConfig.tools];
                                 newTools[index] = { 
                                   ...tool, 
+                                  defaultTargetNodeId: selected ? selected.value : undefined,
+                                  // Mantém compatibilidade com versões anteriores
                                   targetNodeId: selected ? selected.value : undefined 
                                 };
                                 handleConfigChange({ tools: newTools });
@@ -779,30 +1172,27 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                                 control: (base, state) => ({
                                   ...base,
                                   backgroundColor: 'var(--select-bg)',
-                                  borderColor: state.isFocused ? 'var(--select-focus-border)' : 'var(--select-border)',
+                                  borderColor: 'var(--select-border)',
+                                  boxShadow: state.isFocused ? '0 0 0 1px var(--select-focus)' : 'none',
                                   '&:hover': {
-                                    borderColor: 'var(--select-hover-border)'
+                                    borderColor: 'var(--select-border-hover)'
                                   }
                                 }),
                                 menu: (base) => ({
                                   ...base,
                                   backgroundColor: 'var(--select-bg)',
-                                  border: '1px solid var(--select-border)'
+                                  zIndex: 9999
                                 }),
-                                option: (base, { isFocused, isSelected }) => ({
+                                option: (base, state) => ({
                                   ...base,
-                                  backgroundColor: isSelected 
-                                    ? 'var(--select-selected-bg)'
-                                    : isFocused 
-                                      ? 'var(--select-hover-bg)'
-                                      : 'transparent',
-                                  color: isSelected 
-                                    ? 'var(--select-selected-text)'
+                                  backgroundColor: state.isSelected
+                                    ? 'var(--select-option-selected-bg)'
+                                    : state.isFocused
+                                      ? 'var(--select-option-focus-bg)'
+                                      : 'var(--select-bg)',
+                                  color: state.isSelected
+                                    ? 'var(--select-option-selected-text)'
                                     : 'var(--select-text)'
-                                }),
-                                singleValue: (base) => ({
-                                  ...base,
-                                  color: 'var(--select-text)'
                                 })
                               }}
                             />
@@ -818,7 +1208,9 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                             name: '', 
                             description: '', 
                             parameters: { type: 'object', properties: {} },
-                            targetNodeId: ''
+                            targetNodeId: '',
+                            defaultTargetNodeId: '',
+                            conditions: []
                           }];
                           handleConfigChange({ tools: newTools });
                         }}

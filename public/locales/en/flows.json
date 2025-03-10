@@ -5,17 +5,21 @@
   "published": "Published",
   "publish": "Publish",
   "restore": "Restore Published Version",
-  "lastSaved": "Last saved at {{time}}",
+  "lastSaved": "Saved at {{time}}",
   "edit": "Edit", 
   "editFlow": "Edit Flow",
   "flowDescription": "Flow Description",
   "flowName": "Flow Name",
+  "debounce_time": "Debounce Time",
+  "debounce_time_description": "Time in milliseconds to wait before processing consecutive messages. Useful for combining multiple messages into a single response.",
   "resetConfirmTitle": "Clear Flow",
   "resetConfirmMessage": "Are you sure you want to clear the flow?",
   "reset": "Clear",
   "variables": {
     "title": "Variables",
-    "add": "Add Variable"
+    "add": "Add Variable",
+    "noVariables": "No variables found",
+    "valueDefault": "Initial value"
   },
   "categories": {
     "send": "Send",
@@ -26,7 +30,12 @@
   "nodes": {
     "start": "Start",
     "sendText": {
-      "title": "Send Text"
+      "title": "Send Text",
+      "edit": "Edit Text",
+      "splitParagraphs": "Split paragraphs into separate messages",
+      "splitParagraphsDescription": "Each paragraph separated by a blank line will be sent as an individual message.",
+      "messages": "messages",
+      "longText": "Long text"
     },
     "sendAudio": {
       "title": "Send Audio"
@@ -187,7 +196,19 @@
         "noParameters": "No parameters added",
         "required": "Required",
         "targetNode": "Target node",
-        "selectTargetNode": "Select a target node"
+        "selectTargetNode": "Select a target node",
+        "enumValues": "Predefined values",
+        "addEnumValue": "Add value",
+        "noEnumValues": "No predefined values added",
+        "conditions": "Conditions",
+        "addCondition": "Add condition",
+        "ifParameter": "If parameter",
+        "equals": "equals",
+        "goTo": "go to",
+        "defaultRoute": "Default route",
+        "noConditions": "No conditions added",
+        "removeCondition": "Remove condition",
+        "addEnumFirst": "Add predefined values to parameters to create conditions"
       }
     },
     "updateCustomer": {

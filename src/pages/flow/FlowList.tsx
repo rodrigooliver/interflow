@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GitFork, Plus, Loader2, X, AlertTriangle, Pencil, ArrowLeft } from 'lucide-react';
+import { GitFork, Plus, Loader2, X, AlertTriangle, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
-import { Flow } from '../../types/flow';
-import { FlowTriggers } from '../../components/flow/FlowTriggers';
+import { Flow } from '../../types/database';
+import { Trigger } from '../../types/flow';
+import FlowEditForm from '../../components/flow/FlowEditForm';
 
 // Default start node
-const DEFAULT_START_NODE = {
-  id: 'start-node',
+const defaultStartNode = {
+  id: 'start',
   type: 'start',
   position: { x: 100, y: 100 },
-  data: { isStart: true }
+  data: {}
 };
 
 export default function FlowList() {
@@ -22,17 +23,12 @@ export default function FlowList() {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingFlow, setCreatingFlow] = useState(false);
+  const [showCreateFlowModal, setShowCreateFlowModal] = useState(false);
+  const [showDeleteFlowModal, setShowDeleteFlowModal] = useState(false);
   const [deletingFlow, setDeletingFlow] = useState(false);
-  const [showNewFlowModal, setShowNewFlowModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [newFlowData, setNewFlowData] = useState({ name: '', description: '' });
-  const [error, setError] = useState('');
   const [showEditFlowModal, setShowEditFlowModal] = useState(false);
-  const [editingFlow, setEditingFlow] = useState(false);
-  const [editFlowData, setEditFlowData] = useState({ name: '', description: '' });
-  const [editingTriggers, setEditingTriggers] = useState(false);
-  const [savingTriggers, setSavingTriggers] = useState(false);
 
   useEffect(() => {
     if (currentOrganization) {
@@ -64,7 +60,6 @@ export default function FlowList() {
       setFlows(flowsData || []);
     } catch (error) {
       console.error('Error loading flows:', error);
-      setError(t('common:error'));
     } finally {
       setLoading(false);
     }
@@ -84,7 +79,7 @@ export default function FlowList() {
           description: newFlowData.description,
           nodes: [],
           edges: [],
-          draft_nodes: [DEFAULT_START_NODE],
+          draft_nodes: [defaultStartNode],
           draft_edges: [],
           variables: [],
           is_published: false
@@ -113,7 +108,7 @@ export default function FlowList() {
       }
 
       setNewFlowData({ name: '', description: '' });
-      setShowNewFlowModal(false);
+      setShowCreateFlowModal(false);
       
       // Redirecionar para o novo flow
       if (flowData) {
@@ -121,7 +116,6 @@ export default function FlowList() {
       }
     } catch (error) {
       console.error('Error creating flow:', error);
-      setError(t('common:error'));
     } finally {
       setCreatingFlow(false);
     }
@@ -141,78 +135,74 @@ export default function FlowList() {
       if (error) throw error;
 
       await loadFlows();
-      setShowDeleteModal(false);
+      setShowDeleteFlowModal(false);
       setSelectedFlow(null);
     } catch (error) {
       console.error('Error deleting flow:', error);
-      setError(t('common:error'));
     } finally {
       setDeletingFlow(false);
     }
   }
 
-  async function handleEditFlow() {
+  async function handleEditFlow(flowData: { name: string; description: string; debounce_time: number }) {
     if (!selectedFlow) return;
-    setEditingFlow(true);
-
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('flows')
         .update({
-          name: editFlowData.name,
-          description: editFlowData.description
+          name: flowData.name,
+          description: flowData.description,
+          debounce_time: flowData.debounce_time
         })
         .eq('id', selectedFlow.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       await loadFlows();
       setShowEditFlowModal(false);
       setSelectedFlow(null);
-      setEditFlowData({ name: '', description: '' });
     } catch (error) {
       console.error('Error editing flow:', error);
-      setError(t('common:error'));
-    } finally {
-      setEditingFlow(false);
+      // Mostrar erro na interface se necessário
     }
   }
 
-  const handleEditTriggers = async (newTriggers: Trigger[]) => {
-    if (!selectedFlow) return;
-    setSavingTriggers(true);
+  // Função para salvar os triggers
+  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
+    if (!selectedFlow || !currentOrganization) return;
 
     try {
-      // Atualizar triggers existentes
-      const updatePromises = newTriggers.map(trigger => 
-        supabase
+      // Excluir triggers existentes
+      const { error: deleteError } = await supabase
+        .from('flow_triggers')
+        .delete()
+        .eq('flow_id', selectedFlow.id);
+
+      if (deleteError) throw deleteError;
+
+      // Inserir novos triggers
+      if (newTriggers.length > 0) {
+        const { error: insertError } = await supabase
           .from('flow_triggers')
-          .upsert({
-            ...trigger,
-            flow_id: selectedFlow.id,
-            updated_at: new Date().toISOString()
-          })
-      );
+          .insert(
+            newTriggers.map(trigger => ({
+              ...trigger,
+              flow_id: selectedFlow.id,
+              organization_id: currentOrganization.id,
+              updated_at: new Date().toISOString()
+            }))
+          );
 
-      await Promise.all(updatePromises);
+        if (insertError) throw insertError;
+      }
 
-      // Atualizar o flow localmente
-      setSelectedFlow({ ...selectedFlow, triggers: newTriggers });
-      
       // Atualizar a lista de flows
-      setFlows(prevFlows => 
-        prevFlows.map(flow => 
-          flow.id === selectedFlow.id 
-            ? { ...flow, triggers: newTriggers }
-            : flow
-        )
-      );
-
+      await loadFlows();
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error updating triggers:', error);
-      setError(t('common:error'));
-    } finally {
-      setSavingTriggers(false);
+      return Promise.reject(error);
     }
   };
 
@@ -249,7 +239,7 @@ export default function FlowList() {
         </div>
         <div className="flex space-x-2">
           <button
-            onClick={() => setShowNewFlowModal(true)}
+            onClick={() => setShowCreateFlowModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -268,7 +258,6 @@ export default function FlowList() {
               <button
                 onClick={() => {
                   setSelectedFlow(flow);
-                  setEditFlowData({ name: flow.name, description: flow.description });
                   setShowEditFlowModal(true);
                 }}
                 className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
@@ -278,7 +267,7 @@ export default function FlowList() {
               <button
                 onClick={() => {
                   setSelectedFlow(flow);
-                  setShowDeleteModal(true);
+                  setShowDeleteFlowModal(true);
                 }}
                 className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
               >
@@ -305,32 +294,52 @@ export default function FlowList() {
         ))}
       </div>
 
-      {/* New Flow Modal */}
-      {showNewFlowModal && (
+      {/* Modal de criação de fluxo */}
+      {showCreateFlowModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              {t('flows:newFlow')}
-            </h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {t('flows:newFlow')}
+              </h3>
+              <button
+                onClick={() => setShowCreateFlowModal(false)}
+                className="text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                value={newFlowData.name}
-                onChange={(e) => setNewFlowData({ ...newFlowData, name: e.target.value })}
-                placeholder="Nome do fluxo"
-                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-              />
-              <textarea
-                value={newFlowData.description}
-                onChange={(e) => setNewFlowData({ ...newFlowData, description: e.target.value })}
-                placeholder="Descrição (opcional)"
-                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-                rows={3}
-              />
+              <div>
+                <label htmlFor="flow-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('flows:flowName')}
+                </label>
+                <input
+                  id="flow-name"
+                  type="text"
+                  value={newFlowData.name}
+                  onChange={(e) => setNewFlowData({ ...newFlowData, name: e.target.value })}
+                  placeholder={t('flows:flowName')}
+                  className="block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+              <div>
+                <label htmlFor="flow-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('flows:flowDescription')}
+                </label>
+                <textarea
+                  id="flow-description"
+                  value={newFlowData.description}
+                  onChange={(e) => setNewFlowData({ ...newFlowData, description: e.target.value })}
+                  placeholder={t('flows:flowDescription')}
+                  className="block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  rows={3}
+                />
+              </div>
             </div>
             <div className="mt-4 flex justify-end space-x-2">
               <button
-                onClick={() => setShowNewFlowModal(false)}
+                onClick={() => setShowCreateFlowModal(false)}
                 disabled={creatingFlow}
                 className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               >
@@ -349,42 +358,58 @@ export default function FlowList() {
         </div>
       )}
 
-      {/* Delete Flow Modal */}
-      {showDeleteModal && selectedFlow && (
+      {/* Modal de exclusão de fluxo */}
+      {showDeleteFlowModal && selectedFlow && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/50 rounded-full mb-4">
-                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
-                {t('flows:delete.title')}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
-                {t('flows:delete.confirmation', { name: selectedFlow.name })}
-                <br />
-                {t('flows:delete.warning')}
-              </p>
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {t('flows:delete.title')}
+                </h3>
                 <button
                   type="button"
                   onClick={() => {
-                    setShowDeleteModal(false);
+                    setShowDeleteFlowModal(false);
+                    setSelectedFlow(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/50 rounded-full mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              
+              <p className="text-center text-gray-700 dark:text-gray-300 mb-4">
+                {t('flows:delete.confirmation', { name: selectedFlow.name })}
+              </p>
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {t('flows:delete.warning')}
+              </p>
+              
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteFlowModal(false);
                     setSelectedFlow(null);
                   }}
                   disabled={deletingFlow}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                 >
-                  {t('common:back')}
+                  {t('common:cancel')}
                 </button>
                 <button
                   type="button"
                   onClick={handleDeleteFlow}
                   disabled={deletingFlow}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 flex items-center"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {deletingFlow && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {t('common:confirmDelete')}
+                  {t('common:delete')}
                 </button>
               </div>
             </div>
@@ -392,99 +417,32 @@ export default function FlowList() {
         </div>
       )}
 
-      {/* Edit Flow Modal */}
-      {showEditFlowModal && selectedFlow && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {t('flows:editFlow')}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowEditFlowModal(false);
-                  setSelectedFlow(null);
-                  setEditFlowData({ name: '', description: '' });
-                  setEditingTriggers(false);
-                }}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {/* Modal de edição de fluxo */}
+      {showEditFlowModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75 dark:bg-gray-900 dark:opacity-90"></div>
             </div>
 
-            <div className="space-y-4">
-              {!editingTriggers ? (
-                <>
-                  <input
-                    type="text"
-                    value={editFlowData.name}
-                    onChange={(e) => setEditFlowData({ ...editFlowData, name: e.target.value })}
-                    placeholder={t('flows:flowName')}
-                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <textarea
-                    value={editFlowData.description}
-                    onChange={(e) => setEditFlowData({ ...editFlowData, description: e.target.value })}
-                    placeholder={t('flows:flowDescription')}
-                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-                    rows={3}
-                  />
-                  <div className="flex justify-between items-center pt-4">
-                    <button
-                      onClick={() => setEditingTriggers(true)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      {t('flows:triggers.configure')}
-                    </button>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setShowEditFlowModal(false);
-                          setSelectedFlow(null);
-                          setEditFlowData({ name: '', description: '' });
-                        }}
-                        disabled={editingFlow}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                      >
-                        {t('common:back')}
-                      </button>
-                      <button
-                        onClick={handleEditFlow}
-                        disabled={editingFlow}
-                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {editingFlow && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        {t('common:saving')}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="border-b border-gray-200 dark:border-gray-700 -mx-6 px-6 pb-4">
-                    <button
-                      onClick={() => setEditingTriggers(false)}
-                      className="flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-1" />
-                      {t('common:back')}
-                    </button>
-                  </div>
-                  <div className="max-h-[60vh] overflow-y-auto">
-                    <FlowTriggers
-                      flowId={selectedFlow.id}
-                      triggers={selectedFlow.triggers || []}
-                      onChange={handleEditTriggers}
-                    />
-                  </div>
-                  {/* {savingTriggers && (
-                    <div className="flex justify-center">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                    </div>
-                  )} */}
-                </>
-              )}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white dark:bg-gray-800 px-6 py-4">
+                <FlowEditForm 
+                  flowId={selectedFlow?.id || null}
+                  onSave={handleEditFlow}
+                  onCancel={() => {
+                    setShowEditFlowModal(false);
+                    setSelectedFlow(null);
+                  }}
+                  onSaveTriggers={handleSaveTriggers}
+                  onClose={() => {
+                    setShowEditFlowModal(false);
+                    setSelectedFlow(null);
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>

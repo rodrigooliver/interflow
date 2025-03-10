@@ -394,7 +394,7 @@ export function FlowBuilder() {
         >
           <Background />
           <Controls />
-          <MiniMap />
+          {/* <MiniMap /> */}
         </ReactFlow>
       </div>
 

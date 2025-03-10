@@ -96,6 +96,7 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
   };
 
   const debouncedUpdate = useCallback(
+    
     debounce(async (triggerId: string, rules: TriggerRule[]) => {
       try {
         await supabase

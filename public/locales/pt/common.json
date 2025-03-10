@@ -18,6 +18,7 @@
   "darkMode": "Modo Escuro",
   "logout": "Sair",
   "cancel": "Cancelar",
+  "close": "Fechar",
   "send": "Enviar",
   "previous": "Anterior",
   "next": "Próximo",
@@ -31,6 +32,8 @@
   "saveSuccess": "Alterações salvas com sucesso!",
   "recommended": "Recomendado",
   "agent": "Agente",
+  "name": "Nome",
+  "value": "Valor",
   "delete_confirmation": {
     "title": "Excluir",
     "message": "Tem certeza que deseja excluir este item?"
@@ -58,7 +61,6 @@
     }
   },
   "unnamed": "Sem nome",
-  "close": "Fechar",
   "of": "de",
   "showing": "Mostrando",
   "to": "até",

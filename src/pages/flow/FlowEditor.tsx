@@ -1,13 +1,15 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReactFlowProvider } from 'reactflow';
-import { ArrowLeft, Loader2, Variable, Send, RotateCcw, Pencil, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Variable, Send, RotateCcw, Pencil, Check, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FlowBuilder } from '../../components/flow/FlowBuilder';
-import { FlowNode, FlowConnection } from '../../types/flow';
+import { Trigger } from '../../types/flow';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { FlowEditorProvider, useFlowEditor } from '../../contexts/FlowEditorContext';
 import { VariablesModal } from '../../components/flow/VariablesModal';
+import FlowEditForm from '../../components/flow/FlowEditForm';
+import { supabase } from '../../lib/supabase';
 
 function FlowEditorContent() {
   const { t } = useTranslation(['flows', 'common']);
@@ -24,10 +26,9 @@ function FlowEditorContent() {
     publishedEdges,
     lastSaved,
     loadFlow,
-    onSaveFlow,
     publishFlow,
     restoreFlow,
-    setFlowName: updateFlowName,
+    setFlowName: updateFlowName
   } = useFlowEditor();
   const { currentOrganization } = useOrganizationContext();
   const [saving, setSaving] = useState(false);
@@ -36,7 +37,8 @@ function FlowEditorContent() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(flowName);
   const [showVariablesModal, setShowVariablesModal] = useState(false);
-  const [flowKey, setFlowKey] = useState(0);
+  const [showEditFlowModal, setShowEditFlowModal] = useState(false);
+  const [flowKey] = useState(0);
 
   useEffect(() => {
     if (currentOrganization && id) {
@@ -63,7 +65,7 @@ function FlowEditorContent() {
   const handlePublish = useCallback(async () => {
     setPublishing(true);
     try {
-      await publishFlow(id);
+      await publishFlow();
     } catch (error) {
       console.error('Error publishing flow:', error);
     } finally {
@@ -99,6 +101,72 @@ function FlowEditorContent() {
   // Check if current version is different from published version
   const hasChanges = JSON.stringify(nodes) !== JSON.stringify(publishedNodes) || 
                     JSON.stringify(edges) !== JSON.stringify(publishedEdges);
+
+  // Função para atualizar os dados do fluxo
+  const handleEditFlow = async (flowData: { name: string; description: string; debounce_time: number }) => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('flows')
+        .update({
+          name: flowData.name,
+          description: flowData.description,
+          debounce_time: flowData.debounce_time
+        })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      // Atualizar o nome do fluxo no contexto
+      await updateFlowName(flowData.name);
+      
+      // Recarregar o fluxo para obter os dados atualizados
+      await loadFlow(id);
+      
+      setShowEditFlowModal(false);
+    } catch (error) {
+      console.error('Error updating flow:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Função para salvar os triggers
+  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
+    if (!id || !currentOrganization) return Promise.reject(new Error('Missing flow ID or organization'));
+
+    try {
+      // Excluir triggers existentes
+      const { error: deleteError } = await supabase
+        .from('flow_triggers')
+        .delete()
+        .eq('flow_id', id);
+
+      if (deleteError) throw deleteError;
+
+      // Inserir novos triggers
+      if (newTriggers.length > 0) {
+        const { error: insertError } = await supabase
+          .from('flow_triggers')
+          .insert(
+            newTriggers.map(trigger => ({
+              ...trigger,
+              flow_id: id,
+              organization_id: currentOrganization.id,
+              updated_at: new Date().toISOString()
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Error updating triggers:', error);
+      return Promise.reject(error);
+    }
+  };
 
   if (loading) {
     return (
@@ -189,6 +257,13 @@ function FlowEditorContent() {
         </div>
         <div className="flex items-center space-x-2">
           <button
+            onClick={() => setShowEditFlowModal(true)}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            {t('flows:settings')}
+          </button>
+          <button
             onClick={() => setShowVariablesModal(true)}
             className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
@@ -211,7 +286,7 @@ function FlowEditorContent() {
           )}
           <button
             onClick={handlePublish}
-            disabled={publishing || saving}
+            disabled={publishing || saving || (isPublished && !hasChanges)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {publishing ? (
@@ -234,6 +309,31 @@ function FlowEditorContent() {
         isOpen={showVariablesModal}
         onClose={() => setShowVariablesModal(false)}
       />
+
+      {/* Modal de edição de fluxo */}
+      {showEditFlowModal && id && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75 dark:bg-gray-900 dark:opacity-90"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white dark:bg-gray-800 px-6 py-4">
+                <FlowEditForm 
+                  flowId={id}
+                  onSave={handleEditFlow}
+                  onCancel={() => setShowEditFlowModal(false)}
+                  onSaveTriggers={handleSaveTriggers}
+                  onClose={() => setShowEditFlowModal(false)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

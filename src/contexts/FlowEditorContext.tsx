@@ -70,7 +70,7 @@ interface FlowEditorContextType {
   restoreFlow: () => Promise<void>;
   setFlowName: (name: string) => Promise<void>;
   getViewport: () => any;
-  id: string;
+  id: string | undefined;
 }
 
 const FlowEditorContext = createContext<FlowEditorContextType | undefined>(undefined);
@@ -289,7 +289,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
     }
   }, [currentOrganization]);
 
-  const publishFlow = useCallback(async (id: string) => {
+  const publishFlow = useCallback(async () => {
     if (!currentOrganization || !id) return;
 
     try {
@@ -321,8 +321,6 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   }, [currentOrganization, nodes, edges, variables, viewport]);
 
   const restoreFlow = useCallback(async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
     
     if (!currentOrganization || !id) return;
 
@@ -348,8 +346,6 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   }, [currentOrganization, publishedNodes, publishedEdges]);
 
   const updateFlowName = useCallback(async (name: string) => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
     
     if (!currentOrganization || !id || !name.trim()) return;
 
