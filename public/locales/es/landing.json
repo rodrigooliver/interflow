@@ -18,6 +18,19 @@
   },
   "socialProof": {
     "title": "Empresas que confían en InterFlow Chat",
+    "subtitle": "Empresas innovadoras de diversos sectores confían en nuestra plataforma para transformar su comunicación con clientes.",
+    "trustedBy": "Utilizado por empresas líderes en sus sectores",
+    "joinOthers": "Únete a miles de empresas que ya han transformado su atención al cliente",
+    "featuredTestimonial": "Testimonio Destacado",
+    "resultsAchieved": "Resultados Obtenidos",
+    "viewTestimonial": "Ver testimonio {{number}}",
+    "verifiedCustomer": "Cliente Verificado",
+    "companies": {
+      "empresa1": "TechSolutions",
+      "empresa2": "Grupo Nexus",
+      "empresa3": "Moda Express",
+      "empresa4": "Banco Digital"
+    },
     "testimonial1": {
       "content": "Desde que implementamos InterFlow Chat, nuestro tiempo de respuesta bajó un 70% y las conversiones aumentaron significativamente.",
       "author": "Ana Silva",

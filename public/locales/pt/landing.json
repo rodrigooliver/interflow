@@ -125,16 +125,28 @@
     "monthlyEquivalent": "Equivalente a {{price}}/mês",
     "yearlySavings": "Economize {{percentage}}% pagando anualmente",
     "havingQuestions": "Tem alguma dúvida? Veja nosso FAQ",
-
     "users": "Usuários",
     "customers": "Clientes",
     "channels": "Canais",
     "flows": "Fluxos",
     "teams": "Equipes",
     "storage": "Armazenamento"
-
   },
   "socialProof": {
+    "title": "Empresas que confiam no InterFlow Chat",
+    "subtitle": "Empresas inovadoras de diversos setores confiam na nossa plataforma para transformar sua comunicação com clientes.",
+    "trustedBy": "Utilizado por empresas líderes em seus setores",
+    "joinOthers": "Junte-se a milhares de empresas que já transformaram seu atendimento",
+    "featuredTestimonial": "Depoimento em Destaque",
+    "resultsAchieved": "Resultados Obtidos",
+    "viewTestimonial": "Ver depoimento {{number}}",
+    "verifiedCustomer": "Cliente verificado",
+    "companies": {
+      "empresa1": "TechSolutions",
+      "empresa2": "Grupo Nexus",
+      "empresa3": "Moda Express",
+      "empresa4": "Banco Digital"
+    },
     "testimonial1": {
       "author": "Ana Silva",
       "company": "TechSolutions",
@@ -155,8 +167,7 @@
       "content": "A integração entre WhatsApp e Instagram revolucionou nosso atendimento. Tudo centralizado e organizado.",
       "result": "Resultado: Satisfação do cliente de 98%",
       "role": "Supervisora de Atendimento"
-    },
-    "title": "Empresas que confiam no InterFlow Chat"
+    }
   },
   "whatsapp": {
     "message": "Olá! Gostaria de saber mais sobre o InterFlow Chat.",

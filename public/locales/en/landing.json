@@ -18,6 +18,19 @@
   },
   "socialProof": {
     "title": "Companies that trust InterFlow Chat",
+    "subtitle": "Innovative companies from various sectors trust our platform to transform their customer communication.",
+    "trustedBy": "Used by leading companies in their industries",
+    "joinOthers": "Join thousands of companies that have already transformed their customer service",
+    "featuredTestimonial": "Featured Testimonial",
+    "resultsAchieved": "Results Achieved",
+    "viewTestimonial": "View testimonial {{number}}",
+    "verifiedCustomer": "Verified Customer",
+    "companies": {
+      "empresa1": "TechSolutions",
+      "empresa2": "Nexus Group",
+      "empresa3": "Moda Express",
+      "empresa4": "Digital Bank"
+    },
     "testimonial1": {
       "content": "Since implementing InterFlow Chat, our response time has dropped 70% and conversions have increased significantly.",
       "author": "Ana Silva",
