@@ -40,7 +40,16 @@
       "additionalFlowPriceBrl": "Precio por Flujo Adicional (BRL)",
       "additionalFlowPriceUsd": "Precio por Flujo Adicional (USD)",
       "additionalTeamPriceBrl": "Precio por Equipo Adicional (BRL)",
-      "additionalTeamPriceUsd": "Precio por Equipo Adicional (USD)"
+      "additionalTeamPriceUsd": "Precio por Equipo Adicional (USD)",
+      "monthlyPrices": "Precios Mensuales",
+      "yearlyPrices": "Precios Anuales",
+      "priceBrlYearly": "Precio en Reales (Anual)",
+      "priceUsdYearly": "Precio en Dólares (Anual)",
+      "stripePrices": "IDs de Precios en Stripe",
+      "stripePriceBrlMonthly": "ID de Precio en Reales (Mensual)",
+      "stripePriceBrlYearly": "ID de Precio en Reales (Anual)",
+      "stripePriceUsdMonthly": "ID de Precio en Dólares (Mensual)",
+      "stripePriceUsdYearly": "ID de Precio en Dólares (Anual)"
     }
   }
 } 

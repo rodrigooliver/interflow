@@ -217,7 +217,11 @@ export default function Tags() {
               </h3>
               <button
                 onClick={() => {
-                  showAddModal ? setShowAddModal(false) : setShowEditModal(false);
+                  if (showAddModal) {
+                    setShowAddModal(false);
+                  } else {
+                    setShowEditModal(false);
+                  }
                   setSelectedTag(null);
                   setFormData({ name: '', color: '#3B82F6' });
                 }}
@@ -233,7 +237,11 @@ export default function Tags() {
                 onChange={setFormData}
                 onSubmit={showAddModal ? handleAdd : handleEdit}
                 onCancel={() => {
-                  showAddModal ? setShowAddModal(false) : setShowEditModal(false);
+                  if (showAddModal) {
+                    setShowAddModal(false);
+                  } else {
+                    setShowEditModal(false);
+                  }
                   setSelectedTag(null);
                   setFormData({ name: '', color: '#3B82F6' });
                 }}

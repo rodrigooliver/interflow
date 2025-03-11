@@ -161,6 +161,7 @@ export interface Organization {
   name: string;
   slug: string;
   logo_url?: string;
+  email?: string;
   status: 'active' | 'inactive' | 'suspended';
   created_at: string;
   updated_at: string;

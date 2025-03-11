@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAuthContext } from '../contexts/AuthContext';
-
+import { useCurrentSubscription } from '../hooks/useQueryes';
+import { useOrganizationContext } from '../contexts/OrganizationContext';
 interface SidebarProps {
   onClose?: () => void;
   isMobile?: boolean;
@@ -16,8 +17,33 @@ interface SidebarProps {
 const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: SidebarProps) => {
   const location = useLocation();
   const { signOut, profile } = useAuthContext();
+  const { currentOrganization } = useOrganizationContext();
   const { isDark, setIsDark } = useDarkMode();
   const { t } = useTranslation(['navigation', 'common']);
+  const { data: subscription } = useCurrentSubscription(currentOrganization?.id);
+
+  // Verificar se é trial
+  const isTrial = subscription?.status === 'trialing';
+
+  // Calcular dias do trial
+  const trialDays = subscription ? 
+    Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+
+  // Verificar se o trial já venceu
+  const isTrialExpired = isTrial && trialDays < 0;
+
+  // Verificar se a subscription está próxima de vencer (7 dias ou menos)
+  const isSubscriptionEndingSoon = subscription && !subscription.cancel_at_period_end && 
+    new Date(subscription.current_period_end).getTime() - Date.now() <= 7 * 24 * 60 * 60 * 1000 &&
+    new Date(subscription.current_period_end).getTime() > Date.now();
+
+  // Verificar se a subscription já venceu
+  const isSubscriptionExpired = subscription && !isTrial && 
+    new Date(subscription.current_period_end).getTime() < Date.now();
+
+  // Calcular dias desde que venceu
+  const daysExpired = subscription ? 
+    Math.abs(Math.ceil((Date.now() - new Date(subscription.current_period_end).getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   // Base links that all users can see
   const baseLinks = [
@@ -104,6 +130,50 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
             <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
           )}
         </button>
+      )}
+
+      {/* Alertas de Subscription */}
+      {!shouldCollapse && (isTrial || isSubscriptionEndingSoon || isSubscriptionExpired) && (
+        <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+          {isTrial && !isTrialExpired && (
+            <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-500 text-sm mb-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span>
+                {t('common:trialDaysLeft', { days: trialDays })}
+              </span>
+            </div>
+          )}
+          {isTrialExpired && (
+            <div className="flex items-center space-x-2 text-red-600 dark:text-red-500 text-sm mb-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span>
+                {t('common:subscriptionExpired', { days: Math.abs(trialDays) })}
+              </span>
+            </div>
+          )}
+          {isSubscriptionEndingSoon && !isTrial && (
+            <div className="flex items-center space-x-2 text-orange-600 dark:text-orange-500 text-sm">
+              <AlertTriangle className="w-4 h-4" />
+              <span>
+                {t('common:subscriptionEndingSoon')}
+              </span>
+            </div>
+          )}
+          {isSubscriptionExpired && !isTrial && (
+            <div className="flex items-center space-x-2 text-red-600 dark:text-red-500 text-sm">
+              <AlertTriangle className="w-4 h-4" />
+              <span>
+                {t('common:subscriptionExpired', { days: daysExpired })}
+              </span>
+            </div>
+          )}
+          <Link
+            to="/app/settings/billing"
+            className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline block"
+          >
+            {t('common:updateSubscription')}
+          </Link>
+        </div>
       )}
 
       {/* Scrollable Navigation - ajustando para garantir scroll adequado */}

@@ -1,11 +1,12 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { Profile } from '../types/database';
+import { Profile, Organization } from '../types/database';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
+  currentOrganization: Organization | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error?: Error | null } | undefined>;

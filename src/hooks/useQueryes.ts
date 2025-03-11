@@ -54,6 +54,8 @@ interface SubscriptionPlan {
   description_es: string;
   price_brl: number;
   price_usd: number;
+  price_brl_yearly: number;
+  price_usd_yearly: number;
   default_currency: 'BRL' | 'USD';
   max_users: number;
   max_customers: number;
@@ -72,7 +74,41 @@ interface SubscriptionPlan {
   features_pt: string[] | Record<string, string>;
   features_en: string[] | Record<string, string>;
   features_es: string[] | Record<string, string>;
-  stripe_price_id?: string;
+  stripe_price_id_brl_monthly: string;
+  stripe_price_id_usd_monthly: string;
+  stripe_price_id_brl_yearly: string;
+  stripe_price_id_usd_yearly: string;
+}
+
+interface Subscription {
+  id: string;
+  organization_id: string;
+  plan_id: string;
+  status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  stripe_subscription_id?: string;
+  billing_period?: 'monthly' | 'yearly';
+  canceled_at?: string;
+  cancel_at?: string;
+}
+
+interface Invoice {
+  id: string;
+  organization_id: string;
+  subscription_id: string | null;
+  stripe_invoice_id: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  paid_at: string | null;
+  due_date: string | null;
+  pdf_url: string | null;
+  hosted_invoice_url: string | null;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, unknown> | null;
 }
 
 // Hooks individuais para cada tipo de filtro
@@ -308,4 +344,51 @@ export const useSubscriptionPlans = () => {
     error,
     refetch,
   };
+};
+
+/**
+ * Hook para buscar a subscription atual da organização
+ */
+export const useCurrentSubscription = (organizationId?: string) => {
+  return useQuery({
+    queryKey: ['current-subscription', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+      return data as Subscription;
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000 // 10 minutos
+  });
+};
+
+export const useInvoices = (organizationId?: string) => {
+  return useQuery({
+    queryKey: ['invoices', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Invoice[];
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000 // 10 minutos
+  });
 }; 

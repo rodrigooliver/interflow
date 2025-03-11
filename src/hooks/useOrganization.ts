@@ -61,9 +61,11 @@ export function useOrganization() {
         .from('subscriptions')
         .select('*, subscription_plans(*)')
         .eq('organization_id', organizationId)
-        .eq('status', 'active')
+        .in('status', ['active', 'trialing'])
         .order('created_at', { ascending: false })
         .limit(1);
+
+      console.log(data);
 
       if (error) throw error;
       

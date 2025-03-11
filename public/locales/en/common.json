@@ -35,6 +35,11 @@
   "agent": "Agent",
   "name": "Name",
   "value": "Value",
+  "trialDaysLeft": "{{days}} days left in trial period",
+  "subscriptionEndingSoon": "Your subscription is about to expire",
+  "subscriptionExpired": "Your subscription expired {{days}} days ago",
+  "updateSubscription": "Update subscription",
+  "processing": "Processing...",
   "delete_confirmation": {
     "title": "Delete",
     "message": "Are you sure you want to delete this item?"

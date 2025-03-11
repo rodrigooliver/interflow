@@ -13,6 +13,8 @@ interface FormData {
   description_es: string;
   price_brl: number;
   price_usd: number;
+  price_brl_yearly: number;
+  price_usd_yearly: number;
   default_currency: 'BRL' | 'USD';
   max_users: number;
   max_customers: number;
@@ -28,11 +30,13 @@ interface FormData {
   additional_flow_price_usd: number;
   additional_team_price_brl: number;
   additional_team_price_usd: number;
-  stripe_price_id: string;
+  stripe_price_id_brl_monthly: string;
+  stripe_price_id_usd_monthly: string;
+  stripe_price_id_brl_yearly: string;
+  stripe_price_id_usd_yearly: string;
   features_pt: string[];
   features_en: string[];
   features_es: string[];
-  currentLanguage: 'pt' | 'en' | 'es';
 }
 
 const initialFormData: FormData = {
@@ -44,6 +48,8 @@ const initialFormData: FormData = {
   description_es: '',
   price_brl: 0,
   price_usd: 0,
+  price_brl_yearly: 0,
+  price_usd_yearly: 0,
   default_currency: 'BRL',
   max_users: 1,
   max_customers: 100,
@@ -59,11 +65,13 @@ const initialFormData: FormData = {
   additional_flow_price_usd: 0,
   additional_team_price_brl: 0,
   additional_team_price_usd: 0,
-  stripe_price_id: '',
+  stripe_price_id_brl_monthly: '',
+  stripe_price_id_usd_monthly: '',
+  stripe_price_id_brl_yearly: '',
+  stripe_price_id_usd_yearly: '',
   features_pt: [],
   features_en: [],
-  features_es: [],
-  currentLanguage: 'pt'
+  features_es: []
 };
 
 export default function SubscriptionPlanForm() {
@@ -92,11 +100,38 @@ export default function SubscriptionPlanForm() {
       if (error) throw error;
       if (data) {
         setFormData({
-          ...data,
+          name_pt: data.name_pt || '',
+          name_en: data.name_en || '',
+          name_es: data.name_es || '',
+          description_pt: data.description_pt || '',
+          description_en: data.description_en || '',
+          description_es: data.description_es || '',
+          price_brl: data.price_brl || 0,
+          price_usd: data.price_usd || 0,
+          price_brl_yearly: data.price_brl_yearly || 0,
+          price_usd_yearly: data.price_usd_yearly || 0,
+          default_currency: data.default_currency || 'BRL',
+          max_users: data.max_users || 1,
+          max_customers: data.max_customers || 100,
+          max_channels: data.max_channels || 1,
+          max_flows: data.max_flows || 5,
+          max_teams: data.max_teams || 1,
+          storage_limit: data.storage_limit || 104857600,
+          additional_user_price_brl: data.additional_user_price_brl || 0,
+          additional_user_price_usd: data.additional_user_price_usd || 0,
+          additional_channel_price_brl: data.additional_channel_price_brl || 0,
+          additional_channel_price_usd: data.additional_channel_price_usd || 0,
+          additional_flow_price_brl: data.additional_flow_price_brl || 0,
+          additional_flow_price_usd: data.additional_flow_price_usd || 0,
+          additional_team_price_brl: data.additional_team_price_brl || 0,
+          additional_team_price_usd: data.additional_team_price_usd || 0,
+          stripe_price_id_brl_monthly: data.stripe_price_id_brl_monthly || '',
+          stripe_price_id_usd_monthly: data.stripe_price_id_usd_monthly || '',
+          stripe_price_id_brl_yearly: data.stripe_price_id_brl_yearly || '',
+          stripe_price_id_usd_yearly: data.stripe_price_id_usd_yearly || '',
           features_pt: Array.isArray(data.features_pt) ? data.features_pt : [],
           features_en: Array.isArray(data.features_en) ? data.features_en : [],
-          features_es: Array.isArray(data.features_es) ? data.features_es : [],
-          currentLanguage: 'pt'
+          features_es: Array.isArray(data.features_es) ? data.features_es : []
         });
       }
     } catch (err) {
@@ -118,20 +153,17 @@ export default function SubscriptionPlanForm() {
         features_es: Array.isArray(formData.features_es) ? formData.features_es : []
       };
 
-      // Remover o campo currentLanguage antes de enviar para o banco
-      const { currentLanguage, ...dataToSend } = planData;
-
       if (id) {
         const { error } = await supabase
           .from('subscription_plans')
-          .update(dataToSend)
+          .update(planData)
           .eq('id', id);
 
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('subscription_plans')
-          .insert([dataToSend]);
+          .insert([planData]);
 
         if (error) throw error;
       }
@@ -146,7 +178,7 @@ export default function SubscriptionPlanForm() {
   };
 
   const getCurrentFeatures = () => {
-    switch (formData.currentLanguage) {
+    switch (i18n.language) {
       case 'en':
         return formData.features_en;
       case 'es':
@@ -164,15 +196,15 @@ export default function SubscriptionPlanForm() {
         const updatedData = { ...prev };
         
         // Adicionar o recurso no idioma atual
-        if (prev.currentLanguage === 'pt') {
+        if (i18n.language === 'pt') {
           updatedData.features_pt = Array.isArray(prev.features_pt) 
             ? [...prev.features_pt, feature] 
             : [feature];
-        } else if (prev.currentLanguage === 'en') {
+        } else if (i18n.language === 'en') {
           updatedData.features_en = Array.isArray(prev.features_en) 
             ? [...prev.features_en, feature] 
             : [feature];
-        } else if (prev.currentLanguage === 'es') {
+        } else if (i18n.language === 'es') {
           updatedData.features_es = Array.isArray(prev.features_es) 
             ? [...prev.features_es, feature] 
             : [feature];
@@ -190,15 +222,15 @@ export default function SubscriptionPlanForm() {
       const updatedData = { ...prev };
       
       // Remover o recurso do idioma atual
-      if (prev.currentLanguage === 'pt') {
+      if (i18n.language === 'pt') {
         updatedData.features_pt = Array.isArray(prev.features_pt) 
           ? prev.features_pt.filter((_, i) => i !== index) 
           : [];
-      } else if (prev.currentLanguage === 'en') {
+      } else if (i18n.language === 'en') {
         updatedData.features_en = Array.isArray(prev.features_en) 
           ? prev.features_en.filter((_, i) => i !== index) 
           : [];
-      } else if (prev.currentLanguage === 'es') {
+      } else if (i18n.language === 'es') {
         updatedData.features_es = Array.isArray(prev.features_es) 
           ? prev.features_es.filter((_, i) => i !== index) 
           : [];
@@ -320,67 +352,107 @@ export default function SubscriptionPlanForm() {
           </div>
 
           {/* Preços e moeda padrão */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <label htmlFor="price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('subscription:plans.form.priceBrl')} *
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">R$</span>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                {t('subscription:plans.form.monthlyPrices')}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('subscription:plans.form.priceBrl')} *
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">R$</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="price_brl"
+                      required
+                      min="0"
+                      step="0.01"
+                      className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.price_brl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price_brl: parseFloat(e.target.value) }))}
+                    />
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  id="price_brl"
-                  required
-                  min="0"
-                  step="0.01"
-                  className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                  value={formData.price_brl}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price_brl: parseFloat(e.target.value) }))}
-                />
+
+                <div>
+                  <label htmlFor="price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('subscription:plans.form.priceUsd')} *
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="price_usd"
+                      required
+                      min="0"
+                      step="0.01"
+                      className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.price_usd}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price_usd: parseFloat(e.target.value) }))}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
             <div>
-              <label htmlFor="price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('subscription:plans.form.priceUsd')} *
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">$</span>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                {t('subscription:plans.form.yearlyPrices')}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="price_brl_yearly" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('subscription:plans.form.priceBrlYearly')} *
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">R$</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="price_brl_yearly"
+                      required
+                      min="0"
+                      step="0.01"
+                      className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.price_brl_yearly}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price_brl_yearly: parseFloat(e.target.value) }))}
+                    />
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  id="price_usd"
-                  required
-                  min="0"
-                  step="0.01"
-                  className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                  value={formData.price_usd}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price_usd: parseFloat(e.target.value) }))}
-                />
-              </div>
-            </div>
 
-            <div>
-              <label htmlFor="default_currency" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('subscription:plans.form.defaultCurrency')} *
-              </label>
-              <select
-                id="default_currency"
-                required
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                value={formData.default_currency}
-                onChange={(e) => setFormData(prev => ({ ...prev, default_currency: e.target.value as 'BRL' | 'USD' }))}
-              >
-                <option value="BRL">Real (BRL)</option>
-                <option value="USD">Dólar (USD)</option>
-              </select>
+                <div>
+                  <label htmlFor="price_usd_yearly" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('subscription:plans.form.priceUsdYearly')} *
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="price_usd_yearly"
+                      required
+                      min="0"
+                      step="0.01"
+                      className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.price_usd_yearly}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price_usd_yearly: parseFloat(e.target.value) }))}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Limites */}
+          {/* Limites do plano */}
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               {t('subscription:plans.form.limits')}
@@ -389,7 +461,7 @@ export default function SubscriptionPlanForm() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label htmlFor="max_users" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.maxUsers')} *
+                  {t('settings:billing.maxUsers')} *
                 </label>
                 <input
                   type="number"
@@ -404,7 +476,7 @@ export default function SubscriptionPlanForm() {
 
               <div>
                 <label htmlFor="max_customers" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.maxCustomers')} *
+                  {t('settings:billing.maxCustomers')} *
                 </label>
                 <input
                   type="number"
@@ -419,7 +491,7 @@ export default function SubscriptionPlanForm() {
 
               <div>
                 <label htmlFor="max_channels" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.maxChannels')} *
+                  {t('settings:billing.maxChannels')} *
                 </label>
                 <input
                   type="number"
@@ -434,7 +506,7 @@ export default function SubscriptionPlanForm() {
 
               <div>
                 <label htmlFor="max_flows" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.maxFlows')} *
+                  {t('settings:billing.maxFlows')} *
                 </label>
                 <input
                   type="number"
@@ -449,7 +521,7 @@ export default function SubscriptionPlanForm() {
 
               <div>
                 <label htmlFor="max_teams" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.maxTeams')} *
+                  {t('settings:billing.maxTeams')} *
                 </label>
                 <input
                   type="number"
@@ -464,7 +536,7 @@ export default function SubscriptionPlanForm() {
 
               <div>
                 <label htmlFor="storage_limit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.storageLimit')} (MB) *
+                  {t('settings:billing.storage')} (MB) *
                 </label>
                 <input
                   type="number"
@@ -472,7 +544,7 @@ export default function SubscriptionPlanForm() {
                   required
                   min="1"
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                  value={formData.storage_limit / 1048576} // Convertendo bytes para MB
+                  value={(formData.storage_limit / 1048576).toFixed(0)}
                   onChange={(e) => setFormData(prev => ({ ...prev, storage_limit: parseInt(e.target.value) * 1048576 }))}
                 />
               </div>
@@ -487,162 +559,257 @@ export default function SubscriptionPlanForm() {
             
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <label htmlFor="additional_user_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalUserPriceBrl')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">R$</span>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">BRL</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="additional_user_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalUser')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">R$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_user_price_brl"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_user_price_brl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_user_price_brl: parseFloat(e.target.value) }))}
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="number"
-                    id="additional_user_price_brl"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_user_price_brl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_user_price_brl: parseFloat(e.target.value) }))}
-                  />
+
+                  <div>
+                    <label htmlFor="additional_channel_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalChannel')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">R$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_channel_price_brl"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_channel_price_brl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_channel_price_brl: parseFloat(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="additional_flow_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalFlow')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">R$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_flow_price_brl"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_flow_price_brl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_flow_price_brl: parseFloat(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="additional_team_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalTeam')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">R$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_team_price_brl"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_team_price_brl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_team_price_brl: parseFloat(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="additional_user_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalUserPriceUsd')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">$</span>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">USD</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="additional_user_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalUser')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_user_price_usd"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_user_price_usd}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_user_price_usd: parseFloat(e.target.value) }))}
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="number"
-                    id="additional_user_price_usd"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_user_price_usd}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_user_price_usd: parseFloat(e.target.value) }))}
-                  />
+
+                  <div>
+                    <label htmlFor="additional_channel_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalChannel')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_channel_price_usd"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_channel_price_usd}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_channel_price_usd: parseFloat(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="additional_flow_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalFlow')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_flow_price_usd"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_flow_price_usd}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_flow_price_usd: parseFloat(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="additional_team_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('settings:billing.additionalTeam')}
+                    </label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="additional_team_price_usd"
+                        min="0"
+                        step="0.01"
+                        className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                        value={formData.additional_team_price_usd}
+                        onChange={(e) => setFormData(prev => ({ ...prev, additional_team_price_usd: parseFloat(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* IDs dos Preços do Stripe */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              {t('subscription:plans.form.stripePrices')}
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {/* Preços mensais */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                  {t('subscription:plans.form.monthlyPrices')}
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="stripe_price_id_brl_monthly" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('subscription:plans.form.stripePriceBrlMonthly')} *
+                    </label>
+                    <input
+                      type="text"
+                      id="stripe_price_id_brl_monthly"
+                      required
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.stripe_price_id_brl_monthly}
+                      onChange={(e) => setFormData(prev => ({ ...prev, stripe_price_id_brl_monthly: e.target.value }))}
+                      placeholder="price_..."
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="stripe_price_id_usd_monthly" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('subscription:plans.form.stripePriceUsdMonthly')} *
+                    </label>
+                    <input
+                      type="text"
+                      id="stripe_price_id_usd_monthly"
+                      required
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.stripe_price_id_usd_monthly}
+                      onChange={(e) => setFormData(prev => ({ ...prev, stripe_price_id_usd_monthly: e.target.value }))}
+                      placeholder="price_..."
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Preços anuais */}
               <div>
-                <label htmlFor="additional_channel_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalChannelPriceBrl')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">R$</span>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                  {t('subscription:plans.form.yearlyPrices')}
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="stripe_price_id_brl_yearly" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('subscription:plans.form.stripePriceBrlYearly')} *
+                    </label>
+                    <input
+                      type="text"
+                      id="stripe_price_id_brl_yearly"
+                      required
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.stripe_price_id_brl_yearly}
+                      onChange={(e) => setFormData(prev => ({ ...prev, stripe_price_id_brl_yearly: e.target.value }))}
+                      placeholder="price_..."
+                    />
                   </div>
-                  <input
-                    type="number"
-                    id="additional_channel_price_brl"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_channel_price_brl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_channel_price_brl: parseFloat(e.target.value) }))}
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label htmlFor="additional_channel_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalChannelPriceUsd')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">$</span>
+                  <div>
+                    <label htmlFor="stripe_price_id_usd_yearly" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('subscription:plans.form.stripePriceUsdYearly')} *
+                    </label>
+                    <input
+                      type="text"
+                      id="stripe_price_id_usd_yearly"
+                      required
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                      value={formData.stripe_price_id_usd_yearly}
+                      onChange={(e) => setFormData(prev => ({ ...prev, stripe_price_id_usd_yearly: e.target.value }))}
+                      placeholder="price_..."
+                    />
                   </div>
-                  <input
-                    type="number"
-                    id="additional_channel_price_usd"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_channel_price_usd}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_channel_price_usd: parseFloat(e.target.value) }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="additional_flow_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalFlowPriceBrl')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">R$</span>
-                  </div>
-                  <input
-                    type="number"
-                    id="additional_flow_price_brl"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_flow_price_brl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_flow_price_brl: parseFloat(e.target.value) }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="additional_flow_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalFlowPriceUsd')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">$</span>
-                  </div>
-                  <input
-                    type="number"
-                    id="additional_flow_price_usd"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_flow_price_usd}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_flow_price_usd: parseFloat(e.target.value) }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="additional_team_price_brl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalTeamPriceBrl')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">R$</span>
-                  </div>
-                  <input
-                    type="number"
-                    id="additional_team_price_brl"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_team_price_brl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_team_price_brl: parseFloat(e.target.value) }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="additional_team_price_usd" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('subscription:plans.form.additionalTeamPriceUsd')}
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">$</span>
-                  </div>
-                  <input
-                    type="number"
-                    id="additional_team_price_usd"
-                    min="0"
-                    step="0.01"
-                    className="pl-12 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-                    value={formData.additional_team_price_usd}
-                    onChange={(e) => setFormData(prev => ({ ...prev, additional_team_price_usd: parseFloat(e.target.value) }))}
-                  />
                 </div>
               </div>
             </div>
@@ -660,33 +827,33 @@ export default function SubscriptionPlanForm() {
                 <button
                   type="button"
                   className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-                    formData.currentLanguage === 'pt'
+                    i18n.language === 'pt'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
                   }`}
-                  onClick={() => setFormData(prev => ({ ...prev, currentLanguage: 'pt' }))}
+                  onClick={() => i18n.changeLanguage('pt')}
                 >
                   Português
                 </button>
                 <button
                   type="button"
                   className={`px-4 py-2 text-sm font-medium ${
-                    formData.currentLanguage === 'en'
+                    i18n.language === 'en'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
                   }`}
-                  onClick={() => setFormData(prev => ({ ...prev, currentLanguage: 'en' }))}
+                  onClick={() => i18n.changeLanguage('en')}
                 >
                   English
                 </button>
                 <button
                   type="button"
                   className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-                    formData.currentLanguage === 'es'
+                    i18n.language === 'es'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
                   }`}
-                  onClick={() => setFormData(prev => ({ ...prev, currentLanguage: 'es' }))}
+                  onClick={() => i18n.changeLanguage('es')}
                 >
                   Español
                 </button>
@@ -723,20 +890,6 @@ export default function SubscriptionPlanForm() {
                 </li>
               ))}
             </ul>
-          </div>
-
-          {/* Stripe */}
-          <div>
-            <label htmlFor="stripe_price_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('subscription:plans.form.stripePriceId')}
-            </label>
-            <input
-              type="text"
-              id="stripe_price_id"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
-              value={formData.stripe_price_id}
-              onChange={(e) => setFormData(prev => ({ ...prev, stripe_price_id: e.target.value }))}
-            />
           </div>
 
           <div className="flex justify-end space-x-3">

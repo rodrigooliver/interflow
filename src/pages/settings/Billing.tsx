@@ -12,7 +12,7 @@ export default function BillingPage() {
         <SettingsTabs />
         
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <h1 className="text-lg font-medium text-gray-900 dark:text-white">
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
             {t('settings:billing.title')}
           </h1>
 

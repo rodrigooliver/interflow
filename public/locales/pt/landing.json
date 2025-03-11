@@ -115,17 +115,24 @@
   "pricing": {
     "title": "Planos",
     "subtitle": "Escolha o plano ideal para o seu negócio",
-    "description": "Oferecemos planos flexíveis que se adaptam ao tamanho e às necessidades da sua empresa. Todos os planos incluem suporte técnico e atualizações gratuitas.",
-    "popular": "Mais popular",
+    "description": "Todos os planos incluem suporte prioritário e atualizações gratuitas.",
+    "monthly": "Mensal",
+    "yearly": "Anual",
     "month": "mês",
-    "subscribe": "Assinar agora",
+    "year": "ano",
+    "popular": "Mais Popular",
+    "subscribe": "Começar Agora",
+    "monthlyEquivalent": "Equivalente a {{price}}/mês",
+    "yearlySavings": "Economize {{percentage}}% pagando anualmente",
+    "havingQuestions": "Tem alguma dúvida? Veja nosso FAQ",
+
     "users": "Usuários",
     "customers": "Clientes",
     "channels": "Canais",
     "flows": "Fluxos",
     "teams": "Equipes",
-    "storage": "Armazenamento",
-    "havingQuestions": "Tem dúvidas? Veja nossas perguntas frequentes"
+    "storage": "Armazenamento"
+
   },
   "socialProof": {
     "testimonial1": {

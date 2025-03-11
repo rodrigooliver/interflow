@@ -9,6 +9,14 @@
       "dest": "/index.html"
     },
     {
+      "src": "/privacy-policy",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/terms-of-service",
+      "dest": "/index.html"
+    },
+    {
       "src": "/app/*",
       "dest": "/index.html"
     },

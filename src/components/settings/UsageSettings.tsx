@@ -33,7 +33,7 @@ interface UsageStats {
 
 export function UsageSettings() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization, subscription } = useOrganizationContext();
+  const { currentOrganization } = useOrganizationContext();
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,6 +46,20 @@ export function UsageSettings() {
 
   async function loadUsageStats() {
     try {
+
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('organization_id', currentOrganization?.id)
+        .in('status', ['active', 'trialing'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+
+      if (subscriptionError) throw subscriptionError;
+
+      const subscription = subscriptionData[0];
+
       // Load storage usage
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
@@ -96,6 +110,8 @@ export function UsageSettings() {
         .eq('organization_id', currentOrganization?.id);
 
       if (customersError) throw customersError;
+
+      console.log(subscription);
 
       setStats({
         storage: {

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useAuthContext } from '../contexts/AuthContext';
-import { useTheme } from '../providers/ThemeProvider';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { PublicLayout } from '../layouts/PublicLayout';
+import { PublicLayout } from '../../layouts/PublicLayout';
 
 export default function Login() {
   const [email, setEmail] = useState('');

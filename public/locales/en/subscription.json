@@ -40,7 +40,16 @@
       "additionalFlowPriceBrl": "Price per Additional Flow (BRL)",
       "additionalFlowPriceUsd": "Price per Additional Flow (USD)",
       "additionalTeamPriceBrl": "Price per Additional Team (BRL)",
-      "additionalTeamPriceUsd": "Price per Additional Team (USD)"
+      "additionalTeamPriceUsd": "Price per Additional Team (USD)",
+      "monthlyPrices": "Monthly Prices",
+      "yearlyPrices": "Yearly Prices",
+      "priceBrlYearly": "Price in Brazilian Real (Yearly)",
+      "priceUsdYearly": "Price in Dollars (Yearly)",
+      "stripePrices": "Stripe Price IDs",
+      "stripePriceBrlMonthly": "Stripe Price ID in Brazilian Real (Monthly)",
+      "stripePriceBrlYearly": "Stripe Price ID in Brazilian Real (Yearly)",
+      "stripePriceUsdMonthly": "Stripe Price ID in Dollars (Monthly)",
+      "stripePriceUsdYearly": "Stripe Price ID in Dollars (Yearly)"
     }
   }
 } 

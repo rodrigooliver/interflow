@@ -19,6 +19,7 @@
   "darkMode": "Modo Oscuro",
   "logout": "Cerrar Sesión",
   "cancel": "Cancelar",
+  "close": "Cerrar",
   "send": "Enviar",
   "previous": "Anterior",
   "next": "Siguiente",
@@ -32,6 +33,13 @@
   "saveSuccess": "Cambios guardados correctamente!",
   "recommended": "Recomendado",
   "agent": "Agente",
+  "name": "Nombre",
+  "value": "Valor",
+  "trialDaysLeft": "{{days}} días restantes del período de prueba",
+  "subscriptionEndingSoon": "Tu suscripción está a punto de vencer",
+  "subscriptionExpired": "Tu suscripción venció hace {{days}} días",
+  "updateSubscription": "Actualizar suscripción",
+  "processing": "Procesando...",
   "delete_confirmation": {
     "title": "Eliminar",
     "message": "¿Estás seguro de querer eliminar este elemento?"
@@ -59,7 +67,6 @@
     }
   },
   "unnamed": "Sin nombre",
-  "close": "Cerrar",
   "of": "de",
   "showing": "Mostrando",
   "to": "hasta",

@@ -35,6 +35,11 @@
   "agent": "Agente",
   "name": "Nome",
   "value": "Valor",
+  "trialDaysLeft": "{{days}} dias restantes do período de teste",
+  "subscriptionEndingSoon": "Sua assinatura está próxima de vencer",
+  "subscriptionExpired": "Sua assinatura venceu há {{days}} dias",
+  "updateSubscription": "Atualizar assinatura",
+  "processing": "Processando...",
   "delete_confirmation": {
     "title": "Excluir",
     "message": "Tem certeza que deseja excluir este item?"

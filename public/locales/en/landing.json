@@ -41,7 +41,7 @@
     }
   },
   "features": {
-    "title": "Features",
+    "title": "Everything you need for exceptional customer service",
     "subtitle": "Exclusive features",
     "description": "Our platform was developed to maximize efficiency, automation and conversion across all your service channels.",
     "items": [
@@ -107,17 +107,22 @@
   "pricing": {
     "title": "Plans",
     "subtitle": "Choose the ideal plan for your business",
-    "description": "We offer flexible plans that adapt to the size and needs of your company. All plans include technical support and free updates.",
-    "popular": "Most popular",
+    "description": "All plans include priority support and free updates.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
     "month": "month",
-    "subscribe": "Subscribe now",
+    "year": "year",
+    "popular": "Most popular",
+    "subscribe": "Get Started Now",
+    "monthlyEquivalent": "Equivalent to {{price}}/month",
+    "yearlySavings": "Save {{percentage}}% by paying annually",
+    "havingQuestions": "Have questions? Check our FAQ",
     "users": "Users",
     "customers": "Customers",
     "channels": "Channels",
     "flows": "Flows",
     "teams": "Teams",
-    "storage": "Storage",
-    "havingQuestions": "Have questions? Check our frequently asked questions"
+    "storage": "Storage"
   },
   "testimonials": {
     "title": "What our customers say",

@@ -41,7 +41,7 @@
     }
   },
   "features": {
-    "title": "Características",
+    "title": "Todo lo que necesitas para una atención excepcional",
     "subtitle": "Funciones exclusivas",
     "description": "Nuestra plataforma fue desarrollada para maximizar la eficiencia, automatización y conversión en todos sus canales de atención.",
     "items": [
@@ -107,17 +107,22 @@
   "pricing": {
     "title": "Planes",
     "subtitle": "Elige el plan ideal para tu negocio",
-    "description": "Ofrecemos planes flexibles que se adaptan al tamaño y las necesidades de tu empresa. Todos los planes incluyen soporte técnico y actualizaciones gratuitas.",
-    "popular": "Más popular",
+    "description": "Todos los planes incluyen soporte prioritario y actualizaciones gratuitas.",
+    "monthly": "Mensual",
+    "yearly": "Anual",
     "month": "mes",
-    "subscribe": "Suscribirse ahora",
+    "year": "año",
+    "popular": "Más popular",
+    "subscribe": "Comenzar Ahora",
+    "monthlyEquivalent": "Equivalente a {{price}}/mes",
+    "yearlySavings": "Ahorra {{percentage}}% pagando anualmente",
+    "havingQuestions": "¿Tienes dudas? Consulta nuestro FAQ",
     "users": "Usuarios",
     "customers": "Clientes",
     "channels": "Canales",
     "flows": "Flujos",
     "teams": "Equipos",
-    "storage": "Almacenamiento",
-    "havingQuestions": "¿Tienes preguntas? Consulta nuestras preguntas frecuentes"
+    "storage": "Almacenamiento"
   },
   "testimonials": {
     "title": "Lo que dicen nuestros clientes",
@@ -160,7 +165,7 @@
     "message": "¡Hola! Me gustaría saber más sobre InterFlow Chat."
   },
   "footer": {
-    "copyright": "© 2024 InterFlow Chat. Todos los derechos reservados.",
+    "copyright": "InterFlow Chat. Todos los derechos reservados.",
     "privacyPolicy": "Política de Privacidad",
     "termsOfService": "Términos de Servicio"
   }
