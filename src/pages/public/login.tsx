@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { PublicLayout } from '../../layouts/PublicLayout';
 
-export default function Login() {
+export default function Login() { //Login page
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

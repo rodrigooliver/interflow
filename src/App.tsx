@@ -13,7 +13,7 @@ import IntegrationsPage from './pages/settings/Integrations';
 import NotificationsPage from './pages/settings/Notifications';
 import ApiKeysPage from './pages/settings/ApiKeysPage';
 import UsagePage from './pages/settings/Usage';
-import Login from './pages/public/Login';
+import Login from './pages/public/login';
 import Organizations from './pages/admin/Organizations';
 import AddOrganization from './pages/admin/AddOrganization';
 import TeamMembers from './pages/organization/TeamMembers';
