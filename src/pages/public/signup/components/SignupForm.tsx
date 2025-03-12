@@ -406,14 +406,14 @@ export default function SignupForm() {
       </button>
       
       <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-        Ao criar uma conta, você concorda com os{' '}
+        {t('auth:signup.agreement')}
         <Link to="/terms-of-service" target="_blank" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-          Termos de uso
-        </Link>{' '}
-        e a{' '}
+          {t('auth:signup.termsOfService')}
+        </Link>
+        {' '}
         <Link to="/privacy-policy" target="_blank" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-          Política de privacidade
-        </Link>.
+          {t('auth:signup.privacyPolicy')}
+        </Link>
       </div>
     </form>
   );
