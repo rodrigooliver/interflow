@@ -10,7 +10,8 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    avatar_url: ''
+    avatar_url: '',
+    whatsapp: ''
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +23,8 @@ export default function Profile() {
       setFormData({
         full_name: currentProfile.full_name || '',
         email: currentProfile.email || '',
-        avatar_url: currentProfile.avatar_url || ''
+        avatar_url: currentProfile.avatar_url || '',
+        whatsapp: currentProfile.whatsapp || ''
       });
     }
   }, [currentProfile]);
@@ -40,6 +42,7 @@ export default function Profile() {
         .update({
           full_name: formData.full_name,
           avatar_url: formData.avatar_url,
+          whatsapp: formData.whatsapp,
           updated_at: new Date().toISOString()
         })
         .eq('id', currentProfile.id);
@@ -228,6 +231,21 @@ export default function Profile() {
                 value={formData.email}
                 disabled
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm py-2 px-3 cursor-not-allowed"
+              />
+            </div>
+
+            {/* WhatsApp */}
+            <div>
+              <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('profile:form.whatsapp')}
+              </label>
+              <input
+                type="text"
+                id="whatsapp"
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                placeholder="+55 (11) 98765-4321"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
               />
             </div>
 

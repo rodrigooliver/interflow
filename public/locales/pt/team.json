@@ -14,7 +14,9 @@
     "fullName": "Nome Completo",
     "email": "Email",
     "password": "Senha",
-    "role": "Função"
+    "role": "Função",
+    "whatsapp": "WhatsApp",
+    "avatarUrl": "URL do Avatar"
   },
   "actions": {
     "register": "Cadastrar",

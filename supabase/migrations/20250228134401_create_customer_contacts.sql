@@ -46,16 +46,11 @@ USING (
 
 -- Política para INSERT
 DROP POLICY IF EXISTS "Usuários podem inserir contatos para clientes da sua organização" ON customer_contacts;
-CREATE POLICY "Usuários podem inserir contatos para clientes da sua organização"
+CREATE POLICY "Usuários autenticados podem inserir contatos para qualquer cliente"
 ON customer_contacts
 FOR INSERT
 WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM customers c
-    JOIN organization_members om ON c.organization_id = om.organization_id
-    WHERE c.id = customer_contacts.customer_id
-    AND om.user_id = auth.uid()
-  )
+  auth.uid() IS NOT NULL
 );
 
 -- Política para UPDATE

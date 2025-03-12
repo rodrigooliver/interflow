@@ -53,6 +53,8 @@ import TermsOfService from './pages/public/terms-of-service';
 import SubscriptionPlans from './pages/admin/SubscriptionPlans';
 import SubscriptionPlanForm from './pages/admin/SubscriptionPlanForm';
 import Referrals from './pages/organization/Referrals';
+import OrganizationSubscriptions from './pages/admin/OrganizationSubscriptions';
+import { useAutoLogin } from './hooks/useAutoLogin';
 
 // Criar uma instância do QueryClient
 const queryClient = new QueryClient({
@@ -71,6 +73,9 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  
+  // Usar o hook de autologin para garantir que a sessão seja estabelecida após o cadastro
+  useAutoLogin();
 
   // Enquanto estiver carregando, mostra o loading em todas as rotas
   if (loading) {
@@ -206,6 +211,7 @@ function AppContent() {
                         <>
                           <Route path="admin/organizations" element={<Organizations />} />
                           <Route path="admin/organizations/add" element={<AddOrganization />} />
+                          <Route path="admin/organizations/:organizationId/subscriptions" element={<OrganizationSubscriptions />} />
                           <Route path="admin/subscription-plans" element={<SubscriptionPlans />} />
                           <Route path="admin/subscription-plans/new" element={<SubscriptionPlanForm />} />
                           <Route path="admin/subscription-plans/:id" element={<SubscriptionPlanForm />} />

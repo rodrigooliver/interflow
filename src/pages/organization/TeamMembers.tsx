@@ -21,6 +21,7 @@ interface EditProfileFormData {
   fullName: string;
   email: string;
   avatarUrl: string;
+  whatsapp: string;
 }
 
 export default function TeamMembers() {
@@ -46,6 +47,7 @@ export default function TeamMembers() {
     fullName: '',
     email: '',
     avatarUrl: '',
+    whatsapp: ''
   });
 
   useEffect(() => {
@@ -195,6 +197,7 @@ export default function TeamMembers() {
           full_name: editProfileForm.fullName,
           email: editProfileForm.email,
           avatar_url: editProfileForm.avatarUrl,
+          whatsapp: editProfileForm.whatsapp
         })
         .eq('id', selectedMember.profile.id);
         
@@ -326,6 +329,7 @@ export default function TeamMembers() {
                             fullName: member.profile.full_name || '',
                             email: member.profile.email || '',
                             avatarUrl: member.profile.avatar_url || '',
+                            whatsapp: member.profile.whatsapp || ''
                           });
                           setShowEditModal(true);
                         }
@@ -585,6 +589,20 @@ export default function TeamMembers() {
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
                     value={editProfileForm.avatarUrl}
                     onChange={(e) => setEditProfileForm({ ...editProfileForm, avatarUrl: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="editWhatsapp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('team:form.whatsapp')}
+                  </label>
+                  <input
+                    type="text"
+                    id="editWhatsapp"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+                    value={editProfileForm.whatsapp}
+                    onChange={(e) => setEditProfileForm({ ...editProfileForm, whatsapp: e.target.value })}
+                    placeholder="+55 (11) 98765-4321"
                   />
                 </div>
               </div>

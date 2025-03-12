@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabase';
 interface FormData {
   organizationName: string;
   organizationSlug: string;
+  organizationEmail: string;
+  organizationWhatsapp: string;
   adminName: string;
   adminEmail: string;
   adminPassword: string;
@@ -18,6 +20,8 @@ export default function AddOrganization() {
   const [formData, setFormData] = useState<FormData>({
     organizationName: '',
     organizationSlug: '',
+    organizationEmail: '',
+    organizationWhatsapp: '',
     adminName: '',
     adminEmail: '',
     adminPassword: '',
@@ -29,125 +33,105 @@ export default function AddOrganization() {
     setError('');
 
     try {
-      // 1. Create admin user without signing in
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.adminEmail,
-        password: formData.adminPassword,
-        email_confirm: true
-      });
-
-      if (authError) {
-        if (authError.message === 'User already registered') {
-          setError('Este email já está cadastrado. Por favor, use outro email.');
-          return;
-        }
-        throw authError;
-      }
-      
-      if (!authData.user) throw new Error('Failed to create user');
-      
-      const userId = authData.user.id;
-
-      // 2. Create admin profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: userId,
-            email: formData.adminEmail,
-            full_name: formData.adminName,
-            is_superadmin: false,
-            role: 'admin',
-          },
-        ]);
-
-      if (profileError) throw profileError;
-
-      // 3. Create organization
+      // 1. Create organization
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
-        .insert([
-          {
-            name: formData.organizationName,
-            slug: formData.organizationSlug,
-            status: 'active',
-          },
-        ])
+        .insert({
+          name: formData.organizationName,
+          slug: formData.organizationSlug,
+          email: formData.organizationEmail,
+          whatsapp: formData.organizationWhatsapp
+        })
         .select()
         .single();
 
       if (orgError) throw orgError;
 
-      // 4. Add user as organization owner
+      // 2. Create admin user
+      const { data: userData, error: userError } = await supabase.auth.signUp({
+        email: formData.adminEmail,
+        password: formData.adminPassword,
+        options: {
+          data: {
+            full_name: formData.adminName
+          }
+        }
+      });
+
+      if (userError) throw userError;
+
+      // 3. Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userData.user?.id,
+          email: formData.adminEmail,
+          full_name: formData.adminName,
+          role: 'admin'
+        });
+
+      if (profileError) throw profileError;
+
+      // 4. Create organization membership
       const { error: memberError } = await supabase
         .from('organization_members')
-        .insert([
-          {
-            organization_id: orgData.id,
-            user_id: userId,
-            role: 'owner',
-          },
-        ]);
+        .insert({
+          organization_id: orgData.id,
+          user_id: userData.user?.id,
+          role: 'owner'
+        });
 
       if (memberError) throw memberError;
 
-      // 5. Create initial subscription (trial)
-      const { data: planData } = await supabase
+      // 5. Create default subscription
+      const { data: planData, error: planError } = await supabase
         .from('subscription_plans')
         .select('id')
-        .eq('name', 'Starter')
+        .eq('name', 'Free')
         .single();
 
-      if (planData) {
-        const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + 14); // 14 days trial
+      if (planError) throw planError;
 
-        await supabase
-          .from('subscriptions')
-          .insert([
-            {
-              organization_id: orgData.id,
-              plan_id: planData.id,
-              status: 'trialing',
-              current_period_start: new Date().toISOString(),
-              current_period_end: trialEnd.toISOString(),
-            },
-          ]);
-      }
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert({
+          organization_id: orgData.id,
+          plan_id: planData.id,
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          cancel_at_period_end: false
+        });
 
+      if (subscriptionError) throw subscriptionError;
+
+      // Success - redirect to organizations list
       navigate('/app/admin/organizations');
-    } catch (err: any) {
-      console.error('Error creating organization:', err);
-      setError(err.message || 'Erro ao criar organização');
+    } catch (error: unknown) {
+      console.error('Error creating organization:', error);
+      setError(typeof error === 'object' && error !== null && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'Ocorreu um erro ao criar a organização');
     } finally {
       setLoading(false);
     }
   };
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  };
-
   const handleOrganizationNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    setFormData(prev => ({
-      ...prev,
+    setFormData({
+      ...formData,
       organizationName: name,
-      organizationSlug: generateSlug(name)
-    }));
+      organizationSlug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    });
   };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      organizationSlug: generateSlug(value)
-    }));
+    const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setFormData({
+      ...formData,
+      organizationSlug: slug
+    });
   };
 
   return (
@@ -206,14 +190,41 @@ export default function AddOrganization() {
                   Identificador único para a organização (apenas letras minúsculas, números e hífens)
                 </p>
               </div>
+
+              <div>
+                <label htmlFor="organizationEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email da Organização
+                </label>
+                <input
+                  type="email"
+                  id="organizationEmail"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                  value={formData.organizationEmail}
+                  onChange={(e) => setFormData({ ...formData, organizationEmail: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="organizationWhatsapp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  WhatsApp da Organização
+                </label>
+                <input
+                  type="text"
+                  id="organizationWhatsapp"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                  placeholder="+55 (11) 98765-4321"
+                  value={formData.organizationWhatsapp}
+                  onChange={(e) => setFormData({ ...formData, organizationWhatsapp: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Dados do Administrador</h2>
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Administrador</h2>
               
               <div>
                 <label htmlFor="adminName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome do Administrador *
+                  Nome Completo *
                 </label>
                 <input
                   type="text"
@@ -221,13 +232,13 @@ export default function AddOrganization() {
                   required
                   className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
                   value={formData.adminName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, adminName: e.target.value }))}
+                  onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
                 />
               </div>
 
               <div>
                 <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email do Administrador *
+                  Email *
                 </label>
                 <input
                   type="email"
@@ -235,13 +246,13 @@ export default function AddOrganization() {
                   required
                   className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
                   value={formData.adminEmail}
-                  onChange={(e) => setFormData(prev => ({ ...prev, adminEmail: e.target.value }))}
+                  onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
                 />
               </div>
 
               <div>
                 <label htmlFor="adminPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Senha do Administrador *
+                  Senha *
                 </label>
                 <input
                   type="password"
@@ -249,16 +260,16 @@ export default function AddOrganization() {
                   required
                   className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
                   value={formData.adminPassword}
-                  onChange={(e) => setFormData(prev => ({ ...prev, adminPassword: e.target.value }))}
+                  onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
                 />
               </div>
             </div>
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Criar Organização

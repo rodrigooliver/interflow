@@ -162,6 +162,7 @@ export interface Organization {
   slug: string;
   logo_url?: string;
   email?: string;
+  whatsapp?: string;
   status: 'active' | 'inactive' | 'suspended';
   created_at: string;
   updated_at: string;
@@ -192,6 +193,7 @@ export interface Profile {
   email: string;
   full_name: string;
   avatar_url?: string;
+  whatsapp?: string;
   role: string;
   created_at: string;
   is_superadmin: boolean;

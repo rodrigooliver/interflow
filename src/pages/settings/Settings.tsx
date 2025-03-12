@@ -15,7 +15,6 @@ export default function Settings() {
           </h1>
 
           <div className="space-y-6">
-            {/* Adicione aqui os campos de configurações gerais */}
             <div className="text-center text-gray-500 dark:text-gray-400">
               {t('settings:sections.comingSoon')}
             </div>
