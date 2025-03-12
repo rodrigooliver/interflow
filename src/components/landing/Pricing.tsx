@@ -281,7 +281,7 @@ export const Pricing = () => {
                   </div>
                 )}
                 <button
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate(`/signup?planId=${plan.id}&billingPeriod=${billingPeriod}&currency=${selectedCurrency}`)}
                   className={`mt-6 block w-full rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
                     isPopular
                       ? 'bg-blue-600 text-white hover:bg-blue-500 focus-visible:outline-blue-600'

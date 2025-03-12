@@ -91,8 +91,8 @@ export const Hero = () => {
         <div className="h-full w-full bg-[linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)]" style={{ backgroundSize: '20px 20px' }} />
       </div>
       
-      <div className="relative z-10 px-6 pt-8 lg:px-8">
-        <div className="mx-auto max-w-7xl py-16 sm:py-24 lg:flex lg:items-center lg:gap-x-10 lg:py-28">
+      <div className="relative z-10 px-6 pt-4 sm:pt-8 lg:px-8">
+        <div className="mx-auto max-w-7xl py-10 sm:py-16 md:py-20 lg:py-28 lg:flex lg:items-center lg:gap-x-10">
           <div 
             className={`w-full lg:w-1/2 lg:pr-8 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} text-center lg:text-left`}
             style={{ transitionDelay: '200ms' }}
@@ -100,11 +100,11 @@ export const Hero = () => {
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500 leading-tight">
               {t('hero.title')}
             </h1>
-            <p className={`mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 dark:text-gray-300 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} max-w-2xl mx-auto lg:mx-0`}
+            <p className={`mt-3 sm:mt-4 md:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 dark:text-gray-300 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} max-w-2xl mx-auto lg:mx-0`}
                style={{ transitionDelay: '400ms' }}>
               {t('hero.subtitle')}
             </p>
-            <div className={`mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-x-6 gap-y-4 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+            <div className={`mt-5 sm:mt-6 md:mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-x-6 gap-y-3 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
                  style={{ transitionDelay: '600ms' }}>
               <Link
                 to="/signup"
@@ -122,12 +122,12 @@ export const Hero = () => {
                 <span className="inline-block transition-transform duration-300 group-hover:translate-x-1 ml-1">→</span>
               </Link>
             </div>
-            <div className={`mt-4 sm:mt-5 text-sm text-gray-500 dark:text-gray-400 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+            <div className={`mt-3 sm:mt-4 md:mt-5 text-sm text-gray-500 dark:text-gray-400 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
                  style={{ transitionDelay: '800ms' }}>
               {t('hero.noCard')}
             </div>
           </div>
-          <div className={`mt-10 sm:mt-12 lg:mt-0 w-full lg:w-1/2 transition-all duration-1000 transform ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}
+          <div className={`mt-8 sm:mt-10 md:mt-12 lg:mt-0 w-full lg:w-1/2 transition-all duration-1000 transform ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}
                style={{ transitionDelay: '400ms' }}>
             <div className="relative group max-w-md mx-auto lg:max-w-none">
               {/* Efeito de brilho */}

@@ -71,5 +71,7 @@
   "showing": "Showing",
   "to": "to",
   "results": "results",
-  "actions": "Actions"
+  "actions": "Actions",
+  "searchCountry": "Search country...",
+  "noCountriesFound": "No countries found"
 }

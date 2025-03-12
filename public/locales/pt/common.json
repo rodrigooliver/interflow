@@ -71,5 +71,7 @@
   "showing": "Mostrando",
   "to": "até",
   "results": "resultados",
-  "actions": "Ações"
+  "actions": "Ações",
+  "searchCountry": "Pesquisar país...",
+  "noCountriesFound": "Nenhum país encontrado"
 }
