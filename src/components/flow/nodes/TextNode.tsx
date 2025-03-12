@@ -78,7 +78,7 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, on
         
         {/* Modal fixado no lado direito */}
         <div 
-          className="absolute top-0 right-0 h-full w-96 bg-white dark:bg-gray-800 shadow-xl flex flex-col"
+          className="absolute top-0 right-0 h-full w-96 bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden"
           style={{ maxWidth: '100vw' }}
         >
           <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
@@ -93,7 +93,7 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, on
             </button>
           </div>
           
-          <div className="p-4 overflow-y-auto flex-1">
+          <div className="flex-1 overflow-y-auto p-4">
             <div className="mb-4">
               <label htmlFor="text-editor" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('flows:nodes.messagePlaceholder')}

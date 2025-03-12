@@ -73,5 +73,6 @@
   "results": "resultados",
   "actions": "Ações",
   "searchCountry": "Pesquisar país...",
-  "noCountriesFound": "Nenhum país encontrado"
+  "noCountriesFound": "Nenhum país encontrado",
+  "change": "Alterar"
 }

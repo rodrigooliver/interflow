@@ -73,5 +73,6 @@
   "results": "results",
   "actions": "Actions",
   "searchCountry": "Search country...",
-  "noCountriesFound": "No countries found"
+  "noCountriesFound": "No countries found",
+  "change": "Change"
 }

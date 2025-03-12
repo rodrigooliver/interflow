@@ -285,10 +285,10 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
       {/* Modal de imagem */}
       {imageModalOpen && selectedImage && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 overflow-y-auto"
           onClick={() => setImageModalOpen(false)}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh]">
+          <div className="relative max-w-[90vw] max-h-[90vh] overflow-auto">
             <button 
               className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
               onClick={(e) => {

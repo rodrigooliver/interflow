@@ -4,21 +4,15 @@ import { SettingsTabs } from '../../components/settings/SettingsTabs';
 import { HardDrive, Plus, Loader2, X, Trash2, Edit2 } from 'lucide-react';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
-import { IntegrationForm } from '../../components/settings/IntegrationForm';
 import { Integration } from '../../types/database';
+import { IntegrationFormOpenAI } from '../../components/settings/IntegrationFormOpenAI';
+import { IntegrationFormS3 } from '../../components/settings/IntegrationFormS3';
 
   
 interface IntegrationConfig {
     type: 'openai' | 'aws_s3';
     name: string;
     icon: React.ElementType;
-    fields: {
-        key: string;
-        label: string;
-        type: 'text' | 'password';
-        placeholder: string;
-        required: boolean;
-    }[];
 }
 
 const integrationConfigs: IntegrationConfig[] = [
@@ -31,58 +25,12 @@ const integrationConfigs: IntegrationConfig[] = [
             alt="OpenAI Logo" 
             className="w-8 h-8 transition-all dark:invert dark:brightness-200"
           />
-        ),
-        fields: [
-        {
-            key: 'api_key',
-            label: 'API Key',
-            type: 'password',
-            placeholder: 'sk-...',
-            required: true
-        },
-        {
-            key: 'organization_id',
-            label: 'Organization ID',
-            type: 'text',
-            placeholder: 'org-...',
-            required: false
-        }
-        ]
+        )
     },
     {
         type: 'aws_s3',
         name: 'AWS S3',
-        icon: HardDrive,
-        fields: [
-        {
-            key: 'access_key_id',
-            label: 'Access Key ID',
-            type: 'text',
-            placeholder: 'AKIA...',
-            required: true
-        },
-        {
-            key: 'secret_access_key',
-            label: 'Secret Access Key',
-            type: 'password',
-            placeholder: 'Your AWS secret key',
-            required: true
-        },
-        {
-            key: 'region',
-            label: 'Region',
-            type: 'text',
-            placeholder: 'us-east-1',
-            required: true
-        },
-        {
-            key: 'bucket',
-            label: 'Bucket Name',
-            type: 'text',
-            placeholder: 'my-bucket',
-            required: true
-        }
-        ]
+        icon: HardDrive
     }
 ];
 
@@ -91,11 +39,11 @@ export default function IntegrationsPage() {
   const { currentOrganization } = useOrganizationContext();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddOpenAIModal, setShowAddOpenAIModal] = useState(false);
+  const [showAddS3Modal, setShowAddS3Modal] = useState(false);
+  const [showEditOpenAIModal, setShowEditOpenAIModal] = useState(false);
+  const [showEditS3Modal, setShowEditS3Modal] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [selectedType, setSelectedType] = useState<'openai' | 'aws_s3'>('openai');
-  const [formData, setFormData] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<Integration | null>(null);
@@ -129,12 +77,14 @@ export default function IntegrationsPage() {
 
   const handleAddSuccess = async () => {
     await loadIntegrations();
-    setShowAddModal(false);
+    setShowAddOpenAIModal(false);
+    setShowAddS3Modal(false);
   };
 
   const handleEditSuccess = async () => {
     await loadIntegrations();
-    setShowEditModal(false);
+    setShowEditOpenAIModal(false);
+    setShowEditS3Modal(false);
     setSelectedIntegration(null);
   };
 
@@ -166,18 +116,27 @@ export default function IntegrationsPage() {
         
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center">
               <h1 className="text-lg font-medium text-gray-900 dark:text-white">
                 {t('settings:integrations.title')}
               </h1>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t('settings:integrations.add')}
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setShowAddOpenAIModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('settings:integrations.addOpenAI')}
+                </button>
+                <button
+                  onClick={() => setShowAddS3Modal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('settings:integrations.addS3')}
+                </button>
+              </div>
             </div>
 
             {error && (
@@ -229,9 +188,11 @@ export default function IntegrationsPage() {
                           <button
                             onClick={() => {
                               setSelectedIntegration(integration);
-                              setSelectedType(integration.type);
-                              setFormData(integration.credentials);
-                              setShowEditModal(true);
+                              if (integration.type === 'openai') {
+                                setShowEditOpenAIModal(true);
+                              } else if (integration.type === 'aws_s3') {
+                                setShowEditS3Modal(true);
+                              }
                             }}
                             className="p-2 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full"
                           >
@@ -254,71 +215,70 @@ export default function IntegrationsPage() {
               </div>
             )}
 
-            {/* Add Integration Modal */}
-            {showAddModal && (
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            {/* Add OpenAI Integration Modal */}
+            {showAddOpenAIModal && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
                   <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {t('settings:integrations.add')}
+                      {t('settings:integrations.addOpenAI')}
                     </h3>
                     <button
-                      onClick={() => {
-                        setShowAddModal(false);
-                        setFormData({});
-                      }}
+                      onClick={() => setShowAddOpenAIModal(false)}
                       className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
 
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {t('settings:integrations.type')}
-                      </label>
-                      <select
-                        value={selectedType}
-                        onChange={(e) => setSelectedType(e.target.value as 'openai' | 'aws_s3')}
-                        className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-                      >
-                        {integrationConfigs.map(config => (
-                          <option key={config.type} value={config.type}>
-                            {config.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <IntegrationForm
-                      type={selectedType}
-                      formData={formData}
-                      setFormData={setFormData}
+                  <div className="p-6 overflow-y-auto">
+                    <IntegrationFormOpenAI
                       onSuccess={handleAddSuccess}
-                      onCancel={() => {
-                        setShowAddModal(false);
-                        setFormData({});
-                      }}
+                      onCancel={() => setShowAddOpenAIModal(false)}
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Edit Integration Modal */}
-            {showEditModal && selectedIntegration && (
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            {/* Add S3 Integration Modal */}
+            {showAddS3Modal && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
                   <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {t('settings:integrations.edit')}
+                      {t('settings:integrations.addS3')}
+                    </h3>
+                    <button
+                      onClick={() => setShowAddS3Modal(false)}
+                      className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto">
+                    <IntegrationFormS3
+                      onSuccess={handleAddSuccess}
+                      onCancel={() => setShowAddS3Modal(false)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit OpenAI Integration Modal */}
+            {showEditOpenAIModal && selectedIntegration && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+                  <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      {t('settings:integrations.editOpenAI')}
                     </h3>
                     <button
                       onClick={() => {
-                        setShowEditModal(false);
+                        setShowEditOpenAIModal(false);
                         setSelectedIntegration(null);
-                        setFormData({});
                       }}
                       className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                     >
@@ -326,16 +286,45 @@ export default function IntegrationsPage() {
                     </button>
                   </div>
 
-                  <div className="p-6">
-                    <IntegrationForm
-                      type={selectedType}
-                      formData={formData}
-                      setFormData={setFormData}
+                  <div className="p-6 overflow-y-auto">
+                    <IntegrationFormOpenAI
                       onSuccess={handleEditSuccess}
                       onCancel={() => {
-                        setShowEditModal(false);
+                        setShowEditOpenAIModal(false);
                         setSelectedIntegration(null);
-                        setFormData({});
+                      }}
+                      integrationId={selectedIntegration.id}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit S3 Integration Modal */}
+            {showEditS3Modal && selectedIntegration && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+                  <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      {t('settings:integrations.editS3')}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowEditS3Modal(false);
+                        setSelectedIntegration(null);
+                      }}
+                      className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto">
+                    <IntegrationFormS3
+                      onSuccess={handleEditSuccess}
+                      onCancel={() => {
+                        setShowEditS3Modal(false);
+                        setSelectedIntegration(null);
                       }}
                       integrationId={selectedIntegration.id}
                     />
@@ -345,36 +334,38 @@ export default function IntegrationsPage() {
             )}
 
             {showDeleteModal && integrationToDelete && (
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    {t('settings:integrations.deleteConfirmation')}
-                  </h3>
-                  <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                      onClick={() => {
-                        setShowDeleteModal(false);
-                        setIntegrationToDelete(null);
-                      }}
-                      disabled={deletingId === integrationToDelete.id}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {t('common:cancel')}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(integrationToDelete)}
-                      disabled={deletingId === integrationToDelete.id}
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {deletingId === integrationToDelete.id ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          {t('common:deleting')}
-                        </>
-                      ) : (
-                        t('settings:integrations.delete')
-                      )}
-                    </button>
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+                  <div className="p-6 overflow-y-auto">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                      {t('settings:integrations.deleteConfirmation')}
+                    </h3>
+                    <div className="mt-6 flex justify-end space-x-3">
+                      <button
+                        onClick={() => {
+                          setShowDeleteModal(false);
+                          setIntegrationToDelete(null);
+                        }}
+                        disabled={deletingId === integrationToDelete.id}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t('common:cancel')}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(integrationToDelete)}
+                        disabled={deletingId === integrationToDelete.id}
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingId === integrationToDelete.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {t('common:deleting')}
+                          </>
+                        ) : (
+                          t('settings:integrations.delete')
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

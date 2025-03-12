@@ -14,7 +14,11 @@
   "integrations": {
     "title": "Integrations",
     "add": "Add Integration",
+    "addOpenAI": "Add OpenAI",
+    "addS3": "Add AWS S3",
     "edit": "Edit Integration",
+    "editOpenAI": "Edit OpenAI",
+    "editS3": "Edit AWS S3",
     "delete": "Delete",
     "deleteConfirmation": "Are you sure you want to delete this integration?",
     "type": "Integration Type",
@@ -22,11 +26,47 @@
     "noIntegrations": "No integrations found",
     "form": {
       "title": "Title",
-      "titlePlaceholderOpenAI": "Title for OpenAI",
-      "titlePlaceholderS3": "Title for AWS"
+      "titlePlaceholderOpenAI": "My OpenAI integration",
+      "titlePlaceholderS3": "My S3 storage",
+      "validate": "Validate",
+      "validKey": "Valid key",
+      "invalidKey": "Invalid key",
+      "validateKeyBeforeSaving": "Please validate the API key before saving",
+      "validKeyStored": "Valid key already stored",
+      "keepExistingKey": "Keep existing key"
     },
     "errors": {
-      "invalidOpenAIKey": "Invalid OpenAI API key. Please check the key and try again."
+      "loadError": "Error loading integration",
+      "invalidOpenAIKey": "Invalid OpenAI API key",
+      "emptyApiKey": "API key cannot be empty",
+      "requiredFields": "All required fields must be filled",
+      "keyNotValidated": "API key must be validated before saving"
+    },
+    "openai": {
+      "setupInstructions": "To use Interflow's AI features, you need to set up your OpenAI API key. Follow the instructions below to get your key.",
+      "howToGetKey": "How to get an OpenAI API key:",
+      "step1": "Visit the OpenAI website and log in to your account (or create a new one)",
+      "step2": "Navigate to the 'API Keys' section in the dashboard",
+      "step3": "Click on 'Create new secret key' and give your key a name",
+      "step4": "Copy the generated key (you'll only see it once) and use it in Interflow",
+      "step5": "Add a payment method to your OpenAI account to use the API",
+      "visitWebsite": "Visit OpenAI website",
+      "continueToSetup": "Continue to setup",
+      "paymentRequired": "Important: You need to add a valid payment method to your OpenAI account to use the API, even for the free tier.",
+      "addPaymentMethod": "Add payment method"
+    },
+    "s3": {
+      "setupInstructions": "To use S3 storage, you need to set up your AWS credentials. Follow the instructions below to get your keys.",
+      "howToGetKey": "How to get your AWS S3 credentials:",
+      "step1": "Access the AWS Management Console and log in to your account",
+      "step2": "Navigate to the IAM (Identity and Access Management) service",
+      "step3": "Create a new user with permissions to access S3 or use an existing one",
+      "step4": "Generate a new access key and note down the Access Key ID and Secret Access Key",
+      "step5": "Create an S3 bucket or use an existing one and note down the name and region",
+      "visitWebsite": "Visit AWS Console",
+      "validateCredentials": "Validate Credentials",
+      "validCredentials": "Valid credentials",
+      "invalidCredentials": "Invalid credentials"
     }
   },
   "fileManager": {

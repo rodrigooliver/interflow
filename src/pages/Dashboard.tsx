@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 import { useOrganizationContext } from '../contexts/OrganizationContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
 
 interface StatCard {
   id: string;
@@ -30,6 +31,26 @@ interface ChatData {
   status: 'new' | 'in_progress' | 'resolved';
 }
 
+interface ChartDataPoint {
+  name: string;
+  messages: number;
+  chats: number;
+}
+
+interface Customer {
+  name: string;
+}
+
+interface ChatWithRelations {
+  id: string;
+  customers: Customer;
+  status: 'new' | 'in_progress' | 'resolved';
+  messages: {
+    content: string;
+    created_at: string;
+  }[];
+}
+
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
   const { currentOrganization } = useOrganizationContext();
@@ -39,7 +60,7 @@ export default function Dashboard() {
   const [responseTime, setResponseTime] = useState(0);
   const [loading, setLoading] = useState(true);
   const [recentChats, setRecentChats] = useState<ChatData[]>([]);
-  const [chartData, setChartData] = useState([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [selectedTimeRange, setSelectedTimeRange] = useState('week');
 
   useEffect(() => {
@@ -168,7 +189,7 @@ export default function Dashboard() {
 
       if (error) throw error;
 
-      const formattedChats = data.map(chat => {
+      const formattedChats = (data as unknown as ChatWithRelations[]).map(chat => {
         const lastMessage = chat.messages && chat.messages.length > 0 
           ? chat.messages[chat.messages.length - 1] 
           : null;
@@ -190,10 +211,10 @@ export default function Dashboard() {
     }
   }
 
-  async function loadChartData(timeRange) {
+  async function loadChartData(timeRange: string) {
     // Simulando dados de gráfico para diferentes períodos
     const today = new Date();
-    let data = [];
+    const data: ChartDataPoint[] = [];
 
     if (timeRange === 'week') {
       // Dados para a última semana
@@ -233,7 +254,7 @@ export default function Dashboard() {
     setChartData(data);
   }
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
@@ -300,7 +321,7 @@ export default function Dashboard() {
     }
   ];
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'new':
         return 'bg-blue-500';
@@ -352,6 +373,8 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      <QuickSetupGuide />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map(({ id, title, description, value, icon: Icon, bgColor, iconColor, textColor, link, change }) => {

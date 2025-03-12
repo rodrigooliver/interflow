@@ -603,8 +603,8 @@ export default function OrganizationSubscriptions() {
 
       {/* Modal para adicionar/editar assinatura */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 {modalMode === 'add' ? 'Nova Assinatura' : 'Editar Assinatura'}

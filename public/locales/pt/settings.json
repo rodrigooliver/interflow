@@ -14,7 +14,11 @@
   "integrations": {
     "title": "Integrações",
     "add": "Adicionar Integração",
+    "addOpenAI": "Adicionar OpenAI",
+    "addS3": "Adicionar AWS S3",
     "edit": "Editar Integração",
+    "editOpenAI": "Editar OpenAI",
+    "editS3": "Editar AWS S3",
     "delete": "Excluir",
     "deleteConfirmation": "Tem certeza que deseja excluir esta integração?",
     "type": "Tipo de Integração",
@@ -22,11 +26,47 @@
     "noIntegrations": "Nenhuma integração encontrada",
     "form": {
       "title": "Título",
-      "titlePlaceholderOpenAI": "Título para OpenAI",
-      "titlePlaceholderS3": "Título para AWS"
+      "titlePlaceholderOpenAI": "Minha integração OpenAI",
+      "titlePlaceholderS3": "Meu armazenamento S3",
+      "validate": "Validar",
+      "validKey": "Chave válida",
+      "invalidKey": "Chave inválida",
+      "validateKeyBeforeSaving": "Por favor, valide a chave API antes de salvar",
+      "validKeyStored": "Chave válida já armazenada",
+      "keepExistingKey": "Manter chave existente"
     },
     "errors": {
-      "invalidOpenAIKey": "Chave API OpenAI inválida. Por favor, verifique a chave e tente novamente."
+      "loadError": "Erro ao carregar integração",
+      "invalidOpenAIKey": "Chave de API OpenAI inválida",
+      "emptyApiKey": "A chave de API não pode estar vazia",
+      "requiredFields": "Todos os campos obrigatórios devem ser preenchidos",
+      "keyNotValidated": "A chave API precisa ser validada antes de salvar"
+    },
+    "openai": {
+      "setupInstructions": "Para usar os recursos de IA do Interflow, você precisa configurar sua chave de API da OpenAI. Siga as instruções abaixo para obter sua chave.",
+      "howToGetKey": "Como obter uma chave de API da OpenAI:",
+      "step1": "Acesse o site da OpenAI e faça login na sua conta (ou crie uma nova)",
+      "step2": "Navegue até a seção 'API Keys' no painel de controle",
+      "step3": "Clique em 'Create new secret key' e dê um nome para sua chave",
+      "step4": "Copie a chave gerada (você só poderá vê-la uma vez) e use-a no Interflow",
+      "step5": "Adicione um método de pagamento à sua conta OpenAI para utilizar a API",
+      "visitWebsite": "Visitar o site da OpenAI",
+      "continueToSetup": "Continuar para configuração",
+      "paymentRequired": "Importante: É necessário adicionar um método de pagamento válido à sua conta OpenAI para utilizar a API, mesmo para o nível gratuito.",
+      "addPaymentMethod": "Adicionar método de pagamento"
+    },
+    "s3": {
+      "setupInstructions": "Para usar o armazenamento S3, você precisa configurar suas credenciais da AWS. Siga as instruções abaixo para obter suas chaves.",
+      "howToGetKey": "Como obter suas credenciais AWS S3:",
+      "step1": "Acesse o AWS Management Console e faça login na sua conta",
+      "step2": "Navegue até o serviço IAM (Identity and Access Management)",
+      "step3": "Crie um novo usuário com permissões para acessar o S3 ou use um existente",
+      "step4": "Gere uma nova chave de acesso e anote o Access Key ID e Secret Access Key",
+      "step5": "Crie um bucket S3 ou use um existente e anote o nome e a região",
+      "visitWebsite": "Visitar o AWS Console",
+      "validateCredentials": "Validar Credenciais",
+      "validCredentials": "Credenciais válidas",
+      "invalidCredentials": "Credenciais inválidas"
     }
   },
   "fileManager": {
