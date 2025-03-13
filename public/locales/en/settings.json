@@ -78,7 +78,7 @@
     "actions": "Actions",
     "delete": "Delete",
     "deleteTitle": "Delete File",
-    "deleteConfirmation": "Are you sure you want to delete {name}?",
+    "deleteConfirmation": "Are you sure you want to delete {{name}}?",
     "deleteWarning": "This action cannot be undone. If this file is used in any messages, they will no longer display the file."
   },
   "profile": {

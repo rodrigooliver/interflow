@@ -78,7 +78,7 @@
     "actions": "Ações",
     "delete": "Excluir",
     "deleteTitle": "Excluir Arquivo",
-    "deleteConfirmation": "Tem certeza que deseja excluir {name}?",
+    "deleteConfirmation": "Tem certeza que deseja excluir {{name}}?",
     "deleteWarning": "Esta ação não pode ser desfeita. Se este arquivo for usado em alguma mensagem, ela não exibirá mais o arquivo."
   },
   "profile": {

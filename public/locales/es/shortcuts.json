@@ -4,6 +4,9 @@
   "editShortcut": "Editar Atajo",
   "saveChanges": "Guardar Cambios",
   "noShortcuts": "No hay atajos registrados",
+  "noShortcutsYet": "Aún no hay atajos creados",
+  "noShortcutsDescription": "Los atajos te permiten guardar mensajes y archivos para reutilizarlos rápidamente durante la atención al cliente. Crea tu primer atajo para comenzar.",
+  "createFirstShortcut": "Crear primer atajo",
   "attachments": "Adjuntos",
   "uploadFiles": "Subir archivos",
   "dragAndDrop": "o arrastrar y soltar",
@@ -13,7 +16,7 @@
   "noSearchResults": "No se encontraron atajos para esta búsqueda",
   "delete": {
     "title": "Eliminar Atajo",
-    "confirmation": "¿Estás seguro de que deseas eliminar el atajo {name}?",
+    "confirmation": "¿Estás seguro de que deseas eliminar el atajo {{name}}?",
     "warning": "Esta acción no se puede deshacer."
   }
 }

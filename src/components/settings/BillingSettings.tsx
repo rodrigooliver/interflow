@@ -153,16 +153,23 @@ export function BillingSettings() {
   };
 
   if (isLoadingPlans) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4" role="status">
+          <span className="sr-only">{t('common:loading')}</span>
+        </div>
+        <p className="text-gray-500 dark:text-gray-400">{t('common:loading')}</p>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="px-0 py-0">
       {/* Modal de Email */}
       {showEmailModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 w-full max-w-md relative">
-            <div className="absolute top-4 right-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-6 w-full max-w-md relative">
+            <div className="absolute top-3 right-3">
               <button
                 onClick={() => {
                   setShowEmailModal(false);
@@ -172,12 +179,12 @@ export function BillingSettings() {
                 }}
                 className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
             </div>
             
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <div className="mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 {t('settings:billing.updateEmail')}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -208,7 +215,7 @@ export function BillingSettings() {
                 )}
               </div>
 
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={() => {
                     setShowEmailModal(false);
@@ -249,12 +256,12 @@ export function BillingSettings() {
       )}
 
       {/* Seletores de moeda e período */}
-      <div className="flex justify-center mb-8 space-x-4">
+      <div className="flex flex-col sm:flex-row justify-center mb-6 sm:mb-8 space-y-3 sm:space-y-0 sm:space-x-4">
         {/* Seletor de período */}
-        <div className="inline-flex rounded-md shadow-sm" role="group">
+        <div className="inline-flex rounded-md shadow-sm self-center w-full max-w-xs sm:w-auto" role="group">
           <button
             type="button"
-            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-l-lg ${
               billingPeriod === 'monthly'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -265,7 +272,7 @@ export function BillingSettings() {
           </button>
           <button
             type="button"
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-r-lg ${
               billingPeriod === 'yearly'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -277,10 +284,10 @@ export function BillingSettings() {
         </div>
 
         {/* Seletor de moeda */}
-        <div className="inline-flex rounded-md shadow-sm" role="group">
+        <div className="inline-flex rounded-md shadow-sm self-center w-full max-w-xs sm:w-auto" role="group">
           <button
             type="button"
-            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-l-lg ${
               selectedCurrency === 'BRL'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -291,7 +298,7 @@ export function BillingSettings() {
           </button>
           <button
             type="button"
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-r-lg ${
               selectedCurrency === 'USD'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -304,7 +311,7 @@ export function BillingSettings() {
       </div>
 
       {/* Lista de planos */}
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan) => {
           const price = getPrice(plan);
           const monthlyPrice = getMonthlyPrice(plan);
@@ -314,47 +321,51 @@ export function BillingSettings() {
           return (
             <div
               key={plan.id}
-              className={`rounded-lg border p-6 bg-white dark:bg-gray-800 ${
+              className={`rounded-lg border p-3 sm:p-4 md:p-6 bg-white dark:bg-gray-800 ${
                 isCurrentPlan
                   ? 'border-blue-500 dark:border-blue-400'
                   : 'border-gray-200 dark:border-gray-700'
               }`}
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {selectedCurrency === 'BRL' ? plan.name_pt : plan.name_en}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  {selectedCurrency === 'BRL' ? plan.name_pt : plan.name_en}
+                </h3>
                 {isCurrentPlan && currentSubscription?.status === 'active' && (
-                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  <span className="mt-1 sm:mt-0 sm:ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                     {t('settings:billing.currentPlan')}
                   </span>
                 )}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+              </div>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
                 {selectedCurrency === 'BRL' ? plan.description_pt : plan.description_en}
               </p>
               {isCurrentPlan && currentSubscription?.cancel_at_period_end && (
-                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-md border border-yellow-200 dark:border-yellow-800">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-md border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
                     {t('settings:billing.willCancelOn', {
                       date: new Date(currentSubscription.current_period_end).toLocaleDateString()
                     })}
                   </p>
                 </div>
               )}
-              <div className="mb-6">
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {formatPrice(price, selectedCurrency)}
-                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+              <div className="mb-3 sm:mb-4 md:mb-6">
+                <div className="flex flex-wrap items-baseline">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mr-1">
+                    {formatPrice(price, selectedCurrency)}
+                  </p>
+                  <span className="text-xs sm:text-sm font-normal text-gray-500 dark:text-gray-400">
                     /{billingPeriod === 'yearly' ? t('settings:billing.year') : t('settings:billing.month')}
                   </span>
-                </p>
+                </div>
                 {billingPeriod === 'yearly' && (
                   <div className="mt-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       {t('settings:billing.monthlyEquivalent', {
                         price: formatPrice(monthlyPrice, selectedCurrency)
                       })}
                     </p>
-                    <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                    <p className="text-xs sm:text-sm font-medium text-green-600 dark:text-green-400">
                       {t('settings:billing.yearlySavings', { percentage: savingsPercentage })}
                     </p>
                   </div>
@@ -362,7 +373,7 @@ export function BillingSettings() {
               </div>
 
               {/* Lista de recursos */}
-              <ul className="mt-6 space-y-4 mb-6">
+              <ul className="mt-3 sm:mt-4 md:mt-6 space-y-2 sm:space-y-3 md:space-y-4 mb-3 sm:mb-4 md:mb-6">
                 {[
                   `${t('settings:billing.maxUsers')}: ${plan.max_users}`,
                   `${t('settings:billing.maxCustomers')}: ${plan.max_customers}`,
@@ -373,9 +384,9 @@ export function BillingSettings() {
                 ].map((feature, index) => (
                   <li key={index} className="flex items-start">
                     <div className="flex-shrink-0">
-                      <Check className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                      <Check className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 dark:text-blue-400" />
                     </div>
-                    <p className="ml-3 text-sm text-gray-500 dark:text-gray-400">{feature}</p>
+                    <p className="ml-2 sm:ml-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">{feature}</p>
                   </li>
                 ))}
 
@@ -444,11 +455,11 @@ export function BillingSettings() {
                     : handleSubscribe(plan.id)
                 }
                 disabled={isProcessing}
-                className={`w-full py-2 px-4 rounded-md ${
+                className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
                   isCurrentPlan && !!currentSubscription?.stripe_subscription_id
                     ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                     : 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500'
-                }`}
+                } ${isProcessing ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
                 {isProcessing
                   ? (
@@ -467,91 +478,160 @@ export function BillingSettings() {
       </div>
 
       {/* Histórico de Faturas */}
-      <div className="mt-12">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+      <div className="mt-8 sm:mt-12">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">
           {t('settings:billing.invoiceHistory')}
         </h2>
         
         {isLoadingInvoices ? (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <div className="text-center py-6 sm:py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3" role="status">
+              <span className="sr-only">{t('common:loading')}</span>
+            </div>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('common:loading')}</p>
           </div>
         ) : invoices && invoices.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('settings:billing.invoiceDate')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('settings:billing.invoiceAmount')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('settings:billing.invoiceStatus')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('settings:billing.invoiceDueDate')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('settings:billing.invoiceActions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(invoice.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatPrice(invoice.amount, invoice.currency.toUpperCase() as 'BRL' | 'USD')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${invoice.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
-                          invoice.status === 'open' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
-                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-                        {invoice.status === 'paid' ? t('settings:billing.invoicePaid') : 
-                         invoice.status === 'open' ? t('settings:billing.invoiceOpen') : 
-                         t('settings:billing.invoiceUnpaid')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-3">
-                        {invoice.hosted_invoice_url && (
-                          <a 
-                            href={invoice.hosted_invoice_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                            title={t('settings:billing.viewInvoice')}
-                          >
-                            <ExternalLink className="h-5 w-5" />
-                          </a>
-                        )}
-                        {invoice.pdf_url && (
-                          <a 
-                            href={invoice.pdf_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                            title={t('settings:billing.downloadInvoice')}
-                          >
-                            <FileText className="h-5 w-5" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Versão para desktop */}
+            <div className="hidden sm:block overflow-x-auto sm:rounded-lg shadow">
+              <div className="inline-block min-w-full align-middle">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th scope="col" className="px-4 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t('settings:billing.invoiceDate')}
+                      </th>
+                      <th scope="col" className="px-4 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t('settings:billing.invoiceAmount')}
+                      </th>
+                      <th scope="col" className="px-4 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t('settings:billing.invoiceStatus')}
+                      </th>
+                      <th scope="col" className="px-4 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t('settings:billing.invoiceDueDate')}
+                      </th>
+                      <th scope="col" className="px-4 sm:px-6 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t('settings:billing.invoiceActions')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {invoices.map((invoice) => (
+                      <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(invoice.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                          {formatPrice(invoice.amount, invoice.currency.toUpperCase() as 'BRL' | 'USD')}
+                        </td>
+                        <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${invoice.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                              invoice.status === 'open' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                            {invoice.status === 'paid' ? t('settings:billing.invoicePaid') : 
+                             invoice.status === 'open' ? t('settings:billing.invoiceOpen') : 
+                             t('settings:billing.invoiceUnpaid')}
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                          {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
+                          <div className="flex justify-end space-x-2 sm:space-x-3">
+                            {invoice.hosted_invoice_url && (
+                              <a 
+                                href={invoice.hosted_invoice_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                title={t('settings:billing.viewInvoice')}
+                                aria-label={t('settings:billing.viewInvoice')}
+                              >
+                                <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5" />
+                              </a>
+                            )}
+                            {invoice.pdf_url && (
+                              <a 
+                                href={invoice.pdf_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                title={t('settings:billing.downloadInvoice')}
+                                aria-label={t('settings:billing.downloadInvoice')}
+                              >
+                                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Versão para mobile */}
+            <div className="sm:hidden space-y-3">
+              {invoices.map((invoice) => (
+                <div key={invoice.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-xs font-medium text-gray-900 dark:text-white">
+                        {new Date(invoice.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white mt-1">
+                        {formatPrice(invoice.amount, invoice.currency.toUpperCase() as 'BRL' | 'USD')}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${invoice.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                        invoice.status === 'open' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                      {invoice.status === 'paid' ? t('settings:billing.invoicePaid') : 
+                       invoice.status === 'open' ? t('settings:billing.invoiceOpen') : 
+                       t('settings:billing.invoiceUnpaid')}
+                    </span>
+                  </div>
+                  
+                  {invoice.due_date && (
+                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span className="font-medium mr-1">{t('settings:billing.invoiceDueDate')}:</span>
+                      {new Date(invoice.due_date).toLocaleDateString()}
+                    </div>
+                  )}
+                  
+                  <div className="flex space-x-3 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    {invoice.hosted_invoice_url && (
+                      <a 
+                        href={invoice.hosted_invoice_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        aria-label={t('settings:billing.viewInvoice')}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        {t('settings:billing.viewInvoice')}
+                      </a>
+                    )}
+                    {invoice.pdf_url && (
+                      <a 
+                        href={invoice.pdf_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        aria-label={t('settings:billing.downloadInvoice')}
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        {t('settings:billing.downloadInvoice')}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />

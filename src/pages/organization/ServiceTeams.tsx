@@ -16,6 +16,11 @@ interface TeamWithMembers extends ServiceTeam {
   };
 }
 
+interface LoadingState {
+  userId: string;
+  role: 'leader' | 'member';
+}
+
 export default function ServiceTeams() {
   const { t } = useTranslation(['serviceTeams', 'common']);
   const { currentOrganization, membership } = useOrganizationContext();
@@ -44,6 +49,16 @@ export default function ServiceTeams() {
       loadAvailableUsers();
     }
   }, [currentOrganization]);
+
+  // Limpar mensagem de erro após 5 segundos
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   async function loadTeams() {
     if (!currentOrganization) return;
@@ -108,7 +123,7 @@ export default function ServiceTeams() {
     setError('');
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('service_teams')
         .insert([
           {
@@ -240,98 +255,130 @@ export default function ServiceTeams() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teams.map((team) => (
-          <div key={team.id} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-            <div className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    {team.name}
-                  </h3>
-                  {team.description && (
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      {team.description}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  {(membership?.role === 'owner' || membership?.role === 'admin') && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setSelectedTeam(team);
-                          setShowAddMemberModal(true);
-                        }}
-                        className="inline-flex items-center p-1 border border-transparent rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-                      >
-                        <UserPlus className="w-5 h-5" />
-                      </button>
-                      {team._count?.members === 0 && (
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {teams.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {teams.map((team) => (
+            <div key={team.id} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+              <div className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      {team.name}
+                    </h3>
+                    {team.description && (
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {team.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {(membership?.role === 'owner' || membership?.role === 'admin') && (
+                      <>
                         <button
                           onClick={() => {
                             setSelectedTeam(team);
-                            setShowRemoveTeamModal(true);
+                            setShowAddMemberModal(true);
                           }}
-                          className="inline-flex items-center p-1 border border-transparent rounded-full text-red-400 hover:text-red-500"
+                          className="inline-flex items-center p-1 border border-transparent rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <UserPlus className="w-5 h-5" />
                         </button>
-                      )}
-                    </>
-                  )}
+                        {team._count?.members === 0 && (
+                          <button
+                            onClick={() => {
+                              setSelectedTeam(team);
+                              setShowRemoveTeamModal(true);
+                            }}
+                            className="inline-flex items-center p-1 border border-transparent rounded-full text-red-400 hover:text-red-500"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
-                  {t('serviceTeams:members')} ({team._count?.members || 0})
-                </h4>
-                <div className="space-y-3">
-                  {team.members.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                          {member.profile.avatar_url ? (
-                            <img
-                              src={member.profile.avatar_url}
-                              alt=""
-                              className="h-8 w-8 rounded-full"
-                            />
-                          ) : (
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              {member.profile.full_name[0]}
-                            </span>
-                          )}
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
+                    {t('serviceTeams:members')} ({team._count?.members || 0})
+                  </h4>
+                  <div className="space-y-3">
+                    {team.members.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            {member.profile.avatar_url ? (
+                              <img
+                                src={member.profile.avatar_url}
+                                alt=""
+                                className="h-8 w-8 rounded-full"
+                              />
+                            ) : (
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {member.profile.full_name[0]}
+                              </span>
+                            )}
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {member.profile.full_name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                              {t(`serviceTeams:${member.role}`)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {member.profile.full_name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                            {t(`serviceTeams:${member.role}`)}
-                          </p>
-                        </div>
+                        {(membership?.role === 'owner' || membership?.role === 'admin') && (
+                          <button
+                            onClick={() => {
+                              setMemberToRemove(member);
+                              setShowRemoveModal(true);
+                            }}
+                            className="text-sm text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            {t('common:confirmDelete')}
+                          </button>
+                        )}
                       </div>
-                      {(membership?.role === 'owner' || membership?.role === 'admin') && (
-                        <button
-                          onClick={() => {
-                            setMemberToRemove(member);
-                            setShowRemoveModal(true);
-                          }}
-                          className="text-sm text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          {t('common:confirmDelete')}
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <Users className="w-16 h-16 text-gray-300 dark:text-gray-600" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+              {t('serviceTeams:noTeamsYet')}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              {t('serviceTeams:noTeamsDescription')}
+            </p>
+            {(membership?.role === 'owner' || membership?.role === 'admin') && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('serviceTeams:createFirstTeam')}
+              </button>
+            )}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Create Team Modal */}
       {showCreateModal && (

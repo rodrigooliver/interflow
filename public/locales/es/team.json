@@ -27,7 +27,7 @@
   },
   "delete": {
     "title": "Eliminar Usuario",
-    "confirmation": "¿Estás seguro de que deseas eliminar el usuario {name}?",
+    "confirmation": "¿Estás seguro de que deseas eliminar el usuario {{name}}?",
     "warning": "Esta acción no se puede deshacer."
   },
   "roles": {

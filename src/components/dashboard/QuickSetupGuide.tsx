@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
+import FlowCreateModal from '../flow/FlowCreateModal';
 
 interface SetupStep {
   id: string;
@@ -17,36 +18,76 @@ interface SetupStep {
 }
 
 const QuickSetupGuide: React.FC = () => {
-  const { t } = useTranslation('dashboard');
+  const { t } = useTranslation(['dashboard', 'flows', 'common']);
   const { currentOrganization } = useOrganizationContext();
   const [loading, setLoading] = useState(true);
   const [showGuide, setShowGuide] = useState(true);
   const [steps, setSteps] = useState<SetupStep[]>([]);
   const [setupProgress, setSetupProgress] = useState(0);
   const [showOpenAIModal, setShowOpenAIModal] = useState(false);
+  const [showFlowCreateModal, setShowFlowCreateModal] = useState(false);
+  const [setupChecked, setSetupChecked] = useState(false);
+  const [isCreatingFunnel, setIsCreatingFunnel] = useState(false);
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganization && !setupChecked) {
+      // Verificar se já existe um bloqueio global
+      const lockKey = `funnel_creation_lock_${currentOrganization?.id}`;
+      const existingLock = localStorage.getItem(lockKey);
+      
+      if (existingLock) {
+        const lockData = JSON.parse(existingLock);
+        const lockTime = new Date(lockData.timestamp);
+        const now = new Date();
+        
+        // Se o bloqueio tiver menos de 30 segundos, aguardar e verificar novamente
+        if ((now.getTime() - lockTime.getTime()) < 30000) {
+          console.log('Outra instância está criando um funil, aguardando...');
+          
+          // Aguardar 5 segundos e verificar novamente
+          const timeoutId = setTimeout(() => {
+            setSetupChecked(false); // Forçar nova verificação
+          }, 5000);
+          
+          return () => clearTimeout(timeoutId);
+        } else {
+          // Se o bloqueio for antigo, removê-lo
+          localStorage.removeItem(lockKey);
+        }
+      }
+      
+      setSetupChecked(true);
       checkSetupStatus();
     }
-  }, [currentOrganization]);
+  }, [currentOrganization, setupChecked]);
 
   const checkSetupStatus = async () => {
     setLoading(true);
     try {
+      // Limpar funis incompletos que possam ter sido criados em tentativas anteriores
+      await cleanupIncompleteFunnels();
+      
       // Verificar se já tem funil CRM
       const { data: funnels, error: funnelsError } = await supabase
         .from('crm_funnels')
-        .select('id')
-        .eq('organization_id', currentOrganization?.id)
-        .limit(1);
+        .select('id, is_active')
+        .eq('organization_id', currentOrganization?.id);
 
       if (funnelsError) throw funnelsError;
-      const hasFunnel = funnels && funnels.length > 0;
+      
+      // Verificar se existe algum funil ativo
+      const activeFunnels = funnels?.filter(f => f.is_active === true) || [];
+      const hasFunnel = activeFunnels.length > 0;
+      
+      // Verificar se existe algum funil em processo de criação
+      const inProgressFunnels = funnels?.filter(f => f.is_active === false) || [];
+      const hasInProgressFunnel = inProgressFunnels.length > 0;
 
-      // Se não tiver funil, criar automaticamente
-      if (!hasFunnel) {
+      // Se não tiver funil e não estiver criando um, criar automaticamente
+      if (!hasFunnel && !hasInProgressFunnel && !isCreatingFunnel) {
+        setIsCreatingFunnel(true);
         await createDefaultFunnel();
+        setIsCreatingFunnel(false);
       }
 
       // Verificar se já tem tipos de encerramento
@@ -138,7 +179,8 @@ const QuickSetupGuide: React.FC = () => {
           description: t('quickSetup.createFlowDesc'),
           completed: hasFlows,
           link: '/app/flows',
-          icon: GitBranch
+          icon: GitBranch,
+          onClick: () => setShowFlowCreateModal(true)
         }
       ];
 
@@ -162,20 +204,86 @@ const QuickSetupGuide: React.FC = () => {
 
   const createDefaultFunnel = async () => {
     try {
-      // Criar funil padrão
-      const { data: funnel, error: funnelError } = await supabase
+      // Verificar se já existe um bloqueio global
+      const lockKey = `funnel_creation_lock_${currentOrganization?.id}`;
+      const existingLock = localStorage.getItem(lockKey);
+      
+      if (existingLock) {
+        const lockData = JSON.parse(existingLock);
+        const lockTime = new Date(lockData.timestamp);
+        const now = new Date();
+        
+        // Se o bloqueio tiver menos de 30 segundos, não prosseguir
+        if ((now.getTime() - lockTime.getTime()) < 30000) {
+          console.log('Outra instância está criando um funil, aguardando...');
+          return;
+        } else {
+          // Se o bloqueio for antigo, removê-lo
+          localStorage.removeItem(lockKey);
+        }
+      }
+      
+      // Criar um bloqueio global
+      localStorage.setItem(lockKey, JSON.stringify({
+        timestamp: new Date().toISOString(),
+        instanceId: Math.random().toString(36).substring(2, 9)
+      }));
+      
+      // Usar uma abordagem com transação para evitar duplicação
+      // Primeiro, verificamos se já existe um funil
+      const { data: existingFunnels, error: checkError } = await supabase
+        .from('crm_funnels')
+        .select('id')
+        .eq('organization_id', currentOrganization?.id)
+        .limit(1);
+      
+      if (checkError) throw checkError;
+      
+      // Se já existir um funil, não criar novamente
+      if (existingFunnels && existingFunnels.length > 0) {
+        console.log('Funil já existe, não criando novamente:', existingFunnels[0].id);
+        localStorage.removeItem(lockKey);
+        return;
+      }
+      
+      // Adicionar um identificador único para esta operação
+      const operationId = `create_funnel_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Criar um registro temporário para "bloquear" a criação
+      const { data: lockRecord, error: lockError } = await supabase
         .from('crm_funnels')
         .insert({
           organization_id: currentOrganization?.id,
-          name: t('quickSetup.defaultFunnelName'),
-          description: t('quickSetup.defaultFunnelDesc')
+          name: `${t('quickSetup.defaultFunnelName')} (criando...)`,
+          description: `Operação: ${operationId}`,
+          is_active: false
         })
         .select('id')
         .single();
-
-      if (funnelError) throw funnelError;
-
+      
+      if (lockError) {
+        console.error('Erro ao criar registro de bloqueio:', lockError);
+        localStorage.removeItem(lockKey);
+        return;
+      }
+      
+      // Agora atualizamos o registro com os dados corretos
+      const { data: funnel, error: updateError } = await supabase
+        .from('crm_funnels')
+        .update({
+          name: t('quickSetup.defaultFunnelName'),
+          description: t('quickSetup.defaultFunnelDesc'),
+          is_active: true
+        })
+        .eq('id', lockRecord.id)
+        .select('id')
+        .single();
+      
+      if (updateError) throw updateError;
+      
       if (funnel) {
+        console.log('Funil criado com sucesso:', funnel.id);
+        
         // Criar estágios padrão
         const stages = [
           {
@@ -228,8 +336,15 @@ const QuickSetupGuide: React.FC = () => {
 
         if (stagesError) throw stagesError;
       }
+      
+      // Remover o bloqueio global
+      localStorage.removeItem(lockKey);
     } catch (error) {
       console.error('Erro ao criar funil padrão:', error);
+      
+      // Remover o bloqueio global em caso de erro
+      const lockKey = `funnel_creation_lock_${currentOrganization?.id}`;
+      localStorage.removeItem(lockKey);
     }
   };
 
@@ -260,8 +375,150 @@ const QuickSetupGuide: React.FC = () => {
 
   const handleCloseOpenAIModal = () => {
     setShowOpenAIModal(false);
-    // Recarregar o status após fechar o modal
-    checkSetupStatus();
+    // Recarregar apenas os passos sem criar novos recursos
+    loadStepsStatus();
+  };
+
+  const handleFlowCreated = () => {
+    setShowFlowCreateModal(false);
+    // Recarregar apenas os passos sem criar novos recursos
+    loadStepsStatus();
+  };
+
+  // Função para carregar apenas o status dos passos sem criar recursos
+  const loadStepsStatus = async () => {
+    try {
+      // Verificar se já tem canais
+      const { data: channels, error: channelsError } = await supabase
+        .from('chat_channels')
+        .select('id')
+        .eq('organization_id', currentOrganization?.id)
+        .limit(1);
+
+      if (channelsError) throw channelsError;
+      const hasChannels = channels && channels.length > 0;
+
+      // Verificar se já tem integração com OpenAI
+      const { data: openaiIntegration, error: openaiError } = await supabase
+        .from('integrations')
+        .select('id')
+        .eq('organization_id', currentOrganization?.id)
+        .eq('type', 'openai')
+        .limit(1);
+
+      if (openaiError) throw openaiError;
+      const hasOpenAI = openaiIntegration && openaiIntegration.length > 0;
+
+      // Verificar se já tem prompts
+      const { data: prompts, error: promptsError } = await supabase
+        .from('prompts')
+        .select('id')
+        .eq('organization_id', currentOrganization?.id)
+        .limit(1);
+
+      if (promptsError) throw promptsError;
+      const hasPrompts = prompts && prompts.length > 0;
+
+      // Verificar se já tem flows
+      const { data: flows, error: flowsError } = await supabase
+        .from('flows')
+        .select('id')
+        .eq('organization_id', currentOrganization?.id)
+        .limit(1);
+
+      if (flowsError) throw flowsError;
+      const hasFlows = flows && flows.length > 0;
+
+      // Atualizar os passos com base no status
+      const updatedSteps: SetupStep[] = [
+        {
+          id: 'channel',
+          title: t('quickSetup.createChannel'),
+          description: t('quickSetup.createChannelDesc'),
+          completed: hasChannels,
+          link: '/app/channels/new',
+          icon: MessageSquare
+        },
+        {
+          id: 'openai',
+          title: t('quickSetup.setupOpenAI'),
+          description: t('quickSetup.setupOpenAIDesc'),
+          completed: hasOpenAI,
+          link: '/app/settings/integrations',
+          icon: Key,
+          onClick: () => setShowOpenAIModal(true)
+        },
+        {
+          id: 'prompt',
+          title: t('quickSetup.createPrompt'),
+          description: t('quickSetup.createPromptDesc'),
+          completed: hasPrompts,
+          link: '/app/prompts/new',
+          icon: Zap
+        },
+        {
+          id: 'flow',
+          title: t('quickSetup.createFlow'),
+          description: t('quickSetup.createFlowDesc'),
+          completed: hasFlows,
+          link: '/app/flows',
+          icon: GitBranch,
+          onClick: () => setShowFlowCreateModal(true)
+        }
+      ];
+
+      setSteps(updatedSteps);
+
+      // Calcular progresso
+      const completedSteps = updatedSteps.filter(step => step.completed).length;
+      const progress = Math.round((completedSteps / updatedSteps.length) * 100);
+      setSetupProgress(progress);
+
+      // Se todos os passos estiverem completos, ocultar o guia
+      if (progress === 100) {
+        setShowGuide(false);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status de configuração:', error);
+    }
+  };
+
+  // Função para limpar funis incompletos
+  const cleanupIncompleteFunnels = async () => {
+    try {
+      // Buscar funis inativos ou com descrição contendo "Operação:"
+      const { data: incompleteFunnels, error } = await supabase
+        .from('crm_funnels')
+        .select('id')
+        .eq('organization_id', currentOrganization?.id)
+        .eq('is_active', false);
+      
+      if (error) {
+        console.error('Erro ao buscar funis incompletos:', error);
+        return;
+      }
+      
+      // Se encontrar funis incompletos, excluí-los
+      if (incompleteFunnels && incompleteFunnels.length > 0) {
+        console.log('Removendo funis incompletos:', incompleteFunnels.map(f => f.id));
+        
+        // Primeiro excluir os estágios associados
+        for (const funnel of incompleteFunnels) {
+          await supabase
+            .from('crm_stages')
+            .delete()
+            .eq('funnel_id', funnel.id);
+        }
+        
+        // Depois excluir os funis
+        await supabase
+          .from('crm_funnels')
+          .delete()
+          .in('id', incompleteFunnels.map(f => f.id));
+      }
+    } catch (error) {
+      console.error('Erro ao limpar funis incompletos:', error);
+    }
   };
 
   if (loading) {
@@ -391,6 +648,13 @@ const QuickSetupGuide: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal para criação de fluxo */}
+      <FlowCreateModal 
+        isOpen={showFlowCreateModal}
+        onClose={() => setShowFlowCreateModal(false)}
+        onSuccess={() => handleFlowCreated()}
+      />
     </>
   );
 };

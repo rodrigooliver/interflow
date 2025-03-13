@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
-import { CRMFunnel as CRMFunnelType, CRMStage } from '../../types/crm';
+import { CRMStage } from '../../types/crm';
 import { Customer } from '../../types/database';
 import { KanbanBoard } from '../../components/crm/KanbanBoard';
 import { StageModal } from '../../components/crm/StageModal';
@@ -50,10 +50,9 @@ export default function CRMFunnel() {
   const { currentOrganization } = useOrganizationContext();
   
   // State
-  const [funnel, setFunnel] = useState<any>(null);
+  const [funnel, setFunnel] = useState<Record<string, any> | null>(null);
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [availableCustomers, setAvailableCustomers] = useState<Customer[]>([]);
   const [error, setError] = useState('');
 
   // Modal states
@@ -75,11 +74,11 @@ export default function CRMFunnel() {
   const [deletingStage, setDeletingStage] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
 
-  const { data: funnelData, isLoading: isFunnelLoading } = useFunnels(currentOrganization?.id);
+  const { data: funnelData } = useFunnels(currentOrganization?.id);
 
   useEffect(() => {
     if (funnelData && id) {
-      const currentFunnel = funnelData.find((f: any) => f.id === id);
+      const currentFunnel = funnelData.find((f: Record<string, any>) => f.id === id);
       if (currentFunnel) {
         setFunnel(currentFunnel);
         setStages(currentFunnel.stages || []);
@@ -418,36 +417,89 @@ export default function CRMFunnel() {
       />
 
       <div className="flex-1 overflow-hidden">
-        <KanbanBoard
-          stages={stages}
-          customers={customers}
-          onDragEnd={handleDragEnd}
-          onEditStage={(stage) => {
-            setSelectedStage(stage);
-            setStageForm({
-              name: stage.name,
-              description: stage.description || '',
-              color: stage.color
-            });
-            setShowStageModal(true);
-          }}
-          onDeleteStage={(stage) => {
-            setSelectedStage(stage);
-            setShowDeleteStageModal(true);
-          }}
-          onAddCustomer={(stage) => {
-            setSelectedStage(stage);
-            setShowAddCustomerModal(true);
-          }}
-          onEditCustomer={(customer) => {
-            setSelectedCustomer(customer);
-            setShowEditCustomerModal(true);
-          }}
-          onRemoveCustomer={(customer) => {
-            setSelectedCustomer(customer);
-            setShowRemoveCustomerModal(true);
-          }}
-        />
+        {stages.length === 0 ? (
+          <div className="flex items-center justify-center h-full p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center max-w-2xl">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="w-16 h-16 text-gray-300 dark:text-gray-600" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={1.5} 
+                    d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" 
+                  />
+                </svg>
+                <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+                  {t('crm:stages.noStages')}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                  {t('crm:stages.noStagesDescription')}
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedStage(null);
+                    setStageForm({ name: '', description: '', color: '#3B82F6' });
+                    setShowStageModal(true);
+                  }}
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="w-4 h-4 mr-2" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M12 4v16m8-8H4" 
+                    />
+                  </svg>
+                  {t('crm:stages.createFirstStage')}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <KanbanBoard
+            stages={stages}
+            customers={customers}
+            onDragEnd={handleDragEnd}
+            onEditStage={(stage) => {
+              setSelectedStage(stage);
+              setStageForm({
+                name: stage.name,
+                description: stage.description || '',
+                color: stage.color
+              });
+              setShowStageModal(true);
+            }}
+            onDeleteStage={(stage) => {
+              setSelectedStage(stage);
+              setShowDeleteStageModal(true);
+            }}
+            onAddCustomer={(stage) => {
+              setSelectedStage(stage);
+              setShowAddCustomerModal(true);
+            }}
+            onEditCustomer={(customer) => {
+              setSelectedCustomer(customer);
+              setShowEditCustomerModal(true);
+            }}
+            onRemoveCustomer={(customer) => {
+              setSelectedCustomer(customer);
+              setShowRemoveCustomerModal(true);
+            }}
+          />
+        )}
       </div>
 
       {/* Stage Modal */}

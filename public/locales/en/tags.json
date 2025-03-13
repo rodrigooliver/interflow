@@ -4,8 +4,11 @@
   "edit": "Edit Tag",
   "delete": "Delete",
   "deleteTitle": "Delete Tag",
-  "deleteConfirmation": "Are you sure you want to delete tag {name}?",
+  "deleteConfirmation": "Are you sure you want to delete tag {{name}}?",
   "deleteWarning": "This action cannot be undone. Any messages or prompts using this tag will be unaffected.",
+  "noTagsYet": "No tags created yet",
+  "noTagsDescription": "Tags allow you to categorize and organize your content for easier searching and filtering. Create your first tag to get started.",
+  "createFirstTag": "Create first tag",
   "form": {
     "name": "Name",
     "color": "Color"

@@ -15,6 +15,18 @@
   "resetConfirmTitle": "Clear Flow",
   "resetConfirmMessage": "Are you sure you want to clear the flow?",
   "reset": "Clear",
+  "linkedToAgent": "Linked to AI Agent",
+  "createFromAgent": "Create based on AI Agent",
+  "createFreeFlow": "Create free flow",
+  "selectAgent": "Select an AI Agent",
+  "noAgentsAvailable": "No AI Agents available",
+  "selectCreationType": "Select the type of flow you want to create:",
+  "createFreeFlowDescription": "Create a blank flow to build from scratch.",
+  "createFromAgentDescription": "Create a flow based on an existing AI Agent.",
+  "optionalIfAgentSelected": "Optional if an AI Agent is selected. If not filled, the Agent name will be used.",
+  "noFlowsYet": "No flows created yet",
+  "noFlowsDescription": "Flows allow you to automate interactions with your customers. Create your first flow to get started.",
+  "createFirstFlow": "Create first flow",
   "variables": {
     "title": "Variables",
     "add": "Add Variable",
@@ -146,56 +158,57 @@
     },
     "openai": {
       "title": "OpenAI",
+      "integration": "OpenAI Integration",
       "model": "Model",
+      "temperature": "Temperature",
+      "maxTokens": "Max Tokens",
       "prompt": "AI Instruction",
       "promptPlaceholder": "Type your AI instruction...",
-      "promptType": "AI Instruction Type",
-      "customPrompt": "Custom AI Instruction",
-      "enterCustomPrompt": "Enter your custom AI instruction...",
-      "temperature": "Temperature",
-      "maxTokens": "Max. Tokens",
-      "saveResponse": "Save response in",
-      "integration": "OpenAI Integration",
-      "selectIntegration": "Select OpenAI Integration",
       "systemPrompt": "System AI Instruction",
-      "selectPrompt": "Select AI Instruction",
-      "selectModel": "Select Model",
+      "customPrompt": "Custom AI Instruction",
+      "enterCustomPrompt": "Type your custom AI instruction...",
+      "promptType": "AI Instruction Type",
+      "selectPrompt": "Select an AI Instruction",
+      "selectIntegration": "Select an OpenAI Integration",
+      "selectModel": "Select a Model",
+      "saveResponse": "Save response in",
+      "settings": "Settings",
+      "defaultLabel": "OpenAI",
       "apiType": "API Type",
-      "selectApiType": "Select API Type",
+      "selectApiType": "Select an API Type",
       "voice": "Voice",
       "apiTypes": {
         "textGeneration": "Generate text",
         "audioGeneration": "Generate audio",
-        "textToSpeech": "Transform text to speech"
-      },
-      "settings": "Settings",
-      "messages": {
-        "type": "Message type",
-        "chatMessages": "Chat messages",
-        "allClientMessages": "All client messages"
+        "textToSpeech": "Text to speech"
       },
       "tabs": {
-        "messages": "Messages",
         "general": "General",
-        "tools": "Tools/Functions",
-        "prompts": "AI Instructions"
+        "prompts": "Prompts",
+        "messages": "Messages",
+        "tools": "Tools/Functions"
+      },
+      "messages": {
+        "type": "Message Type",
+        "chatMessages": "Chat Messages",
+        "allClientMessages": "All Client Messages"
       },
       "tools": {
-        "tools": "Tools",
         "title": "Tools",
-        "addTool": "Add tool",
-        "name": "Name",
         "tool": "Tool",
+        "tools": "Tools",
+        "addTool": "Add Tool",
+        "name": "Name",
         "description": "Description",
         "parameters": "Parameters",
-        "parameterDescription": "Parameter description",
-        "availableVariables": "Available variables",
-        "clickToAdd": "Click to add",
+        "availableVariables": "Available Variables",
         "noVariables": "No variables available",
-        "createVariable": "Create variable",
+        "createVariable": "Create Variable",
+        "clickToAdd": "Click to add",
         "noParameters": "No parameters added",
+        "parameterDescription": "Parameter description",
         "required": "Required",
-        "targetNode": "Target node",
+        "targetNode": "Target Node",
         "selectTargetNode": "Select a target node",
         "enumValues": "Predefined values",
         "addEnumValue": "Add value",
@@ -210,6 +223,13 @@
         "removeCondition": "Remove condition",
         "addEnumFirst": "Add predefined values to parameters to create conditions"
       }
+    },
+    "agenteia": {
+      "title": "AI Agent",
+      "defaultLabel": "AI Agent",
+      "prompt": "AI Instruction",
+      "selectPrompt": "Select an AI Instruction",
+      "saveResponse": "Save response in"
     },
     "updateCustomer": {
       "title": "Update Customer",
@@ -238,12 +258,12 @@
   },
   "delete": {
     "title": "Delete Flow",
-    "confirmation": "Are you sure you want to delete flow {name}?",
+    "confirmation": "Are you sure you want to delete flow {{name}}?",
     "warning": "This action cannot be undone."
   },
   "folder": {
     "title": "Delete Folder",
-    "confirmation": "Are you sure you want to delete folder {name}?",
+    "confirmation": "Are you sure you want to delete folder {{name}}?",
     "warning": "This action cannot be undone. All flows inside this folder will be moved to the root."
   },
   "triggers": {
@@ -251,6 +271,9 @@
     "configure": "Configure Triggers",
     "add": "Add Trigger",
     "selectType": "Select Trigger Type",
+    "description": "Configure when this flow will be automatically activated",
+    "enableAutomation": "Enable automation for this flow",
+    "noAutomationDescription": "This flow will not be automatically activated. You will need to activate it manually or through integrations.",
     "firstContact": "First Contact",
     "firstContactDescription": "Activate when a customer enters contact for the first time",
     "inactivity": "Inactivity",
@@ -260,14 +283,14 @@
     "channels": "Channels",
     "requireNoActiveChat": "Only when there is no active chat",
     "useSchedule": "Only at specific times",
-    "addTimeSlot": "Add Time Slot",
+    "addTimeSlot": "Add time slot",
     "inactivitySource": "Inactivity Source",
     "customer": "Customer",
     "agent": "Agent",
     "inactivityMinutes": "Inactivity Minutes",
-    "days": "Days",
+    "days": "Days of the week",
     "startTime": "Start Time",
-    "endTime": "End Time",
+    "endTime": "End time",
     "timezone": "Timezone",
     "selectChannels": "Select Channels",
     "noChannels": "No channels found",
@@ -276,7 +299,9 @@
       "startTime": "Start Time",
       "endTime": "End Time",
       "remove": "Remove Time Slot"
-    }
+    },
+    "filterByChannel": "Filter by Channel",
+    "channelFilterDescription": "Select the channels where this trigger will be activated. If no channel is selected, the trigger will be activated on all channels."
   },
   "rules": {
     "title": "Rules and Conditions",

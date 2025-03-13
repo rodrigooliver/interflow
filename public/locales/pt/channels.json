@@ -1,6 +1,6 @@
 {
   "delete": {
-    "confirmation": "Tem certeza que deseja remover o canal {name}?",
+    "confirmation": "Tem certeza que deseja remover o canal {{name}}?",
     "error": {
       "hasChats": "Não é possível excluir um canal com atendimentos existentes"
     },
@@ -14,12 +14,15 @@
     "instagram": "Integração com Direct Messages do Instagram",
     "whatsapp_evo": "Integração com WhatsApp via Evolution API - Solução open source",
     "whatsapp_official": "Integração oficial com a API do WhatsApp Business",
-    "whatsapp_wapi": "Integração com WhatsApp via WApi - Suporte a múltiplas sessões",
+    "whatsapp_wapi": "Integração com WhatsApp via WApi",
     "whatsapp_zapi": "Integração com WhatsApp via ZApi - API gerenciada e estável"
   },
   "errors": {
     "testRequired": "O canal precisa ser testado antes de ser ativado"
   },
+  "noChannelsYet": "Nenhum canal criado ainda",
+  "noChannelsDescription": "Canais permitem que você se conecte com seus clientes através de diferentes plataformas. Crie seu primeiro canal para começar.",
+  "createFirstChannel": "Criar primeiro canal",
   "form": {
     "email": {
       "error": "Erro ao conectar com o servidor de email",

@@ -9,7 +9,7 @@
     "description": "Descripción",
     "delete": {
       "title": "Eliminar Embudo",
-      "confirmation": "¿Estás seguro de que deseas eliminar el embudo {name}?",
+      "confirmation": "¿Estás seguro de que deseas eliminar el embudo {{name}}?",
       "warning": "Esta acción no se puede deshacer.",
       "hasCustomers": "No se puede eliminar el embudo porque hay clientes en algunas etapas."
     },
@@ -31,7 +31,10 @@
     "currentStage": "Etapa actual",
     "noStageSelected": "Ningún embudo seleccionado",
     "selectStage": "Seleccionar etapa",
-    "clickToSelect": "Haz clic para seleccionar"
+    "clickToSelect": "Haz clic para seleccionar",
+    "noStages": "Ninguna etapa creada aún",
+    "noStagesDescription": "Las etapas te permiten organizar a tus clientes en diferentes pasos del proceso de ventas. Crea tu primera etapa para comenzar.",
+    "createFirstStage": "Crear primera etapa"
   },
   "customers": {
     "addCustomer": "Agregar Cliente",

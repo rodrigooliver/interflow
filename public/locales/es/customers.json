@@ -17,7 +17,7 @@
   },
   "delete": {
     "title": "Eliminar Cliente",
-    "confirmation": "¿Estás seguro de que deseas eliminar el cliente {name}?",
+    "confirmation": "¿Estás seguro de que deseas eliminar el cliente {{name}}?",
     "warning": "Esta acción no se puede deshacer."
   },
   "tags": {

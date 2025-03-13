@@ -5,13 +5,13 @@
   "crm": "CRM",
   "shortcuts": "Atajos",
   "settings": "Configuración",
-  "team": "Equipo",
+  "team": "Atendentes",
   "serviceTeams": "Equipos de Atención",
   "channels": "Canales",
   "flows": "Flujos",
   "organizations": "Organizaciones",
   "tags": "Etiquetas",
-  "prompts": "Prompts",
+  "prompts": "Agentes IA",
   "closureTypes": "Tipos de Cierre",
   "subscriptionPlans": "Planes de Suscripción"
 }

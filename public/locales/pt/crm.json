@@ -9,7 +9,7 @@
     "description": "Descrição",
     "delete": {
       "title": "Excluir Funil",
-      "confirmation": "Tem certeza que deseja excluir o funil {name}?",
+      "confirmation": "Tem certeza que deseja excluir o funil {{name}}?",
       "warning": "Esta ação não pode ser desfeita.",
       "hasCustomers": "Não é possível excluir o funil pois existem clientes em algum dos estágios."
     },
@@ -31,7 +31,10 @@
     "currentStage": "Estágio atual",
     "noStageSelected": "Nenhum funil selecionado",
     "selectStage": "Selecione o estágio",
-    "clickToSelect": "Clique para selecionar"
+    "clickToSelect": "Clique para selecionar",
+    "noStages": "Nenhum estágio criado ainda",
+    "noStagesDescription": "Estágios permitem organizar seus clientes em diferentes etapas do processo de vendas. Crie seu primeiro estágio para começar.",
+    "createFirstStage": "Criar primeiro estágio"
   },
   "customers": {
     "addCustomer": "Adicionar Cliente",

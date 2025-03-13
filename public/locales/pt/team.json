@@ -27,7 +27,7 @@
   },
   "delete": {
     "title": "Excluir Usuário",
-    "confirmation": "Tem certeza que deseja excluir o usuário {name}?",
+    "confirmation": "Tem certeza que deseja excluir o usuário {{name}}?",
     "warning": "Esta ação não pode ser desfeita."
   },
   "roles": {

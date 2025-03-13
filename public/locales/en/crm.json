@@ -9,7 +9,7 @@
     "description": "Description",
     "delete": {
       "title": "Delete Funnel",
-      "confirmation": "Are you sure you want to delete funnel {name}?",
+      "confirmation": "Are you sure you want to delete funnel {{name}}?",
       "warning": "This action cannot be undone.",
       "hasCustomers": "Cannot delete funnel because there are customers in some stages."
     },
@@ -31,7 +31,10 @@
     "currentStage": "Current stage",
     "noStageSelected": "No funnel selected",
     "selectStage": "Select stage",
-    "clickToSelect": "Click to select"
+    "clickToSelect": "Click to select",
+    "noStages": "No stages created yet",
+    "noStagesDescription": "Stages allow you to organize your customers in different steps of the sales process. Create your first stage to get started.",
+    "createFirstStage": "Create first stage"
   },
   "customers": {
     "addCustomer": "Add Customer",

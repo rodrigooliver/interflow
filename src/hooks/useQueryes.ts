@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition } from '../types/database';
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration } from '../types/database';
+import api from '../lib/api';
 
 interface Tag {
   id: string;
@@ -390,5 +391,92 @@ export const useInvoices = (organizationId?: string) => {
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000 // 10 minutos
+  });
+};
+
+// Definindo o tipo para os modelos da OpenAI
+interface OpenAIModel {
+  id: string;
+  name: string;
+}
+
+/**
+ * Hook para buscar os modelos disponíveis da OpenAI para uma integração específica
+ */
+export const useOpenAIModels = (organizationId?: string, integrationId?: string) => {
+  return useQuery({
+    queryKey: ['openai-models', organizationId, integrationId],
+    queryFn: async () => {
+      if (!organizationId || !integrationId) return [];
+
+      try {
+        const response = await api.get(
+          `/api/${organizationId}/integrations/${integrationId}/openai-models`
+        );
+        
+        if (response.data.success && response.data.data.length > 0) {
+          return response.data.data as OpenAIModel[];
+        }
+        
+        return [] as OpenAIModel[];
+      } catch (error) {
+        console.error('Erro ao carregar modelos da OpenAI:', error);
+        return [] as OpenAIModel[];
+      }
+    },
+    enabled: !!organizationId && !!integrationId,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    gcTime: 60 * 60 * 1000 // 1 hora
+  });
+};
+
+/**
+ * Hook para buscar as integrações OpenAI ativas de uma organização
+ */
+export const useOpenAIIntegrations = (organizationId?: string) => {
+  return useQuery({
+    queryKey: ['openai-integrations', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      try {
+        const { data, error } = await supabase
+          .from('integrations')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .eq('type', 'openai')
+          .eq('status', 'active');
+
+        if (error) throw error;
+        return data as Integration[];
+      } catch (error) {
+        console.error('Erro ao carregar integrações OpenAI:', error);
+        return [] as Integration[];
+      }
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000 // 10 minutos
+  });
+};
+
+export const useFlows = (organizationId?: string) => {
+  return useQuery({
+    queryKey: ['flows', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      const { data, error } = await supabase
+        .from('flows')
+        .select('id, name')
+        .eq('organization_id', organizationId)
+        .order('name');
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    gcTime: 60 * 60 * 1000 // 1 hora
   });
 }; 

@@ -4,8 +4,11 @@
   "edit": "Editar Etiqueta",
   "delete": "Eliminar",
   "deleteTitle": "Eliminar Etiqueta",
-  "deleteConfirmation": "¿Estás seguro de que deseas eliminar la etiqueta {name}?",
+  "deleteConfirmation": "¿Estás seguro de que deseas eliminar la etiqueta {{name}}?",
   "deleteWarning": "Esta acción no se puede deshacer. Los mensajes y prompts que usan esta etiqueta no se verán afectados.",
+  "noTagsYet": "Aún no hay etiquetas creadas",
+  "noTagsDescription": "Las etiquetas te permiten categorizar y organizar tu contenido para facilitar la búsqueda y el filtrado. Crea tu primera etiqueta para comenzar.",
+  "createFirstTag": "Crear primera etiqueta",
   "form": {
     "name": "Nombre",
     "color": "Color"

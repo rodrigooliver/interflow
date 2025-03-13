@@ -17,7 +17,7 @@
   },
   "delete": {
     "title": "Delete Customer",
-    "confirmation": "Are you sure you want to delete customer {name}?",
+    "confirmation": "Are you sure you want to delete customer {{name}}?",
     "warning": "This action cannot be undone."
   },
   "tags": {

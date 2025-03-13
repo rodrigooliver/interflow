@@ -12,7 +12,7 @@
   "contact": "Contato",
   "contacts": "Contatos",
   "delete": {
-    "confirmation": "Tem certeza que deseja excluir o cliente {name}?",
+    "confirmation": "Tem certeza que deseja excluir o cliente {{name}}?",
     "title": "Excluir Cliente",
     "warning": "Esta ação não pode ser desfeita."
   },

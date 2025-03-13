@@ -5,18 +5,21 @@
   "leader": "Líder",
   "member": "Membro",
   "addMember": "Adicionar Membro",
+  "noTeamsYet": "Nenhuma equipe criada ainda",
+  "noTeamsDescription": "Equipes permitem organizar seus atendentes em grupos para melhor gerenciamento. Crie sua primeira equipe para começar.",
+  "createFirstTeam": "Criar primeira equipe",
   "form": {
     "name": "Nome da Equipe",
     "description": "Descrição"
   },
   "removeMember": {
     "title": "Remover Membro",
-    "confirmation": "Tem certeza que deseja remover {name} da equipe?",
+    "confirmation": "Tem certeza que deseja remover {{name}} da equipe?",
     "warning": "Esta ação não pode ser desfeita."
   },
   "removeTeam": {
     "title": "Remover Equipe",
-    "confirmation": "Tem certeza que deseja remover a equipe {name}?",
+    "confirmation": "Tem certeza que deseja remover a equipe {{name}}?",
     "warning": "Esta ação não pode ser desfeita."
   }
 }

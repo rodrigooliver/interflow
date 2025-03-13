@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
-  MiniMap,
   Node,
   Edge,
   Connection,
@@ -25,6 +24,7 @@ import { ConditionNode } from './nodes/ConditionNode';
 import { InputNode } from './nodes/InputNode';
 import { StartNode } from './nodes/StartNode';
 import { OpenAINode } from './nodes/OpenAINode';
+import { AgenteIANode } from './nodes/AgenteIANode';
 import { UpdateCustomerNode } from './nodes/UpdateCustomerNode';
 import { Trash2, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +42,7 @@ const nodeTypes: NodeTypes = {
   input: InputNode,
   start: StartNode,
   openai: OpenAINode,
+  agenteia: AgenteIANode,
   update_customer: UpdateCustomerNode,
 };
 
@@ -54,7 +55,6 @@ export function FlowBuilder() {
     setNodes,
     setEdges, 
     onSaveFlow,
-    updateNodeData
   } = useFlowEditor();
   
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -79,6 +79,7 @@ export function FlowBuilder() {
       input: t('nodes.input.title') + ` ${nodeCount}`,
       start: t('nodes.start.title') + ` ${nodeCount}`,
       openai: t('nodes.openai.title') + ` ${nodeCount}`,
+      agenteia: t('nodes.agenteia.title') + ` ${nodeCount}`,
       update_customer: t('nodes.updateCustomer.title') + ` ${nodeCount}`,
     };
 

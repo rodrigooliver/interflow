@@ -1,24 +1,321 @@
 {
-  "title": "Instructions AI",
-  "add": "New AI Instruction",
-  "edit": "Edit AI Instruction",
+  "title": "AI Agents",
+  "add": "New AI Agent",
+  "edit": "Edit AI Agent",
   "delete": "Delete",
-  "deleteTitle": "Delete AI Instruction",
-  "deleteConfirmation": "Are you sure you want to delete AI instruction {name}?",
+  "deleteTitle": "Delete AI Agent",
+  "deleteConfirmation": "Are you sure you want to delete AI Agent {{name}}?",
   "deleteWarning": "This action cannot be undone.",
   "lastUpdated": "Last updated",
+  "noAgentsYet": "No AI Agents created yet",
+  "noAgentsDescription": "AI Agents allow you to automate interactions with your customers using artificial intelligence. Create your first agent to get started.",
+  "createFirstAgent": "Create first AI Agent",
+  "createFlow": "Create Flow based on this Agent",
+  "syncFlow": "Sync Flow",
+  "viewLinkedFlow": "View Linked Flow",
+  "resetFlow": "Reset Flow",
+  "resetFlowConfirm": "Are you sure you want to reset the flow? This action will delete the current flow and create a new one.",
+  "resettingFlow": "Resetting flow...",
+  "checkingFlow": "Checking flow...",
+  "creatingFlow": "Creating flow...",
+  "syncingFlow": "Syncing flow...",
+  "flowLinkError": "Error linking to flow. Please try again.",
+  "flowResetError": "Error resetting flow. Please try again.",
+  "flowCreatedSuccess": "Flow created successfully!",
+  "flowResetSuccess": "Flow reset successfully!",
+  "hasLinkedFlow": "This AI agent has a linked flow",
+  "flowOptions": "Flow Options",
   "form": {
     "title": "Title",
     "description": "Description",
     "content": "Content",
     "tags": "Tags",
-    "tagsPlaceholder": "Enter tags separated by commas"
+    "tagsPlaceholder": "Enter tags separated by commas",
+    "titlePlaceholder": "Enter the AI Agent title",
+    "descriptionPlaceholder": "Describe the purpose of this AI Agent",
+    "contentPlaceholder": "Enter instructions for the AI (system AI Agent)",
+    "contentHelp": "This is the system AI Agent that defines the AI's behavior.",
+    "integration": "Integration",
+    "selectIntegration": "Select an integration",
+    "tools": "Tools",
+    "toolsHelp": "Tools that the AI can use",
+    "destinations": "Destinations",
+    "destinationsHelp": "Where to send responses based on detected intents",
+    "tip": "Tip",
+    "markdownTip": "You can use Markdown formatting such as",
+    "bold": "bold",
+    "italic": "italic",
+    "code": "code",
+    "andMore": "lists and more",
+    "characters": "characters",
+    "tabs": {
+      "general": "General Settings",
+      "tools": "Tools"
+    },
+    "toolsDescription": "Configure the tools that the model can use. Tools allow the model to perform specific actions during the conversation.",
+    "toolsInfo": "Information about tools",
+    "toolsInfoDescription": "Tools allow the model to call specific functions. Only GPT-4, GPT-4o, and GPT-3.5-Turbo models support tools.",
+    "learnMore": "Learn more about Function Calling",
+    "noTools": "No tools configured",
+    "addTool": "+ Add Tool",
+    "newTool": "New Tool",
+    "toolName": "Tool Name",
+    "toolNamePlaceholder": "Ex: get_weather",
+    "toolDescription": "Tool Description",
+    "toolDescriptionPlaceholder": "Ex: Gets current weather information for a specific location",
+    "toolParameters": "Parameters (JSON Schema)",
+    "toolParametersHelp": "Define the tool parameters using JSON Schema format.",
+    "parameters": "Parameters",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "variables": "Variables",
+    "addVariable": "Add Variable",
+    "variableName": "Variable Name",
+    "variableType": "Variable Type",
+    "variableDescription": "Variable Description",
+    "variableRequired": "Required",
+    "variableEnum": "Possible Values (Enum)",
+    "addEnum": "Add Value",
+    "addParameter": "Add Parameter",
+    "useVariable": "Use Variable",
+    "variableAdded": "Added",
+    "noVariables": "No variables defined",
+    "enumValues": "Possible values",
+    "enumValuePlaceholder": "New value",
+    "editTool": "Edit Tool",
+    "editVariable": "Edit Variable",
+    "actions": {
+      "title": "Tool Actions",
+      "description": "Configure the actions that will be executed when this tool is called by the model.",
+      "name": "Action Name",
+      "namePlaceholder": "Ex: Update Customer",
+      "type": "Action Type",
+      "types": {
+        "update_customer": "Update Customer",
+        "update_chat": "Update Chat",
+        "start_flow": "Start Flow",
+        "custom": "Custom"
+      },
+      "fields": "Fields to update",
+      "chatFields": "Chat fields to update",
+      "flowId": "Flow ID",
+      "variables": "Initial variables (JSON)",
+      "customConfig": "Custom configuration (JSON)",
+      "add": "Add Action",
+      "addAction": "Add New Action",
+      "editAction": "Edit Action",
+      "noActions": "No actions configured",
+      "actionSingular": "action configured",
+      "actionPlural": "actions configured",
+      "selectField": "Select a field to configure",
+      "showAllFields": "Show all fields",
+      "useVariable": "Use variable",
+      "manualInput": "Manual input",
+      "customerNamePlaceholder": "Customer name",
+      "selectVariable": "Select a variable",
+      "funnel": "Funnel",
+      "selectFunnel": "Select a funnel",
+      "stage": "Stage",
+      "selectStage": "Select a stage",
+      "status": "Status",
+      "selectStatus": "Select a status",
+      "statusPending": "Pending",
+      "statusInProgress": "In Progress",
+      "statusClosed": "Closed",
+      "team": "Team",
+      "selectTeam": "Select a team",
+      "chatTitlePlaceholder": "Chat title",
+      "flow": "Flow",
+      "selectFlow": "Select a flow",
+      "filters": {
+        "title": "Filters",
+        "description": "Configure filters to determine when this action will be executed",
+        "add": "Add Filter",
+        "noFilters": "No filters configured",
+        "selectVariable": "Select a variable",
+        "selectValue": "Select a value",
+        "operator": "Operator",
+        "operators": {
+          "equals": "equals",
+          "not_equals": "not equals",
+          "contains": "contains",
+          "not_contains": "not contains",
+          "greater_than": "greater than",
+          "less_than": "less than"
+        }
+      }
+    },
+    "examples": {
+      "title": "Examples",
+      "tools": {
+        "weather": {
+          "name": "get_weather",
+          "description": "Gets current weather information or forecast for a specific location",
+          "parameters": {
+            "location": {
+              "description": "The city or place to get weather information for",
+              "type": "string",
+              "example": "New York"
+            },
+            "days": {
+              "description": "Number of days for the forecast (1-7)",
+              "type": "integer",
+              "example": "3"
+            }
+          }
+        },
+        "calculator": {
+          "name": "calculate",
+          "description": "Performs complex mathematical calculations",
+          "parameters": {
+            "expression": {
+              "description": "The mathematical expression to calculate",
+              "type": "string",
+              "example": "(23 * 4.5) / 2 + 7"
+            }
+          }
+        },
+        "search": {
+          "name": "search",
+          "description": "Searches the internet for information about a specific topic",
+          "parameters": {
+            "query": {
+              "description": "The term or question to search for",
+              "type": "string",
+              "example": "What are the benefits of regular exercise?"
+            },
+            "limit": {
+              "description": "Maximum number of results to return",
+              "type": "integer",
+              "example": "5"
+            }
+          }
+        },
+        "calendar": {
+          "name": "schedule_event",
+          "description": "Schedules a new event in the calendar",
+          "parameters": {
+            "title": {
+              "description": "Event title",
+              "type": "string",
+              "example": "Meeting with marketing team"
+            },
+            "start_date": {
+              "description": "Start date and time (ISO format)",
+              "type": "string",
+              "example": "2023-11-15T14:00:00"
+            },
+            "end_date": {
+              "description": "End date and time (ISO format)",
+              "type": "string",
+              "example": "2023-11-15T15:30:00"
+            },
+            "participants": {
+              "description": "List of participants (emails)",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": ["mary@company.com", "john@company.com"]
+            }
+          }
+        },
+        "translate": {
+          "name": "translate_text",
+          "description": "Translates text to another language",
+          "parameters": {
+            "text": {
+              "description": "The text to translate",
+              "type": "string",
+              "example": "Hello, how are you today?"
+            },
+            "target_language": {
+              "description": "The language to translate to",
+              "type": "string",
+              "enum": ["English", "Spanish", "French", "German", "Italian", "Japanese", "Chinese"],
+              "example": "Spanish"
+            }
+          }
+        }
+      },
+      "variables": {
+        "name": {
+          "label": "Name",
+          "name": "name",
+          "type": "string",
+          "description": "Name of the user or entity",
+          "required": true,
+          "enumValues": []
+        },
+        "email": {
+          "label": "Email",
+          "name": "email",
+          "type": "string",
+          "description": "Email address for contact",
+          "required": true,
+          "enumValues": []
+        },
+        "language": {
+          "label": "Language (enum)",
+          "name": "language",
+          "type": "enum",
+          "description": "Preferred language for communication",
+          "required": false,
+          "enumValues": ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Chinese"]
+        },
+        "age": {
+          "label": "Age (number)",
+          "name": "age",
+          "type": "number",
+          "description": "User's age in years",
+          "required": false,
+          "enumValues": []
+        },
+        "options": {
+          "label": "Options (enum)",
+          "name": "options",
+          "type": "enum",
+          "description": "Available options for selection",
+          "required": true,
+          "enumValues": ["option 1", "option 2", "option 3"]
+        },
+        "sales_stage": {
+          "label": "Sales Stage (enum)",
+          "name": "sales_stage",
+          "type": "enum",
+          "description": "Current stage in the sales funnel",
+          "required": true,
+          "enumValues": ["Prospecting", "Qualification", "Proposal", "Negotiation", "Closing", "Post-sale"]
+        }
+      }
+    }
   },
-  "test": "Test AI Instruction",
-  "testPlaceholder": "Enter a message to test the AI instruction",
+  "test": "Test AI Agent",
+  "testPlaceholder": "Enter a message to test the AI Agent",
+  "testEmpty": "Send a message to test the AI Agent",
+  "clearChat": "Clear conversation",
   "send": "Send",
   "testing": "Testing...",
-  "testSuccess": "AI instruction tested successfully!",
-  "testError": "Error testing the AI instruction",
-  "selectIntegration": "Select the integration to test the AI instruction"
+  "testSuccess": "AI Agent tested successfully!",
+  "testError": "Error testing the AI Agent",
+  "testErrorBackend": "Error processing the AI Agent on the server",
+  "testNoIntegration": "No OpenAI integration available",
+  "selectIntegration": "Select the integration to test the AI Agent",
+  "model": "Model",
+  "temperature": "Temperature",
+  "loadingModels": "Loading models...",
+  "tokenUsage": "Token Usage",
+  "promptTokens": "Prompt",
+  "completionTokens": "Completion",
+  "totalTokens": "Total",
+  "noModelsAvailable": "No models available",
+  "loadingIntegrations": "Loading integrations...",
+  "noIntegrationsAvailable": "No integrations available",
+  "editor": {
+    "editMode": "Edit",
+    "splitMode": "Split View",
+    "previewMode": "Preview"
+  },
+  "togglePreview": "Toggle preview",
+  "toggleFullscreen": "Toggle fullscreen"
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Plus, AlertTriangle, Loader2 } from 'lucide-react';
+import { Share2, Plus, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -24,6 +24,16 @@ export default function Channels() {
       loadChannels();
     }
   }, [currentOrganization]);
+
+  // Limpar mensagem de erro após 5 segundos
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   async function loadChannels() {
     if (!currentOrganization) return;
@@ -132,7 +142,7 @@ export default function Channels() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-          <MessageSquare className="w-6 h-6 mr-2" />
+          <Share2 className="w-6 h-6 mr-2" />
           {t('title')}
         </h1>
         {(membership?.role === 'owner' || membership?.role === 'admin') && (
@@ -146,22 +156,54 @@ export default function Channels() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {channels.map((channel) => (
-          <ChannelCard
-            key={channel.id}
-            channel={channel}
-            canManage={membership?.role === 'owner' || membership?.role === 'admin'}
-            onToggleStatus={() => handleToggleStatus(channel)}
-            onEdit={() => navigate(`/app/channels/${channel.id}/edit`)}
-            onDelete={channel.type === 'whatsapp_wapi' ? undefined : () => {
-              setSelectedChannel(channel);
-              setShowDeleteModal(true);
-            }}
-            updatingStatus={updatingStatus === channel.id}
-          />
-        ))}
-      </div>
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {channels.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {channels.map((channel) => (
+            <ChannelCard
+              key={channel.id}
+              channel={channel}
+              canManage={membership?.role === 'owner' || membership?.role === 'admin'}
+              onToggleStatus={() => handleToggleStatus(channel)}
+              onEdit={() => navigate(`/app/channels/${channel.id}/edit`)}
+              onDelete={channel.type === 'whatsapp_wapi' ? undefined : () => {
+                setSelectedChannel(channel);
+                setShowDeleteModal(true);
+              }}
+              updatingStatus={updatingStatus === channel.id}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <Share2 className="w-16 h-16 text-gray-300 dark:text-gray-600" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+              {t('noChannelsYet')}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              {t('noChannelsDescription')}
+            </p>
+            {(membership?.role === 'owner' || membership?.role === 'admin') && (
+              <button
+                onClick={() => navigate('/app/channels/new')}
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('createFirstChannel')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedChannel && selectedChannel.type !== 'whatsapp_wapi' && (

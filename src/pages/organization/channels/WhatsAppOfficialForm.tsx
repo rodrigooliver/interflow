@@ -45,6 +45,12 @@ export default function WhatsAppOfficialForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganization } = useOrganizationContext();
+  
+  // Adicionar função para voltar usando a history do navegador
+  const handleGoBack = () => {
+    window.history.back();
+  };
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -393,7 +399,8 @@ export default function WhatsAppOfficialForm() {
         throw new Error(response.data.error || t('common:error'));
       }
 
-      navigate('/app/channels');
+      // Usar a função handleGoBack em vez de navegar diretamente
+      handleGoBack();
       toast.success(t('channels:deleteSuccess'));
     } catch (error: unknown) {
       const err = error as ApiError;
@@ -722,8 +729,18 @@ export default function WhatsAppOfficialForm() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex justify-center items-center min-h-[200px]">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={handleGoBack}
+              className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex justify-center items-center min-h-[200px]">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
         </div>
       </div>
     );
@@ -735,7 +752,7 @@ export default function WhatsAppOfficialForm() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center mb-6">
             <button
-              onClick={() => navigate('/app/channels')}
+              onClick={handleGoBack}
               className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <ArrowLeft className="w-5 h-5" />

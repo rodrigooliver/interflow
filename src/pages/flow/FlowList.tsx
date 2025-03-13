@@ -7,14 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { Flow } from '../../types/database';
 import { Trigger } from '../../types/flow';
 import FlowEditForm from '../../components/flow/FlowEditForm';
-
-// Default start node
-const defaultStartNode = {
-  id: 'start',
-  type: 'start',
-  position: { x: 100, y: 100 },
-  data: {}
-};
+import FlowCreateModal from '../../components/flow/FlowCreateModal';
 
 export default function FlowList() {
   const navigate = useNavigate();
@@ -22,12 +15,10 @@ export default function FlowList() {
   const { currentOrganization } = useOrganizationContext();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creatingFlow, setCreatingFlow] = useState(false);
   const [showCreateFlowModal, setShowCreateFlowModal] = useState(false);
   const [showDeleteFlowModal, setShowDeleteFlowModal] = useState(false);
   const [deletingFlow, setDeletingFlow] = useState(false);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
-  const [newFlowData, setNewFlowData] = useState({ name: '', description: '' });
   const [showEditFlowModal, setShowEditFlowModal] = useState(false);
 
   useEffect(() => {
@@ -51,6 +42,10 @@ export default function FlowList() {
             is_active,
             created_at,
             updated_at
+          ),
+          prompt:created_by_prompt(
+            id,
+            title
           )
         `)
         .eq('organization_id', currentOrganization.id)
@@ -62,62 +57,6 @@ export default function FlowList() {
       console.error('Error loading flows:', error);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleCreateFlow() {
-    if (!currentOrganization || !newFlowData.name.trim()) return;
-    setCreatingFlow(true);
-
-    try {
-      // Criar o flow primeiro
-      const { data: flowData, error: flowError } = await supabase
-        .from('flows')
-        .insert([{
-          organization_id: currentOrganization.id,
-          name: newFlowData.name,
-          description: newFlowData.description,
-          nodes: [],
-          edges: [],
-          draft_nodes: [defaultStartNode],
-          draft_edges: [],
-          variables: [],
-          is_published: false
-        }])
-        .select()
-        .single();
-
-      if (flowError) throw flowError;
-
-      // Criar trigger padrão para o flow
-      if (flowData) {
-        const { error: triggerError } = await supabase
-          .from('flow_triggers')
-          .insert([{
-            flow_id: flowData.id,
-            type: 'first_contact',
-            organization_id: currentOrganization.id,
-            conditions: {
-              operator: 'AND',
-              rules: []
-            },
-            is_active: true
-          }]);
-
-        if (triggerError) throw triggerError;
-      }
-
-      setNewFlowData({ name: '', description: '' });
-      setShowCreateFlowModal(false);
-      
-      // Redirecionar para o novo flow
-      if (flowData) {
-        navigate(`/app/flows/${flowData.id}`);
-      }
-    } catch (error) {
-      console.error('Error creating flow:', error);
-    } finally {
-      setCreatingFlow(false);
     }
   }
 
@@ -248,115 +187,89 @@ export default function FlowList() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {flows.map((flow) => (
-          <div
-            key={flow.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors relative group"
-          >
-            <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => {
-                  setSelectedFlow(flow);
-                  setShowEditFlowModal(true);
-                }}
-                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedFlow(flow);
-                  setShowDeleteFlowModal(true);
-                }}
-                className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <Link
-              to={`/app/flows/${flow.id}`}
-              className="flex items-center"
+      {flows.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {flows.map((flow) => (
+            <div
+              key={flow.id}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors relative group"
             >
-              <GitFork className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-3" />
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
-                  {flow.name}
-                </h3>
-                {flow.description && (
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {flow.description}
-                  </p>
-                )}
+              <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => {
+                    setSelectedFlow(flow);
+                    setShowEditFlowModal(true);
+                  }}
+                  className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedFlow(flow);
+                    setShowDeleteFlowModal(true);
+                  }}
+                  className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </Link>
-          </div>
-        ))}
-      </div>
-
-      {/* Modal de criação de fluxo */}
-      {showCreateFlowModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {t('flows:newFlow')}
-              </h3>
-              <button
-                onClick={() => setShowCreateFlowModal(false)}
-                className="text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200"
+              <Link
+                to={`/app/flows/${flow.id}`}
+                className="flex items-center"
               >
-                <X className="h-5 w-5" />
-              </button>
+                <GitFork className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-3" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+                    {flow.name}
+                  </h3>
+                  {flow.description && (
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {flow.description}
+                    </p>
+                  )}
+                  {flow.prompt && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400">
+                        {t('flows:linkedToAgent')}: {flow.prompt.title}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </Link>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="flow-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('flows:flowName')}
-                </label>
-                <input
-                  id="flow-name"
-                  type="text"
-                  value={newFlowData.name}
-                  onChange={(e) => setNewFlowData({ ...newFlowData, name: e.target.value })}
-                  placeholder={t('flows:flowName')}
-                  className="block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div>
-                <label htmlFor="flow-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('flows:flowDescription')}
-                </label>
-                <textarea
-                  id="flow-description"
-                  value={newFlowData.description}
-                  onChange={(e) => setNewFlowData({ ...newFlowData, description: e.target.value })}
-                  placeholder={t('flows:flowDescription')}
-                  className="block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  rows={3}
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end space-x-2">
-              <button
-                onClick={() => setShowCreateFlowModal(false)}
-                disabled={creatingFlow}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                {t('common:back')}
-              </button>
-              <button
-                onClick={handleCreateFlow}
-                disabled={creatingFlow}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creatingFlow && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {t('common:saving')}
-              </button>
-            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <GitFork className="w-16 h-16 text-gray-300 dark:text-gray-600" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+              {t('flows:noFlowsYet')}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              {t('flows:noFlowsDescription')}
+            </p>
+            <button
+              onClick={() => setShowCreateFlowModal(true)}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t('flows:createFirstFlow')}
+            </button>
           </div>
         </div>
       )}
+
+      {/* Modal de criação de fluxo */}
+      <FlowCreateModal 
+        isOpen={showCreateFlowModal}
+        onClose={() => setShowCreateFlowModal(false)}
+        onSuccess={(flowId) => {
+          loadFlows();
+          navigate(`/app/flows/${flowId}`);
+        }}
+      />
 
       {/* Modal de exclusão de fluxo */}
       {showDeleteFlowModal && selectedFlow && (

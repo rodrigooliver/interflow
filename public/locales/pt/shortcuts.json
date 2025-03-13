@@ -4,6 +4,9 @@
   "editShortcut": "Editar Atalho",
   "saveChanges": "Salvar Alterações",
   "noShortcuts": "Nenhum atalho cadastrado",
+  "noShortcutsYet": "Nenhum atalho criado ainda",
+  "noShortcutsDescription": "Atalhos permitem salvar mensagens e arquivos para reutilização rápida durante os atendimentos. Crie seu primeiro atalho para começar.",
+  "createFirstShortcut": "Criar primeiro atalho",
   "attachments": "Anexos",
   "uploadFiles": "Fazer upload de arquivos",
   "dragAndDrop": "ou arraste e solte",
@@ -13,7 +16,7 @@
   "noSearchResults": "Nenhum atalho encontrado para esta pesquisa",
   "delete": {
     "title": "Excluir Atalho",
-    "confirmation": "Tem certeza que deseja excluir o atalho {name}?",
+    "confirmation": "Tem certeza que deseja excluir o atalho {{name}}?",
     "warning": "Esta ação não pode ser desfeita."
   }
 }

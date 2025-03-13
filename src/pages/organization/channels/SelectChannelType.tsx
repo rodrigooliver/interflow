@@ -8,6 +8,11 @@ export default function SelectChannelType() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
 
+  // Adicionar função para voltar usando a history do navegador
+  const handleGoBack = () => {
+    window.history.back();
+  };
+
   const channelTypes = [
     { 
       id: 'whatsapp_official', 
@@ -21,30 +26,30 @@ export default function SelectChannelType() {
       description: t('descriptions.whatsapp_wapi'),
       icon: getChannelIcon('whatsapp_wapi')
     },
-    { 
-      id: 'whatsapp_zapi', 
-      name: t('types.whatsapp_zapi'),
-      description: t('descriptions.whatsapp_zapi'),
-      icon: getChannelIcon('whatsapp_zapi')
-    },
-    { 
-      id: 'whatsapp_evo', 
-      name: t('types.whatsapp_evo'),
-      description: t('descriptions.whatsapp_evo'),
-      icon: getChannelIcon('whatsapp_evo')
-    },
+    // { 
+    //   id: 'whatsapp_zapi', 
+    //   name: t('types.whatsapp_zapi'),
+    //   description: t('descriptions.whatsapp_zapi'),
+    //   icon: getChannelIcon('whatsapp_zapi')
+    // },
+    // { 
+    //   id: 'whatsapp_evo', 
+    //   name: t('types.whatsapp_evo'),
+    //   description: t('descriptions.whatsapp_evo'),
+    //   icon: getChannelIcon('whatsapp_evo')
+    // },
     { 
       id: 'instagram', 
       name: t('types.instagram'),
       description: t('descriptions.instagram'),
       icon: getChannelIcon('instagram')
     },
-    { 
-      id: 'facebook', 
-      name: t('types.facebook'),
-      description: t('descriptions.facebook'),
-      icon: getChannelIcon('facebook')
-    },
+    // { 
+    //   id: 'facebook', 
+    //   name: t('types.facebook'),
+    //   description: t('descriptions.facebook'),
+    //   icon: getChannelIcon('facebook')
+    // },
     {
       id: 'email',
       name: t('types.email'),
@@ -58,7 +63,7 @@ export default function SelectChannelType() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <button
-            onClick={() => navigate('/app/channels')}
+            onClick={handleGoBack}
             className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ArrowLeft className="w-5 h-5" />

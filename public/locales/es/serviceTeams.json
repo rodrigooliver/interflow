@@ -5,18 +5,21 @@
   "leader": "Líder",
   "member": "Miembro",
   "addMember": "Agregar Miembro",
+  "noTeamsYet": "Aún no hay equipos creados",
+  "noTeamsDescription": "Los equipos le permiten organizar a sus agentes en grupos para una mejor gestión. Cree su primer equipo para comenzar.",
+  "createFirstTeam": "Crear primer equipo",
   "form": {
     "name": "Nombre del Equipo",
     "description": "Descripción"
   },
   "removeMember": {
     "title": "Eliminar Miembro",
-    "confirmation": "¿Estás seguro de que deseas eliminar a {name} del equipo?",
+    "confirmation": "¿Estás seguro de que deseas eliminar a {{name}} del equipo?",
     "warning": "Esta acción no se puede deshacer."
   },
   "removeTeam": {
     "title": "Eliminar Equipo",
-    "confirmation": "¿Estás seguro de que deseas eliminar el equipo {name}?",
+    "confirmation": "¿Estás seguro de que deseas eliminar el equipo {{name}}?",
     "warning": "Esta acción no se puede deshacer."
   }
 }

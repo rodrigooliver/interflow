@@ -2,6 +2,9 @@
   "title": "Service Channels",
   "newChannel": "New Channel",
   "deleteSuccess": "Channel successfully removed",
+  "noChannelsYet": "No channels created yet",
+  "noChannelsDescription": "Channels allow you to connect with your customers through different platforms. Create your first channel to get started.",
+  "createFirstChannel": "Create first channel",
   "form": {
     "title": {
       "create": "New Service Channel",
@@ -240,7 +243,7 @@
   },
   "delete": {
     "title": "Remove Channel",
-    "confirmation": "Are you sure you want to remove channel {name}?",
+    "confirmation": "Are you sure you want to remove channel {{name}}?",
     "warning": "This action cannot be undone.",
     "error": {
       "hasChats": "Cannot delete channel with existing chats"

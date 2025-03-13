@@ -3,6 +3,7 @@
   "newType": "New Type", 
   "loading": "Loading...",
   "saving": "Saving...",
+  "no_flows_available": "No flows available",
   "form": {
     "title": "Title",
     "color": "Color",

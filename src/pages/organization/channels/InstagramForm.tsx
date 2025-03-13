@@ -7,11 +7,26 @@ import { supabase } from '../../../lib/supabase';
 import api from '../../../lib/api';
 import { toast } from 'react-hot-toast';
 
+// Interface para erros com resposta
+interface ApiError extends Error {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 export default function InstagramForm() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { id } = useParams(); // Pega o ID da URL se estiver editando
   const { currentOrganization } = useOrganizationContext();
+  
+  // Adicionar função para voltar usando a history do navegador
+  const handleGoBack = () => {
+    window.history.back();
+  };
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -47,8 +62,9 @@ export default function InstagramForm() {
         is_connected: data.is_connected,
         status: data.status
       });
-    } catch (error) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const err = error as Error;
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -82,8 +98,9 @@ export default function InstagramForm() {
       }
 
       navigate(`/app/channels/${data.id}/edit/instagram`);
-    } catch (error) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const err = error as Error;
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -105,8 +122,9 @@ export default function InstagramForm() {
       }
 
       // Não navegamos após atualizar, permanecemos na mesma página
-    } catch (error) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const err = error as Error;
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -162,7 +180,7 @@ export default function InstagramForm() {
         status: prev.status === 'active' ? 'inactive' : 'active'
       }));
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error toggling status:', error);
       setError(t('common:error'));
     } finally {
@@ -184,13 +202,14 @@ export default function InstagramForm() {
         throw new Error(response.data.error || t('common:error'));
       }
 
-      // Redirecionar para a lista de canais
-      navigate('/app/channels');
+      // Usar a função handleGoBack em vez de navegar diretamente
+      handleGoBack();
       toast.success(t('channels:deleteSuccess'));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as ApiError;
       console.error('Error deleting channel:', error);
-      setError(error.response?.data?.error || error.message || t('common:error'));
-      toast.error(error.response?.data?.error || error.message || t('common:error'));
+      setError(err.response?.data?.error || err.message || t('common:error'));
+      toast.error(err.response?.data?.error || err.message || t('common:error'));
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);
@@ -200,8 +219,18 @@ export default function InstagramForm() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex justify-center items-center min-h-[200px]">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={handleGoBack}
+              className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex justify-center items-center min-h-[200px]">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
         </div>
       </div>
     );
@@ -212,7 +241,7 @@ export default function InstagramForm() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <button
-            onClick={() => navigate('/app/channels')}
+            onClick={handleGoBack}
             className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -10,7 +10,8 @@ export type NodeType =
   | 'input'
   | 'update_customer'
   | 'start'
-  | 'openai';
+  | 'openai'
+  | 'agenteia';
 
 export interface Variable {
   id: string;
@@ -74,6 +75,7 @@ export interface Flow {
   folders: string[];
   created_at: string;
   updated_at: string;
+  created_by_prompt?: string | null;
 }
 
 export interface FlowSession {
@@ -84,7 +86,7 @@ export interface FlowSession {
   customer_id: string;
   current_node_id: string;
   status: 'active' | 'inactive' | 'timeout';
-  variables: Record<string, any>;
+  variables: Record<string, string | number | boolean | object>;
   message_history: {
     id: string;
     content: string;

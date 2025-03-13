@@ -36,6 +36,16 @@ export default function Tags() {
     }
   }, [currentOrganization]);
 
+  // Limpar mensagem de erro após 5 segundos
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   async function loadTags() {
     if (!currentOrganization) return;
 
@@ -160,52 +170,76 @@ export default function Tags() {
       </div>
 
       {error && (
-        <div className="mb-6 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-lg">
-          {error}
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            <span>{error}</span>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tags.map((tag) => (
-          <div key={tag.id} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-6 h-6 rounded-full"
-                  style={{ backgroundColor: tag.color }}
-                />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  {tag.name}
-                </h3>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => {
-                    setSelectedTag(tag);
-                    setFormData({
-                      name: tag.name,
-                      color: tag.color
-                    });
-                    setShowEditModal(true);
-                  }}
-                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedTag(tag);
-                    setShowDeleteModal(true);
-                  }}
-                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+      {tags.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tags.map((tag) => (
+            <div key={tag.id} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-6 h-6 rounded-full"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    {tag.name}
+                  </h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      setSelectedTag(tag);
+                      setFormData({
+                        name: tag.name,
+                        color: tag.color
+                      });
+                      setShowEditModal(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedTag(tag);
+                      setShowDeleteModal(true);
+                    }}
+                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <TagIcon className="w-16 h-16 text-gray-300 dark:text-gray-600" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+              {t('tags:noTagsYet')}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              {t('tags:noTagsDescription')}
+            </p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t('tags:createFirstTag')}
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       {(showAddModal || showEditModal) && (

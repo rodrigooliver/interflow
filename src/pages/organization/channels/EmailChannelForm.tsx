@@ -1,17 +1,29 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { supabase } from '../../../lib/supabase';
 import api from '../../../lib/api';
 
+// Interface para erros com resposta
+interface ApiError extends Error {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 export default function EmailChannelForm() {
   const { t } = useTranslation(['channels', 'common']);
-  const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganization } = useOrganizationContext();
-  const API_URL = import.meta.env.VITE_API_URL;
+  
+  // Adicionar função para voltar usando a history do navegador
+  const handleGoBack = () => {
+    window.history.back();
+  };
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -149,10 +161,11 @@ export default function EmailChannelForm() {
         is_tested: true,
         is_connected: true
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as ApiError;
       console.error('Error testing email connection:', error);
       setConnectionStatus('error');
-      setError(error.response?.data?.error || error.message || t('form.email.error'));
+      setError(err.response?.data?.error || err.message || t('form.email.error'));
     } finally {
       setTesting(false);
     }
@@ -204,7 +217,7 @@ export default function EmailChannelForm() {
         }
 
         // Create new channel
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('chat_channels')
           .insert([{
             organization_id: currentOrganization.id,
@@ -218,13 +231,21 @@ export default function EmailChannelForm() {
             status: 'inactive',
             is_connected: true, // Auto set connected for new channels after testing
             is_tested: true
-          }]);
+          }])
+          .select();
 
         if (error) throw error;
+        
+        // Se criou um novo canal, redireciona para a página de edição
+        if (data && data.length > 0) {
+          window.location.href = `/app/channels/${data[0].id}/edit/email`;
+          return;
+        }
       }
 
-      navigate('/app/channels');
-    } catch (error) {
+      // Usar a função handleGoBack em vez de navegar diretamente
+      handleGoBack();
+    } catch (error: unknown) {
       console.error('Error saving channel:', error);
       setError(t('common:error'));
     } finally {
@@ -235,8 +256,18 @@ export default function EmailChannelForm() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex justify-center items-center min-h-[200px]">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={handleGoBack}
+              className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex justify-center items-center min-h-[200px]">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
         </div>
       </div>
     );
@@ -247,7 +278,7 @@ export default function EmailChannelForm() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <button
-            onClick={() => navigate('/app/channels')}
+            onClick={handleGoBack}
             className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -509,7 +540,7 @@ export default function EmailChannelForm() {
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={() => navigate('/app/channels')}
+                onClick={handleGoBack}
                 disabled={saving}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >

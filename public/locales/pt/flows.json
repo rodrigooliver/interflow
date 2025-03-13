@@ -17,7 +17,7 @@
   "debounce_time": "Tempo de Debounce",
   "debounce_time_description": "Tempo em milissegundos para aguardar antes de processar mensagens consecutivas. Útil para combinar múltiplas mensagens em uma única resposta.",
   "delete": {
-    "confirmation": "Tem certeza que deseja excluir o fluxo {name}?",
+    "confirmation": "Tem certeza que deseja excluir o fluxo {{name}}?",
     "title": "Excluir Fluxo",
     "warning": "Esta ação não pode ser desfeita."
   },
@@ -27,7 +27,7 @@
   "flowDescription": "Descrição do Fluxo",
   "flowName": "Nome do Fluxo",
   "folder": {
-    "confirmation": "Tem certeza que deseja excluir a pasta {name}?",
+    "confirmation": "Tem certeza que deseja excluir a pasta {{name}}?",
     "title": "Excluir Pasta",
     "warning": "Esta ação não pode ser desfeita. Todos os fluxos dentro desta pasta serão movidos para a raiz."
   },
@@ -35,6 +35,18 @@
   "name": "Nome",
   "newFlow": "Novo Fluxo",
   "newFolder": "Nova Pasta",
+  "linkedToAgent": "Vinculado ao Agente IA",
+  "createFromAgent": "Criar baseado em Agente IA",
+  "createFreeFlow": "Criar fluxo livre",
+  "selectAgent": "Selecione um Agente IA",
+  "noAgentsAvailable": "Nenhum Agente IA disponível",
+  "selectCreationType": "Selecione o tipo de fluxo que deseja criar:",
+  "createFreeFlowDescription": "Crie um fluxo em branco para construir do zero.",
+  "createFromAgentDescription": "Crie um fluxo baseado em um Agente IA existente.",
+  "optionalIfAgentSelected": "Opcional se um Agente IA for selecionado. Se não for preenchido, o nome do Agente será usado.",
+  "noFlowsYet": "Nenhum fluxo criado ainda",
+  "noFlowsDescription": "Fluxos permitem automatizar interações com seus clientes. Crie seu primeiro fluxo para começar.",
+  "createFirstFlow": "Criar primeiro fluxo",
   "nodes": {
     "audio": "Áudio",
     "condition": {
@@ -184,6 +196,13 @@
       },
       "voice": "Voz"
     },
+    "agenteia": {
+      "title": "Agente IA",
+      "defaultLabel": "Agente IA",
+      "prompt": "Instrução IA",
+      "selectPrompt": "Selecione uma Instrução IA",
+      "saveResponse": "Salvar resposta em"
+    },
     "options": {
       "textPlaceholder": "Texto da opção",
       "title": "Opções",
@@ -266,7 +285,12 @@
     "configure": "Configurar Gatilhos",
     "customer": "Cliente",
     "days": "Dias da semana",
+    "description": "Configure quando este fluxo será ativado automaticamente",
+    "enableAutomation": "Ativar automação para este fluxo",
+    "noAutomationDescription": "Este fluxo não será ativado automaticamente. Você precisará ativá-lo manualmente ou através de integrações.",
     "endTime": "Horário final",
+    "filterByChannel": "Filtrar por Canal",
+    "channelFilterDescription": "Selecione os canais onde este gatilho será ativado. Se nenhum canal for selecionado, o gatilho será ativado em todos os canais.",
     "firstContact": "Primeiro Contato",
     "firstContactDescription": "Ativar quando um cliente entrar em contato pela primeira vez",
     "inactivity": "Inatividade",

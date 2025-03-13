@@ -78,7 +78,7 @@
     "actions": "Acciones",
     "delete": "Eliminar",
     "deleteTitle": "Eliminar Archivo",
-    "deleteConfirmation": "¿Estás seguro de que deseas eliminar {name}?",
+    "deleteConfirmation": "¿Estás seguro de que deseas eliminar {{name}}?",
     "deleteWarning": "Esta acción no se puede deshacer. Si este archivo se usa en algún mensaje, ya no mostrará el archivo."
   },
   "profile": {

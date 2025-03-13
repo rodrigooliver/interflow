@@ -32,6 +32,16 @@ export default function MessageShortcuts() {
     }
   }, [currentOrganization]);
 
+  // Limpar mensagem de erro após 5 segundos
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   async function loadShortcuts() {
     if (!currentOrganization) return;
 
@@ -306,23 +316,59 @@ export default function MessageShortcuts() {
         </button>
       </div>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder={t('shortcuts:searchPlaceholder')}
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-        />
-      </div>
+      {shortcuts.length > 0 && (
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder={t('shortcuts:searchPlaceholder')}
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
 
       {paginatedShortcuts.length === 0 ? (
-        <div className="text-center text-gray-500 dark:text-gray-400">
-          {searchTerm ? t('shortcuts:noSearchResults') : t('shortcuts:noShortcuts')}
-        </div>
+        searchTerm ? (
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            {t('shortcuts:noSearchResults')}
+          </div>
+        ) : shortcuts.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <Keyboard className="w-16 h-16 text-gray-300 dark:text-gray-600" />
+              <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+                {t('shortcuts:noShortcutsYet')}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                {t('shortcuts:noShortcutsDescription')}
+              </p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('shortcuts:createFirstShortcut')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            {t('shortcuts:noShortcuts')}
+          </div>
+        )
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -173,14 +173,19 @@ export function UsageSettings() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="flex flex-col items-center space-y-3">
+          <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-blue-600" />
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+            {t('common:loading')}
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!stats) {
     return (
-      <div className="text-center text-gray-500 dark:text-gray-400">
+      <div className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 py-6">
         {error || t('settings:usage.noData')}
       </div>
     );
@@ -232,30 +237,30 @@ export function UsageSettings() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {usageItems.map((item, index) => {
           const Icon = item.icon;
           const usageColor = getUsageColor(item.percentage);
           
           return (
-            <div key={index} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <div key={index} className="bg-white dark:bg-gray-800 shadow rounded-lg p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Icon className="h-6 w-6 text-gray-400" />
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-gray-400" />
                 </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                <div className="ml-2 sm:ml-3">
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                     {item.title}
                   </h3>
-                  <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     {item.used} / {item.limit}
                   </div>
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-2 sm:mt-3 md:mt-4">
                 <div className="relative pt-1">
-                  <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
+                  <div className="overflow-hidden h-1.5 sm:h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
                     <div
                       style={{ width: `${item.percentage}%` }}
                       className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
@@ -269,8 +274,8 @@ export function UsageSettings() {
                   </div>
                 </div>
                 {item.percentage >= 90 && (
-                  <div className="mt-2 flex items-center text-sm text-red-600">
-                    <AlertTriangle className="h-4 w-4 mr-1" />
+                  <div className="mt-1.5 sm:mt-2 flex items-center text-xs sm:text-sm text-red-600">
+                    <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                     {t('settings:usage.limitWarning')}
                   </div>
                 )}

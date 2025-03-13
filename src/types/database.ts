@@ -125,8 +125,6 @@ export interface MessageShortcut {
  * Customers can be contacted through various channels
  */
 
-import { CRMStage } from './crm';
-
 export interface Customer {
   id: string;
   name: string;
@@ -436,6 +434,11 @@ export interface Flow {
     y: number;
     zoom: number;
   };
+  created_by_prompt?: string | null;
+  prompt?: {
+    id: string;
+    title: string;
+  } | null;
 }
 
 /**
@@ -511,6 +514,7 @@ export interface Integration {
   id: string;
   organization_id: Organization;
   title: string;
+  name?: string;
   type: 'openai' | 'aws_s3';
   credentials: {
     [key: string]: string;

@@ -4,6 +4,9 @@
   "editShortcut": "Edit Shortcut",
   "saveChanges": "Save Changes",
   "noShortcuts": "No shortcuts registered",
+  "noShortcutsYet": "No shortcuts created yet",
+  "noShortcutsDescription": "Shortcuts allow you to save messages and files for quick reuse during customer service. Create your first shortcut to get started.",
+  "createFirstShortcut": "Create first shortcut",
   "attachments": "Attachments",
   "uploadFiles": "Upload files",
   "dragAndDrop": "or drag and drop",
@@ -13,7 +16,7 @@
   "noSearchResults": "No shortcuts found for this search",
   "delete": {
     "title": "Delete Shortcut",
-    "confirmation": "Are you sure you want to delete shortcut {name}?",
+    "confirmation": "Are you sure you want to delete shortcut {{name}}?",
     "warning": "This action cannot be undone."
   }
 }

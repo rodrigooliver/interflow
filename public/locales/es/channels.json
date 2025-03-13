@@ -2,6 +2,9 @@
   "title": "Canales de Servicio",
   "newChannel": "Nuevo Canal",
   "deleteSuccess": "Canal eliminado con éxito",
+  "noChannelsYet": "Aún no hay canales creados",
+  "noChannelsDescription": "Los canales le permiten conectarse con sus clientes a través de diferentes plataformas. Cree su primer canal para comenzar.",
+  "createFirstChannel": "Crear primer canal",
   "form": {
     "title": {
       "create": "Nuevo Canal de Servicio",
@@ -240,7 +243,7 @@
   },
   "delete": {
     "title": "Eliminar Canal",
-    "confirmation": "¿Está seguro de que desea eliminar el canal {name}?",
+    "confirmation": "¿Está seguro de que desea eliminar el canal {{name}}?",
     "warning": "Esta acción no se puede deshacer.",
     "error": {
       "hasChats": "No se puede eliminar un canal con chats existentes"

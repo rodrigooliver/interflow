@@ -1,24 +1,321 @@
 {
-  "title": "Instruções IA",
-  "add": "Nova Instrução IA",
-  "edit": "Editar Instrução IA",
+  "title": "Agentes IA",
+  "add": "Novo Agente IA",
+  "edit": "Editar Agente IA",
   "delete": "Excluir",
-  "deleteTitle": "Excluir Instrução IA",
-  "deleteConfirmation": "Tem certeza que deseja excluir a instrução IA {name}?",
+  "deleteTitle": "Excluir Agente IA",
+  "deleteConfirmation": "Tem certeza que deseja excluir o Agente IA {{name}}?",
   "deleteWarning": "Esta ação não pode ser desfeita.",
   "lastUpdated": "Última atualização",
+  "noAgentsYet": "Nenhum Agente IA criado ainda",
+  "noAgentsDescription": "Agentes IA permitem automatizar interações com seus clientes usando inteligência artificial. Crie seu primeiro agente para começar.",
+  "createFirstAgent": "Criar primeiro Agente IA",
+  "createFlow": "Criar Fluxo baseado neste Agent",
+  "syncFlow": "Sincronizar Fluxo",
+  "viewLinkedFlow": "Ver Fluxo Vinculado",
+  "resetFlow": "Resetar Fluxo",
+  "resetFlowConfirm": "Tem certeza que deseja resetar o fluxo? Esta ação irá excluir o fluxo atual e criar um novo.",
+  "resettingFlow": "Resetando fluxo...",
+  "checkingFlow": "Verificando fluxo...",
+  "creatingFlow": "Criando fluxo...",
+  "syncingFlow": "Sincronizando fluxo...",
+  "flowLinkError": "Erro ao vincular com o fluxo. Tente novamente.",
+  "flowResetError": "Erro ao resetar o fluxo. Tente novamente.",
+  "flowCreatedSuccess": "Fluxo criado com sucesso!",
+  "flowResetSuccess": "Fluxo resetado com sucesso!",
+  "hasLinkedFlow": "Este agente IA tem um fluxo vinculado",
+  "flowOptions": "Opções do Fluxo",
   "form": {
     "title": "Título",
     "description": "Descrição",
     "content": "Conteúdo",
     "tags": "Tags",
-    "tagsPlaceholder": "Digite as tags separadas por vírgulas"
+    "tagsPlaceholder": "Digite as tags separadas por vírgulas",
+    "titlePlaceholder": "Digite o título do Agente IA",
+    "descriptionPlaceholder": "Descreva o propósito deste Agente IA",
+    "contentPlaceholder": "Digite as instruções para a IA (Agente IA de sistema)",
+    "contentHelp": "Este é o Agente IA de sistema que define o comportamento da IA.",
+    "integration": "Integração",
+    "selectIntegration": "Selecione uma integração",
+    "tools": "Ferramentas",
+    "toolsHelp": "Ferramentas que a IA pode utilizar",
+    "destinations": "Destinos",
+    "destinationsHelp": "Para onde enviar as respostas baseadas em intenções detectadas",
+    "tip": "Dica",
+    "markdownTip": "Você pode usar formatação Markdown como",
+    "bold": "negrito",
+    "italic": "itálico",
+    "code": "código",
+    "andMore": "listas e muito mais",
+    "characters": "caracteres",
+    "tabs": {
+      "general": "Configurações Gerais",
+      "tools": "Ferramentas"
+    },
+    "toolsDescription": "Configure as ferramentas que o modelo pode utilizar. Ferramentas permitem que o modelo execute ações específicas durante a conversa.",
+    "toolsInfo": "Informação sobre ferramentas",
+    "toolsInfoDescription": "Ferramentas permitem que o modelo chame funções específicas. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ferramentas.",
+    "learnMore": "Saiba mais sobre Function Calling",
+    "noTools": "Nenhuma ferramenta configurada",
+    "addTool": "+ Adicionar Ferramenta",
+    "newTool": "Nova Ferramenta",
+    "toolName": "Nome da Ferramenta",
+    "toolNamePlaceholder": "Ex: get_weather",
+    "toolDescription": "Descrição da Ferramenta",
+    "toolDescriptionPlaceholder": "Ex: Obtém informações sobre o clima atual para uma localização específica",
+    "toolParameters": "Parâmetros (JSON Schema)",
+    "toolParametersHelp": "Defina os parâmetros da ferramenta usando o formato JSON Schema.",
+    "parameters": "Parâmetros",
+    "collapse": "Minimizar",
+    "expand": "Expandir",
+    "variables": "Variáveis",
+    "addVariable": "Adicionar Variável",
+    "variableName": "Nome da Variável",
+    "variableType": "Tipo da Variável",
+    "variableDescription": "Descrição da Variável",
+    "variableRequired": "Obrigatório",
+    "variableEnum": "Valores Possíveis (Enum)",
+    "addEnum": "Adicionar Valor",
+    "addParameter": "Adicionar Parâmetro",
+    "useVariable": "Usar Variável",
+    "variableAdded": "Adicionada",
+    "noVariables": "Nenhuma variável definida",
+    "enumValues": "Valores possíveis",
+    "enumValuePlaceholder": "Novo valor",
+    "editTool": "Editar Ferramenta",
+    "editVariable": "Editar Variável",
+    "actions": {
+      "title": "Ações da Ferramenta",
+      "description": "Configure as ações que serão executadas quando esta ferramenta for chamada pelo modelo.",
+      "name": "Nome da Ação",
+      "namePlaceholder": "Ex: Atualizar Cliente",
+      "type": "Tipo de Ação",
+      "types": {
+        "update_customer": "Atualizar Cliente",
+        "update_chat": "Atualizar Chat",
+        "start_flow": "Iniciar Fluxo",
+        "custom": "Personalizado"
+      },
+      "fields": "Campos para atualizar",
+      "chatFields": "Campos do chat para atualizar",
+      "flowId": "ID do Fluxo",
+      "variables": "Variáveis iniciais (JSON)",
+      "customConfig": "Configuração personalizada (JSON)",
+      "add": "Adicionar Ação",
+      "addAction": "Adicionar Nova Ação",
+      "editAction": "Editar Ação",
+      "noActions": "Nenhuma ação configurada",
+      "actionSingular": "ação configurada",
+      "actionPlural": "ações configuradas",
+      "selectField": "Selecione um campo para configurar",
+      "showAllFields": "Mostrar todos os campos",
+      "useVariable": "Usar variável",
+      "manualInput": "Entrada manual",
+      "customerNamePlaceholder": "Nome do cliente",
+      "selectVariable": "Selecione uma variável",
+      "funnel": "Funil",
+      "selectFunnel": "Selecione um funil",
+      "stage": "Estágio",
+      "selectStage": "Selecione um estágio",
+      "status": "Status",
+      "selectStatus": "Selecione um status",
+      "statusPending": "Pendente",
+      "statusInProgress": "Em Progresso",
+      "statusClosed": "Fechado",
+      "team": "Equipe",
+      "selectTeam": "Selecione uma equipe",
+      "chatTitlePlaceholder": "Título do chat",
+      "flow": "Fluxo",
+      "selectFlow": "Selecione um fluxo",
+      "filters": {
+        "title": "Filtros",
+        "description": "Configure os filtros para determinar quando esta ação será executada",
+        "add": "Adicionar Filtro",
+        "noFilters": "Nenhum filtro configurado",
+        "selectVariable": "Selecione uma variável",
+        "selectValue": "Selecione um valor",
+        "operator": "Operador",
+        "operators": {
+          "equals": "igual a",
+          "not_equals": "diferente de",
+          "contains": "contém",
+          "not_contains": "não contém",
+          "greater_than": "maior que",
+          "less_than": "menor que"
+        }
+      }
+    },
+    "examples": {
+      "title": "Exemplos",
+      "tools": {
+        "weather": {
+          "name": "consultar_clima",
+          "description": "Consulta informações sobre o clima atual ou previsão para uma localização específica",
+          "parameters": {
+            "location": {
+              "description": "A cidade ou local para obter informações do clima",
+              "type": "string",
+              "example": "São Paulo"
+            },
+            "days": {
+              "description": "Número de dias para a previsão (1-7)",
+              "type": "integer",
+              "example": "3"
+            }
+          }
+        },
+        "calculator": {
+          "name": "calcular",
+          "description": "Realiza cálculos matemáticos complexos",
+          "parameters": {
+            "expression": {
+              "description": "A expressão matemática a ser calculada",
+              "type": "string",
+              "example": "(23 * 4.5) / 2 + 7"
+            }
+          }
+        },
+        "search": {
+          "name": "pesquisar",
+          "description": "Busca informações na internet sobre um tópico específico",
+          "parameters": {
+            "query": {
+              "description": "O termo ou pergunta a ser pesquisado",
+              "type": "string",
+              "example": "Quais são os benefícios do exercício físico regular?"
+            },
+            "limit": {
+              "description": "Número máximo de resultados a retornar",
+              "type": "integer",
+              "example": "5"
+            }
+          }
+        },
+        "calendar": {
+          "name": "agendar_evento",
+          "description": "Agenda um novo evento no calendário",
+          "parameters": {
+            "title": {
+              "description": "Título do evento",
+              "type": "string",
+              "example": "Reunião com equipe de marketing"
+            },
+            "start_date": {
+              "description": "Data e hora de início (formato ISO)",
+              "type": "string",
+              "example": "2023-11-15T14:00:00"
+            },
+            "end_date": {
+              "description": "Data e hora de término (formato ISO)",
+              "type": "string",
+              "example": "2023-11-15T15:30:00"
+            },
+            "participants": {
+              "description": "Lista de participantes (emails)",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": ["maria@empresa.com", "joao@empresa.com"]
+            }
+          }
+        },
+        "translate": {
+          "name": "traduzir_texto",
+          "description": "Traduz um texto para outro idioma",
+          "parameters": {
+            "text": {
+              "description": "O texto a ser traduzido",
+              "type": "string",
+              "example": "Olá, como você está hoje?"
+            },
+            "target_language": {
+              "description": "O idioma para o qual traduzir",
+              "type": "string",
+              "enum": ["inglês", "espanhol", "francês", "alemão", "italiano", "japonês", "chinês"],
+              "example": "inglês"
+            }
+          }
+        }
+      },
+      "variables": {
+        "name": {
+          "label": "Nome",
+          "name": "nome",
+          "type": "string",
+          "description": "Nome do usuário ou entidade",
+          "required": true,
+          "enumValues": []
+        },
+        "email": {
+          "label": "Email",
+          "name": "email",
+          "type": "string",
+          "description": "Endereço de e-mail para contato",
+          "required": true,
+          "enumValues": []
+        },
+        "language": {
+          "label": "Idioma (enum)",
+          "name": "idioma",
+          "type": "enum",
+          "description": "Idioma preferido para comunicação",
+          "required": false,
+          "enumValues": ["português", "english", "español", "français", "deutsch"]
+        },
+        "age": {
+          "label": "Idade (número)",
+          "name": "idade",
+          "type": "number",
+          "description": "Idade do usuário em anos",
+          "required": false,
+          "enumValues": []
+        },
+        "options": {
+          "label": "Opções (enum)",
+          "name": "opcoes",
+          "type": "enum",
+          "description": "Opções disponíveis para seleção",
+          "required": true,
+          "enumValues": ["opção 1", "opção 2", "opção 3"]
+        },
+        "sales_stage": {
+          "label": "Estágio de Vendas (enum)",
+          "name": "estagio_vendas",
+          "type": "enum",
+          "description": "Estágio atual no funil de vendas",
+          "required": true,
+          "enumValues": ["Prospecção", "Qualificação", "Proposta", "Negociação", "Fechamento", "Pós-venda"]
+        }
+      }
+    }
   },
-  "test": "Testar Instrução IA",
-  "testPlaceholder": "Digite uma mensagem para testar a instrução IA",
+  "test": "Testar Agente IA",
+  "testPlaceholder": "Digite uma mensagem para testar o Agente IA",
+  "testEmpty": "Envie uma mensagem para testar o Agente IA",
+  "clearChat": "Limpar conversa",
   "send": "Enviar",
   "testing": "Testando...",
-  "testSuccess": "Instrução IA testada com sucesso!",
-  "testError": "Erro ao testar a instrução IA",
-  "selectIntegration": "Selecione a integração para testar a instrução IA"
+  "testSuccess": "Agente IA testado com sucesso!",
+  "testError": "Erro ao testar o Agente IA",
+  "testErrorBackend": "Erro ao processar o Agente IA no servidor",
+  "testNoIntegration": "Nenhuma integração OpenAI disponível",
+  "selectIntegration": "Selecione a integração para testar o Agente IA",
+  "model": "Modelo",
+  "temperature": "Temperatura",
+  "loadingModels": "Carregando modelos...",
+  "tokenUsage": "Uso de Tokens",
+  "promptTokens": "Prompt",
+  "completionTokens": "Resposta",
+  "totalTokens": "Total",
+  "noModelsAvailable": "Nenhum modelo disponível",
+  "loadingIntegrations": "Carregando integrações...",
+  "noIntegrationsAvailable": "Nenhuma integração disponível",
+  "editor": {
+    "editMode": "Edição",
+    "splitMode": "Visualização dividida",
+    "previewMode": "Visualização"
+  },
+  "togglePreview": "Alternar visualização",
+  "toggleFullscreen": "Alternar tela cheia"
 }

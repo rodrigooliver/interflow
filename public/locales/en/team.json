@@ -27,7 +27,7 @@
   },
   "delete": {
     "title": "Delete User",
-    "confirmation": "Are you sure you want to delete user {name}?",
+    "confirmation": "Are you sure you want to delete user {{name}}?",
     "warning": "This action cannot be undone."
   },
   "roles": {

@@ -62,8 +62,8 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     { to: '/app/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
-    { to: '/app/settings/billing', icon: SettingsIcon, label: t('navigation:settings') },
     { to: '/app/closure-types', icon: CheckCircle, label: t('navigation:closureTypes') },
+    { to: '/app/settings/billing', icon: SettingsIcon, label: t('navigation:settings') },
   ];
 
   // Super admin links

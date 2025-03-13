@@ -16,6 +16,11 @@ export default function WhatsAppWApiForm() {
   const { id } = useParams();
   const { currentOrganization } = useOrganizationContext();
 
+  // Adicionar função para voltar usando a history do navegador
+  const handleGoBack = () => {
+    window.history.back();
+  };
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -448,8 +453,8 @@ export default function WhatsAppWApiForm() {
         throw new Error(response.data.error || 'Failed to delete channel');
       }
 
-      // Redirecionar para a lista de canais
-      navigate('/app/channels');
+      // Redirecionar para a lista de canais usando a history
+      handleGoBack();
     } catch (error: any) {
       console.error('Error deleting channel:', error);
       setError(error.response?.data?.error || error.message || t('common:error'));
@@ -624,6 +629,17 @@ export default function WhatsAppWApiForm() {
     return (
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={handleGoBack}
+              className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('form.title.create')}
+            </h1>
+          </div>
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             {error && (
               <div className="mb-6 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
@@ -710,6 +726,17 @@ export default function WhatsAppWApiForm() {
     return (
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={handleGoBack}
+              className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('form.title.create')}
+            </h1>
+          </div>
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">
               {t('channels:whatsapp.interflowSetup')}
@@ -727,8 +754,18 @@ export default function WhatsAppWApiForm() {
   if (id && (!formData.name || loading)) {
     return (
       <div className="p-6">
-        <div className="flex justify-center items-center min-h-[200px]">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-6">
+            <button
+              onClick={handleGoBack}
+              className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex justify-center items-center min-h-[200px]">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
         </div>
       </div>
     );
@@ -739,7 +776,7 @@ export default function WhatsAppWApiForm() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <button
-            onClick={() => navigate('/app/channels')}
+            onClick={handleGoBack}
             className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -1109,7 +1146,7 @@ export default function WhatsAppWApiForm() {
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={() => navigate('/app/channels')}
+                onClick={handleGoBack}
                 disabled={saving}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >

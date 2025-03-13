@@ -4,8 +4,11 @@
   "edit": "Editar Tag",
   "delete": "Excluir",
   "deleteTitle": "Excluir Tag",
-  "deleteConfirmation": "Tem certeza que deseja excluir a tag {name}?",
+  "deleteConfirmation": "Tem certeza que deseja excluir a tag {{name}}?",
   "deleteWarning": "Esta ação não pode ser desfeita. Mensagens e prompts que usam esta tag não serão afetados.",
+  "noTagsYet": "Nenhuma tag criada ainda",
+  "noTagsDescription": "Tags permitem categorizar e organizar seus conteúdos para facilitar a busca e filtragem. Crie sua primeira tag para começar.",
+  "createFirstTag": "Criar primeira tag",
   "form": {
     "name": "Nome",
     "color": "Cor"
