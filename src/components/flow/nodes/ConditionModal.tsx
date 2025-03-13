@@ -3,11 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { Plus, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
+import { useAgents, useFunnels, useTeams, useTags } from '../../../hooks/useQueryes';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { SearchableSelect } from '../../../components/common/SearchableSelect';
 
-const Portal = ({ children }) => {
-  return createPortal(children, document.body);
-};
+interface SelectOption {
+  value: string;
+  label: string;
+}
 
 interface SubCondition {
   type: 'variable' | 'clientData';
@@ -17,6 +20,7 @@ interface SubCondition {
            'startsWith' | 'endsWith' | 'matchesRegex' | 'doesNotMatchRegex' |
            'inList' | 'notInList';
   value: string;
+  stageId?: string;
 }
 
 interface Condition {
@@ -31,9 +35,17 @@ interface ConditionModalProps {
   variables: { id: string; name: string }[];
 }
 
+const Portal = ({ children }: { children: React.ReactNode }) => {
+  return createPortal(children, document.body);
+};
+
 export function ConditionModal({ condition, onClose, onSave, variables }: ConditionModalProps) {
   const { t } = useTranslation('flows');
-  const { funnels, teams, users } = useFlowEditor();
+  const { currentOrganization } = useOrganizationContext();
+  const { data: users = [] } = useAgents(currentOrganization?.id, ['agent', 'admin', 'owner', 'member']);
+  const { data: funnels = [] } = useFunnels(currentOrganization?.id);
+  const { data: teams = [] } = useTeams(currentOrganization?.id);
+  const { data: tags = [] } = useTags(currentOrganization?.id);
 
   const operatorOptions = [
     { value: 'equalTo', labelKey: 'equalTo' },
@@ -108,7 +120,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                   <React.Fragment key={index}>
                     {index > 0 && (
                       <div className="flex justify-center items-center my-4">
-                        <SearchableSelect
+                        <SearchableSelect<SelectOption>
                           value={{
                             value: localCondition.logicOperator,
                             label: t(`nodes.condition.${localCondition.logicOperator.toLowerCase()}`)
@@ -179,7 +191,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                             {subCondition.type === 'variable' ? t('nodes.condition.selectVariable') : t('nodes.condition.selectClientData')}
                           </label>
                           {subCondition.type === 'variable' ? (
-                            <SearchableSelect
+                            <SearchableSelect<SelectOption>
                               value={variables
                                 .filter(variable => variable.name === subCondition.field)
                                 .map(variable => ({
@@ -205,7 +217,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                               placeholder={t('nodes.condition.select')}
                             />
                           ) : (
-                            <SearchableSelect
+                            <SearchableSelect<SelectOption>
                               value={clientDataOptions
                                 .filter(option => option.value === subCondition.field)
                                 .map(option => ({
@@ -237,7 +249,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                           <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                             {t('nodes.condition.operator')}
                           </label>
-                          <SearchableSelect
+                          <SearchableSelect<SelectOption>
                             value={getFilteredOperators(subCondition.field)
                               .find(op => op.value === subCondition.operator)
                               ? {
@@ -273,7 +285,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                               {t('nodes.condition.value')}
                             </label>
                             {['inList', 'notInList'].includes(subCondition.operator) && 
-                             !['chat_funil', 'chat_team', 'chat_attendant'].includes(subCondition.field) && (
+                             !['chat_funil', 'chat_team', 'chat_attendant', 'chat_tag'].includes(subCondition.field) && (
                               <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                 {t('nodes.condition.separateByComma')}
                               </p>
@@ -281,7 +293,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                             
                             {subCondition.field === 'chat_funil' ? (
                               <>
-                                <SearchableSelect
+                                <SearchableSelect<SelectOption>
                                   value={funnels
                                     .filter(funnel => funnel.id === subCondition.value)
                                     .map(funnel => ({
@@ -310,7 +322,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
 
                                 {subCondition.value && (
                                   <div className="mt-3">
-                                    <SearchableSelect
+                                    <SearchableSelect<SelectOption>
                                       value={funnels
                                         .find(f => f.id === subCondition.value)
                                         ?.stages
@@ -347,7 +359,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                                 )}
                               </>
                             ) : subCondition.field === 'chat_team' ? (
-                              <SearchableSelect
+                              <SearchableSelect<SelectOption>
                                 value={teams
                                   .filter(team => (subCondition.value || '').split(',').includes(team.id))
                                   .map(team => ({
@@ -377,7 +389,7 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                                 isMulti={['inList', 'notInList'].includes(subCondition.operator)}
                               />
                             ) : subCondition.field === 'chat_attendant' ? (
-                              <SearchableSelect
+                              <SearchableSelect<SelectOption>
                                 value={users
                                   .filter(user => (subCondition.value || '').split(',').includes(user.id))
                                   .map(user => ({
@@ -404,6 +416,36 @@ export function ConditionModal({ condition, onClose, onSave, variables }: Condit
                                   label: user.full_name
                                 }))}
                                 placeholder={t('nodes.condition.selectAttendant')}
+                                isMulti={['inList', 'notInList'].includes(subCondition.operator)}
+                              />
+                            ) : subCondition.field === 'chat_tag' ? (
+                              <SearchableSelect<SelectOption>
+                                value={tags
+                                  .filter(tag => (subCondition.value || '').split(',').includes(tag.id))
+                                  .map(tag => ({
+                                    value: tag.id,
+                                    label: tag.name
+                                  }))}
+                                onChange={(selected) => {
+                                  const newSubConditions = [...localCondition.subConditions];
+                                  const value = Array.isArray(selected)
+                                    ? selected.map(option => option.value).join(',')
+                                    : selected ? selected.value : '';
+                                  newSubConditions[index] = {
+                                    ...subCondition,
+                                    value
+                                  };
+                                  setLocalCondition({
+                                    ...localCondition,
+                                    subConditions: newSubConditions
+                                  });
+                                }}
+                                onBlur={handleConfigBlur}
+                                options={tags.map(tag => ({
+                                  value: tag.id,
+                                  label: tag.name
+                                }))}
+                                placeholder={t('nodes.condition.selectTag')}
                                 isMulti={['inList', 'notInList'].includes(subCondition.operator)}
                               />
                             ) : (

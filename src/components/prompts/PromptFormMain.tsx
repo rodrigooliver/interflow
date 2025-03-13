@@ -14,6 +14,7 @@ import VariableForm from './VariableForm';
 import VariablesList from './VariablesList';
 import TestChat from './TestChat';
 import { Modal } from '../ui/Modal';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -201,6 +202,7 @@ const PromptFormMain: React.FC = () => {
   const [resettingFlow, setResettingFlow] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (id) {
@@ -291,14 +293,16 @@ const PromptFormMain: React.FC = () => {
         .from('flows')
         .select('id, name')
         .eq('created_by_prompt', id)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error checking linked flow:', error);
       }
       
       if (data) {
         setLinkedFlow(data);
+      } else {
+        setLinkedFlow(null);
       }
     } catch (error) {
       console.error('Error checking linked flow:', error);
@@ -321,7 +325,8 @@ const PromptFormMain: React.FC = () => {
         
         if (flowData) {
           setLinkedFlow(flowData);
-          // Não navegar para o fluxo, apenas atualizar o estado
+          // Invalidar cache dos flows
+          await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganization.id] });
           setError('');
           // Mostrar mensagem de sucesso
           const successMessage = document.createElement('div');
@@ -363,7 +368,8 @@ const PromptFormMain: React.FC = () => {
       
       if (flowData) {
         setLinkedFlow(flowData);
-        // Não navegar para o fluxo, apenas atualizar o estado
+        // Invalidar cache dos flows
+        await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganization.id] });
         setError('');
         // Mostrar mensagem de sucesso
         const successMessage = document.createElement('div');
@@ -422,7 +428,8 @@ const PromptFormMain: React.FC = () => {
 
         if (error) throw error;
         
-        // Don't redirect, just show a temporary success message
+        // Invalidar cache dos prompts
+        await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganization.id] });
         setError('');
       } else {
         // Create
@@ -435,6 +442,9 @@ const PromptFormMain: React.FC = () => {
           .select();
 
         if (error) throw error;
+        
+        // Invalidar cache dos prompts
+        await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganization.id] });
         
         if (data && data.length > 0) {
           // Redirect to the edit page with the newly created ID

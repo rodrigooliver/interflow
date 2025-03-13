@@ -8,7 +8,8 @@
     "role": "Role",
     "since": "Since",
     "unknown": "Unknown User",
-    "emailNotAvailable": "Email not available"
+    "emailNotAvailable": "Email not available",
+    "actions": "Actions"
   },
   "form": {
     "fullName": "Full Name",

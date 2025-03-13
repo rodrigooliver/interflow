@@ -1,14 +1,24 @@
 {
   "title": "Perfil",
+  "changePassword": "Alterar Senha",
+  "passwordChanged": "Senha alterada com sucesso!",
   "form": {
     "avatar": "Foto de Perfil",
     "changeAvatar": "Alterar Foto",
     "removeAvatar": "Remover Foto",
     "fullName": "Nome Completo",
-    "email": "Email"
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "newPassword": "Nova Senha",
+    "confirmPassword": "Confirmar Nova Senha",
+    "passwordRequirements": "A senha deve ter pelo menos 6 caracteres",
+    "changePassword": "Alterar Senha",
+    "changing": "Alterando..."
   },
   "errors": {
     "avatarTooLarge": "A foto de perfil deve ter menos de 2MB",
-    "invalidFileType": "Apenas arquivos de imagem são permitidos"
+    "invalidFileType": "Apenas arquivos de imagem são permitidos",
+    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+    "passwordsDoNotMatch": "As senhas não coincidem"
   }
 }

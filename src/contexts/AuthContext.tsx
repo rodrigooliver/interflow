@@ -2,6 +2,7 @@ import { createContext, useContext, ReactNode } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Profile, Organization } from '../types/database';
 import { useAuth } from '../hooks/useAuth';
+import { useProfile, useOrganization } from '../hooks/useQueryes';
 
 interface AuthContextType {
   session: Session | null;
@@ -27,10 +28,26 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const auth = useAuth();
-  
+  const { session, loading: authLoading, signIn, signOut } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile(session?.user?.id);
+  const { data: currentOrganization, isLoading: orgLoading } = useOrganization(session?.user?.id);
+
+  const loading = authLoading || profileLoading || orgLoading;
+
+  // Se ainda estiver carregando, não renderiza os filhos
+  if (loading) {
+    return null;
+  }
+
   return (
-    <AuthContext.Provider value={auth}>
+    <AuthContext.Provider value={{
+      session,
+      profile: profile || null,
+      currentOrganization: currentOrganization || null,
+      loading,
+      signIn,
+      signOut
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,6 +3,8 @@ import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { UserCog, Loader2 } from 'lucide-react';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
+import { useAgents, useFunnels, useTeams } from '../../../hooks/useQueryes';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { BaseNode } from './BaseNode';
 
 interface UpdateCustomerNodeProps {
@@ -22,7 +24,11 @@ interface UpdateCustomerNodeProps {
 
 export function UpdateCustomerNode({ data, id, isConnectable }: UpdateCustomerNodeProps) {
   const { t } = useTranslation('flows');
-  const { funnels, teams, users, updateNodeData } = useFlowEditor();
+  const { currentOrganization } = useOrganizationContext();
+  const { updateNodeData } = useFlowEditor();
+  const { data: users = [] } = useAgents(currentOrganization?.id, ['agent', 'admin', 'owner', 'member']);
+  const { data: funnels = [] } = useFunnels(currentOrganization?.id);
+  const { data: teams = [] } = useTeams(currentOrganization?.id);
   const [localConfig, setLocalConfig] = useState(data.updateCustomer || {
     field: '',
     value: '',

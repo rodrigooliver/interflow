@@ -74,5 +74,8 @@
   "actions": "Acciones",
   "searchCountry": "Buscar país...",
   "noCountriesFound": "No se encontraron países",
-  "change": "Cambiar"
+  "change": "Cambiar",
+  "checkingConnection": "Verificando conexión...",
+  "online": "Conexión restaurada",
+  "offline": "Sin conexión - Verifica tu conexión a internet"
 }

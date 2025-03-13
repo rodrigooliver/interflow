@@ -5,23 +5,19 @@ import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '../../types/database';
-
+import { usePrompts } from '../../hooks/useQueryes';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Prompts() {
   const { t } = useTranslation(['prompts', 'common']);
   const { currentOrganization } = useOrganizationContext();
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: prompts = [], isLoading } = usePrompts(currentOrganization?.id);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (currentOrganization) {
-      loadPrompts();
-    }
-  }, [currentOrganization]);
 
   // Limpar mensagem de erro após 5 segundos
   useEffect(() => {
@@ -33,27 +29,10 @@ export default function Prompts() {
     }
   }, [error]);
 
-  async function loadPrompts() {
+  const handleDelete = async (prompt: Prompt) => {
     if (!currentOrganization) return;
 
-    try {
-      const { data, error } = await supabase
-        .from('prompts')
-        .select('*')
-        .eq('organization_id', currentOrganization.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPrompts(data || []);
-    } catch (error) {
-      console.error('Error loading prompts:', error);
-      setError(t('common:error'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleDelete = async (prompt: Prompt) => {
+    setDeleting(true);
     try {
       const { error } = await supabase
         .from('prompts')
@@ -62,16 +41,20 @@ export default function Prompts() {
 
       if (error) throw error;
 
-      await loadPrompts();
+      // Invalida o cache para forçar uma nova busca
+      await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganization.id] });
+      
       setShowDeleteModal(false);
       setSelectedPrompt(null);
     } catch (error) {
       console.error('Error deleting prompt:', error);
       setError(t('common:error'));
+    } finally {
+      setDeleting(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">
@@ -210,15 +193,24 @@ export default function Prompts() {
                     setShowDeleteModal(false);
                     setSelectedPrompt(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  disabled={deleting}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('common:back')}
                 </button>
                 <button
                   onClick={() => handleDelete(selectedPrompt)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  disabled={deleting}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t('common:confirmDelete')}
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t('common:deleting')}
+                    </>
+                  ) : (
+                    t('common:confirmDelete')
+                  )}
                 </button>
               </div>
             </div>

@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration } from '../types/database';
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Organization, Prompt, OrganizationMember } from '../types/database';
 import api from '../lib/api';
+import { useTranslation } from 'react-i18next';
+import { reloadTranslations } from '../i18n';
+import { PostgrestResponse } from '@supabase/supabase-js';
 
 interface Tag {
   id: string;
@@ -23,11 +26,8 @@ interface Funnel {
   stages: FunnelStage[];
 }
 
-// Atualização do tipo Agent
-interface Agent extends Profile {
-  organization_member: {
-    role: 'agent';
-  }
+interface TeamMemberWithProfile extends OrganizationMember {
+  profile: Profile | null;
 }
 
 // Remover a interface MessageShortcut se não estiver sendo usada
@@ -113,43 +113,55 @@ interface Invoice {
 }
 
 // Hooks individuais para cada tipo de filtro
-export const useAgents = (organizationId?: string) => {
+export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 'owner' | 'member')[]) => {
   return useQuery({
-    queryKey: ['agents', organizationId],
+    queryKey: ['agents', organizationId, roles],
     queryFn: async () => {
       if (!organizationId) return [];
+      
+      type MemberWithProfile = {
+        id: string;
+        organization_id: string;
+        user_id: string;
+        role: string;
+        created_at: string;
+        profile: {
+          id: string;
+          email: string;
+          full_name: string;
+          avatar_url: string;
+          whatsapp: string;
+          created_at: string;
+        } | null;
+      };
       
       const { data, error } = await supabase
         .from('organization_members')
         .select(`
-          profile_id,
+          id,
+          organization_id,
+          user_id,
+          role,
+          created_at,
           profile:profiles!fk_organization_members_profile(
             id,
             email,
             full_name,
             avatar_url,
+            whatsapp,
             created_at
           )
         `)
         .eq('organization_id', organizationId)
-        .in('role', ['agent', 'admin', 'owner']);
+        .in('role', roles || ['agent', 'admin', 'owner']) as PostgrestResponse<MemberWithProfile>;
 
       if (error) throw error;
       
-      // Corrigindo o tipo de retorno
-      return (data || []).map(item => {
-        const profile = item.profile as unknown as Profile;
-        return {
-          ...profile,
-          organization_member: {
-            role: 'agent'
-          }
-        } as Agent;
-      });
+      return data || [];
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000 // 10 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 };
 
@@ -170,7 +182,34 @@ export const useTeams = (organizationId?: string) => {
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000 // 10 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+};
+
+export const useUsers = (organizationId?: string) => {
+  return useQuery({
+    queryKey: ['users', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select(`
+          user:profiles!user_id(
+            id,
+            full_name
+          )
+        `)
+        .eq('organization_id', organizationId)
+        .order('user(full_name)');
+
+      if (error) throw error;
+      
+      return data.map(item => item.user);
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 };
 
@@ -191,7 +230,7 @@ export const useChannels = (organizationId?: string) => {
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000 // 10 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 };
 
@@ -212,7 +251,7 @@ export const useTags = (organizationId?: string) => {
     },
     enabled: !!organizationId,
     staleTime: 30 * 60 * 1000, // 30 minutos
-    gcTime: 60 * 60 * 1000 // 1 hora
+    gcTime: 60 * 60 * 1000, // 1 hora
   });
 };
 
@@ -248,7 +287,7 @@ export const useFunnels = (organizationId?: string) => {
     },
     enabled: !!organizationId,
     staleTime: 30 * 60 * 1000, // 30 minutos
-    gcTime: 60 * 60 * 1000 // 1 hora
+    gcTime: 60 * 60 * 1000, // 1 hora
   });
 };
 
@@ -271,7 +310,7 @@ export const useCustomFieldDefinitions = (organizationId?: string) => {
     },
     enabled: !!organizationId,
     staleTime: 30 * 60 * 1000, // 30 minutos
-    gcTime: 60 * 60 * 1000 // 1 hora
+    gcTime: 60 * 60 * 1000, // 1 hora
   });
 };
 
@@ -369,7 +408,7 @@ export const useCurrentSubscription = (organizationId?: string) => {
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000 // 10 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 };
 
@@ -390,7 +429,7 @@ export const useInvoices = (organizationId?: string) => {
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000 // 10 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 };
 
@@ -479,4 +518,98 @@ export const useFlows = (organizationId?: string) => {
     staleTime: 30 * 60 * 1000, // 30 minutos
     gcTime: 60 * 60 * 1000 // 1 hora
   });
-}; 
+};
+
+export function usePrompts(organizationId?: string) {
+  return useQuery({
+    queryKey: ['prompts', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      const { data, error } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Prompt[];
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+export function useProfile(userId?: string) {
+  const { i18n } = useTranslation();
+
+  return useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (data && data.language && data.language !== i18n.language) {
+        await reloadTranslations(data.language);
+      }
+
+      return data as Profile;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+export function useOrganization(userId?: string) {
+  return useQuery({
+    queryKey: ['organization', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select(`
+          *,
+          organization:organizations(*)
+        `)
+        .eq('user_id', userId)
+        .single();
+
+      if (error) throw error;
+      return (data as any).organization as Organization;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+export function useIntegrations(organizationId?: string) {
+  return useQuery({
+    queryKey: ['integrations', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Integration[];
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+} 

@@ -64,9 +64,7 @@ export function useOrganization() {
         .in('status', ['active', 'trialing'])
         .order('created_at', { ascending: false })
         .limit(1);
-
-      console.log(data);
-
+        
       if (error) throw error;
       
       // Set the first subscription if available, otherwise null

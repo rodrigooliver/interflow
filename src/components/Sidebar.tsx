@@ -58,7 +58,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
 
   // Admin and owner only links
   const adminLinks = [
-    { to: '/app/team', icon: UserPlus, label: t('navigation:team') },
+    { to: '/app/member', icon: UserPlus, label: t('navigation:team') },
     { to: '/app/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },

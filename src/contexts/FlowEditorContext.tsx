@@ -1,29 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { Integration, Prompt } from '../types/database';
 import { Variable } from '../types/flow';
 import { Node } from 'reactflow';
 import { useOrganizationContext } from './OrganizationContext';
-import { useParams } from 'react-router-dom';
-
-interface Funnel {
-  id: string;
-  name: string;
-  stages: {
-    id: string;
-    name: string;
-  }[];
-}
-
-interface Team {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  full_name: string;
-}
+import { useParams } from 'react-router-dom';   
+import { FlowConnection, FlowNode } from '../types/flow';
 
 interface Viewport {
   x: number;
@@ -39,8 +20,6 @@ interface SaveFlowData {
 }
 
 interface FlowEditorContextType {
-  integrations: Integration[];
-  prompts: Prompt[];
   variables: Variable[];
   nodes: Node[];
   edges: FlowConnection[];
@@ -60,16 +39,12 @@ interface FlowEditorContextType {
   handleVariableNameBlur: (index: number) => void;
   addVariable: () => void;
   removeVariable: (index: number) => void;
-  funnels: Funnel[];
-  teams: Team[];
-  users: User[];
   onSaveFlow: (data?: SaveFlowData) => Promise<void>;
   updateNodeData: (nodeId: string, data: any) => Promise<void>;
   loadFlow: (id: string) => Promise<void>;
   publishFlow: () => Promise<void>;
   restoreFlow: () => Promise<void>;
   setFlowName: (name: string) => Promise<void>;
-  getViewport: () => any;
   id: string | undefined;
 }
 
@@ -81,8 +56,6 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<FlowConnection[]>([]);
   const [variables, setVariables] = useState<Variable[]>([]);
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [publishedNodes, setPublishedNodes] = useState<FlowNode[]>([]);
   const [publishedEdges, setPublishedEdges] = useState<FlowConnection[]>([]);
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 0.7 });
@@ -91,101 +64,10 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [funnels, setFunnels] = useState<Funnel[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    async function loadData() {
-      if (!currentOrganization) return;
-
-      try {
-        // Carregar dados existentes
-        const [integrationsData, promptsData, funnelsData, teamsData, usersData] = await Promise.all([
-          loadIntegrations(),
-          loadPrompts(),
-          loadFunnels(),
-          loadTeams(),
-          loadUsers()
-        ]);
-
-        setIntegrations(integrationsData || []);
-        setPrompts(promptsData || []);
-        setFunnels(funnelsData || []);
-        setTeams(teamsData || []);
-        setUsers(usersData || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
-  }, [currentOrganization]);
-
-  async function loadIntegrations() {
-    const { data, error } = await supabase
-      .from('integrations')
-      .select('*')
-      .eq('organization_id', currentOrganization.id)
-      .eq('type', 'openai');
-
-    if (error) throw error;
-    return data;
-  }
-
-  async function loadPrompts() {
-    const { data, error } = await supabase
-      .from('prompts')
-      .select('*')
-      .eq('organization_id', currentOrganization.id);
-
-    if (error) throw error;
-    return data;
-  }
-
-  async function loadFunnels() {
-    const { data, error } = await supabase
-      .from('crm_funnels')
-      .select('id, name, stages:crm_stages(id, name)')
-      .eq('organization_id', currentOrganization?.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  }
-
-  async function loadTeams() {
-    const { data, error } = await supabase
-      .from('service_teams')
-      .select('id, name')
-      .eq('organization_id', currentOrganization?.id)
-      .order('name');
-
-    if (error) throw error;
-    return data;
-  }
-
-  async function loadUsers() {
-    const { data: membersData, error: membersError } = await supabase
-      .from('organization_members')
-      .select('user_id')
-      .eq('organization_id', currentOrganization?.id);
-
-    if (membersError) throw membersError;
-    if (!membersData?.length) return [];
-
-    const userIds = membersData.map(member => member.user_id);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', userIds)
-      .order('full_name');
-
-    if (error) throw error;
-    return data;
-  }
+    setLoading(false);
+  }, []);
 
   const handleVariableNameChange = (index: number, name: string) => {
     const newVariables = [...variables];
@@ -370,8 +252,6 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <FlowEditorContext.Provider value={{ 
-      integrations, 
-      prompts, 
       variables,
       nodes,
       edges,
@@ -391,9 +271,6 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       handleVariableNameBlur,
       addVariable,
       removeVariable,
-      funnels,
-      teams,
-      users,
       onSaveFlow,
       updateNodeData,
       loadFlow,

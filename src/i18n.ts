@@ -14,7 +14,7 @@ const namespaces = [
   'customers',
   'crm',
   'shortcuts',
-  'team',
+  'member',
   'serviceTeams',
   'channels',
   'flows',

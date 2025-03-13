@@ -1,14 +1,24 @@
 {
   "title": "Profile",
+  "changePassword": "Change Password",
+  "passwordChanged": "Password changed successfully!",
   "form": {
     "avatar": "Profile Picture",
     "changeAvatar": "Change Picture",
     "removeAvatar": "Remove Picture",
     "fullName": "Full Name",
-    "email": "Email"
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordRequirements": "Password must be at least 6 characters long",
+    "changePassword": "Change Password",
+    "changing": "Changing..."
   },
   "errors": {
     "avatarTooLarge": "Profile picture must be less than 2MB",
-    "invalidFileType": "Only image files are allowed"
+    "invalidFileType": "Only image files are allowed",
+    "passwordTooShort": "Password must be at least 6 characters long",
+    "passwordsDoNotMatch": "Passwords do not match"
   }
 }

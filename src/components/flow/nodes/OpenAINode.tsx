@@ -5,7 +5,10 @@ import { createPortal } from 'react-dom';
 import Select from 'react-select';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
+import { useOrganizationContext } from '../../../contexts/OrganizationContext';
 import { Loader2 } from 'lucide-react';
+import { useIntegrations, usePrompts } from '../../../hooks/useQueryes';
+import { Integration, Prompt } from '../../../types/database';
 
 interface OpenAINodeProps {
   data: {
@@ -65,7 +68,10 @@ const OpenAILogo = () => (
 
 export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
   const { t } = useTranslation('flows');
-  const { integrations, prompts, variables, nodes, updateNodeData } = useFlowEditor();
+  const { variables, nodes, updateNodeData } = useFlowEditor();
+  const { currentOrganization } = useOrganizationContext();
+  const { data: integrations = [] } = useIntegrations(currentOrganization?.id);
+  const { data: prompts = [] } = usePrompts(currentOrganization?.id);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [loading] = useState(false);
@@ -76,18 +82,18 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
     variableName: '',
     integrationId: '',
     promptId: '',
-    promptType: 'select',
+    promptType: 'select' as const,
     customPrompt: '',
-    apiType: 'textGeneration',
-    messageType: 'chatMessages',
+    apiType: 'textGeneration' as const,
+    messageType: 'chatMessages' as const,
     voice: 'alloy',
     tools: []
   });
 
   // Atualiza estado local
-  const handleConfigChange = (updates: Partial<typeof localConfig>) => {
+  const handleConfigChange = useCallback((updates: Partial<typeof localConfig>) => {
     setLocalConfig(prev => ({ ...prev, ...updates }));
-  };
+  }, []);
 
   // Salva no banco quando perde o foco
   const handleConfigBlur = useCallback(() => {
@@ -267,7 +273,7 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
                         <option value="">{t('nodes.openai.selectIntegration')}</option>
-                        {integrations.map(integration => (
+                        {integrations.map((integration: Integration) => (
                           <option key={integration.id} value={integration.id}>
                             {integration.title}
                           </option>
@@ -281,13 +287,11 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                       </label>
                       <select
                         value={localConfig.apiType}
-                        onChange={(e) => handleConfigChange({ apiType: e.target.value })}
+                        onChange={(e) => handleConfigChange({ apiType: e.target.value as 'textGeneration' | 'audioGeneration' | 'textToSpeech' })}
                         onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
-                        <option key="default" value="">
-                          {t('nodes.openai.selectApiType')}
-                        </option>
+                        <option value="">{t('nodes.openai.selectApiType')}</option>
                         {apiTypes.map(type => (
                           <option key={type.value} value={type.value}>
                             {type.label}
@@ -398,8 +402,8 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                         {t('nodes.openai.promptType')}
                       </label>
                       <select
-                        value={localConfig.promptType || 'select'}
-                        onChange={(e) => handleConfigChange({ promptType: e.target.value })}
+                        value={localConfig.promptType}
+                        onChange={(e) => handleConfigChange({ promptType: e.target.value as 'select' | 'custom' })}
                         onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >
@@ -420,7 +424,7 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                           className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                         >
                           <option value="">{t('nodes.openai.selectPrompt')}</option>
-                          {prompts.map(prompt => (
+                          {prompts.map((prompt: Prompt) => (
                             <option key={prompt.id} value={prompt.id}>
                               {prompt.title}
                             </option>
@@ -451,7 +455,7 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                       </label>
                       <select
                         value={localConfig.messageType}
-                        onChange={(e) => handleConfigChange({ messageType: e.target.value })}
+                        onChange={(e) => handleConfigChange({ messageType: e.target.value as 'chatMessages' | 'allClientMessages' })}
                         onBlur={handleConfigBlur}
                         className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                       >

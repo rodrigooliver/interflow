@@ -1,14 +1,24 @@
 {
   "title": "Perfil",
+  "changePassword": "Cambiar Contraseña",
+  "passwordChanged": "¡Contraseña cambiada con éxito!",
   "form": {
     "avatar": "Foto de Perfil",
     "changeAvatar": "Cambiar Foto",
     "removeAvatar": "Eliminar Foto",
     "fullName": "Nombre Completo",
-    "email": "Correo"
+    "email": "Correo",
+    "whatsapp": "WhatsApp",
+    "newPassword": "Nueva Contraseña",
+    "confirmPassword": "Confirmar Nueva Contraseña",
+    "passwordRequirements": "La contraseña debe tener al menos 6 caracteres",
+    "changePassword": "Cambiar Contraseña",
+    "changing": "Cambiando..."
   },
   "errors": {
     "avatarTooLarge": "La foto de perfil debe ser menor a 2MB",
-    "invalidFileType": "Solo se permiten archivos de imagen"
+    "invalidFileType": "Solo se permiten archivos de imagen",
+    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+    "passwordsDoNotMatch": "Las contraseñas no coinciden"
   }
 }
