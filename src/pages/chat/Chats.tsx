@@ -10,6 +10,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useQueryes';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { StartChatModal } from '../../components/chat/StartChatModal';
+import { useNavbarVisibility } from '../../contexts/NavbarVisibilityContext';
 
 // Novos tipos para os filtros
 type FilterOption = {
@@ -40,6 +41,7 @@ export default function Chats() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showStartChatModal, setShowStartChatModal] = useState(false);
+  const { showNavbar } = useNavbarVisibility();
 
   // Hooks para buscar dados dos filtros
   const { data: agents } = useAgents(currentOrganizationMember?.organization.id);
@@ -520,6 +522,11 @@ export default function Chats() {
       navigate('/app/chats', { replace: true });
     }
   };
+
+  // Garantir que a barra de navegação seja exibida quando o componente for montado
+  useEffect(() => {
+    showNavbar();
+  }, [showNavbar]);
 
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">

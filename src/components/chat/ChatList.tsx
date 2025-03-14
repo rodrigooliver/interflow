@@ -77,10 +77,10 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
               channel={chat.channel_id}
             />
             
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 truncate">
               <div className="flex justify-between items-center w-full mb-1">
                 <span className="font-medium text-gray-900 dark:text-white truncate">
-                  {chat.customer?.name || chat.customer?.whatsapp || 'Sem nome'}
+                  {chat.customer?.name || 'Sem nome'}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                   {new Date(chat.last_message?.created_at || chat.created_at).toLocaleTimeString([], { 

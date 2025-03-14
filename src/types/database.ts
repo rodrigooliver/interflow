@@ -96,6 +96,7 @@ export interface Message {
   external_id?: string;
   response_message_id?: string;
   sender_agent_id?: string;
+  sender_agent?: Profile;
   sender_customer_id?: string;
 }
 

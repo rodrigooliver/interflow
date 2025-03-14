@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { X, Loader2, MessageSquare, ArrowLeftRight, ArrowUpDown, Sparkles, BookOpen, MessageCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Integration, Prompt } from '../../types/database';
-
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 interface AIImproveModalProps {
   text: string;
@@ -20,6 +20,7 @@ export function AIImproveModal({ text, onClose, onTextUpdate }: AIImproveModalPr
   const [openAIAccounts, setOpenAIAccounts] = useState<Integration[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState('');
   const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const isMobile = useMediaQuery('(max-width: 640px)');
 
   useEffect(() => {
     async function loadOpenAIAccounts() {
@@ -87,10 +88,18 @@ export function AIImproveModal({ text, onClose, onTextUpdate }: AIImproveModalPr
     onClose();
   };
 
+  // Prevenir o scroll do corpo quando o modal estiver aberto
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {t('ai.title')}
           </h2>
@@ -102,107 +111,109 @@ export function AIImproveModal({ text, onClose, onTextUpdate }: AIImproveModalPr
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                {t('ai.selectAccount')}
-              </label>
-              <select
-                value={selectedAccount}
-                onChange={(e) => setSelectedAccount(e.target.value)}
-                className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-              >
-                <option value="">{t('ai.selectAccountPlaceholder')}</option>
-                {openAIAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    OpenAI - {account.credentials.organization_id || 'Padrão'}
-                  </option>
-                ))}
-              </select>
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  {t('ai.selectAccount')}
+                </label>
+                <select
+                  value={selectedAccount}
+                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                >
+                  <option value="">{t('ai.selectAccountPlaceholder')}</option>
+                  {openAIAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      OpenAI - {account.credentials.organization_id || 'Padrão'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  {t('ai.selectPrompt')}
+                </label>
+                <select
+                  value={selectedPrompt}
+                  onChange={(e) => setSelectedPrompt(e.target.value)}
+                  className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                >
+                  <option value="">{t('ai.selectPromptPlaceholder')}</option>
+                  {prompts.map((prompt) => (
+                    <option key={prompt.id} value={prompt.id}>
+                      {prompt.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                {t('ai.selectPrompt')}
+                {t('ai.improvementType')}
               </label>
-              <select
-                value={selectedPrompt}
-                onChange={(e) => setSelectedPrompt(e.target.value)}
-                className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-              >
-                <option value="">{t('ai.selectPromptPlaceholder')}</option>
-                {prompts.map((prompt) => (
-                  <option key={prompt.id} value={prompt.id}>
-                    {prompt.title}
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {improvementOptions.map((option) => {
+                  const Icon = option.icon;
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => setSelectedOption(option.id)}
+                      className={`px-3 py-2 rounded-lg flex items-center gap-1 text-sm ${
+                        selectedOption === option.id
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                {t('ai.result')}
+              </label>
+              <textarea
+                value={improvedText}
+                onChange={(e) => setImprovedText(e.target.value)}
+                className="w-full p-2 border rounded-lg min-h-[150px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+              />
             </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-              {t('ai.improvementType')}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {improvementOptions.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => setSelectedOption(option.id)}
-                    className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                      selectedOption === option.id
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-              {t('ai.result')}
-            </label>
-            <textarea
-              value={improvedText}
-              onChange={(e) => setImprovedText(e.target.value)}
-              className="w-full p-2 border rounded-lg min-h-[100px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg"
-            >
-              {t('ai.cancel')}
-            </button>
-            <button
-              onClick={handleImprove}
-              disabled={isProcessing || !selectedAccount || !selectedOption}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700"
-            >
-              {isProcessing ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                t('ai.improve')
-              )}
-            </button>
-            <button
-              onClick={handleApply}
-              disabled={isProcessing}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 hover:bg-green-700"
-            >
-              {t('ai.apply')}
-            </button>
-          </div>
+        <div className={`p-4 border-t border-gray-200 dark:border-gray-700 ${isMobile ? 'flex flex-col space-y-2' : 'flex justify-end space-x-2'}`}>
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg ${isMobile ? 'order-3' : ''}`}
+          >
+            {t('ai.cancel')}
+          </button>
+          <button
+            onClick={handleImprove}
+            disabled={isProcessing || !selectedAccount || !selectedOption}
+            className={`px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 ${isMobile ? 'order-2' : ''}`}
+          >
+            {isProcessing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              t('ai.improve')
+            )}
+          </button>
+          <button
+            onClick={handleApply}
+            disabled={isProcessing}
+            className={`px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 hover:bg-green-700 ${isMobile ? 'order-1' : ''}`}
+          >
+            {t('ai.apply')}
+          </button>
         </div>
       </div>
     </div>

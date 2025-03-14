@@ -19,12 +19,37 @@ interface ChatMessagesProps {
   onBack?: () => void;
 }
 
+// Definir interface para o objeto chat
+interface Chat {
+  id: string;
+  status: 'pending' | 'in_progress' | 'closed';
+  customer?: {
+    id: string;
+    name: string;
+    [key: string]: any;
+  };
+  channel_details?: {
+    id: string;
+    type: string;
+    [key: string]: any;
+  };
+  profile_picture?: string;
+  ticket_number?: string;
+  assigned_to?: string;
+  start_time?: string;
+  end_time?: string;
+  closure_type_id?: string;
+  title?: string;
+  last_customer_message_at?: string;
+  [key: string]: any;
+}
+
 export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesProps) {
   const { t } = useTranslation('chats');
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chat, setChat] = useState<any | null>(null);
+  const [chat, setChat] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubscriptionReady, setIsSubscriptionReady] = useState(false);
@@ -311,7 +336,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       if (chatError) throw chatError;
       
-      setChat(prev => prev ? {
+      setChat((prev: Chat | null) => prev ? {
         ...prev,
         status: 'closed',
         end_time: new Date().toISOString(),
@@ -361,7 +386,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       if (chatError) throw chatError;
 
       // Atualiza o estado local
-      setChat(prev => prev ? {
+      setChat((prev: Chat | null) => prev ? {
         ...prev,
         status: 'in_progress',
         assigned_to: user.data.user.id,
@@ -371,7 +396,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Recarrega as mensagens
       loadMessages();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error attending chat:', error);
       setError(error.message || t('errors.attend'));
     }
@@ -423,9 +448,19 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   };
 
   const handleBackClick = () => {
+    // Verificar a rota atual para determinar para onde navegar
+    const currentPath = window.location.pathname;
+    
     if (onBack) {
       onBack();
+    } else if (currentPath.startsWith('/app/chats/')) {
+      // Se estiver na rota /app/chats/[id], voltar para /app/chats
+      navigate('/app/chats');
+    } else if (currentPath.startsWith('/app/chat/')) {
+      // Se estiver na rota /app/chat/[id], voltar para /app/chats
+      navigate('/app/chats');
     } else {
+      // Caso padrão
       navigate('/app/chats');
     }
   };
@@ -451,64 +486,87 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   return (
     <>
       <div className="border-b border-gray-200 dark:border-gray-700 p-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center w-full">
+          {/* Botão de voltar (apenas em mobile) */}
+          <div className="flex-shrink-0">
             {isMobileView && (
               <button 
                 onClick={handleBackClick}
-                className="mr-2 flex items-center justify-center text-gray-500 dark:text-gray-400 self-center"
+                className="mr-2 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 self-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 aria-label={t('backToList')}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="sr-only">{t('backToList')}</span>
+              </button>
+            )}
+          </div>
+          
+          {/* Informações do cliente */}
+          <div 
+            className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors overflow-hidden"
+            onClick={() => setShowEditCustomer(true)}
+          >
+            {headerLoading ? (
+              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+            ) : (
+              <ChatAvatar 
+                id={chatId}
+                name={chat?.customer?.name || 'Anônimo'}
+                profilePicture={chat?.profile_picture}
+                channel={chat?.channel_details}
+              />
+            )}
+            <div className="truncate">
+              {headerLoading ? (
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
+                  {chat?.ticket_number && (
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse" />
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="font-medium text-gray-900 dark:text-gray-100 truncate ">
+                    {chat?.customer?.name || t('unnamed')}
+                  </div>
+                  {chat?.ticket_number && (
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      #{chat.ticket_number}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Botão de resolver */}
+          <div className="flex-shrink-0 justify-self-end">
+            {chat?.status === 'in_progress' && (
+              <button
+                className="md:px-4 md:py-2 p-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center"
+                onClick={() => setShowResolutionModal(true)}
+                aria-label={t('resolve')}
+              >
+                <span className="hidden md:inline">{t('resolve')}</span>
+                <svg 
+                  className="w-5 h-5 md:hidden" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M5 13l4 4L19 7" 
+                  />
                 </svg>
               </button>
             )}
-            <div 
-              className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
-              onClick={() => setShowEditCustomer(true)}
-            >
-              {headerLoading ? (
-                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-              ) : (
-                <ChatAvatar 
-                  id={chatId}
-                  name={chat?.customer?.name || 'Anônimo'}
-                  profilePicture={chat?.profile_picture}
-                  channel={chat?.channel_details}
-                />
-              )}
-              <div>
-                {headerLoading ? (
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
-                    {chat?.ticket_number && (
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse" />
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div className="font-medium text-gray-900 dark:text-gray-100">
-                      {chat?.customer?.name || t('unnamed')}
-                    </div>
-                    {chat?.ticket_number && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        #{chat.ticket_number}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
           </div>
-          {chat?.status === 'in_progress' && (
-            <button
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-              onClick={() => setShowResolutionModal(true)}
-            >
-              {t('resolve')}
-            </button>
-          )}
         </div>
       </div>
 
@@ -551,16 +609,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   {dateMessages.map((message) => (
                     <MessageBubble
                       key={message.id}
-                      message={{
-                        ...message,
-                        sender_agent: message.sender_agent_id ? {
-                          id: message.sender_agent_id,
-                          full_name: message.sender_agent_id || t('unnamed')
-                        } : null,
-                        response_to: message.response_message_id ? 
-                          messages.find(m => m.id === message.response_message_id) || null 
-                          : null
-                      }}
+                      message={message}
                       chatStatus={chat?.status}
                       onReply={(message) => {
                         setReplyingTo(message);
@@ -576,30 +625,28 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       </div>
 
       {footerLoading ? (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
           <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
         </div>
       ) : (
         <>
           {chat?.status === 'in_progress' && canSendMessage && (
-            <div className="pb-20 md:pb-0">
-              <MessageInput
-                chatId={chatId}
-                organizationId={organizationId}
-                onMessageSent={() => {}}
-                replyTo={
-                  replyingTo ? {
-                    message: replyingTo,
-                    onClose: () => setReplyingTo(null)
-                  } : undefined
-                }
-                isSubscriptionReady={isSubscriptionReady}
-              />
-            </div>
+            <MessageInput
+              chatId={chatId}
+              organizationId={organizationId}
+              onMessageSent={() => {}}
+              replyTo={
+                replyingTo ? {
+                  message: replyingTo,
+                  onClose: () => setReplyingTo(null)
+                } : undefined
+              }
+              isSubscriptionReady={isSubscriptionReady}
+            />
           )}
 
           {chat?.status === 'in_progress' && !canSendMessage && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
               <div className="p-3 bg-yellow-50 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 rounded-md">
                 {isWhatsAppChat ? (
                   <div className="flex flex-col space-y-3">
@@ -621,7 +668,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           )}
 
           {chat?.status === 'pending' && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
               <button
                 onClick={handleAttend}
                 className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
@@ -632,7 +679,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           )}
 
           {chat?.status === 'closed' && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
               <div className="text-center text-gray-500 dark:text-gray-400">
                 <span className="inline-block mr-2">✓</span>
                 {t('chatClosed')}

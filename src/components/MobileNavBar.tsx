@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, MessageSquare, Users, Calendar, Home } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavbarVisibility } from '../contexts/NavbarVisibilityContext';
 
 interface MobileNavBarProps {
   onOpenSidebar: () => void;
@@ -10,6 +11,15 @@ interface MobileNavBarProps {
 const MobileNavBar: React.FC<MobileNavBarProps> = ({ onOpenSidebar }) => {
   const location = useLocation();
   const { t } = useTranslation(['navigation', 'common']);
+  const { isNavbarVisible } = useNavbarVisibility();
+
+  // Verificar se estamos em uma rota de chat específico
+  const isInSpecificChatRoute = location.pathname.match(/\/app\/chats\/([^/]+)$/) || location.pathname.match(/\/app\/chat\/([^/]+)$/);
+
+  // Se a barra de navegação não estiver visível ou estivermos em uma rota de chat específico, não renderizar nada
+  if (!isNavbarVisible || isInSpecificChatRoute) {
+    return null;
+  }
 
   // Função para verificar se um caminho está ativo
   const isActive = (path: string) => {

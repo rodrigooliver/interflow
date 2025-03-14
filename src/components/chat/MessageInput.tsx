@@ -292,12 +292,13 @@ export function MessageInput({
 
           if (error) throw error;
 
-          const { data: storageData } = supabase.storage
+          // Obter a URL pública do arquivo
+          supabase.storage
             .from('attachments')
             .getPublicUrl(`${currentOrganizationMember?.organization.id}/chat-attachments/${fileName}`);
 
           // Usar a URL pública se necessário
-          console.log('Arquivo disponível em:', storageData?.publicUrl);
+          // console.log('Arquivo disponível em:', storageData?.publicUrl);
 
           handleFileUploadComplete(file, mimeType, fileName);
         } catch (error) {
@@ -502,17 +503,12 @@ export function MessageInput({
 
   // Adicionar um log para verificar o estado dos atalhos
   useEffect(() => {
-    console.log('Shortcuts state:', {
-      showShortcuts,
-      filteredShortcuts: filteredShortcuts.length,
-      messageShortcuts: messageShortcuts.length
-    });
-  }, [showShortcuts, filteredShortcuts, messageShortcuts]);
+    // Não é necessário fazer nada aqui
+  }, [showShortcuts, filteredShortcuts, messageShortcuts, chatId]);
 
   // Adicionar um log para verificar os dados retornados pelo hook
   useEffect(() => {
-    console.log('Message shortcuts data:', messageShortcuts);
-    console.log('Is loading shortcuts:', isLoadingShortcuts);
+    // Não é necessário fazer nada aqui
   }, [messageShortcuts, isLoadingShortcuts]);
 
   return (
@@ -582,7 +578,7 @@ export function MessageInput({
         </div>
       )}
 
-      <div className="flex items-center space-x-2 mb-1">
+      <div className="flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap">
         <button
           onClick={handleBoldClick}
           className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
@@ -613,7 +609,7 @@ export function MessageInput({
             <Paperclip className="w-5 h-5" />
           </button>
           {showAttachmentMenu && (
-            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px]">
+            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px] z-50">
               <button
                 onClick={() => {
                   setShowFileUpload('image');
@@ -637,7 +633,14 @@ export function MessageInput({
             </div>
           )}
         </div>
-        <div className="relative" ref={emojiPickerRef}>
+        <button
+          onClick={() => setShowAIModal(true)}
+          className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
+          title={t('ai.improve')}
+        >
+          <Sparkles className="w-5 h-5" />
+        </button>
+        <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
           <button
             onClick={() => {
               setShowEmojiPicker(!showEmojiPicker);
@@ -653,7 +656,7 @@ export function MessageInput({
             <Smile className="w-5 h-5" />
           </button>
           {showEmojiPicker && (
-            <div className="absolute bottom-full right-0 mb-2">
+            <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
               <Picker
                 data={data}
                 onEmojiSelect={onEmojiSelect}
@@ -661,17 +664,11 @@ export function MessageInput({
                 theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
                 previewPosition="none"
                 skinTonePosition="none"
+                perLine={9}
               />
             </div>
           )}
         </div>
-        <button
-          onClick={() => setShowAIModal(true)}
-          className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
-          title={t('ai.improve')}
-        >
-          <Sparkles className="w-5 h-5" />
-        </button>
       </div>
 
       <div className="flex items-center space-x-2">
@@ -680,8 +677,8 @@ export function MessageInput({
           value={message}
           onChange={handleMessageChange}
           onKeyDown={handleKeyPress}
-          placeholder={isSubscriptionReady ? t('input.placeholder') : t('input.waitingConnection')}
-          className="flex-1 min-h-[40px] max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+          placeholder={t('input.placeholder')}
+          className="flex-1 max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
         />
         <button
           onClick={isRecording ? stopRecording : startRecording}

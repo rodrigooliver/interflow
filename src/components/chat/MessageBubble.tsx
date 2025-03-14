@@ -12,13 +12,7 @@ import {
 } from "../../components/ui/dropdown-menu";
 
 interface MessageBubbleProps {
-  message: Message & {
-    sender_agent: {
-      id: string;
-      full_name: string;
-    } | null;
-    response_to?: Message | null;
-  };
+  message: Message
   chatStatus: string;
   onReply?: (message: Message) => void;
 }
@@ -90,9 +84,9 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
   if (isSystem) {
     return (
       <div className="flex justify-center my-2 relative group">
-        <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
+        <div className="flex items-center flex-row gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
           {renderSystemIcon()}
-          <span>{getSystemMessage()}</span>
+          <span className=''>{getSystemMessage()}</span>
           <span className="text-xs text-gray-500">
             {new Date(created_at).toLocaleTimeString([], { 
               hour: '2-digit', 

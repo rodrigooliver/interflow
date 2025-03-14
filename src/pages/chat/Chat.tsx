@@ -11,13 +11,15 @@ export default function Chat() {
   if (!currentOrganizationMember || !id) {
     return null;
   }
-
+  
   return (
     <div className="flex flex-col h-screen">
       <ChatMessages 
         chatId={id}
         organizationId={currentOrganizationMember.organization.id}
-        onBack={() => navigate('/app/chats')}
+        onBack={() => {
+          navigate('/app/chats');
+        }}
       />
     </div>
   );

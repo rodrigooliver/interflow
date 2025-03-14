@@ -69,7 +69,7 @@
     height: 100%;
     height: 100dvh; /* Dynamic viewport height para mobile */
     width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
   /* Quando o modal está aberto, impedir o scroll do body */

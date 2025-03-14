@@ -90,7 +90,7 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
         )}
       </button>
 
-      <div className="flex-1 min-w-[100px] sm:min-w-[150px]">
+      <div className="flex-1">
         <div className="flex items-center">
           <div
             className="flex-1 h-1.5 ml-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden"
@@ -102,7 +102,7 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
             />
           </div>
           
-          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 min-w-[40px] text-right">
+          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-right ml-2">
             {formatTime(currentTime)}
           </span>
         </div>

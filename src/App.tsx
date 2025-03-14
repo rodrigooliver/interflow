@@ -60,6 +60,7 @@ import OrganizationSubscriptions from './pages/admin/OrganizationSubscriptions';
 import { useAutoLogin } from './hooks/useAutoLogin';
 import { ConnectionStatus } from './components/common/ConnectionStatus';
 import OrganizationSelector from './components/auth/OrganizationSelector';
+import { NavbarVisibilityProvider } from './contexts/NavbarVisibilityContext';
 
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
@@ -346,7 +347,9 @@ function AppContent() {
               </div>
 
               {/* Mobile Navigation Bar */}
-              <MobileNavBar onOpenSidebar={() => setSidebarOpen(true)} />
+              <MobileNavBar onOpenSidebar={() => {
+                setSidebarOpen(true);
+              }} />
             </div>
           }
         />
@@ -485,16 +488,15 @@ function App() {
       <AuthProvider>
         <I18nextProvider i18n={i18n}>
           <ThemeProvider>
-            <Router>
-              <AppContent />
-            </Router>
+            <NavbarVisibilityProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </NavbarVisibilityProvider>
           </ThemeProvider>
         </I18nextProvider>
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
-      {/* Removido temporariamente:
-      <ReactQueryDevtools initialIsOpen={false} />
-      */}
     </QueryClientProvider>
   );
 }
