@@ -5,7 +5,7 @@
   "crm": "CRM",
   "shortcuts": "Shortcuts",
   "settings": "Settings",
-  "team": "Attendants",
+  "team": "Team Members",
   "serviceTeams": "Service Teams",
   "channels": "Channels",
   "flows": "Flows",
@@ -13,5 +13,6 @@
   "tags": "Tags",
   "prompts": "AI Agents",
   "closureTypes": "Closure Types",
-  "subscriptionPlans": "Subscription Plans"
+  "subscriptionPlans": "Subscription Plans",
+  "schedules": "Schedules"
 }

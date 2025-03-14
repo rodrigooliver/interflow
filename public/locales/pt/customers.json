@@ -10,7 +10,12 @@
   "configureColumns": "Configurar colunas",
   "configureVisibleColumns": "Configurar colunas visíveis",
   "contact": "Contato",
+  "contactPlaceholder": "Digite o contato",
+  "contactRequired": "Contato é obrigatório",
   "contacts": "Contatos",
+  "createAndStartChat": "Criar cliente e iniciar conversa",
+  "createNewCustomer": "Criar novo cliente",
+  "customerNotFound": "Cliente não encontrado. Por favor, forneça um nome para criar um novo cliente.",
   "delete": {
     "confirmation": "Tem certeza que deseja excluir o cliente {{name}}?",
     "title": "Excluir Cliente",
@@ -21,9 +26,18 @@
     "phone": "Telefone",
     "title": "Editar Cliente"
   },
+  "email": "Email",
+  "enterContact": "Digite o contato",
+  "enterContactDescription": "Digite o contato para verificar se o cliente já existe.",
+  "enterEmail": "Digite o email",
+  "enterEmailDescription": "Digite o email do cliente para verificar se já existe.",
+  "enterWhatsApp": "Digite o WhatsApp",
+  "enterWhatsAppDescription": "Digite o número de WhatsApp do cliente para verificar se já existe.",
   "filters": "Filtros",
   "funnel": "Funil",
   "name": "Nome",
+  "nameRequired": "Nome é obrigatório",
+  "namePlaceholder": "Nome do cliente",
   "noContacts": "Sem contatos",
   "noCustomers": "Nenhum cliente cadastrado",
   "noTags": "Sem tags",
@@ -43,5 +57,7 @@
     "title": "Tags"
   },
   "title": "Clientes",
-  "viewCRM": "Ver CRM"
+  "viewCRM": "Ver CRM",
+  "whatsapp": "WhatsApp",
+  "whatsappFormatHint": "Digite apenas números, sem espaços ou caracteres especiais."
 }

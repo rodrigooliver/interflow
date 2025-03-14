@@ -43,5 +43,21 @@
   "registeredOn": "Registered on",
   "settingsReset": "Settings reset",
   "contacts": "Contacts",
-  "noTagsAvailable": "No tags available"
+  "noTagsAvailable": "No tags available",
+  "contactPlaceholder": "Enter contact",
+  "contactRequired": "Contact is required",
+  "createAndStartChat": "Create customer and start chat",
+  "createNewCustomer": "Create new customer",
+  "customerNotFound": "Customer not found. Please provide a name to create a new customer.",
+  "email": "Email",
+  "enterContact": "Enter contact",
+  "enterContactDescription": "Enter the contact to check if the customer already exists.",
+  "enterEmail": "Enter email",
+  "enterEmailDescription": "Enter the customer's email to check if they already exist.",
+  "enterWhatsApp": "Enter WhatsApp",
+  "enterWhatsAppDescription": "Enter the customer's WhatsApp number to check if they already exist.",
+  "nameRequired": "Name is required",
+  "namePlaceholder": "Customer name",
+  "whatsapp": "WhatsApp",
+  "whatsappFormatHint": "Enter numbers only, without spaces or special characters."
 }

@@ -8,6 +8,7 @@
     "warning": "Esta ação não pode ser desfeita."
   },
   "deleteSuccess": "Canal removido com sucesso",
+  "selectChannel": "Selecionar Canal",
   "descriptions": {
     "email": "Atendimento via Email com suporte IMAP/SMTP",
     "facebook": "Integração com Messenger do Facebook",
@@ -291,12 +292,13 @@
   },
   "title": "Canais de Atendimento",
   "types": {
-    "email": "Email",
-    "facebook": "Facebook",
-    "instagram": "Instagram",
-    "whatsapp_evo": "WhatsApp Evolution",
     "whatsapp_official": "WhatsApp Business API",
     "whatsapp_wapi": "WhatsApp WApi",
-    "whatsapp_zapi": "WhatsApp ZApi"
+    "whatsapp_zapi": "WhatsApp ZApi",
+    "whatsapp_evo": "WhatsApp Evolution API",
+    "instagram": "Instagram",
+    "facebook": "Facebook Messenger",
+    "email": "Email",
+    "telegram": "Telegram"
   }
 }

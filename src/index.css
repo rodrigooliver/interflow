@@ -51,6 +51,18 @@
     --select-tag-remove-hover-text: white;
   }
 
+  /* Classe para quebrar palavras longas e URLs */
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    -ms-word-break: break-all;
+    word-wrap: break-word;
+    -ms-hyphens: auto;
+    -moz-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+  }
+
   /* Estilos corrigidos para o scroll */
   html, body {
     @apply m-0 p-0;
@@ -155,8 +167,14 @@
   background-color: rgba(75, 85, 99, 0.5);
 }
 
-.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(75, 85, 99, 0.7);
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
 
 /* ReactFlow custom styles */
@@ -675,4 +693,64 @@
 
 .dark .wmde-markdown a:hover {
   border-bottom-color: #60a5fa !important;
+}
+
+/* Estilos para o componente MarkdownMessage */
+.markdown-message {
+  font-size: inherit;
+  line-height: 1.5;
+}
+
+.markdown-message a {
+  color: #3b82f6;
+  text-decoration: underline;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.dark .markdown-message a {
+  color: #60a5fa;
+}
+
+.markdown-message p {
+  margin-bottom: 0.5rem;
+}
+
+.markdown-message p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-message ul, 
+.markdown-message ol {
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-message pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdown-message code {
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.markdown-message img {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-message blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 0.75rem;
+  font-style: italic;
+  margin: 0.5rem 0;
+}
+
+.dark .markdown-message blockquote {
+  border-left-color: #4b5563;
 }

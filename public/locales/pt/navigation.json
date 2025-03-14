@@ -13,5 +13,6 @@
   "tags": "Tags",
   "prompts": "Agentes IA",
   "closureTypes": "Tipos de Encerramento",
-  "subscriptionPlans": "Planos de Assinatura"
+  "subscriptionPlans": "Planos de Assinatura",
+  "schedules": "Agendamentos"
 }

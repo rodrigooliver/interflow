@@ -1,8 +1,8 @@
 import React, { useState, Suspense, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
+import MobileNavBar from './components/MobileNavBar';
 import Dashboard from './pages/Dashboard';
 import Chats from './pages/chat/Chats';
 import Chat from './pages/chat/Chat';
@@ -38,6 +38,7 @@ import Profile from './pages/Profile';
 import Tags from './pages/Tags';
 import Prompts from './pages/prompts/Prompts';
 import PromptFormPage from './pages/prompts/PromptForm';
+import Schedules from './pages/Schedules';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { I18nextProvider } from 'react-i18next';
@@ -270,17 +271,6 @@ function AppContent() {
                 </div>
               ) : null}
 
-              {/* Mobile Menu Button */}
-              <button
-                type="button"
-                className={`md:hidden fixed top-4 z-10 ml-2 p-2 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-lg ${
-                  sidebarOpen ? 'hidden' : 'block'
-                }`}
-                onClick={() => {setSidebarOpen(true);}}
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-
               {/* Mobile Overlay */}
               {sidebarOpen && (
                 <div
@@ -291,15 +281,17 @@ function AppContent() {
 
               {/* Main Content */}
               <div className="flex-1 relative flex flex-col w-0 overflow-hidden">
-                <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
+                <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none pb-16 md:pb-0">
                   <div className="min-h-full h-full">
                     <Suspense fallback={<LoadingScreen />}>
                       <Routes>
                         <Route index element={<Dashboard />} />
                         <Route path="chats" element={<Chats />} />
-                        <Route path="chats/:id" element={<Chat />} />
+                        <Route path="chats/:id" element={<Chats />} />
+                        <Route path="chat/:id" element={<Chat />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="customers/:id/chats" element={<CustomerChats />} />
+                        <Route path="schedules" element={<Schedules />} />
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="settings/billing" element={<BillingPage />} />
                         <Route path="settings/integrations" element={<IntegrationsPage />} />
@@ -352,6 +344,9 @@ function AppContent() {
                   </div>
                 </main>
               </div>
+
+              {/* Mobile Navigation Bar */}
+              <MobileNavBar onOpenSidebar={() => setSidebarOpen(true)} />
             </div>
           }
         />

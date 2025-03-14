@@ -9,6 +9,7 @@
   "you": "Você",
   "connected": "Conectado",
   "disconnected": "Desconectado",
+  "startNewChat": "Iniciar nova conversa",
   "filters": {
     "title": "Filtros",
     "unassigned": "Não atribuídos",
@@ -43,7 +44,7 @@
   },
   "selectChat": {
     "title": "Selecione um atendimento",
-    "description": "Escolha um atendimento da lista à esquerda para visualizar a conversa"
+    "description": "Selecione um atendimento da lista ou inicie uma nova conversa."
   },
   "status": {
     "in_progress": "Em atendimento",

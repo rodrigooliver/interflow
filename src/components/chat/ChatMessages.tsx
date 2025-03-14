@@ -11,17 +11,20 @@ import { ChatAvatar } from './ChatAvatar';
 import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatMessagesProps {
   chatId: string;
   organizationId: string;
+  onBack?: () => void;
 }
 
-export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
+export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesProps) {
   const { t } = useTranslation('chats');
+  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chat, setChat] = useState<Chat | null>(null);
+  const [chat, setChat] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubscriptionReady, setIsSubscriptionReady] = useState(false);
@@ -38,6 +41,32 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
   const [isMessageWindowClosed, setIsMessageWindowClosed] = useState(false);
   const [canSendMessage, setCanSendMessage] = useState(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    const checkFiltersVisibility = () => {
+      const filtersElement = document.querySelector('[data-filters-sidebar]');
+      setShowFilters(!!filtersElement);
+    };
+    
+    checkFiltersVisibility();
+    const interval = setInterval(checkFiltersVisibility, 500);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const checkMobileView = () => {
+      // Em telas menores que 900px, sempre mostrar o botão de voltar
+      // Entre 900px e 1300px, mostrar o botão apenas se os filtros estiverem visíveis
+      setIsMobileView(window.innerWidth < 900 || (showFilters && window.innerWidth < 1300));
+    };
+
+    checkMobileView();
+    window.addEventListener('resize', checkMobileView);
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, [showFilters]);
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
@@ -393,6 +422,14 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     }
   };
 
+  const handleBackClick = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate('/app/chats');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -415,40 +452,53 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
     <>
       <div className="border-b border-gray-200 dark:border-gray-700 p-2">
         <div className="flex items-center justify-between">
-          <div 
-            className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
-            onClick={() => setShowEditCustomer(true)}
-          >
-            {headerLoading ? (
-              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-            ) : (
-              <ChatAvatar 
-                id={chatId}
-                name={chat?.customer?.name || 'Anônimo'}
-                profilePicture={chat?.profile_picture}
-                channel={chat?.channel_details}
-              />
+          <div className="flex items-center">
+            {isMobileView && (
+              <button 
+                onClick={handleBackClick}
+                className="mr-2 flex items-center justify-center text-gray-500 dark:text-gray-400 self-center"
+                aria-label={t('backToList')}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
             )}
-            <div>
+            <div 
+              className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
+              onClick={() => setShowEditCustomer(true)}
+            >
               {headerLoading ? (
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
-                  {chat?.ticket_number && (
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse" />
-                  )}
-                </div>
+                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
               ) : (
-                <>
-                  <div className="font-medium text-gray-900 dark:text-gray-100">
-                    {chat?.customer?.name || t('unnamed')}
-                  </div>
-                  {chat?.ticket_number && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      #{chat.ticket_number}
-                    </div>
-                  )}
-                </>
+                <ChatAvatar 
+                  id={chatId}
+                  name={chat?.customer?.name || 'Anônimo'}
+                  profilePicture={chat?.profile_picture}
+                  channel={chat?.channel_details}
+                />
               )}
+              <div>
+                {headerLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
+                    {chat?.ticket_number && (
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse" />
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                      {chat?.customer?.name || t('unnamed')}
+                    </div>
+                    {chat?.ticket_number && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        #{chat.ticket_number}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
           {chat?.status === 'in_progress' && (
@@ -464,7 +514,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-16 md:pb-4"
         onScroll={handleScroll}
       >
         {loading ? (
@@ -490,18 +540,27 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
             )}
             
             {Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
-              <div key={date}>
+              <div key={date} className="w-full">
                 <div className="sticky top-2 flex justify-center mb-4 z-10">
                   <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
                     {formatMessageDate(dateMessages[0].created_at)}
                   </span>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-4 w-full">
                   {dateMessages.map((message) => (
                     <MessageBubble
                       key={message.id}
-                      message={message}
+                      message={{
+                        ...message,
+                        sender_agent: message.sender_agent_id ? {
+                          id: message.sender_agent_id,
+                          full_name: message.sender_agent_id || t('unnamed')
+                        } : null,
+                        response_to: message.response_message_id ? 
+                          messages.find(m => m.id === message.response_message_id) || null 
+                          : null
+                      }}
                       chatStatus={chat?.status}
                       onReply={(message) => {
                         setReplyingTo(message);
@@ -517,28 +576,30 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
       </div>
 
       {footerLoading ? (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
           <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
         </div>
       ) : (
         <>
           {chat?.status === 'in_progress' && canSendMessage && (
-            <MessageInput
-              chatId={chatId}
-              organizationId={organizationId}
-              onMessageSent={() => {}}
-              replyTo={
-                replyingTo ? {
-                  message: replyingTo,
-                  onClose: () => setReplyingTo(null)
-                } : undefined
-              }
-              isSubscriptionReady={isSubscriptionReady}
-            />
+            <div className="pb-20 md:pb-0">
+              <MessageInput
+                chatId={chatId}
+                organizationId={organizationId}
+                onMessageSent={() => {}}
+                replyTo={
+                  replyingTo ? {
+                    message: replyingTo,
+                    onClose: () => setReplyingTo(null)
+                  } : undefined
+                }
+                isSubscriptionReady={isSubscriptionReady}
+              />
+            </div>
           )}
 
           {chat?.status === 'in_progress' && !canSendMessage && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
               <div className="p-3 bg-yellow-50 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 rounded-md">
                 {isWhatsAppChat ? (
                   <div className="flex flex-col space-y-3">
@@ -560,7 +621,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           )}
 
           {chat?.status === 'pending' && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
               <button
                 onClick={handleAttend}
                 className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
@@ -571,7 +632,7 @@ export function ChatMessages({ chatId, organizationId }: ChatMessagesProps) {
           )}
 
           {chat?.status === 'closed' && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
               <div className="text-center text-gray-500 dark:text-gray-400">
                 <span className="inline-block mr-2">✓</span>
                 {t('chatClosed')}

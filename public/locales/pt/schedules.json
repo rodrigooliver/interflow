@@ -1,0 +1,24 @@
+{
+  "title": "Agendamentos",
+  "newSchedule": "Novo Agendamento",
+  "upcomingSchedules": "Próximos Agendamentos",
+  "noSchedulesYet": "Nenhum agendamento encontrado",
+  "createScheduleMessage": "Crie um novo agendamento para começar",
+  "date": "Data",
+  "time": "Hora",
+  "customer": "Cliente",
+  "subject": "Assunto",
+  "description": "Descrição",
+  "status": "Status",
+  "statuses": {
+    "scheduled": "Agendado",
+    "completed": "Concluído",
+    "cancelled": "Cancelado",
+    "rescheduled": "Reagendado"
+  },
+  "notifications": {
+    "scheduleCreated": "Agendamento criado com sucesso",
+    "scheduleUpdated": "Agendamento atualizado com sucesso",
+    "scheduleDeleted": "Agendamento excluído com sucesso"
+  }
+} 

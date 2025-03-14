@@ -1,17 +1,18 @@
 {
-  "dashboard": "Panel",
+  "dashboard": "Dashboard",
   "chats": "Conversaciones",
   "customers": "Clientes",
   "crm": "CRM",
   "shortcuts": "Atajos",
   "settings": "Configuración",
   "team": "Atendentes",
-  "serviceTeams": "Equipos de Atención",
+  "serviceTeams": "Equipos de Servicio",
   "channels": "Canales",
   "flows": "Flujos",
   "organizations": "Organizaciones",
   "tags": "Etiquetas",
   "prompts": "Agentes IA",
   "closureTypes": "Tipos de Cierre",
-  "subscriptionPlans": "Planes de Suscripción"
+  "subscriptionPlans": "Planes de Suscripción",
+  "schedules": "Agendamientos"
 }

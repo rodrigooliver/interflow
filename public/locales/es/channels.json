@@ -3,6 +3,7 @@
   "newChannel": "Nuevo Canal",
   "deleteSuccess": "Canal eliminado con éxito",
   "noChannelsYet": "Aún no hay canales creados",
+  "selectChannel": "Seleccionar Canal",
   "noChannelsDescription": "Los canales le permiten conectarse con sus clientes a través de diferentes plataformas. Cree su primer canal para comenzar.",
   "createFirstChannel": "Crear primer canal",
   "form": {
@@ -213,10 +214,11 @@
     "whatsapp_official": "WhatsApp Business API",
     "whatsapp_wapi": "WhatsApp WApi",
     "whatsapp_zapi": "WhatsApp ZApi",
-    "whatsapp_evo": "WhatsApp Evolution",
+    "whatsapp_evo": "WhatsApp Evolution API",
     "instagram": "Instagram",
-    "facebook": "Facebook",
-    "email": "Correo electrónico"
+    "facebook": "Facebook Messenger",
+    "email": "Email",
+    "telegram": "Telegram"
   },
   "descriptions": {
     "whatsapp_official": "Integración oficial con WhatsApp Business API",

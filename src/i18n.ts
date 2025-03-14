@@ -19,7 +19,8 @@ const namespaces = [
   'channels',
   'flows',
   'settings',
-  'landing'
+  'landing',
+  'schedules'
 ] as const;
 
 export type Namespace = typeof namespaces[number];

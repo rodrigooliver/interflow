@@ -15,6 +15,7 @@
   "noResults": "Nenhum resultado encontrado",
   "error": "Ocorreu um erro. Por favor, tente novamente.",
   "back": "Voltar",
+  "continue": "Continuar",
   "lightMode": "Modo Claro",
   "darkMode": "Modo Escuro",
   "logout": "Sair",
@@ -45,6 +46,8 @@
     "message": "Tem certeza que deseja excluir este item?"
   },
   "all": "Todos",
+  "searchCountry": "Buscar por país, código ou DDI...",
+  "noCountriesFound": "Nenhum país encontrado",
   "signup": {
     "title": "Criar uma conta",
     "subtitle": "Já tem uma conta?",
@@ -72,8 +75,6 @@
   "to": "até",
   "results": "resultados",
   "actions": "Ações",
-  "searchCountry": "Pesquisar país...",
-  "noCountriesFound": "Nenhum país encontrado",
   "change": "Alterar",
   "checkingConnection": "Verificando conexão...",
   "online": "Conexão restaurada",
@@ -87,5 +88,11 @@
   "redirecting": "Redirecionando para o dashboard...",
   "backToHome": "Voltar para a página inicial",
   "loginRequired": "Login necessário",
-  "loginToJoin": "Faça login para aceitar o convite e entrar na organização."
+  "loginToJoin": "Faça login para aceitar o convite e entrar na organização.",
+  "menu": "Menu",
+  "schedules": "Agendamentos",
+  "newSchedule": "Novo Agendamento",
+  "upcomingSchedules": "Próximos Agendamentos",
+  "noSchedulesYet": "Nenhum agendamento encontrado",
+  "createScheduleMessage": "Crie um novo agendamento para começar"
 }

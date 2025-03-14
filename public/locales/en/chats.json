@@ -5,6 +5,7 @@
   "attend": "Attend",
   "backToList": "Back to list",
   "chatClosed": "Chat closed",
+  "startNewChat": "Start new chat",
   "customer": "Customer",
   "you": "You",
   "connected": "Connected",
@@ -43,7 +44,7 @@
   },
   "selectChat": {
     "title": "Select a chat",
-    "description": "Choose a chat from the list on the left to view the conversation"
+    "description": "Select a chat from the list or start a new conversation."
   },
   "status": {
     "in_progress": "In progress",

@@ -1,10 +1,11 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ChatMessages } from '../../components/chat/ChatMessages';
 import { useAuthContext } from '../../contexts/AuthContext';
 
 export default function Chat() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { currentOrganizationMember } = useAuthContext();
 
   if (!currentOrganizationMember || !id) {
@@ -16,6 +17,7 @@ export default function Chat() {
       <ChatMessages 
         chatId={id}
         organizationId={currentOrganizationMember.organization.id}
+        onBack={() => navigate('/app/chats')}
       />
     </div>
   );

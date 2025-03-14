@@ -15,6 +15,7 @@
   "noResults": "No se encontraron resultados",
   "error": "Ocurrió un error. Por favor, intente nuevamente.",
   "back": "Volver",
+  "continue": "Continuar",
   "lightMode": "Modo Claro",
   "darkMode": "Modo Oscuro",
   "logout": "Cerrar Sesión",
@@ -72,7 +73,7 @@
   "to": "hasta",
   "results": "resultados",
   "actions": "Acciones",
-  "searchCountry": "Buscar país...",
+  "searchCountry": "Buscar por país, código o prefijo...",
   "noCountriesFound": "No se encontraron países",
   "change": "Cambiar",
   "checkingConnection": "Verificando conexión...",
@@ -87,5 +88,11 @@
   "redirecting": "Redirigiendo al panel de control...",
   "backToHome": "Volver a la página de inicio",
   "loginRequired": "Inicio de sesión requerido",
-  "loginToJoin": "Por favor, inicia sesión para aceptar la invitación y unirte a la organización."
+  "loginToJoin": "Inicie sesión para aceptar la invitación y unirse a la organización.",
+  "menu": "Menú",
+  "schedules": "Agendamientos",
+  "newSchedule": "Nuevo Agendamiento",
+  "upcomingSchedules": "Próximos Agendamientos",
+  "noSchedulesYet": "No se encontraron agendamientos",
+  "createScheduleMessage": "Crea un nuevo agendamiento para comenzar"
 }

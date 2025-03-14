@@ -15,6 +15,7 @@
   "noResults": "No results found",
   "error": "An error occurred. Please try again.",
   "back": "Back",
+  "continue": "Continue",
   "lightMode": "Light Mode",
   "darkMode": "Dark Mode",
   "logout": "Logout",
@@ -72,7 +73,7 @@
   "to": "to",
   "results": "results",
   "actions": "Actions",
-  "searchCountry": "Search country...",
+  "searchCountry": "Search by country, code or dial code...",
   "noCountriesFound": "No countries found",
   "change": "Change",
   "checkingConnection": "Checking connection...",
@@ -85,7 +86,13 @@
   "joinOrganization": "Join organization",
   "joinSuccess": "You have been successfully added to the organization!",
   "redirecting": "Redirecting to dashboard...",
-  "backToHome": "Back to home page",
+  "backToHome": "Back to home",
   "loginRequired": "Login required",
-  "loginToJoin": "Please log in to accept the invitation and join the organization."
+  "loginToJoin": "Please login to accept the invitation and join the organization.",
+  "menu": "Menu",
+  "schedules": "Schedules",
+  "newSchedule": "New Schedule",
+  "upcomingSchedules": "Upcoming Schedules",
+  "noSchedulesYet": "No schedules found",
+  "createScheduleMessage": "Create a new schedule to get started"
 }

@@ -35,8 +35,7 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
     error_message,
     attachments,
     type,
-    sender_agent,
-    response_to
+    sender_agent
   } = message;
   
   const isAgent = sender_type === 'agent';
@@ -122,18 +121,10 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
     );
   }
 
-  const formatMessageContent = (content: string) => {
-    let formatted = content;
-    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    formatted = formatted.replace(/_(.*?)_/g, '<em>$1</em>');
-    formatted = formatted.replace(/\n/g, '<br>');
-    return formatted;
-  };
-
   const renderAttachment = (attachment: { url: string; type: string; name: string }) => {
     if (attachment.type.startsWith('image') || attachment.type.startsWith('image/')) {
       return (
-        <div className="mt-2">
+        <div className="mt-2 max-w-full">
           <div 
             onClick={() => {
               setSelectedImage(attachment);
@@ -144,7 +135,7 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
             <img
               src={attachment.url}
               alt={attachment.name}
-              className="max-w-full rounded-lg h-[200px] object-contain"
+              className="max-w-full w-auto rounded-lg h-[200px] object-contain"
             />
           </div>
         </div>
@@ -153,7 +144,7 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
 
     if (attachment.type.startsWith('audio') || attachment.type.startsWith('audio/')) {
       return (
-        <div className="bg-gray-200 dark:bg-gray-800/50 rounded-full p-2">
+        <div className="bg-gray-200 dark:bg-gray-800/50 rounded-full p-2 max-w-full">
           <AudioPlayer
             src={attachment.url}
             fileName={attachment.name}
@@ -163,15 +154,15 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
     }
 
     return (
-      <div className="mt-2">
+      <div className="mt-2 max-w-full">
         <a
           href={attachment.url}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
-          <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-          <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[250px]">
+          <FileText className="w-4 h-4 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
             {attachment.name}
           </span>
         </a>
@@ -183,11 +174,11 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
     <>
       <div 
         id={`message-${message.id}`}
-        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative`}
+        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full`}
         onDoubleClick={handleReply}
       >
         <div
-          className={`max-w-[85%] rounded-lg p-3 relative ${
+          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-3 relative overflow-hidden ${
             isAgent
               ? 'bg-blue-600 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
@@ -204,8 +195,8 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
                 setTimeout(() => element?.classList.remove('highlight-message'), 2000);
               }}
               className={`
-                mb-2 text-sm rounded-md p-2 w-full max-w-[400px] min-w-[150px] text-left
-                hover:opacity-90 transition-opacity cursor-pointer
+                mb-2 text-sm rounded-md p-2 w-full max-w-full text-left
+                hover:opacity-90 transition-opacity cursor-pointer overflow-hidden overflow-wrap-anywhere
                 ${isAgent 
                   ? 'bg-blue-700/60 text-blue-100' 
                   : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
@@ -217,7 +208,7 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
                   {message.response_to.sender_type === 'agent' ? t('you') : t('customer')}:
                 </span>
               </div>
-              <div className="truncate mt-1">
+              <div className="truncate mt-1 overflow-wrap-anywhere">
                 {message.response_to.content}
               </div>
             </button>
@@ -248,23 +239,78 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
 
           <div className="flex flex-col gap-3">
             {attachments?.map((attachment, index) => (
-              <div key={index}>
+              <div key={index} className="max-w-full overflow-hidden">
                 {renderAttachment(attachment)}
               </div>
             ))}
 
             {/* Existing message content */}
             {content && (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: formatMessageContent(content)
-                }}
-                className="whitespace-pre-wrap"
-              />
+              <div className="whitespace-pre-wrap break-words overflow-hidden overflow-wrap-anywhere">
+                {content.split('\n').map((line, lineIndex) => (
+                  <React.Fragment key={`line-${lineIndex}`}>
+                    {line.split(/(\s+)/).map((part, partIndex) => {
+                      // Verificar se a parte é uma URL
+                      if (/^https?:\/\//.test(part)) {
+                        return (
+                          <React.Fragment key={`part-${partIndex}`}>
+                            <a 
+                              href={part} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all"
+                            >
+                              {part.length > 50 ? part.substring(0, 47) + '...' : part}
+                            </a>
+                          </React.Fragment>
+                        );
+                      }
+                      
+                      // Verificar se a parte é um link no formato [texto](url)
+                      const linkMatch = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
+                      if (linkMatch) {
+                        const [, text, url] = linkMatch;
+                        return (
+                          <React.Fragment key={`part-${partIndex}`}>
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all"
+                            >
+                              {text}
+                            </a>
+                          </React.Fragment>
+                        );
+                      }
+                      
+                      // Verificar se a parte é uma URL entre colchetes
+                      const bracketUrlMatch = part.match(/\[(https?:\/\/[^\]]+)\]/);
+                      if (bracketUrlMatch) {
+                        const url = bracketUrlMatch[1];
+                        return (
+                          <React.Fragment key={`part-${partIndex}`}>
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all"
+                            >
+                              {url.length > 50 ? url.substring(0, 47) + '...' : url}
+                            </a>
+                          </React.Fragment>
+                        );
+                      }
+                      
+                      // Parte normal (texto ou espaço)
+                      return <React.Fragment key={`part-${partIndex}`}>{part}</React.Fragment>;
+                    })}
+                    {lineIndex < content.split('\n').length - 1 && <br />}
+                  </React.Fragment>
+                ))}
+              </div>
             )}
           </div>
-
-          
 
           <div className={`flex items-center justify-end space-x-1 text-xs mt-1 ${
             isAgent

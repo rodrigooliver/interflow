@@ -43,5 +43,21 @@
   "registeredOn": "Registrado el",
   "settingsReset": "Configuración restablecida",
   "contacts": "Contactos",
-  "noTagsAvailable": "No hay etiquetas disponibles"
+  "noTagsAvailable": "No hay etiquetas disponibles",
+  "contactPlaceholder": "Ingrese contacto",
+  "contactRequired": "El contacto es obligatorio",
+  "createAndStartChat": "Crear cliente e iniciar conversación",
+  "createNewCustomer": "Crear nuevo cliente",
+  "customerNotFound": "Cliente no encontrado. Por favor, proporcione un nombre para crear un nuevo cliente.",
+  "email": "Correo electrónico",
+  "enterContact": "Ingrese contacto",
+  "enterContactDescription": "Ingrese el contacto para verificar si el cliente ya existe.",
+  "enterEmail": "Ingrese correo electrónico",
+  "enterEmailDescription": "Ingrese el correo electrónico del cliente para verificar si ya existe.",
+  "enterWhatsApp": "Ingrese WhatsApp",
+  "enterWhatsAppDescription": "Ingrese el número de WhatsApp del cliente para verificar si ya existe.",
+  "nameRequired": "El nombre es obligatorio",
+  "namePlaceholder": "Nombre del cliente",
+  "whatsapp": "WhatsApp",
+  "whatsappFormatHint": "Ingrese solo números, sin espacios ni caracteres especiales."
 }

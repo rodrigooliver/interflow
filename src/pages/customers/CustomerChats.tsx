@@ -156,7 +156,7 @@ export default function CustomerChats() {
             {chats.map((chat) => (
               <Link
                 key={chat.id}
-                to={`/app/chats/${chat.id}`}
+                to={`/app/chat/${chat.id}`}
                 className="block bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow"
               >
                 <div className="p-6">
