@@ -2,33 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
-import { supabase } from '../../../lib/supabase';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
-export default function WhatsAppZApiForm() {
+export default function FacebookForm() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     credentials: {
-      instanceId: '',
-      token: '',
+      appId: '',
+      appSecret: '',
+      accessToken: '',
+      pageId: '',
       webhookUrl: ''
     }
   });
 
   useEffect(() => {
-    if (id && currentOrganization) {
+    if (id && currentOrganizationMember) {
       loadChannel();
     } else {
       setLoading(false);
     }
-  }, [id, currentOrganization]);
+  }, [id, currentOrganizationMember]);
 
   async function loadChannel() {
     try {
@@ -36,15 +38,25 @@ export default function WhatsAppZApiForm() {
         .from('chat_channels')
         .select('*')
         .eq('id', id)
-        .eq('type', 'whatsapp_zapi')
+        .eq('type', 'facebook')
         .single();
 
       if (error) throw error;
 
       if (data) {
+        // Ensure credentials object exists and has all required fields
+        const credentials = {
+          appId: '',
+          appSecret: '',
+          accessToken: '',
+          pageId: '',
+          webhookUrl: '',
+          ...data.credentials
+        };
+
         setFormData({
-          name: data.name,
-          credentials: data.credentials || {}
+          name: data.name || '',
+          credentials
         });
       }
     } catch (error) {
@@ -57,7 +69,7 @@ export default function WhatsAppZApiForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     setSaving(true);
     setError('');
@@ -80,9 +92,9 @@ export default function WhatsAppZApiForm() {
         const { error } = await supabase
           .from('chat_channels')
           .insert([{
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: formData.name,
-            type: 'whatsapp_zapi',
+            type: 'facebook',
             credentials: formData.credentials,
             settings: {
               autoReply: true,
@@ -96,7 +108,7 @@ export default function WhatsAppZApiForm() {
         if (error) throw error;
       }
 
-      navigate('/app/channels');
+      navigate('/channels');
     } catch (error) {
       console.error('Error saving channel:', error);
       setError(t('common:error'));
@@ -153,35 +165,69 @@ export default function WhatsAppZApiForm() {
             </div>
 
             <div>
-              <label htmlFor="instanceId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Instance ID
+              <label htmlFor="appId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                App ID
               </label>
               <input
                 type="text"
-                id="instanceId"
+                id="appId"
                 required
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.credentials.instanceId}
+                value={formData.credentials.appId}
                 onChange={(e) => setFormData({
                   ...formData,
-                  credentials: { ...formData.credentials, instanceId: e.target.value }
+                  credentials: { ...formData.credentials, appId: e.target.value }
                 })}
               />
             </div>
 
             <div>
-              <label htmlFor="token" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Token
+              <label htmlFor="appSecret" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                App Secret
               </label>
               <input
                 type="password"
-                id="token"
+                id="appSecret"
                 required
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.credentials.token}
+                value={formData.credentials.appSecret}
                 onChange={(e) => setFormData({
                   ...formData,
-                  credentials: { ...formData.credentials, token: e.target.value }
+                  credentials: { ...formData.credentials, appSecret: e.target.value }
+                })}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="accessToken" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Access Token
+              </label>
+              <input
+                type="password"
+                id="accessToken"
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
+                value={formData.credentials.accessToken}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  credentials: { ...formData.credentials, accessToken: e.target.value }
+                })}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="pageId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Page ID
+              </label>
+              <input
+                type="text"
+                id="pageId"
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
+                value={formData.credentials.pageId}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  credentials: { ...formData.credentials, pageId: e.target.value }
                 })}
               />
             </div>

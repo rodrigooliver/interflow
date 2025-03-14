@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Select from 'react-select';
 import { supabase } from '../../../../lib/supabase';
-import { useOrganizationContext } from '../../../../contexts/OrganizationContext';
+import { useAuthContext } from '../../../../contexts/AuthContext';
 
 interface ChannelRuleProps {
   params: {
@@ -13,19 +13,19 @@ interface ChannelRuleProps {
 
 export function ChannelRule({ params, onChange }: ChannelRuleProps) {
   const { t } = useTranslation('flows');
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [channels, setChannels] = useState<Array<{ value: string; label: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadChannels = useCallback(async () => {
-    if (!currentOrganization?.id) return;
+    if (!currentOrganizationMember?.organization.id) return;
     
     try {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('chat_channels')
         .select('*')
-        .eq('organization_id', currentOrganization.id);
+        .eq('organization_id', currentOrganizationMember.organization.id);
       
       if (error) throw error;
       
@@ -41,7 +41,7 @@ export function ChannelRule({ params, onChange }: ChannelRuleProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentOrganization?.id]);
+  }, [currentOrganizationMember?.organization.id]);
 
   useEffect(() => {
     loadChannels();

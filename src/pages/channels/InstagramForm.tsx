@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
-import { supabase } from '../../../lib/supabase';
-import api from '../../../lib/api';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import { toast } from 'react-hot-toast';
 
 // Interface para erros com resposta
@@ -20,7 +20,7 @@ export default function InstagramForm() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { id } = useParams(); // Pega o ID da URL se estiver editando
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -78,7 +78,7 @@ export default function InstagramForm() {
       const newChannel = {
         name: formData.name,
         type: 'instagram',
-        organization_id: currentOrganization?.id,
+        organization_id: currentOrganizationMember?.organization.id,
         status: 'inactive',
         is_connected: false,
         is_tested: false,
@@ -136,7 +136,7 @@ export default function InstagramForm() {
     // Criando objeto state com channelId e organizationId
     const stateData = {
       channelId: id,
-      organizationId: currentOrganization?.id
+      organizationId: currentOrganizationMember?.organization.id
     };
 
     const params = new URLSearchParams({
@@ -196,7 +196,7 @@ export default function InstagramForm() {
     setError('');
 
     try {
-      const response = await api.delete(`/api/${currentOrganization?.id}/channel/instagram/${id}`);
+      const response = await api.delete(`/api/${currentOrganizationMember?.organization.id}/channel/instagram/${id}`);
 
       if (!response.data.success) {
         throw new Error(response.data.error || t('common:error'));

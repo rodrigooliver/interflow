@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquareText, Plus, Loader2, AlertTriangle, Pencil, Trash2, Bot } from 'lucide-react';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '../../types/database';
@@ -10,9 +10,9 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export default function Prompts() {
   const { t } = useTranslation(['prompts', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const queryClient = useQueryClient();
-  const { data: prompts = [], isLoading } = usePrompts(currentOrganization?.id);
+  const { data: prompts = [], isLoading } = usePrompts(currentOrganizationMember?.organization.id);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ export default function Prompts() {
   }, [error]);
 
   const handleDelete = async (prompt: Prompt) => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     setDeleting(true);
     try {
@@ -42,7 +42,7 @@ export default function Prompts() {
       if (error) throw error;
 
       // Invalida o cache para forçar uma nova busca
-      await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
       
       setShowDeleteModal(false);
       setSelectedPrompt(null);

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Select from 'react-select';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
+import { useAuthContext } from '../../../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { useIntegrations, usePrompts } from '../../../hooks/useQueryes';
 import { Integration, Prompt } from '../../../types/database';
@@ -69,9 +69,9 @@ const OpenAILogo = () => (
 export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
   const { t } = useTranslation('flows');
   const { variables, nodes, updateNodeData } = useFlowEditor();
-  const { currentOrganization } = useOrganizationContext();
-  const { data: integrations = [] } = useIntegrations(currentOrganization?.id);
-  const { data: prompts = [] } = usePrompts(currentOrganization?.id);
+  const { currentOrganizationMember } = useAuthContext();
+  const { data: integrations = [] } = useIntegrations(currentOrganizationMember?.organization.id);
+  const { data: prompts = [] } = usePrompts(currentOrganizationMember?.organization.id);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [loading] = useState(false);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tool, Variable, ToolAction } from '../../types/prompts';
 import ToolActionForm from './ToolActionForm';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { useTeams, useFunnels, useFlows } from '../../hooks/useQueryes';
 
 interface ToolFormProps {
@@ -14,10 +14,10 @@ interface ToolFormProps {
 
 const ToolForm: React.FC<ToolFormProps> = ({ onAddTool, onCancel, variables, initialTool }) => {
   const { t } = useTranslation(['prompts', 'common']);
-  const { currentOrganization } = useOrganizationContext();
-  const { data: teams = [] } = useTeams(currentOrganization?.id);
-  const { data: funnels = [] } = useFunnels(currentOrganization?.id);
-  const { data: flows = [] } = useFlows(currentOrganization?.id);
+  const { currentOrganizationMember } = useAuthContext();
+  const { data: teams = [] } = useTeams(currentOrganizationMember?.organization.id);
+  const { data: funnels = [] } = useFunnels(currentOrganizationMember?.organization.id);
+  const { data: flows = [] } = useFlows(currentOrganizationMember?.organization.id);
   const [newTool, setNewTool] = useState<Tool>({
     name: '',
     description: '',

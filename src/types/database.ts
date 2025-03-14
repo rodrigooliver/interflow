@@ -175,7 +175,8 @@ export interface Organization {
  */
 export interface OrganizationMember {
   id: string;
-  organization_id: Organization;
+  organization: Organization;
+  organization_id: string;
   user_id: string;
   profile_id: string;
   role: 'owner' | 'admin' | 'agent';

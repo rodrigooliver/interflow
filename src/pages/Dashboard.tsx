@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MessageSquare, Users, MessageCircle, BarChart2, Calendar, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
-import { useOrganizationContext } from '../contexts/OrganizationContext';
+import { useAuthContext } from '../contexts/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
 
@@ -53,7 +53,7 @@ interface ChatWithRelations {
 
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [customerCount, setCustomerCount] = useState(0);
   const [activeChatsCount, setActiveChatsCount] = useState(0);
   const [todayMessagesCount, setTodayMessagesCount] = useState(0);
@@ -64,13 +64,13 @@ export default function Dashboard() {
   const [selectedTimeRange, setSelectedTimeRange] = useState('week');
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadStats();
       loadRecentChats();
       loadChartData(selectedTimeRange);
       subscribeToUpdates();
     }
-  }, [currentOrganization, selectedTimeRange]);
+  }, [currentOrganizationMember, selectedTimeRange]);
 
   const subscribeToUpdates = () => {
     // Subscribe to chats changes
@@ -80,7 +80,7 @@ export default function Dashboard() {
         event: '*',
         schema: 'public',
         table: 'chats',
-        filter: `organization_id=eq.${currentOrganization?.id}`
+        filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, () => {
         loadActiveChatsCount();
         loadRecentChats();
@@ -94,7 +94,7 @@ export default function Dashboard() {
         event: '*',
         schema: 'public',
         table: 'messages',
-        filter: `organization_id=eq.${currentOrganization?.id}`
+        filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, () => {
         loadTodayMessagesCount();
         loadChartData(selectedTimeRange);
@@ -125,7 +125,7 @@ export default function Dashboard() {
       const { count, error } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id);
+        .eq('organization_id', currentOrganizationMember?.organization.id);
 
       if (error) throw error;
       setCustomerCount(count || 0);
@@ -139,7 +139,7 @@ export default function Dashboard() {
       const { count, error } = await supabase
         .from('chats')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .eq('status', 'in_progress');
 
       if (error) throw error;
@@ -158,7 +158,7 @@ export default function Dashboard() {
       const { count, error } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .gte('created_at', today.toISOString());
 
       if (error) throw error;
@@ -181,10 +181,10 @@ export default function Dashboard() {
           id,
           customers(name),
           status,
-          messages(content, created_at)
+          messages:last_message_id(content, created_at)
         `)
-        .eq('organization_id', currentOrganization?.id)
-        .order('updated_at', { ascending: false })
+        .eq('organization_id', currentOrganizationMember?.organization.id)
+        .order('last_message_at', { ascending: false })
         .limit(5);
 
       if (error) throw error;

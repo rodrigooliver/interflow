@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Users, Plus, Loader2, X, Mail, AlertTriangle, Edit, Link } from 'lucide-react';
+import { Users, Loader2, X, Mail, AlertTriangle, Edit, Link } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAgents } from '../../hooks/useQueryes';
@@ -13,6 +13,7 @@ type MemberWithProfile = {
   organization_id: string;
   user_id: string;
   role: string;
+  status: string;
   created_at: string;
   profile: {
     id: string;
@@ -39,7 +40,7 @@ interface EditProfileFormData {
 
 export default function OrganizationMembers() {
   const { t, i18n } = useTranslation(['member', 'common']);
-  const { currentOrganization, membership } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const queryClient = useQueryClient();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -49,6 +50,7 @@ export default function OrganizationMembers() {
   const [deletingMember, setDeletingMember] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [inviteForm, setInviteForm] = useState<InviteFormData>({
     email: '',
     fullName: '',
@@ -63,7 +65,7 @@ export default function OrganizationMembers() {
 
   // Usando o hook useAgents para buscar os membros
   const { data: members = [], isLoading } = useAgents(
-    currentOrganization?.id,
+    currentOrganizationMember?.organization.id,
     ['agent', 'admin', 'owner', 'member']
   );
 
@@ -71,8 +73,9 @@ export default function OrganizationMembers() {
     e.preventDefault();
     setInviteLoading(true);
     setError('');
+    setSuccessMessage('');
 
-    if (!currentOrganization) {
+    if (!currentOrganizationMember) {
       setError(t('member:errors.noOrganization'));
       setInviteLoading(false);
       return;
@@ -82,7 +85,7 @@ export default function OrganizationMembers() {
       // Obter o idioma atual da aplicação
       const currentLanguage = i18n.language || 'pt';
       
-      const response = await api.post(`/api/${currentOrganization.id}/member/invite`, {
+      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/member/invite`, {
         email: inviteForm.email,
         fullName: inviteForm.fullName,
         role: inviteForm.role,
@@ -100,11 +103,19 @@ export default function OrganizationMembers() {
       }
 
       // Invalidar cache dos agents
-      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganizationMember.organization.id] });
       
       // Fechar modal e limpar form
       setShowInviteModal(false);
       setInviteForm({ email: '', fullName: '', role: 'agent' });
+      
+      // Mostrar mensagem de sucesso
+      setSuccessMessage(t('member:invite.success', 'Convite enviado com sucesso! Um email foi enviado para {email}.', { email: inviteForm.email }));
+      
+      // Esconder mensagem após 5 segundos
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
     } catch (err: unknown) {
       console.error('Error inviting user:', err);
       setError(err instanceof Error ? err.message : t('common:error'));
@@ -114,7 +125,7 @@ export default function OrganizationMembers() {
   }
 
   async function handleRemoveMember() {
-    if (!selectedMember || !currentOrganization) return;
+    if (!selectedMember || !currentOrganizationMember) return;
     
     setDeletingMember(true);
     try {
@@ -126,7 +137,7 @@ export default function OrganizationMembers() {
       if (error) throw error;
 
       // Invalidar cache dos agents
-      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganizationMember.organization.id] });
       
       setShowDeleteModal(false);
       setSelectedMember(null);
@@ -140,13 +151,13 @@ export default function OrganizationMembers() {
 
   async function handleEditProfile(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedMember?.profile || !currentOrganization) return;
+    if (!selectedMember?.profile || !currentOrganizationMember) return;
     
     setEditingProfile(true);
     setError('');
     
     try {
-      const response = await api.put(`/api/${currentOrganization.id}/member/${selectedMember.profile.id}`, {
+      const response = await api.put(`/api/${currentOrganizationMember.organization.id}/member/${selectedMember.profile.id}`, {
         fullName: editProfileForm.fullName,
         email: editProfileForm.email,
         avatarUrl: editProfileForm.avatarUrl,
@@ -160,7 +171,7 @@ export default function OrganizationMembers() {
       }
       
       // Invalidar cache dos agents
-      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganizationMember.organization.id] });
       
       setShowEditModal(false);
       setSelectedMember(null);
@@ -172,7 +183,7 @@ export default function OrganizationMembers() {
     }
   }
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">
@@ -201,16 +212,30 @@ export default function OrganizationMembers() {
           <Users className="w-6 h-6 mr-2" />
           {t('member:title')}
         </h1>
-        {(membership?.role === 'owner' || membership?.role === 'admin') && (
+        {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
           <button
             onClick={() => setShowInviteModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            {t('member:addUser')}
+            <Mail className="w-4 h-4 mr-2" />
+            {t('member:actions.invite', 'Convidar Atendente')}
           </button>
         )}
       </div>
+
+      {/* Mensagem de sucesso */}
+      {successMessage && (
+        <div className="mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-4 rounded-md flex items-start">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm">{successMessage}</p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -226,12 +251,15 @@ export default function OrganizationMembers() {
                 {t('member:user.email')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('member:user.status')}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t('member:user.since')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t('member:user.actions')}
               </th>
-              {membership?.role === 'owner' && (
+              {currentOrganizationMember?.role === 'owner' && (
                 <th className="relative px-6 py-3">
                   <span className="sr-only">{t('member:actions.register')}</span>
                 </th>
@@ -274,6 +302,21 @@ export default function OrganizationMembers() {
                     {member.profile?.email || t('member:user.emailNotAvailable')}
                   </div>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {member.status === 'pending' ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                      {t('member:status.pending', 'Aguardando aceitação')}
+                    </span>
+                  ) : member.status === 'inactive' ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                      {t('member:status.inactive', 'Inativo')}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                      {t('member:status.active', 'Ativo')}
+                    </span>
+                  )}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {new Date(member.created_at).toLocaleDateString()}
                 </td>
@@ -306,22 +349,23 @@ export default function OrganizationMembers() {
                         <Link className="w-4 h-4" />
                       </RouterLink>
                     )}
-                  </div>
-                </td>
-                {membership?.role === 'owner' && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {member.role !== 'owner' && (
+                    {currentOrganizationMember?.role === 'owner' && member.role !== 'owner' && (
                       <button
                         onClick={() => {
                           setSelectedMember(member);
                           setShowDeleteModal(true);
                         }}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 ml-auto"
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30"
                         title={t('member:actions.remove')}
                       >
                         <X className="w-4 h-4" />
                       </button>
                     )}
+                  </div>
+                </td>
+                {currentOrganizationMember?.role === 'owner' && (
+                  <td className="relative px-6 py-3">
+                    <span className="sr-only">{t('member:actions.register')}</span>
                   </td>
                 )}
               </tr>
@@ -336,7 +380,7 @@ export default function OrganizationMembers() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
             <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {t('member:addUser')}
+                {t('member:actions.invite', 'Convidar Atendente')}
               </h3>
               <button
                 onClick={() => setShowInviteModal(false)}
@@ -352,6 +396,12 @@ export default function OrganizationMembers() {
                   {error}
                 </div>
               )}
+
+              <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-3 rounded-md">
+                <p className="text-sm">
+                  {t('member:invite.info', 'Um convite será enviado para o email informado. O usuário precisará clicar no link recebido para ativar sua conta.')}
+                </p>
+              </div>
 
               <div className="space-y-4">
                 <div>
@@ -379,7 +429,11 @@ export default function OrganizationMembers() {
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
                     value={inviteForm.email}
                     onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                    placeholder="email@exemplo.com"
                   />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('member:form.emailHelp', 'Informe um email válido para o qual o convite será enviado.')}
+                  </p>
                 </div>
 
                 <div>
@@ -413,7 +467,7 @@ export default function OrganizationMembers() {
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {inviteLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {t('member:actions.register')}
+                  {t('member:actions.invite', 'Enviar Convite')}
                 </button>
               </div>
             </form>

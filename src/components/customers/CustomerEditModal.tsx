@@ -3,7 +3,7 @@ import { X, Loader2, Tag, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { Customer, ContactType } from '../../types/database';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { updateCustomerTags } from '../../services/customerService';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { CustomFieldsSection } from '../custom-fields/CustomFieldsSection';
@@ -38,20 +38,20 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   // console.log('CustomerEditModal - Cliente recebido:', customer);
   
   const { t } = useTranslation(['customers', 'common', 'crm']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
   // Usando o hook useFunnels para carregar funis e estágios
-  const { data: funnelsData, isLoading: loadingFunnels } = useFunnels(currentOrganization?.id);
+  const { data: funnelsData, isLoading: loadingFunnels } = useFunnels(currentOrganizationMember?.organization.id);
   const funnels = funnelsData || [];
   const stages = React.useMemo(() => {
     return funnels.flatMap(funnel => funnel.stages || []);
   }, [funnels]);
   
   // Usando o hook useTags para carregar tags
-  const { data: tagsData, isLoading: loadingTags } = useTags(currentOrganization?.id);
+  const { data: tagsData, isLoading: loadingTags } = useTags(currentOrganizationMember?.organization.id);
   const tags = tagsData || [];
   
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -186,7 +186,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
       // console.log(`Tag ${tagId} ${isSelected ? 'removida' : 'adicionada'}. Tags selecionadas:`, newSelectedTags);
       
       // Salvar silenciosamente após alterar as tags
-      if (currentOrganization && customer.id) {
+      if (currentOrganizationMember && customer.id) {
         // Verificar se a operação está em andamento
         const feedbackElement = document.createElement('div');
         feedbackElement.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg z-50';
@@ -194,7 +194,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         document.body.appendChild(feedbackElement);
         
         // Atualizar as tags no banco de dados
-        updateCustomerTags(customer.id, newSelectedTags, currentOrganization.id)
+        updateCustomerTags(customer.id, newSelectedTags, currentOrganizationMember.organization.id)
           .then(() => {
             // console.log('Tags atualizadas com sucesso');
             // Chamar onSuccess com silentRefresh=true para atualizar a lista de clientes sem fechar o modal
@@ -239,7 +239,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
 
   const handleCreateTag = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOrganization || !newTagName.trim()) return;
+    if (!currentOrganizationMember || !newTagName.trim()) return;
     
     // Evitar múltiplas operações simultâneas
     if (tagOperationInProgress.current) {
@@ -257,7 +257,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
           {
             name: newTagName.trim(),
             color: newTagColor,
-            organization_id: currentOrganization.id
+            organization_id: currentOrganizationMember.organization.id
           }
         ])
         .select()
@@ -276,7 +276,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         // Salvar silenciosamente após criar a tag
         if (customer.id) {
           try {
-            await updateCustomerTags(customer.id, newSelectedTags, currentOrganization.id);
+            await updateCustomerTags(customer.id, newSelectedTags, currentOrganizationMember.organization.id);
             onSuccess(true);
             
             // Mostrar feedback visual temporário
@@ -340,7 +340,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   const saveCustomer = async (overrideStageId?: string, isSilent: boolean = false) => {
     // console.log('CustomerEditModal - saveCustomer chamado');
     
-    if (!currentOrganization) {
+    if (!currentOrganizationMember) {
       setError('Organização não encontrada');
       return;
     }
@@ -445,7 +445,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
           .insert({
             customer_id: customer.id,
             stage_id: stageId,
-            organization_id: currentOrganization.id
+            organization_id: currentOrganizationMember.organization.id
           });
           
         if (historyError) throw historyError;
@@ -492,7 +492,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   // 4. Aproveitar o cache do React Query para os dados que não mudam com frequência
   // 5. Melhorar a experiência do usuário com carregamento mais rápido
   useEffect(() => {
-    if (!customer.id || !currentOrganization?.id) return;
+    if (!customer.id || !currentOrganizationMember?.organization.id) return;
     
     const loadCustomerData = async () => {
       setIsLoadingCustomerData(true);
@@ -517,7 +517,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
             )
           `)
           .eq('id', customer.id)
-          .eq('organization_id', currentOrganization.id)
+          .eq('organization_id', currentOrganizationMember.organization.id)
           .single();
           
         if (error) throw error;
@@ -578,7 +578,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
     };
     
     loadCustomerData();
-  }, [customer.id, currentOrganization?.id, stages, funnels]);
+  }, [customer.id, currentOrganizationMember?.organization.id, stages, funnels]);
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-45 flex md:items-stretch z-50">
@@ -965,7 +965,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                 {!isLoadingCustomerData && (
                   <CustomFieldsSection 
                     customerId={customer.id}
-                    organizationId={currentOrganization?.id}
+                    organizationId={currentOrganizationMember?.organization.id}
                     preloadedFieldValues={customerData?.field_values}
                     onFieldsChange={() => {
                       // Não precisamos mais fazer nada aqui, apenas indicar que o callback existe

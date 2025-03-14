@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HardDrive, Users, MessageSquare, GitBranch, Users2, AlertTriangle, Loader2 } from 'lucide-react';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
 interface UsageStats {
@@ -33,16 +33,16 @@ interface UsageStats {
 
 export function UsageSettings() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadUsageStats();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   async function loadUsageStats() {
     try {
@@ -50,7 +50,7 @@ export function UsageSettings() {
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from('subscriptions')
         .select('*, subscription_plans(*)')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .in('status', ['active', 'trialing'])
         .order('created_at', { ascending: false })
         .limit(1);
@@ -64,7 +64,7 @@ export function UsageSettings() {
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .select('storage_used, storage_limit')
-        .eq('id', currentOrganization?.id)
+        .eq('id', currentOrganizationMember?.organization.id)
         .single();
 
       if (orgError) throw orgError;
@@ -73,7 +73,7 @@ export function UsageSettings() {
       const { count: activeUsers, error: usersError } = await supabase
         .from('organization_members')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id);
+        .eq('organization_id', currentOrganizationMember?.organization.id);
 
       if (usersError) throw usersError;
 
@@ -81,7 +81,7 @@ export function UsageSettings() {
       const { count: activeChannels, error: channelsError } = await supabase
         .from('chat_channels')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .eq('status', 'active');
 
       if (channelsError) throw channelsError;
@@ -90,7 +90,7 @@ export function UsageSettings() {
       const { count: activeFlows, error: flowsError } = await supabase
         .from('flows')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .eq('is_active', true);
 
       if (flowsError) throw flowsError;
@@ -99,7 +99,7 @@ export function UsageSettings() {
       const { count: activeTeams, error: teamsError } = await supabase
         .from('service_teams')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id);
+        .eq('organization_id', currentOrganizationMember?.organization.id);
 
       if (teamsError) throw teamsError;
 
@@ -107,7 +107,7 @@ export function UsageSettings() {
       const { count: activeCustomers, error: customersError } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization?.id);
+        .eq('organization_id', currentOrganizationMember?.organization.id);
 
       if (customersError) throw customersError;
 

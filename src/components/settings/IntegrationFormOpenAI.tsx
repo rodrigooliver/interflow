@@ -2,29 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../lib/api';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 
-/**
- * Formulário para configuração de integração com OpenAI
- * 
- * Segurança:
- * - As chaves de API são enviadas para o backend para serem criptografadas antes de armazenadas
- * - A validação da chave também é feita pelo backend para evitar exposição da chave no frontend
- * - O backend deve implementar as seguintes rotas:
- *   - GET /api/:organizationId/integrations/:integrationId - Buscar integração
- *   - POST /api/:organizationId/integrations - Criar integração
- *   - PUT /api/:organizationId/integrations/:integrationId - Atualizar integração
- *   - POST /api/:organizationId/integrations/openai/validate - Validar chave OpenAI
- */
-
-/**
- * Nota: Adicione as seguintes chaves de tradução aos arquivos de tradução:
- * - settings:integrations.errors.keyNotValidated: "A chave API precisa ser validada antes de salvar."
- * - settings:integrations.form.validateKeyBeforeSaving: "Por favor, valide a chave API antes de salvar."
- * - settings:integrations.openai.step5: "Adicione um método de pagamento à sua conta OpenAI para utilizar a API."
- * - settings:integrations.openai.paymentRequired: "Importante: É necessário adicionar um método de pagamento válido à sua conta OpenAI para utilizar a API, mesmo para o nível gratuito."
- * - settings:integrations.openai.addPaymentMethod: "Adicionar método de pagamento"
- */
 
 // Interface para erros de API
 interface ApiError {
@@ -58,7 +37,7 @@ export function IntegrationFormOpenAI({
   integrationId
 }: IntegrationFormOpenAIProps) {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(!!integrationId);
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -72,18 +51,18 @@ export function IntegrationFormOpenAI({
   });
 
   useEffect(() => {
-    if (integrationId && currentOrganization) {
+    if (integrationId && currentOrganizationMember) {
       loadIntegration();
     }
-  }, [integrationId, currentOrganization]);
+  }, [integrationId, currentOrganizationMember]);
 
   async function loadIntegration() {
-    if (!currentOrganization || !integrationId) return;
+    if (!currentOrganizationMember || !integrationId) return;
 
     setLoading(true);
     try {
       // Usar API para buscar a integração do backend
-      const response = await api.get(`/api/${currentOrganization.id}/integrations/${integrationId}`);
+      const response = await api.get(`/api/${currentOrganizationMember.organization.id}/integrations/${integrationId}`);
       
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to load integration');
@@ -121,7 +100,7 @@ export function IntegrationFormOpenAI({
     
     try {
       // Usar o backend para validar a chave OpenAI
-      const response = await api.post(`/api/${currentOrganization?.id}/integrations/openai/validate`, {
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/integrations/openai/validate`, {
         api_key: apiKey
       });
       
@@ -158,7 +137,7 @@ export function IntegrationFormOpenAI({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     // Validar campos obrigatórios
     if (!formData.title) {
@@ -203,7 +182,7 @@ export function IntegrationFormOpenAI({
       if (integrationId) {
         // Atualização - enviar para o backend
         const response = await api.put(
-          `/api/${currentOrganization.id}/integrations/${integrationId}`, 
+          `/api/${currentOrganizationMember.organization.id}/integrations/${integrationId}`, 
           integrationData
         );
         
@@ -213,7 +192,7 @@ export function IntegrationFormOpenAI({
       } else {
         // Cadastro - enviar para o backend
         const response = await api.post(
-          `/api/${currentOrganization.id}/integrations`, 
+          `/api/${currentOrganizationMember.organization.id}/integrations`, 
           integrationData
         );
         

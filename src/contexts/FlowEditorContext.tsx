@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../lib/supabase';
 import { Variable } from '../types/flow';
 import { Node } from 'reactflow';
-import { useOrganizationContext } from './OrganizationContext';
+import { useAuthContext } from './AuthContext';
 import { useParams } from 'react-router-dom';   
 import { FlowConnection, FlowNode } from '../types/flow';
 
@@ -51,7 +51,7 @@ interface FlowEditorContextType {
 const FlowEditorContext = createContext<FlowEditorContextType | undefined>(undefined);
 
 export function FlowEditorProvider({ children }: { children: React.ReactNode }) {
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const { id } = useParams();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<FlowConnection[]>([]);
@@ -89,7 +89,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   };
 
   const onSaveFlow = useCallback(async (data?: SaveFlowData) => {
-    if (!currentOrganization || !id) return;
+    if (!currentOrganizationMember || !id) return;
 
     try {
       const { error } = await supabase
@@ -114,7 +114,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       console.error('Error saving flow:', error);
       throw error;
     }
-  }, [currentOrganization, id, nodes, edges, variables, viewport]);
+  }, [currentOrganizationMember, id, nodes, edges, variables, viewport]);
 
   const updateNodeData = useCallback(async (nodeId: string, newData: any) => {
 
@@ -138,7 +138,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   }, [nodes, edges, onSaveFlow]);
 
   const loadFlow = useCallback(async (id: string) => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setLoading(true);
     setError(null);
@@ -169,10 +169,10 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setLoading(false);
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   const publishFlow = useCallback(async () => {
-    if (!currentOrganization || !id) return;
+    if (!currentOrganizationMember || !id) return;
 
     try {
       const { error } = await supabase
@@ -200,11 +200,11 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       console.error('Error publishing flow:', error);
       throw error;
     }
-  }, [currentOrganization, nodes, edges, variables, viewport]);
+  }, [currentOrganizationMember, nodes, edges, variables, viewport]);
 
   const restoreFlow = useCallback(async () => {
     
-    if (!currentOrganization || !id) return;
+    if (!currentOrganizationMember || !id) return;
 
     try {
       const { error } = await supabase
@@ -225,11 +225,11 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       console.error('Error restoring flow:', error);
       throw error;
     }
-  }, [currentOrganization, publishedNodes, publishedEdges]);
+  }, [currentOrganizationMember, publishedNodes, publishedEdges]);
 
   const updateFlowName = useCallback(async (name: string) => {
     
-    if (!currentOrganization || !id || !name.trim()) return;
+    if (!currentOrganizationMember || !id || !name.trim()) return;
 
     try {
       const { error } = await supabase
@@ -248,7 +248,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       console.error('Error updating flow name:', error);
       throw error;
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   return (
     <FlowEditorContext.Provider value={{ 

@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useOrganizationContext } from '../contexts/OrganizationContext';
+import { useAuthContext } from '../contexts/AuthContext';
 
 export function useSubscription() {
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
 
   const getInvoices = async () => {
-    if (!currentOrganization) return [];
+    if (!currentOrganizationMember) return [];
 
     try {
       const { data, error: queryError } = await supabase
         .from('invoices')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('created_at', { ascending: false });
 
       if (queryError) throw queryError;
@@ -29,7 +29,7 @@ export function useSubscription() {
 
   useEffect(() => {
     setLoading(false);
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   return {
     loading,

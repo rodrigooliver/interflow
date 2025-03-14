@@ -6,6 +6,7 @@
     "name": "Name",
     "email": "Email",
     "role": "Role",
+    "status": "Status",
     "since": "Since",
     "unknown": "Unknown User",
     "emailNotAvailable": "Email not available",
@@ -24,17 +25,31 @@
     "remove": "Remove",
     "edit": "Edit",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "invite": "Send Invitation",
+    "referrals": "Referrals"
   },
   "delete": {
     "title": "Delete User",
     "confirmation": "Are you sure you want to delete user {{name}}?",
     "warning": "This action cannot be undone."
   },
+  "edit": {
+    "title": "Edit User"
+  },
   "roles": {
     "owner": "Owner",
     "admin": "Administrator",
     "agent": "Agent"
+  },
+  "status": {
+    "active": "Active",
+    "pending": "Awaiting acceptance",
+    "inactive": "Inactive"
+  },
+  "invite": {
+    "success": "Invitation sent successfully! An email was sent to {{email}}.",
+    "info": "An invitation will be sent to the provided email. The user will need to click on the received link to activate their account."
   },
   "errors": {
     "noOrganization": "No organization selected",

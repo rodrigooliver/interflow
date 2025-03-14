@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Link2, Plus, Loader2, X, AlertTriangle, Copy, Code } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
 interface Referral {
@@ -55,7 +55,7 @@ function generateFriendlyCode(fullName: string): string {
 
 export default function Referrals() {
   const { t } = useTranslation(['referrals', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const { profileId } = useParams();
   
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -85,11 +85,11 @@ export default function Referrals() {
   });
 
   useEffect(() => {
-    if (currentOrganization && profileId) {
+    if (currentOrganizationMember && profileId) {
       loadReferrals();
       loadProfile();
     }
-  }, [currentOrganization, profileId]);
+  }, [currentOrganizationMember, profileId]);
 
   useEffect(() => {
     if (showCreateModal && profile) {
@@ -119,13 +119,13 @@ export default function Referrals() {
   }
 
   async function loadReferrals() {
-    if (!currentOrganization || !profileId) return;
+    if (!currentOrganizationMember || !profileId) return;
 
     try {
       const { data, error } = await supabase
         .from('referrals')
         .select('*, profile:profiles(full_name, email)')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .eq('user_id', profileId);
 
       if (error) throw error;
@@ -158,7 +158,7 @@ export default function Referrals() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization || !profileId) return;
+    if (!currentOrganizationMember || !profileId) return;
 
     setSaving(true);
     setError('');
@@ -168,7 +168,7 @@ export default function Referrals() {
         .from('referrals')
         .insert([
           {
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             user_id: profileId,
             code: referralForm.code,
             status: referralForm.status,

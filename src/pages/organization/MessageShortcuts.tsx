@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Keyboard, Plus, Loader2, X, AlertTriangle, Upload, Pencil, FileText, Image, Music, Video, File } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { MessageShortcut } from '../../types/database';
 
 export default function MessageShortcuts() {
   const { t } = useTranslation(['shortcuts', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [shortcuts, setShortcuts] = useState<MessageShortcut[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -27,10 +27,10 @@ export default function MessageShortcuts() {
   const itemsPerPage = 9;
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadShortcuts();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   // Limpar mensagem de erro após 5 segundos
   useEffect(() => {
@@ -43,13 +43,13 @@ export default function MessageShortcuts() {
   }, [error]);
 
   async function loadShortcuts() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .from('message_shortcuts')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -92,7 +92,7 @@ export default function MessageShortcuts() {
       if (filePath) {
         await supabase.storage
           .from('attachments')
-          .remove([`${currentOrganization?.id}/shortcuts/${filePath}`]);
+          .remove([`${currentOrganizationMember?.organization.id}/shortcuts/${filePath}`]);
       }
 
       const { error } = await supabase
@@ -118,7 +118,7 @@ export default function MessageShortcuts() {
 
   async function handleCreateShortcut(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setUploading(true);
     setError('');
@@ -129,7 +129,7 @@ export default function MessageShortcuts() {
         files.map(async (file) => {
           const fileExt = file.name.split('.').pop();
           const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `${currentOrganization.id}/shortcuts/${fileName}`;
+          const filePath = `${currentOrganizationMember.organization.id}/shortcuts/${fileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from('attachments')
@@ -154,7 +154,7 @@ export default function MessageShortcuts() {
         .from('message_shortcuts')
         .insert([
           {
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             title: formData.title,
             content: formData.content,
             attachments
@@ -177,7 +177,7 @@ export default function MessageShortcuts() {
 
   async function handleEditShortcut(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization || !selectedShortcut) return;
+    if (!currentOrganizationMember || !selectedShortcut) return;
     
     setUploading(true);
     setError('');
@@ -188,7 +188,7 @@ export default function MessageShortcuts() {
         files.map(async (file) => {
           const fileExt = file.name.split('.').pop();
           const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `${currentOrganization.id}/shortcuts/${fileName}`;
+          const filePath = `${currentOrganizationMember.organization.id}/shortcuts/${fileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from('attachments')
@@ -245,7 +245,7 @@ export default function MessageShortcuts() {
           if (filePath) {
             await supabase.storage
               .from('attachments')
-              .remove([`${currentOrganization?.id}/shortcuts/${filePath}`]);
+              .remove([`${currentOrganizationMember?.organization.id}/shortcuts/${filePath}`]);
           }
         })
       );
@@ -278,7 +278,7 @@ export default function MessageShortcuts() {
     currentPage * itemsPerPage
   );
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">

@@ -1,4 +1,5 @@
 import React, { useState, Suspense, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
@@ -18,15 +19,16 @@ import Organizations from './pages/admin/Organizations';
 import AddOrganization from './pages/admin/AddOrganization';
 import OrganizationMembers from './pages/organization/MembersPage';
 import ServiceTeams from './pages/organization/ServiceTeams';
-import Channels from './pages/organization/Channels';
-import SelectChannelType from './pages/organization/channels/SelectChannelType';
-import EmailChannelForm from './pages/organization/channels/EmailChannelForm';
-import WhatsAppOfficialForm from './pages/organization/channels/WhatsAppOfficialForm';
-import WhatsAppWApiForm from './pages/organization/channels/WhatsAppWApiForm';
-import WhatsAppZApiForm from './pages/organization/channels/WhatsAppZApiForm';
-import WhatsAppEvoForm from './pages/organization/channels/WhatsAppEvoForm';
-import FacebookForm from './pages/organization/channels/FacebookForm';
-import InstagramForm from './pages/organization/channels/InstagramForm';
+import Channels from './pages/channels/Channels';
+import SelectChannelType from './pages/channels/SelectChannelType';
+import EmailChannelForm from './pages/channels/EmailChannelForm';
+import WhatsAppOfficialForm from './pages/channels/WhatsAppOfficialForm';
+import WhatsAppWApiForm from './pages/channels/WhatsAppWApiForm';
+import WhatsAppZApiForm from './pages/channels/WhatsAppZApiForm';
+import WhatsAppEvoForm from './pages/channels/WhatsAppEvoForm';
+import FacebookForm from './pages/channels/FacebookForm';
+import InstagramForm from './pages/channels/InstagramForm';
+import WhatsAppTemplates from './pages/channels/WhatsAppTemplates';
 import MessageShortcuts from './pages/organization/MessageShortcuts';
 import FlowList from './pages/flow/FlowList';
 import FlowEditor from './pages/flow/FlowEditor';
@@ -42,12 +44,12 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import Home from './pages/public/index';
 import SignupPage from './pages/public/signup/page';
+import JoinPage from './pages/public/join/page';
 import { AuthProvider, useAuthContext } from './contexts/AuthContext';
-import { OrganizationProvider } from './contexts/OrganizationContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ClosureTypesPage } from './pages/ClosureTypesPage';
-import WhatsAppTemplates from './pages/organization/channels/WhatsAppTemplates';
+
 import PrivacyPolicy from './pages/public/privacy-policy';
 import TermsOfService from './pages/public/terms-of-service';
 import SubscriptionPlans from './pages/admin/SubscriptionPlans';
@@ -56,6 +58,7 @@ import Referrals from './pages/organization/Referrals';
 import OrganizationSubscriptions from './pages/admin/OrganizationSubscriptions';
 import { useAutoLogin } from './hooks/useAutoLogin';
 import { ConnectionStatus } from './components/common/ConnectionStatus';
+import OrganizationSelector from './components/auth/OrganizationSelector';
 
 // Criar uma instância do QueryClient
 const queryClient = new QueryClient({
@@ -70,16 +73,58 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { session, profile, loading } = useAuthContext();
+  const { session, profile, loading, userOrganizations, loadingCurrentOrganizationMember, loadingOrganizations, currentOrganizationMember, setCurrentOrganizationId } = useAuthContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [modalOrganization, setModalOrganization] = useState(false);
   const location = useLocation();
   
   // Usar o hook de autologin para garantir que a sessão seja estabelecida após o cadastro
   useAutoLogin();
+  
+  // Inicializar o elemento do portal para o modal
+  useEffect(() => {
+    // Verificar se já existe um elemento para o portal
+    let portalElement = document.getElementById('organization-selector-portal');
+    
+    // Se não existir, criar um novo
+    if (!portalElement) {
+      portalElement = document.createElement('div');
+      portalElement.id = 'organization-selector-portal';
+      document.body.appendChild(portalElement);
+    }
+    
+    setModalRoot(portalElement);
+    
+    // Limpar o elemento ao desmontar o componente
+    return () => {
+      if (portalElement && portalElement.parentNode) {
+        portalElement.parentNode.removeChild(portalElement);
+      }
+    };
+  }, []);
+  
+
+  // Função para lidar com a seleção de organização
+  const handleOrganizationSelect = async (orgId: string) => {
+    try {
+      setIsLoading(true);
+      // console.log('[AppContent] Organização selecionada:', orgId);
+      setCurrentOrganizationId(orgId);
+      
+      setModalOrganization(false)
+    } catch (error) {
+      console.error('[AppContent] Erro ao selecionar organização:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Enquanto estiver carregando, mostra o loading em todas as rotas
-  if (loading) {
+  if (loading || loadingOrganizations) {
+    // console.log('[AppContent] Carregando dados do usuário ou organizações...');
     return (
       <Routes>
         <Route path="*" element={<LoadingScreen />} />
@@ -89,6 +134,7 @@ function AppContent() {
 
   // Se não estiver autenticado, permite acesso apenas às rotas públicas
   if (!session) {
+    // console.log('[AppContent] Usuário não autenticado, mostrando rotas públicas');
     return (
       <>
         <ConnectionStatus />
@@ -96,6 +142,7 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/join" element={<JoinPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           {/* Redireciona qualquer outra rota para a home */}
@@ -106,9 +153,36 @@ function AppContent() {
   }
 
   // Se estiver autenticado
+  // console.log('[AppContent] Usuário autenticado, mostrando rotas protegidas');
+  // console.log('currentOrganizationMember', currentOrganizationMember);
+  // console.log('userOrganizations', userOrganizations);
+  // console.log('loadingCurrentOrganizationMember', loadingCurrentOrganizationMember);
   return (
     <>
       <ConnectionStatus />
+      
+      {/* Modal de seleção de organização */}
+      {(modalOrganization || (!currentOrganizationMember && userOrganizations && userOrganizations.length > 0)) && location.pathname.startsWith('/app') && modalRoot && createPortal(
+        <>
+          {/* Overlay escuro */}
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+          
+          <OrganizationSelector
+            organizations={userOrganizations}
+            isLoading={loadingOrganizations || isLoading}
+            isRequired={true}
+            onSelect={handleOrganizationSelect}
+            onClose={() => {
+              // Se o usuário fechar o modal sem selecionar uma organização,
+              // redirecionar para a página inicial
+              // console.log('[AppContent] Modal fechado sem seleção, redirecionando para home');
+              window.location.href = '/';
+            }}
+          />
+        </>,
+        modalRoot
+      )}
+      
       <Routes>
         {/* Rota pública mesmo quando logado */}
         <Route path="/" element={<Home />} />
@@ -139,12 +213,11 @@ function AppContent() {
                   sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 } transition-transform duration-300 ease-in-out`}>
                   <Sidebar 
-                    onClose={() => {setSidebarOpen(false); console.log('Rodrigo')}} 
+                    onClose={() => {setSidebarOpen(false);}} 
                     isMobile={true} 
                   />
                 </div>
               ) : null}
-             
 
               {/* Mobile Menu Button */}
               <button
@@ -152,7 +225,7 @@ function AppContent() {
                 className={`md:hidden fixed top-4 z-10 ml-2 p-2 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 shadow-lg ${
                   sidebarOpen ? 'hidden' : 'block'
                 }`}
-                onClick={() => {setSidebarOpen(true); console.log('Rodrigo 2')}}
+                onClick={() => {setSidebarOpen(true);}}
               >
                 <Menu className="h-6 w-6" />
               </button>
@@ -256,15 +329,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <OrganizationProvider>
-          <I18nextProvider i18n={i18n}>
-            <ThemeProvider>
-              <Router>
-                <AppContent />
-              </Router>
-            </ThemeProvider>
-          </I18nextProvider>
-        </OrganizationProvider>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </ThemeProvider>
+        </I18nextProvider>
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
       {/* Removido temporariamente:

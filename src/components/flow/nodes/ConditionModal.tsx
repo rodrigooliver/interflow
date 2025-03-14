@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import { useAgents, useFunnels, useTeams, useTags } from '../../../hooks/useQueryes';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
+import { useAuthContext } from '../../../contexts/AuthContext';
 import { SearchableSelect } from '../../../components/common/SearchableSelect';
 
 interface SelectOption {
@@ -41,11 +40,11 @@ const Portal = ({ children }: { children: React.ReactNode }) => {
 
 export function ConditionModal({ condition, onClose, onSave, variables }: ConditionModalProps) {
   const { t } = useTranslation('flows');
-  const { currentOrganization } = useOrganizationContext();
-  const { data: users = [] } = useAgents(currentOrganization?.id, ['agent', 'admin', 'owner', 'member']);
-  const { data: funnels = [] } = useFunnels(currentOrganization?.id);
-  const { data: teams = [] } = useTeams(currentOrganization?.id);
-  const { data: tags = [] } = useTags(currentOrganization?.id);
+  const { currentOrganizationMember } = useAuthContext();
+  const { data: users = [] } = useAgents(currentOrganizationMember?.organization.id, ['agent', 'admin', 'owner', 'member']);
+  const { data: funnels = [] } = useFunnels(currentOrganizationMember?.organization.id);
+  const { data: teams = [] } = useTeams(currentOrganizationMember?.organization.id);
+  const { data: tags = [] } = useTags(currentOrganizationMember?.organization.id);
 
   const operatorOptions = [
     { value: 'equalTo', labelKey: 'equalTo' },

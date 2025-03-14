@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SettingsTabs } from '../../components/settings/SettingsTabs';
 import { HardDrive, Plus, Loader2, X, Trash2, Edit2 } from 'lucide-react';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Integration } from '../../types/database';
 import { IntegrationFormOpenAI } from '../../components/settings/IntegrationFormOpenAI';
@@ -36,7 +36,7 @@ const integrationConfigs: IntegrationConfig[] = [
 
 export default function IntegrationsPage() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddOpenAIModal, setShowAddOpenAIModal] = useState(false);
@@ -50,13 +50,13 @@ export default function IntegrationsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function loadIntegrations() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .from('integrations')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -70,10 +70,10 @@ export default function IntegrationsPage() {
   }
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadIntegrations();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   const handleAddSuccess = async () => {
     await loadIntegrations();

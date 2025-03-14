@@ -6,9 +6,11 @@
     "name": "Nombre",
     "email": "Correo",
     "role": "Rol",
+    "status": "Estado",
     "since": "Desde",
     "unknown": "Usuario Desconocido",
-    "emailNotAvailable": "Correo no disponible"
+    "emailNotAvailable": "Correo no disponible",
+    "actions": "Acciones"
   },
   "form": {
     "fullName": "Nombre Completo",
@@ -23,17 +25,31 @@
     "remove": "Eliminar",
     "edit": "Editar",
     "save": "Guardar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "invite": "Enviar Invitación",
+    "referrals": "Referencias"
   },
   "delete": {
     "title": "Eliminar Usuario",
     "confirmation": "¿Estás seguro de que deseas eliminar el usuario {{name}}?",
     "warning": "Esta acción no se puede deshacer."
   },
+  "edit": {
+    "title": "Editar Usuario"
+  },
   "roles": {
     "owner": "Propietario",
     "admin": "Administrador",
     "agent": "Agente"
+  },
+  "status": {
+    "active": "Activo",
+    "pending": "Esperando aceptación",
+    "inactive": "Inactivo"
+  },
+  "invite": {
+    "success": "¡Invitación enviada con éxito! Se ha enviado un correo a {{email}}.",
+    "info": "Se enviará una invitación al correo proporcionado. El usuario deberá hacer clic en el enlace recibido para activar su cuenta."
   },
   "errors": {
     "noOrganization": "Organización no seleccionada",

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Tag as TagIcon, Plus, Loader2, X, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { TagForm } from '../components/tags/TagForm';
-import { useOrganizationContext } from '../contexts/OrganizationContext';
+import { useAuthContext } from '../contexts/AuthContext';
 import { useTags } from '../hooks/useQueryes';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -18,9 +18,9 @@ interface Tag {
 
 export default function Tags() {
   const { t } = useTranslation(['tags', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const queryClient = useQueryClient();
-  const { data: tags = [], isLoading } = useTags(currentOrganization?.id);
+  const { data: tags = [], isLoading } = useTags(currentOrganizationMember?.organization.id);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -45,7 +45,7 @@ export default function Tags() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     setSaving(true);
     setError('');
@@ -54,7 +54,7 @@ export default function Tags() {
       const { error } = await supabase
         .from('tags')
         .insert([{
-          organization_id: currentOrganization.id,
+          organization_id: currentOrganizationMember.organization.id,
           name: formData.name,
           color: formData.color
         }]);
@@ -62,7 +62,7 @@ export default function Tags() {
       if (error) throw error;
 
       // Invalida o cache para forçar uma nova busca
-      await queryClient.invalidateQueries({ queryKey: ['tags', currentOrganization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['tags', currentOrganizationMember.organization.id] });
       
       setShowAddModal(false);
       setFormData({ name: '', color: '#3B82F6' });
@@ -76,7 +76,7 @@ export default function Tags() {
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOrganization || !selectedTag) return;
+    if (!currentOrganizationMember || !selectedTag) return;
 
     setSaving(true);
     setError('');
@@ -93,7 +93,7 @@ export default function Tags() {
       if (error) throw error;
 
       // Invalida o cache para forçar uma nova busca
-      await queryClient.invalidateQueries({ queryKey: ['tags', currentOrganization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['tags', currentOrganizationMember.organization.id] });
       
       setShowEditModal(false);
       setSelectedTag(null);
@@ -107,7 +107,7 @@ export default function Tags() {
   };
 
   const handleDelete = async (tag: Tag) => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setDeleting(true);
     try {
@@ -119,7 +119,7 @@ export default function Tags() {
       if (error) throw error;
 
       // Invalida o cache para forçar uma nova busca
-      await queryClient.invalidateQueries({ queryKey: ['tags', currentOrganization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['tags', currentOrganizationMember.organization.id] });
       
       setShowDeleteModal(false);
       setSelectedTag(null);
@@ -185,7 +185,7 @@ export default function Tags() {
                     onClick={() => {
                       const fullTag: Tag = {
                         id: tag.id,
-                        organization_id: currentOrganization?.id || '',
+                        organization_id: currentOrganizationMember?.organization.id || '',
                         name: tag.name,
                         color: tag.color,
                         created_at: new Date().toISOString(),
@@ -206,7 +206,7 @@ export default function Tags() {
                     onClick={() => {
                       const fullTag: Tag = {
                         id: tag.id,
-                        organization_id: currentOrganization?.id || '',
+                        organization_id: currentOrganizationMember?.organization.id || '',
                         name: tag.name,
                         color: tag.color,
                         created_at: new Date().toISOString(),

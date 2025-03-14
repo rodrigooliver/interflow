@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getChannelIcon } from '../../../utils/channel';
+import { getChannelIcon } from '../../utils/channel';
 
 export default function SelectChannelType() {
   const { t } = useTranslation(['channels', 'common']);

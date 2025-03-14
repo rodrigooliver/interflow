@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { ContactType } from '../../types/database';
 import { ContactsFormSection, ContactFormData, formatContactValue } from './ContactsFormSection';
 import { useFunnels } from '../../hooks/useQueryes';
@@ -15,11 +15,11 @@ interface CustomerAddModalProps {
 
 export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: CustomerAddModalProps) {
   const { t } = useTranslation(['customers', 'crm', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
   
   // Usando o hook useFunnels para carregar funis e estágios
-  const { data: funnelsData, isLoading: loadingFunnels } = useFunnels(currentOrganization?.id);
+  const { data: funnelsData, isLoading: loadingFunnels } = useFunnels(currentOrganizationMember?.organization.id);
   const funnels = funnelsData || [];
   const stages = React.useMemo(() => {
     return funnels.flatMap(funnel => funnel.stages || []);
@@ -100,7 +100,7 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
     setError('');
     setSuccess('');
 
-    if (!currentOrganization) {
+    if (!currentOrganizationMember) {
       setError(t('common:error'));
       setLoading(false);
       return;
@@ -120,7 +120,7 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
         .from('customers')
         .insert([{
           name: formData.name,
-          organization_id: currentOrganization.id,
+          organization_id: currentOrganizationMember.organization.id,
           stage_id: formData.stageId || null // Salvar o estágio diretamente na tabela customers
         }])
         .select()

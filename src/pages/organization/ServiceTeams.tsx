@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Loader2, X, UserPlus, UserCog, AlertTriangle, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { ServiceTeam, ServiceTeamMember, Profile } from '../../types/database';
 
@@ -23,7 +23,7 @@ interface LoadingState {
 
 export default function ServiceTeams() {
   const { t } = useTranslation(['serviceTeams', 'common']);
-  const { currentOrganization, membership } = useOrganizationContext();
+  const { currentOrganizationMember, membership } = useAuthContext();
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
   const [availableUsers, setAvailableUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,11 +44,11 @@ export default function ServiceTeams() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadTeams();
       loadAvailableUsers();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   // Limpar mensagem de erro após 5 segundos
   useEffect(() => {
@@ -61,13 +61,13 @@ export default function ServiceTeams() {
   }, [error]);
 
   async function loadTeams() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data: teamsData, error: teamsError } = await supabase
         .from('service_teams')
         .select('*, members:service_team_members(count)')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('name');
 
       if (teamsError) throw teamsError;
@@ -99,12 +99,12 @@ export default function ServiceTeams() {
   }
 
   async function loadAvailableUsers() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .rpc('get_organization_users', {
-          org_id: currentOrganization.id
+          org_id: currentOrganizationMember.organization.id
         });
 
       if (error) throw error;
@@ -117,7 +117,7 @@ export default function ServiceTeams() {
 
   async function handleCreateTeam(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setCreatingTeam(true);
     setError('');
@@ -127,7 +127,7 @@ export default function ServiceTeams() {
         .from('service_teams')
         .insert([
           {
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: formData.name,
             description: formData.description,
           },
@@ -215,7 +215,7 @@ export default function ServiceTeams() {
     }
   }
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">

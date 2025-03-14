@@ -6,7 +6,7 @@ import { Switch } from '../ui/switch';
 import { FirstContactConfig } from './triggers/FirstContactConfig';
 import { InactivityConfig } from './triggers/InactivityConfig';
 import { supabase } from '../../lib/supabase';
-import { useOrganizationContext  } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { debounce } from 'lodash';
 
 interface FlowTriggersProps {
@@ -20,7 +20,7 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
   const [showAddTrigger, setShowAddTrigger] = useState(false);
   const [removingTriggerId, setRemovingTriggerId] = useState<string | null>(null);
   const [togglingTriggerId, setTogglingTriggerId] = useState<string | null>(null);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
 
   const triggerTypes = [
     {
@@ -46,7 +46,7 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
         operator: 'AND',
         rules: []
       },
-      organization_id: currentOrganization?.id || '',
+      organization_id: currentOrganizationMember?.organization.id || '',
       is_active: true
     };
     onChange([...triggers, newTrigger]);

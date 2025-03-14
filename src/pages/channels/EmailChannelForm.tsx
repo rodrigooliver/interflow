@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
-import { supabase } from '../../../lib/supabase';
-import api from '../../../lib/api';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -18,7 +18,7 @@ interface ApiError extends Error {
 export default function EmailChannelForm() {
   const { t } = useTranslation(['channels', 'common']);
   const { id } = useParams();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -51,12 +51,12 @@ export default function EmailChannelForm() {
   });
 
   React.useEffect(() => {
-    if (id && currentOrganization) {
+    if (id && currentOrganizationMember) {
       loadChannel();
     } else {
       setLoading(false);
     }
-  }, [id, currentOrganization]);
+  }, [id, currentOrganizationMember]);
 
   async function loadChannel() {
     try {
@@ -129,7 +129,7 @@ export default function EmailChannelForm() {
     }
     
     try {
-      const response = await api.post(`/api/${currentOrganization?.id}/channel/email/test`, {
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/email/test`, {
         // IMAP settings
         host: formData.host,
         port: formData.port,
@@ -173,7 +173,7 @@ export default function EmailChannelForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setSaving(true);
     setError('');
@@ -220,7 +220,7 @@ export default function EmailChannelForm() {
         const { data, error } = await supabase
           .from('chat_channels')
           .insert([{
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: formData.name,
             type: 'email',
             credentials,

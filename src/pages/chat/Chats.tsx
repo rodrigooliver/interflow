@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, MessageSquare, Users, UserCheck, UserMinus, Loader2, Bot, Share2, Tags, X } from 'lucide-react';
+import { Search, Filter, MessageSquare, Users, UserCheck, Loader2, Bot, Share2, Tags, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ChatList } from '../../components/chat/ChatList';
 import { ChatMessages } from '../../components/chat/ChatMessages';
 import { Chat } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
 import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useQueryes';
 
 // Novos tipos para os filtros
@@ -20,8 +19,7 @@ type FilterOption = {
 
 export default function Chats() {
   const { t } = useTranslation(['chats', 'common']);
-  const { currentOrganization } = useOrganizationContext();
-  const { session } = useAuthContext();
+  const { session, currentOrganizationMember } = useAuthContext();
   const [selectedFilter, setSelectedFilter] = useState<string>('assigned-to-me');
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [selectedTeam, setSelectedTeam] = useState<string>('');
@@ -38,11 +36,11 @@ export default function Chats() {
   const [isMobileView, setIsMobileView] = useState(false);
 
   // Hooks para buscar dados dos filtros
-  const { data: agents } = useAgents(currentOrganization?.id);
-  const { data: teams } = useTeams(currentOrganization?.id);
-  const { data: channels } = useChannels(currentOrganization?.id);
-  const { data: tags } = useTags(currentOrganization?.id);
-  const { data: funnels } = useFunnels(currentOrganization?.id);
+  const { data: agents } = useAgents(currentOrganizationMember?.organization.id);
+  const { data: teams } = useTeams(currentOrganizationMember?.organization.id);
+  const { data: channels } = useChannels(currentOrganizationMember?.organization.id);
+  const { data: tags } = useTags(currentOrganizationMember?.organization.id);
+  const { data: funnels } = useFunnels(currentOrganizationMember?.organization.id);
 
   const filters: FilterOption[] = [
     { 
@@ -121,11 +119,11 @@ export default function Chats() {
   ];
 
   useEffect(() => {
-    if (currentOrganization && session?.user) {
+    if (currentOrganizationMember && session?.user) {
       loadChats();
       subscribeToChats();
     }
-  }, [currentOrganization, session?.user, selectedFilter, searchTerm]);
+  }, [currentOrganizationMember, session?.user, selectedFilter, searchTerm]);
 
   useEffect(() => {
     const checkMobileView = () => {
@@ -144,7 +142,7 @@ export default function Chats() {
         event: 'UPDATE',
         schema: 'public',
         table: 'messages',
-        filter: `organization_id=eq.${currentOrganization?.id}`
+        filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, async (payload) => {
         await updateChatInList(payload.new.chat_id);
       })
@@ -156,7 +154,7 @@ export default function Chats() {
         event: '*',
         schema: 'public',
         table: 'chats',
-        filter: `organization_id=eq.${currentOrganization?.id}`
+        filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, async (payload) => {
         await updateChatInList(payload.new.id);
       })
@@ -269,7 +267,7 @@ export default function Chats() {
   };
 
   async function loadChats() {
-    if (!currentOrganization || !session?.user) return;
+    if (!currentOrganizationMember || !session?.user) return;
 
     setLoading(true);
     try {
@@ -295,7 +293,7 @@ export default function Chats() {
             sender_type
           )
         `)
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('last_message(created_at)', { ascending: false });
 
       // Mover declarações para fora do switch
@@ -550,7 +548,7 @@ export default function Chats() {
             )}
             <ChatMessages 
               chatId={selectedChat}
-              organizationId={currentOrganization?.id || ''}
+              organizationId={currentOrganizationMember?.organization.id || ''}
             />
           </div>
         ) : (

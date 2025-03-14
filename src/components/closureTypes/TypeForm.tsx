@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ColorPicker } from '../ui/ColorPicker';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { type Flow } from '../../types/database';
 import { Select } from '../ui/Select';
@@ -34,7 +34,7 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
       color: initialValues?.color || '#60A5FA'
     }
   });
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loadingFlows, setLoadingFlows] = useState(true);
   const [flowsError, setFlowsError] = useState<string | null>(null);
@@ -42,13 +42,13 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
 
   useEffect(() => {
     const fetchFlows = async () => {
-      if (!currentOrganization) return;
+      if (!currentOrganizationMember) return;
       
       try {
         const { data, error } = await supabase
           .from('flows')
           .select('id, name')
-          .eq('organization_id', currentOrganization.id)
+          .eq('organization_id', currentOrganizationMember.organization.id)
           .order('name');
 
         if (error) throw error;
@@ -62,7 +62,7 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
     };
 
     fetchFlows();
-  }, [currentOrganization, t]);
+  }, [currentOrganizationMember, t]);
 
   useEffect(() => {
     if (initialValues?.flow_id && flows.length > 0) {
@@ -94,13 +94,13 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
     try {
       setIsSubmitting(true);
       
-      if (!currentOrganization) {
+      if (!currentOrganizationMember) {
         throw new Error(t('errors.no_organization'));
       }
 
       const formattedValues = {
         ...values,
-        organization_id: currentOrganization.id,
+        organization_id: currentOrganizationMember.organization.id,
         flow_id: values.flow_id || null
       };
 

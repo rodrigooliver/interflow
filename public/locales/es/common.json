@@ -77,5 +77,15 @@
   "change": "Cambiar",
   "checkingConnection": "Verificando conexión...",
   "online": "Conexión restaurada",
-  "offline": "Sin conexión - Verifica tu conexión a internet"
+  "offline": "Sin conexión - Verifica tu conexión a internet",
+  "filter": "Filtrar",
+  "clear": "Limpiar",
+  "apply": "Aplicar",
+  "reset": "Restablecer",
+  "joinOrganization": "Unirse a la organización",
+  "joinSuccess": "¡Has sido añadido a la organización con éxito!",
+  "redirecting": "Redirigiendo al panel de control...",
+  "backToHome": "Volver a la página de inicio",
+  "loginRequired": "Inicio de sesión requerido",
+  "loginToJoin": "Por favor, inicia sesión para aceptar la invitación y unirte a la organización."
 }

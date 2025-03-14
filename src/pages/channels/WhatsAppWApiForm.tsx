@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff, Settings, Zap, Trash2, ArrowRightLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
-import { supabase } from '../../../lib/supabase';
-import api from '../../../lib/api';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import { toast } from 'react-hot-toast';
 
 type ConnectionType = 'custom' | 'interflow' | null;
@@ -14,7 +14,7 @@ export default function WhatsAppWApiForm() {
   const { t } = useTranslation(['channels', 'common', 'status']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
 
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -98,7 +98,7 @@ export default function WhatsAppWApiForm() {
   };
 
   useEffect(() => {
-    if (id && currentOrganization) {
+    if (id && currentOrganizationMember) {
       loadChannel();
       const sub = subscribeToChannelUpdates();
       setSubscription(sub);
@@ -117,7 +117,7 @@ export default function WhatsAppWApiForm() {
         subscription.unsubscribe();
       }
     };
-  }, [id, currentOrganization]);
+  }, [id, currentOrganizationMember]);
 
   useEffect(() => {
     // Se for edição, já mostra o formulário direto
@@ -240,8 +240,8 @@ export default function WhatsAppWApiForm() {
     try {
       // Determinar qual endpoint usar com base na existência de um ID
       const endpoint = id 
-        ? `/api/${currentOrganization?.id}/channel/wapi/${id}/test` 
-        : `/api/${currentOrganization?.id}/channel/wapi/test`;
+        ? `/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/test` 
+        : `/api/${currentOrganizationMember?.organization.id}/channel/wapi/test`;
       
       // Enviar os dados de conexão em ambos os casos
       const response = await api.post(endpoint, {
@@ -280,7 +280,7 @@ export default function WhatsAppWApiForm() {
     setError('');
 
     try {
-      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/qr`);
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/qr`);
       const data = response.data;
 
       if (!data.success) {
@@ -310,7 +310,7 @@ export default function WhatsAppWApiForm() {
     setResetSuccess(false);
 
     try {
-      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/reset`);
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/reset`);
       const data = response.data;
 
       if (!data.success) {
@@ -347,7 +347,7 @@ export default function WhatsAppWApiForm() {
     setDisconnectSuccess(false);
 
     try {
-      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/disconnect`);
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/disconnect`);
       const data = response.data;
 
       if (!data.success) {
@@ -408,13 +408,13 @@ export default function WhatsAppWApiForm() {
   };
 
   const handleInterflowConnection = async () => {
-    if (!currentOrganization || !formData.name.trim()) return;
+    if (!currentOrganizationMember || !formData.name.trim()) return;
     
     setCreating(true);
     setError('');
 
     try {
-      const response = await api.post(`/api/${currentOrganization.id}/channel/wapi/interflow`, {
+      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi/interflow`, {
         type: 'whatsapp_wapi',
         name: formData.name.trim(),
         settings: {
@@ -441,13 +441,13 @@ export default function WhatsAppWApiForm() {
 
   // Adicionar função para deletar
   const handleDelete = async () => {
-    if (!id || !currentOrganization) return;
+    if (!id || !currentOrganizationMember) return;
     
     setDeleting(true);
     setError('');
 
     try {
-      const response = await api.delete(`/api/${currentOrganization.id}/channel/wapi/${id}`);
+      const response = await api.delete(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}`);
       
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to delete channel');
@@ -466,7 +466,7 @@ export default function WhatsAppWApiForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setSaving(true);
     setError('');
@@ -493,7 +493,7 @@ export default function WhatsAppWApiForm() {
 
       if (id) {
         // Update existing channel
-        const response = await api.put(`/api/${currentOrganization.id}/channel/wapi/${id}`, channelData);
+        const response = await api.put(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}`, channelData);
         
         if (!response.data.success) {
           throw new Error(response.data.error || 'Failed to update channel');
@@ -514,7 +514,7 @@ export default function WhatsAppWApiForm() {
         }, 3000);
       } else {
         // Create new channel
-        const response = await api.post(`/api/${currentOrganization.id}/channel/wapi`, {
+        const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi`, {
           ...channelData,
           type: 'whatsapp_wapi',
           settings: {
@@ -586,7 +586,7 @@ export default function WhatsAppWApiForm() {
         .from('chat_channels')
         .select('id, name')
         .eq('type', 'whatsapp_wapi')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .neq('id', id) // Exclui o canal atual
         .eq('status', 'active'); // Apenas canais ativos
 
@@ -606,7 +606,7 @@ export default function WhatsAppWApiForm() {
     setError('');
 
     try {
-      const response = await api.post(`/api/${currentOrganization?.id}/channel/wapi/${id}/transfer`, {
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/transfer`, {
         targetChannelId: selectedChannelId
       });
 

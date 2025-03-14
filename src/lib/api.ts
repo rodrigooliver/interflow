@@ -23,4 +23,14 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Interceptor para logs de resposta
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default api; 

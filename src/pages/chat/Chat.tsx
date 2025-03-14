@@ -1,13 +1,13 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { ChatMessages } from '../../components/chat/ChatMessages';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 export default function Chat() {
   const { id } = useParams();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
 
-  if (!currentOrganization || !id) {
+  if (!currentOrganizationMember || !id) {
     return null;
   }
 
@@ -15,7 +15,7 @@ export default function Chat() {
     <div className="flex flex-col h-screen">
       <ChatMessages 
         chatId={id}
-        organizationId={currentOrganization.id}
+        organizationId={currentOrganizationMember.organization.id}
       />
     </div>
   );

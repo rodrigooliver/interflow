@@ -6,9 +6,11 @@
     "name": "Nome",
     "email": "Email",
     "role": "Função",
+    "status": "Status",
     "since": "Desde",
     "unknown": "Usuário Desconhecido",
-    "emailNotAvailable": "Email não disponível"
+    "emailNotAvailable": "Email não disponível",
+    "actions": "Ações"
   },
   "form": {
     "fullName": "Nome Completo",
@@ -23,17 +25,31 @@
     "remove": "Remover",
     "edit": "Editar",
     "save": "Salvar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "invite": "Enviar Convite",
+    "referrals": "Indicações"
   },
   "delete": {
     "title": "Excluir Usuário",
     "confirmation": "Tem certeza que deseja excluir o usuário {{name}}?",
     "warning": "Esta ação não pode ser desfeita."
   },
+  "edit": {
+    "title": "Editar Usuário"
+  },
   "roles": {
     "owner": "Proprietário",
     "admin": "Administrador",
     "agent": "Atendente"
+  },
+  "status": {
+    "active": "Ativo",
+    "pending": "Aguardando aceitação",
+    "inactive": "Inativo"
+  },
+  "invite": {
+    "success": "Convite enviado com sucesso! Um email foi enviado para {{email}}.",
+    "info": "Um convite será enviado para o email informado. O usuário precisará clicar no link recebido para ativar sua conta."
   },
   "errors": {
     "noOrganization": "Organização não selecionada",

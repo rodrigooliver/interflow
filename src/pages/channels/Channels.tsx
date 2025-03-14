@@ -5,12 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ChatChannel } from '../../types/database';
 import { ChannelCard } from '../../components/channels/ChannelCard';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 export default function Channels() {
   const { t } = useTranslation('channels');
   const navigate = useNavigate();
-  const { currentOrganization, membership } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -20,10 +20,10 @@ export default function Channels() {
   const [deletingChannel, setDeletingChannel] = useState(false);
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadChannels();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   // Limpar mensagem de erro após 5 segundos
   useEffect(() => {
@@ -36,13 +36,13 @@ export default function Channels() {
   }, [error]);
 
   async function loadChannels() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .from('chat_channels')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -116,7 +116,7 @@ export default function Channels() {
     }
   }
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">
@@ -145,7 +145,7 @@ export default function Channels() {
           <Share2 className="w-6 h-6 mr-2" />
           {t('title')}
         </h1>
-        {(membership?.role === 'owner' || membership?.role === 'admin') && (
+        {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
           <button
             onClick={() => navigate('/app/channels/new')}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -171,7 +171,7 @@ export default function Channels() {
             <ChannelCard
               key={channel.id}
               channel={channel}
-              canManage={membership?.role === 'owner' || membership?.role === 'admin'}
+              canManage={currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin'}
               onToggleStatus={() => handleToggleStatus(channel)}
               onEdit={() => navigate(`/app/channels/${channel.id}/edit`)}
               onDelete={channel.type === 'whatsapp_wapi' ? undefined : () => {
@@ -192,7 +192,7 @@ export default function Channels() {
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
               {t('noChannelsDescription')}
             </p>
-            {(membership?.role === 'owner' || membership?.role === 'admin') && (
+            {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
               <button
                 onClick={() => navigate('/app/channels/new')}
                 className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

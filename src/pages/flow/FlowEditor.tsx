@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2, Variable, Send, RotateCcw, Pencil, Check, Settings 
 import { useTranslation } from 'react-i18next';
 import { FlowBuilder } from '../../components/flow/FlowBuilder';
 import { Trigger } from '../../types/flow';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { FlowEditorProvider, useFlowEditor } from '../../contexts/FlowEditorContext';
 import { VariablesModal } from '../../components/flow/VariablesModal';
 import FlowEditForm from '../../components/flow/FlowEditForm';
@@ -30,7 +30,7 @@ function FlowEditorContent() {
     restoreFlow,
     setFlowName: updateFlowName
   } = useFlowEditor();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -41,10 +41,10 @@ function FlowEditorContent() {
   const [flowKey] = useState(0);
 
   useEffect(() => {
-    if (currentOrganization && id) {
+    if (currentOrganizationMember && id) {
       loadFlow(id);
     }
-  }, [currentOrganization, id, loadFlow]);
+  }, [currentOrganizationMember, id, loadFlow]);
 
   useEffect(() => {
     setEditedName(flowName);
@@ -134,7 +134,7 @@ function FlowEditorContent() {
 
   // Função para salvar os triggers
   const handleSaveTriggers = async (newTriggers: Trigger[]) => {
-    if (!id || !currentOrganization) return Promise.reject(new Error('Missing flow ID or organization'));
+    if (!id || !currentOrganizationMember) return Promise.reject(new Error('Missing flow ID or organization'));
 
     try {
       // Excluir triggers existentes
@@ -153,7 +153,7 @@ function FlowEditorContent() {
             newTriggers.map(trigger => ({
               ...trigger,
               flow_id: id,
-              organization_id: currentOrganization.id,
+              organization_id: currentOrganizationMember.organization.id,
               updated_at: new Date().toISOString()
             }))
           );

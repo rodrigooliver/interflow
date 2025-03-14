@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import api from '../../../lib/api';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
+import api from '../../lib/api';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 // Interfaces
 interface WhatsAppTemplate {
@@ -60,7 +60,7 @@ export default function WhatsAppTemplates() {
   const { t } = useTranslation(['common', 'channels']);
   const { id: channelId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const queryClient = useQueryClient();
   const [isDark, setIsDark] = useState(false);
 
@@ -117,21 +117,21 @@ export default function WhatsAppTemplates() {
   }>({});
 
   // Queries e Mutations
-  const { data: templates, isLoading, refetch } = useQuery({
+  const { data: templates, isLoading } = useQuery({
     queryKey: ['whatsapp-templates', channelId],
-    queryFn: async ({ signal, queryKey }) => {
+    queryFn: async ({ signal }) => {
       const response = await api.get(
-        `api/${currentOrganization?.id}/channel/whatsapp/${channelId}/templates`,
+        `api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${channelId}/templates`,
         { signal }
       );
       return response.data.templates;
     },
-    enabled: !!channelId && !!currentOrganization
+    enabled: !!channelId && !!currentOrganizationMember
   });
 
   const createTemplate = useMutation({
     mutationFn: (data: FormData) => 
-      api.post(`/api/${currentOrganization?.id}/channel/whatsapp/${channelId}/templates`, data),
+      api.post(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${channelId}/templates`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-templates', channelId] });
       toast.success('Template criado com sucesso!');
@@ -147,7 +147,7 @@ export default function WhatsAppTemplates() {
 
   const updateTemplate = useMutation({
     mutationFn: (data: { templateId: string, formData: Partial<FormData> }) => 
-      api.put(`/api/${currentOrganization?.id}/channel/whatsapp/${channelId}/templates/${data.templateId}`, data.formData),
+      api.put(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${channelId}/templates/${data.templateId}`, data.formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-templates', channelId] });
       toast.success('Template atualizado com sucesso!');
@@ -164,7 +164,7 @@ export default function WhatsAppTemplates() {
 
   const deleteTemplate = useMutation({
     mutationFn: (templateId: string) => 
-      api.delete(`/api/${currentOrganization?.id}/channel/whatsapp/${channelId}/templates/${templateId}`),
+      api.delete(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${channelId}/templates/${templateId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-templates', channelId] });
       toast.success('Template excluído com sucesso!');
@@ -666,7 +666,7 @@ export default function WhatsAppTemplates() {
     setIsSyncing(true);
     try {
       await api.get(
-        `api/${currentOrganization?.id}/channel/whatsapp/${channelId}/templates?sync=true`
+        `api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${channelId}/templates?sync=true`
       );;
       // await refetch();
       toast.success(t('channels:form.whatsapp.syncSuccess'));

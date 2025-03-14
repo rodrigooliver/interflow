@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ChatChannel, ServiceTeam } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
 
 interface ContactChannelModalProps {
   contactType: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram';
@@ -16,8 +15,7 @@ interface ContactChannelModalProps {
 export function ContactChannelModal({ contactType, contactValue, onClose }: ContactChannelModalProps) {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
-  const { currentOrganization } = useOrganizationContext();
-  const { session } = useAuthContext();
+  const { session, currentOrganizationMember } = useAuthContext();
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [userTeams, setUserTeams] = useState<ServiceTeam[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,18 +23,18 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
   const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
-    if (currentOrganization && session?.user) {
+    if (currentOrganizationMember && session?.user) {
       loadChannels();
       loadUserTeams();
     }
-  }, [currentOrganization, session?.user]);
+  }, [currentOrganizationMember, session?.user]);
 
   async function loadChannels() {
     try {
       let query = supabase
         .from('chat_channels')
         .select('*')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .eq('status', 'active');
 
       // Filtrar canais baseado no tipo de contato
@@ -101,7 +99,7 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
   }
 
   const handleSelectChannel = async (channel: ChatChannel) => {
-    if (!currentOrganization || !session?.user) return;
+    if (!currentOrganizationMember || !session?.user) return;
     
     setStartingChat(true);
     try {
@@ -122,7 +120,7 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
       const { data: customers, error: customerError } = await supabase
         .from('customers')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .eq(contactType, contactValue)
         .limit(1);
 
@@ -135,7 +133,7 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
         const { data: newCustomer, error: createError } = await supabase
           .from('customers')
           .insert([{
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: contactValue, // Use contact as temporary name
             [contactType]: contactValue
           }])
@@ -152,7 +150,7 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
       const { data: existingChats, error: chatsError } = await supabase
         .from('chats')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .eq('channel_id', channel.id)
         .in('status', ['in_progress', 'pending']);
 
@@ -183,7 +181,7 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
         const { data: newChat, error: createError } = await supabase
           .from('chats')
           .insert([{
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             channel_id: channel.id,
             customer_id: customerId,
             external_id: formattedValue, // Usar o valor formatado aqui

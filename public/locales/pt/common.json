@@ -13,7 +13,7 @@
   "deleting": "Excluindo...",
   "confirmDelete": "Confirmar exclusão",
   "noResults": "Nenhum resultado encontrado",
-  "error": "Ocorreu um erro. Tente novamente.",
+  "error": "Ocorreu um erro. Por favor, tente novamente.",
   "back": "Voltar",
   "lightMode": "Modo Claro",
   "darkMode": "Modo Escuro",
@@ -77,5 +77,15 @@
   "change": "Alterar",
   "checkingConnection": "Verificando conexão...",
   "online": "Conexão restaurada",
-  "offline": "Offline - Verifique sua conexão com a internet"
+  "offline": "Offline - Verifique sua conexão com a internet",
+  "filter": "Filtrar",
+  "clear": "Limpar",
+  "apply": "Aplicar",
+  "reset": "Resetar",
+  "joinOrganization": "Entrar na organização",
+  "joinSuccess": "Você foi adicionado à organização com sucesso!",
+  "redirecting": "Redirecionando para o dashboard...",
+  "backToHome": "Voltar para a página inicial",
+  "loginRequired": "Login necessário",
+  "loginToJoin": "Faça login para aceitar o convite e entrar na organização."
 }

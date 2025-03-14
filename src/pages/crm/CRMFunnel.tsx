@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { CRMStage } from '../../types/crm';
 import { Customer } from '../../types/database';
@@ -47,7 +47,7 @@ export default function CRMFunnel() {
   const { t } = useTranslation(['crm', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   
   // State
   const [funnel, setFunnel] = useState<Record<string, any> | null>(null);
@@ -74,7 +74,7 @@ export default function CRMFunnel() {
   const [deletingStage, setDeletingStage] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
 
-  const { data: funnelData } = useFunnels(currentOrganization?.id);
+  const { data: funnelData } = useFunnels(currentOrganizationMember?.organization.id);
 
   useEffect(() => {
     if (funnelData && id) {
@@ -87,13 +87,13 @@ export default function CRMFunnel() {
   }, [funnelData, id]);
 
   useEffect(() => {
-    if (currentOrganization && id) {
+    if (currentOrganizationMember && id) {
       loadCustomers();
     }
-  }, [currentOrganization, id]);
+  }, [currentOrganizationMember, id]);
 
   async function loadCustomers() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
@@ -123,7 +123,7 @@ export default function CRMFunnel() {
             )
           )
         `)
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('name');
 
       if (error) throw error;
@@ -216,7 +216,7 @@ export default function CRMFunnel() {
         .insert({
           customer_id: customer.id,
           stage_id: targetStage.id,
-          organization_id: currentOrganization?.id
+          organization_id: currentOrganizationMember?.organization.id
         });
     } catch (error) {
       console.error('Error updating customer stage:', error);
@@ -244,7 +244,7 @@ export default function CRMFunnel() {
         .insert({
           customer_id: customerId,
           stage_id: selectedStage.id,
-          organization_id: currentOrganization?.id
+          organization_id: currentOrganizationMember?.organization.id
         });
 
       await loadCustomers();
@@ -392,7 +392,7 @@ export default function CRMFunnel() {
     setError(''); // Clear error message when closing modal
   };
 
-  if (!currentOrganization || !funnel) {
+  if (!currentOrganizationMember || !funnel) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">

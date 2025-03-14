@@ -2,34 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
-import { supabase } from '../../../lib/supabase';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
-export default function WhatsAppEvoForm() {
+export default function WhatsAppZApiForm() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     credentials: {
-      apiUrl: '',
-      apiKey: '',
-      instanceName: '',
+      instanceId: '',
+      token: '',
       webhookUrl: ''
     }
   });
 
   useEffect(() => {
-    if (id && currentOrganization) {
+    if (id && currentOrganizationMember) {
       loadChannel();
     } else {
       setLoading(false);
     }
-  }, [id, currentOrganization]);
+  }, [id, currentOrganizationMember]);
 
   async function loadChannel() {
     try {
@@ -37,7 +36,7 @@ export default function WhatsAppEvoForm() {
         .from('chat_channels')
         .select('*')
         .eq('id', id)
-        .eq('type', 'whatsapp_evo')
+        .eq('type', 'whatsapp_zapi')
         .single();
 
       if (error) throw error;
@@ -58,7 +57,7 @@ export default function WhatsAppEvoForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     setSaving(true);
     setError('');
@@ -81,9 +80,9 @@ export default function WhatsAppEvoForm() {
         const { error } = await supabase
           .from('chat_channels')
           .insert([{
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: formData.name,
-            type: 'whatsapp_evo',
+            type: 'whatsapp_zapi',
             credentials: formData.credentials,
             settings: {
               autoReply: true,
@@ -154,52 +153,35 @@ export default function WhatsAppEvoForm() {
             </div>
 
             <div>
-              <label htmlFor="apiUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                API URL
-              </label>
-              <input
-                type="url"
-                id="apiUrl"
-                required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.credentials.apiUrl}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  credentials: { ...formData.credentials, apiUrl: e.target.value }
-                })}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                API Key
-              </label>
-              <input
-                type="password"
-                id="apiKey"
-                required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.credentials.apiKey}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  credentials: { ...formData.credentials, apiKey: e.target.value }
-                })}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="instanceName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Instance Name
+              <label htmlFor="instanceId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Instance ID
               </label>
               <input
                 type="text"
-                id="instanceName"
+                id="instanceId"
                 required
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.credentials.instanceName}
+                value={formData.credentials.instanceId}
                 onChange={(e) => setFormData({
                   ...formData,
-                  credentials: { ...formData.credentials, instanceName: e.target.value }
+                  credentials: { ...formData.credentials, instanceId: e.target.value }
+                })}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="token" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Token
+              </label>
+              <input
+                type="password"
+                id="token"
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
+                value={formData.credentials.token}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  credentials: { ...formData.credentials, token: e.target.value }
                 })}
               />
             </div>

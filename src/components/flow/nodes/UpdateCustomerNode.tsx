@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { UserCog, Loader2 } from 'lucide-react';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import { useAgents, useFunnels, useTeams } from '../../../hooks/useQueryes';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
+import { useAuthContext } from '../../../contexts/AuthContext';
 import { BaseNode } from './BaseNode';
 
 interface UpdateCustomerNodeProps {
@@ -24,11 +24,11 @@ interface UpdateCustomerNodeProps {
 
 export function UpdateCustomerNode({ data, id, isConnectable }: UpdateCustomerNodeProps) {
   const { t } = useTranslation('flows');
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const { updateNodeData } = useFlowEditor();
-  const { data: users = [] } = useAgents(currentOrganization?.id, ['agent', 'admin', 'owner', 'member']);
-  const { data: funnels = [] } = useFunnels(currentOrganization?.id);
-  const { data: teams = [] } = useTeams(currentOrganization?.id);
+  const { data: users = [] } = useAgents(currentOrganizationMember?.organization.id, ['agent', 'admin', 'owner', 'member']);
+  const { data: funnels = [] } = useFunnels(currentOrganizationMember?.organization.id);
+  const { data: teams = [] } = useTeams(currentOrganizationMember?.organization.id);
   const [localConfig, setLocalConfig] = useState(data.updateCustomer || {
     field: '',
     value: '',

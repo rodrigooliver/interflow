@@ -3,7 +3,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { Customer } from '../../types/database';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 interface CustomerDeleteModalProps {
   customer: Customer;
@@ -13,13 +13,13 @@ interface CustomerDeleteModalProps {
 
 export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDeleteModalProps) {
   const { t } = useTranslation(['customers', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [hasChats, setHasChats] = useState(false);
 
   async function handleDelete() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setDeleting(true);
     try {
@@ -42,7 +42,7 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
         .from('customers')
         .delete()
         .eq('id', customer.id)
-        .eq('organization_id', currentOrganization.id);
+        .eq('organization_id', currentOrganizationMember.organization.id);
 
       if (deleteError) throw deleteError;
 

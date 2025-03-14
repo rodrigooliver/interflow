@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, X, AlertTriangle, Copy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { ApiKey } from '../../types/database';
 import { generateApiKey, hashApiKey } from '../../utils/apiKey';
@@ -9,7 +9,7 @@ import { SettingsTabs } from '../../components/settings/SettingsTabs';
 
 export default function ApiKeysPage() {
   const { t } = useTranslation(['apiKeys', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -26,19 +26,19 @@ export default function ApiKeysPage() {
   const itemsPerPage = 9;
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadApiKeys();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   async function loadApiKeys() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .from('api_keys')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -53,7 +53,7 @@ export default function ApiKeysPage() {
 
   async function handleCreateApiKey(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setError('');
 
@@ -65,7 +65,7 @@ export default function ApiKeysPage() {
         .from('api_keys')
         .insert([
           {
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: formData.name,
             key_hash: keyHash,
             expires_at: formData.expiresAt || null,
@@ -118,7 +118,7 @@ export default function ApiKeysPage() {
     currentPage * itemsPerPage
   );
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-3 sm:p-4 md:p-6">
         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">

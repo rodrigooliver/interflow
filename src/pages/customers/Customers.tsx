@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Loader2, Pencil, Trash2, GitMerge, Search, MessageSquare, Tag, Filter, X, Settings, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { CustomerAddModal } from '../../components/customers/CustomerAddModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { CustomerDeleteModal } from '../../components/customers/CustomerDeleteModal';
@@ -99,7 +99,7 @@ export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -112,16 +112,16 @@ export default function Customers() {
   const [totalCustomers, setTotalCustomers] = useState(0);
   
   // Usando os hooks de consulta para funis, estágios e tags
-  const { data: funnelsData, isLoading: loadingCRM } = useFunnels(currentOrganization?.id);
+  const { data: funnelsData, isLoading: loadingCRM } = useFunnels(currentOrganizationMember?.organization.id);
   const funnels = funnelsData || [];
   const stages = React.useMemo(() => {
     return funnels.flatMap(funnel => funnel.stages || []);
   }, [funnels]);
   
-  const { data: tagsData, isLoading: loadingTags } = useTags(currentOrganization?.id);
+  const { data: tagsData, isLoading: loadingTags } = useTags(currentOrganizationMember?.organization.id);
   const availableTags = tagsData || [];
   
-  const { data: customFieldDefinitionsData } = useCustomFieldDefinitions(currentOrganization?.id);
+  const { data: customFieldDefinitionsData } = useCustomFieldDefinitions(currentOrganizationMember?.organization.id);
   const customFieldDefinitions = customFieldDefinitionsData || [];
   
   // Estado para controlar a visualização em dispositivos móveis
@@ -149,13 +149,13 @@ export default function Customers() {
 
   // Efeito para carregar configurações de colunas quando a organização mudar
   useEffect(() => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     // Se o ID da organização for o mesmo que já foi carregado, não recarregar
-    if (currentOrgIdRef.current === currentOrganization.id) return;
+    if (currentOrgIdRef.current === currentOrganizationMember.organization.id) return;
     
     // Atualizar a referência com o ID da organização atual
-    currentOrgIdRef.current = currentOrganization.id;
+    currentOrgIdRef.current = currentOrganizationMember.organization.id;
     
     // Carregar configurações de colunas
     loadColumnConfigs();
@@ -164,7 +164,7 @@ export default function Customers() {
     return () => {
       currentOrgIdRef.current = null;
     };
-  }, [currentOrganization?.id]);
+  }, [currentOrganizationMember?.organization.id]);
 
   // Implementar debounce para o termo de pesquisa
   useEffect(() => {
@@ -179,7 +179,7 @@ export default function Customers() {
 
   // Efeito para carregar clientes quando a organização, página, termo de pesquisa ou filtros mudam
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadCustomers();
       
       // Resetar para a primeira página quando o termo de pesquisa mudar
@@ -187,7 +187,7 @@ export default function Customers() {
         setCurrentPage(1);
       }
     }
-  }, [currentOrganization, currentPage, debouncedSearchTerm, selectedFunnelId, selectedStageId, selectedTagIds, sortConfig]);
+  }, [currentOrganizationMember, currentPage, debouncedSearchTerm, selectedFunnelId, selectedStageId, selectedTagIds, sortConfig]);
 
   useEffect(() => {
     // Função para atualizar o estado de visualização móvel
@@ -206,10 +206,10 @@ export default function Customers() {
 
   // Função para carregar configurações de colunas
   const loadColumnConfigs = () => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     // Verificar se já existem configurações salvas
-    const savedConfigs = localStorage.getItem(`columnConfigs_${currentOrganization.id}`);
+    const savedConfigs = localStorage.getItem(`columnConfigs_${currentOrganizationMember.organization.id}`);
     
     if (savedConfigs) {
       // Usar as configurações salvas
@@ -236,7 +236,7 @@ export default function Customers() {
         const updatedConfigs = [...parsedConfigs, ...newCustomColumns];
         setColumnConfigs(updatedConfigs);
         // Salvar as configurações atualizadas
-        localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(updatedConfigs));
+        localStorage.setItem(`columnConfigs_${currentOrganizationMember.organization.id}`, JSON.stringify(updatedConfigs));
       } else {
         // Usar as configurações existentes sem alterações
         setColumnConfigs(parsedConfigs);
@@ -262,7 +262,7 @@ export default function Customers() {
       const newConfigs = [...defaultColumns, ...customColumns];
       setColumnConfigs(newConfigs);
       // Salvar as novas configurações
-      localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(newConfigs));
+      localStorage.setItem(`columnConfigs_${currentOrganizationMember.organization.id}`, JSON.stringify(newConfigs));
     }
   };
   
@@ -321,7 +321,7 @@ export default function Customers() {
 
   // Função para atualizar o estágio do cliente
   const handleStageChange = async (customerId: string, stageId: string) => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     try {
       // Atualizar o estágio do cliente no banco de dados
@@ -329,7 +329,7 @@ export default function Customers() {
         .from('customers')
         .update({ stage_id: stageId })
         .eq('id', customerId)
-        .eq('organization_id', currentOrganization.id);
+        .eq('organization_id', currentOrganizationMember.organization.id);
         
       if (error) throw error;
       
@@ -339,7 +339,7 @@ export default function Customers() {
         .insert({
           customer_id: customerId,
           stage_id: stageId,
-          organization_id: currentOrganization.id
+          organization_id: currentOrganizationMember.organization.id
         });
         
       if (historyError) throw historyError;
@@ -398,7 +398,7 @@ export default function Customers() {
   };
 
   const loadCustomers = async (isSilent: boolean = false) => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     if (!isSilent) setLoading(true);
     setError('');
@@ -439,7 +439,7 @@ export default function Customers() {
             )
           )
         `, { count: 'exact' })
-        .eq('organization_id', currentOrganization.id);
+        .eq('organization_id', currentOrganizationMember.organization.id);
       
       // Aplicar filtros de pesquisa se necessário
       if (debouncedSearchTerm) {
@@ -638,8 +638,8 @@ export default function Customers() {
 
   // Função para salvar configurações de colunas
   const saveColumnConfigs = (configs: ColumnConfig[]) => {
-    if (!currentOrganization) return;
-    localStorage.setItem(`columnConfigs_${currentOrganization.id}`, JSON.stringify(configs));
+    if (!currentOrganizationMember) return;
+    localStorage.setItem(`columnConfigs_${currentOrganizationMember.organization.id}`, JSON.stringify(configs));
   };
 
   // Efeito para atualizar as definições de coluna quando as definições de campo mudarem
@@ -759,10 +759,10 @@ export default function Customers() {
 
   // Função para resetar as configurações de colunas
   const handleResetColumnConfigs = () => {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     // Remover as configurações do localStorage
-    localStorage.removeItem(`columnConfigs_${currentOrganization.id}`);
+    localStorage.removeItem(`columnConfigs_${currentOrganizationMember.organization.id}`);
     
     // Recarregar as configurações padrão
     loadColumnConfigs();
@@ -781,7 +781,7 @@ export default function Customers() {
     }, 3000);
   };
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-4 md:p-6">
         <div className="flex justify-center items-center min-h-[200px]">

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Circle, ArrowRight, Settings, MessageSquare, Zap, GitBranch, Key } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
 import FlowCreateModal from '../flow/FlowCreateModal';
+import { useClosureTypes } from '../../hooks/useQueryes';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface SetupStep {
   id: string;
@@ -19,7 +21,7 @@ interface SetupStep {
 
 const QuickSetupGuide: React.FC = () => {
   const { t } = useTranslation(['dashboard', 'flows', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [showGuide, setShowGuide] = useState(true);
   const [steps, setSteps] = useState<SetupStep[]>([]);
@@ -28,11 +30,38 @@ const QuickSetupGuide: React.FC = () => {
   const [showFlowCreateModal, setShowFlowCreateModal] = useState(false);
   const [setupChecked, setSetupChecked] = useState(false);
   const [isCreatingFunnel, setIsCreatingFunnel] = useState(false);
+  
+  // Usar o hook useClosureTypes para buscar os tipos de encerramento
+  const { data: closureTypesData, isLoading: isLoadingClosureTypes } = useClosureTypes(currentOrganizationMember?.organization.id);
+  
+  // Obter o queryClient para invalidar consultas
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (currentOrganization && !setupChecked) {
+    // Resetar o setupChecked quando currentOrganizationMember mudar
+    if (currentOrganizationMember) {
+      // Resetar todos os estados relevantes
+      setSetupChecked(false);
+      setLoading(true);
+      setShowGuide(true);
+      setSteps([]);
+      setSetupProgress(0);
+      setIsCreatingFunnel(false);
+    }
+    
+    // Limpar bloqueios quando o componente for desmontado ou quando currentOrganizationMember mudar
+    return () => {
+      if (currentOrganizationMember) {
+        const lockKey = `funnel_creation_lock_${currentOrganizationMember.organization.id}`;
+        localStorage.removeItem(lockKey);
+      }
+    };
+  }, [currentOrganizationMember]);
+
+  useEffect(() => {
+    if (currentOrganizationMember && !setupChecked) {
       // Verificar se já existe um bloqueio global
-      const lockKey = `funnel_creation_lock_${currentOrganization?.id}`;
+      const lockKey = `funnel_creation_lock_${currentOrganizationMember?.organization.id}`;
       const existingLock = localStorage.getItem(lockKey);
       
       if (existingLock) {
@@ -59,9 +88,14 @@ const QuickSetupGuide: React.FC = () => {
       setSetupChecked(true);
       checkSetupStatus();
     }
-  }, [currentOrganization, setupChecked]);
+  }, [currentOrganizationMember, setupChecked]);
 
   const checkSetupStatus = async () => {
+    if (!currentOrganizationMember) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
       // Limpar funis incompletos que possam ter sido criados em tentativas anteriores
@@ -71,7 +105,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: funnels, error: funnelsError } = await supabase
         .from('crm_funnels')
         .select('id, is_active')
-        .eq('organization_id', currentOrganization?.id);
+        .eq('organization_id', currentOrganizationMember?.organization.id);
 
       if (funnelsError) throw funnelsError;
       
@@ -90,18 +124,11 @@ const QuickSetupGuide: React.FC = () => {
         setIsCreatingFunnel(false);
       }
 
-      // Verificar se já tem tipos de encerramento
-      const { data: closureTypes, error: closureTypesError } = await supabase
-        .from('closure_types')
-        .select('id')
-        .eq('organization_id', currentOrganization?.id)
-        .limit(1);
-
-      if (closureTypesError) throw closureTypesError;
-      const hasClosureTypes = closureTypes && closureTypes.length > 0;
+      // Verificar se já tem tipos de encerramento usando os dados do hook
+      const hasClosureTypes = closureTypesData && closureTypesData.length > 0;
 
       // Se não tiver tipos de encerramento, criar automaticamente
-      if (!hasClosureTypes) {
+      if (!hasClosureTypes && !isLoadingClosureTypes) {
         await createDefaultClosureTypes();
       }
 
@@ -109,7 +136,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: channels, error: channelsError } = await supabase
         .from('chat_channels')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .limit(1);
 
       if (channelsError) throw channelsError;
@@ -119,7 +146,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: openaiIntegration, error: openaiError } = await supabase
         .from('integrations')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .eq('type', 'openai')
         .limit(1);
 
@@ -130,7 +157,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: prompts, error: promptsError } = await supabase
         .from('prompts')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .limit(1);
 
       if (promptsError) throw promptsError;
@@ -140,7 +167,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: flows, error: flowsError } = await supabase
         .from('flows')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .limit(1);
 
       if (flowsError) throw flowsError;
@@ -203,9 +230,13 @@ const QuickSetupGuide: React.FC = () => {
   };
 
   const createDefaultFunnel = async () => {
+    if (!currentOrganizationMember) {
+      return;
+    }
+    
     try {
       // Verificar se já existe um bloqueio global
-      const lockKey = `funnel_creation_lock_${currentOrganization?.id}`;
+      const lockKey = `funnel_creation_lock_${currentOrganizationMember?.organization.id}`;
       const existingLock = localStorage.getItem(lockKey);
       
       if (existingLock) {
@@ -234,7 +265,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: existingFunnels, error: checkError } = await supabase
         .from('crm_funnels')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .limit(1);
       
       if (checkError) throw checkError;
@@ -253,7 +284,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: lockRecord, error: lockError } = await supabase
         .from('crm_funnels')
         .insert({
-          organization_id: currentOrganization?.id,
+          organization_id: currentOrganizationMember?.organization.id,
           name: `${t('quickSetup.defaultFunnelName')} (criando...)`,
           description: `Operação: ${operationId}`,
           is_active: false
@@ -343,21 +374,26 @@ const QuickSetupGuide: React.FC = () => {
       console.error('Erro ao criar funil padrão:', error);
       
       // Remover o bloqueio global em caso de erro
-      const lockKey = `funnel_creation_lock_${currentOrganization?.id}`;
+      const lockKey = `funnel_creation_lock_${currentOrganizationMember?.organization.id}`;
       localStorage.removeItem(lockKey);
     }
   };
 
   const createDefaultClosureTypes = async () => {
+    if (!currentOrganizationMember) {
+      return;
+    }
+    
     try {
+      // Definir os tipos de encerramento padrão
       const closureTypes = [
         {
-          organization_id: currentOrganization?.id,
+          organization_id: currentOrganizationMember?.organization.id,
           title: t('quickSetup.resolvedClosureType'),
           color: '#10B981'
         },
         {
-          organization_id: currentOrganization?.id,
+          organization_id: currentOrganizationMember?.organization.id,
           title: t('quickSetup.unresolvedClosureType'),
           color: '#EF4444'
         }
@@ -368,6 +404,9 @@ const QuickSetupGuide: React.FC = () => {
         .insert(closureTypes);
 
       if (error) throw error;
+      
+      // Invalidar a consulta de tipos de encerramento para forçar uma nova busca
+      queryClient.invalidateQueries({ queryKey: ['closure_types', currentOrganizationMember.organization.id] });
     } catch (error) {
       console.error('Erro ao criar tipos de encerramento padrão:', error);
     }
@@ -387,12 +426,16 @@ const QuickSetupGuide: React.FC = () => {
 
   // Função para carregar apenas o status dos passos sem criar recursos
   const loadStepsStatus = async () => {
+    if (!currentOrganizationMember) {
+      return;
+    }
+    
     try {
       // Verificar se já tem canais
       const { data: channels, error: channelsError } = await supabase
         .from('chat_channels')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .limit(1);
 
       if (channelsError) throw channelsError;
@@ -402,7 +445,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: openaiIntegration, error: openaiError } = await supabase
         .from('integrations')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .eq('type', 'openai')
         .limit(1);
 
@@ -413,7 +456,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: prompts, error: promptsError } = await supabase
         .from('prompts')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .limit(1);
 
       if (promptsError) throw promptsError;
@@ -423,7 +466,7 @@ const QuickSetupGuide: React.FC = () => {
       const { data: flows, error: flowsError } = await supabase
         .from('flows')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .limit(1);
 
       if (flowsError) throw flowsError;
@@ -485,12 +528,16 @@ const QuickSetupGuide: React.FC = () => {
 
   // Função para limpar funis incompletos
   const cleanupIncompleteFunnels = async () => {
+    if (!currentOrganizationMember) {
+      return;
+    }
+    
     try {
       // Buscar funis inativos ou com descrição contendo "Operação:"
       const { data: incompleteFunnels, error } = await supabase
         .from('crm_funnels')
         .select('id')
-        .eq('organization_id', currentOrganization?.id)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .eq('is_active', false);
       
       if (error) {

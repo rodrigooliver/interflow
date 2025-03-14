@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, ListFilter, GitBranch, Trash2, ExternalLink, ChevronUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
 import { PromptFormData, Tool, Variable } from '../../types/prompts';
 import { Integration } from '../../types/database';
@@ -160,7 +160,7 @@ const PromptFormMain: React.FC = () => {
   const { t } = useTranslation(['prompts', 'common']);
   const navigate = useNavigate();
   const { id } = useParams(); // for editing
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState<PromptFormData>({
@@ -175,7 +175,7 @@ const PromptFormMain: React.FC = () => {
   const { 
     data: integrations = [], 
     isLoading: loadingIntegrations 
-  } = useOpenAIIntegrations(currentOrganization?.id);
+  } = useOpenAIIntegrations(currentOrganizationMember?.organization.id);
   
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [selectedModel, setSelectedModel] = useState('gpt-4o');
@@ -186,7 +186,7 @@ const PromptFormMain: React.FC = () => {
     data: availableModels = DEFAULT_OPENAI_MODELS, 
     isLoading: loadingModels 
   } = useOpenAIModels(
-    currentOrganization?.id, 
+    currentOrganizationMember?.organization.id, 
     selectedIntegration?.id
   );
   
@@ -209,7 +209,7 @@ const PromptFormMain: React.FC = () => {
       loadPrompt();
       checkLinkedFlow();
     }
-  }, [id, currentOrganization]);
+  }, [id, currentOrganizationMember]);
 
   // Effect to select the first integration when integrations are loaded
   useEffect(() => {
@@ -285,7 +285,7 @@ const PromptFormMain: React.FC = () => {
   }
 
   async function checkLinkedFlow() {
-    if (!id || !currentOrganization) return;
+    if (!id || !currentOrganizationMember) return;
     
     setCheckingFlow(true);
     try {
@@ -312,7 +312,7 @@ const PromptFormMain: React.FC = () => {
   }
 
   async function createOrSyncFlow() {
-    if (!id || !currentOrganization) return;
+    if (!id || !currentOrganizationMember) return;
     
     setCreatingFlow(true);
     try {
@@ -321,12 +321,12 @@ const PromptFormMain: React.FC = () => {
         navigate(`/app/flows/${linkedFlow.id}`);
       } else {
         // Criar novo fluxo
-        const flowData = await createFlowFromPrompt(id, currentOrganization.id, formData.title);
+        const flowData = await createFlowFromPrompt(id, currentOrganizationMember.organization.id, formData.title);
         
         if (flowData) {
           setLinkedFlow(flowData);
           // Invalidar cache dos flows
-          await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganization.id] });
+          await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember.organization.id] });
           setError('');
           // Mostrar mensagem de sucesso
           const successMessage = document.createElement('div');
@@ -347,7 +347,7 @@ const PromptFormMain: React.FC = () => {
   }
 
   async function resetFlow() {
-    if (!id || !currentOrganization || !linkedFlow) return;
+    if (!id || !currentOrganizationMember || !linkedFlow) return;
     
     if (!window.confirm(t('prompts:resetFlowConfirm'))) {
       return;
@@ -364,12 +364,12 @@ const PromptFormMain: React.FC = () => {
       if (deleteError) throw deleteError;
       
       // Criar um novo fluxo
-      const flowData = await createFlowFromPrompt(id, currentOrganization.id, formData.title);
+      const flowData = await createFlowFromPrompt(id, currentOrganizationMember.organization.id, formData.title);
       
       if (flowData) {
         setLinkedFlow(flowData);
         // Invalidar cache dos flows
-        await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganization.id] });
+        await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember.organization.id] });
         setError('');
         // Mostrar mensagem de sucesso
         const successMessage = document.createElement('div');
@@ -393,7 +393,7 @@ const PromptFormMain: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     setSaving(true);
     setError('');
@@ -429,14 +429,14 @@ const PromptFormMain: React.FC = () => {
         if (error) throw error;
         
         // Invalidar cache dos prompts
-        await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganization.id] });
+        await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
         setError('');
       } else {
         // Create
         const { data, error } = await supabase
           .from('prompts')
           .insert([{
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             ...promptData
           }])
           .select();
@@ -444,7 +444,7 @@ const PromptFormMain: React.FC = () => {
         if (error) throw error;
         
         // Invalidar cache dos prompts
-        await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganization.id] });
+        await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
         
         if (data && data.length > 0) {
           // Redirect to the edit page with the newly created ID

@@ -2,20 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../lib/api';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { S3Client, ListBucketsCommand, Bucket } from '@aws-sdk/client-s3';
 
-/**
- * Formulário para configuração de integração com AWS S3
- * 
- * Segurança:
- * - As chaves de acesso são enviadas para o backend para serem criptografadas antes de armazenadas
- * - A validação da chave é feita no frontend para verificar se as credenciais são válidas
- * - O backend deve implementar as seguintes rotas:
- *   - GET /api/:organizationId/integrations/:integrationId - Buscar integração
- *   - POST /api/:organizationId/integrations - Criar integração
- *   - PUT /api/:organizationId/integrations/:integrationId - Atualizar integração
- */
 
 // Interface para erros de API
 interface ApiError {
@@ -52,7 +41,7 @@ export function IntegrationFormS3({
   integrationId
 }: IntegrationFormS3Props) {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(!!integrationId);
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -69,18 +58,18 @@ export function IntegrationFormS3({
   });
 
   useEffect(() => {
-    if (integrationId && currentOrganization) {
+    if (integrationId && currentOrganizationMember) {
       loadIntegration();
     }
-  }, [integrationId, currentOrganization]);
+  }, [integrationId, currentOrganizationMember]);
 
   async function loadIntegration() {
-    if (!currentOrganization || !integrationId) return;
+    if (!currentOrganizationMember || !integrationId) return;
 
     setLoading(true);
     try {
       // Usar API para buscar a integração do backend
-      const response = await api.get(`/api/${currentOrganization.id}/integrations/${integrationId}`);
+      const response = await api.get(`/api/${currentOrganizationMember.organization.id}/integrations/${integrationId}`);
       
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to load integration');
@@ -170,7 +159,7 @@ export function IntegrationFormS3({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     // Validar campos obrigatórios
     if (!formData.title || !formData.access_key_id || !formData.region || !formData.bucket) {
@@ -216,7 +205,7 @@ export function IntegrationFormS3({
       if (integrationId) {
         // Atualização - enviar para o backend
         const response = await api.put(
-          `/api/${currentOrganization.id}/integrations/${integrationId}`, 
+          `/api/${currentOrganizationMember.organization.id}/integrations/${integrationId}`, 
           integrationData
         );
         
@@ -226,7 +215,7 @@ export function IntegrationFormS3({
       } else {
         // Cadastro - enviar para o backend
         const response = await api.post(
-          `/api/${currentOrganization.id}/integrations`, 
+          `/api/${currentOrganizationMember.organization.id}/integrations`, 
           integrationData
         );
         

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSubscriptionPlans, useCurrentSubscription, useInvoices } from '../../hooks/useQueryes';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { Check, X, FileText, ExternalLink } from 'lucide-react';
 import api from '../../lib/api';
 
@@ -44,9 +44,9 @@ interface SubscriptionPlan {
 export function BillingSettings() {
   const { t } = useTranslation(['common', 'settings']);
   const { plans, isLoading: isLoadingPlans } = useSubscriptionPlans();
-  const { currentOrganization } = useOrganizationContext();
-  const { data: currentSubscription } = useCurrentSubscription(currentOrganization?.id);
-  const { data: invoices, isLoading: isLoadingInvoices } = useInvoices(currentOrganization?.id);
+  const { currentOrganizationMember } = useAuthContext();
+  const { data: currentSubscription } = useCurrentSubscription(currentOrganizationMember?.organization.id);
+  const { data: invoices, isLoading: isLoadingInvoices } = useInvoices(currentOrganizationMember?.organization.id);
   const [selectedCurrency, setSelectedCurrency] = useState<'BRL' | 'USD'>('BRL');
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -63,7 +63,7 @@ export function BillingSettings() {
   const proceedWithSubscription = async (planId: string) => {
     try {
       setIsProcessing(true);
-      const response = await api.post(`/api/${currentOrganization?.id}/stripe/create-checkout-session`, {
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/stripe/create-checkout-session`, {
         planId,
         currency: selectedCurrency,
         billingPeriod,
@@ -88,7 +88,7 @@ export function BillingSettings() {
   const handleManageSubscription = async () => {
     try {
       setIsProcessing(true);
-      const response = await api.post(`/api/${currentOrganization?.id}/stripe/create-portal-session`);
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/stripe/create-portal-session`);
       const { url } = response.data;
       if (url) {
         window.location.href = url;
@@ -109,7 +109,7 @@ export function BillingSettings() {
     try {
       setIsProcessing(true);
 
-      if (!currentOrganization?.email) {
+      if (!currentOrganizationMember?.email) {
         setPendingPlanId(planId);
         setShowEmailModal(true);
         setIsProcessing(false);

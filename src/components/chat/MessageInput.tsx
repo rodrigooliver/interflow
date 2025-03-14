@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { AudioPlayer } from './AudioPlayer';
 import { AIImproveModal } from './AIImproveModal';
 import { Message } from '../../types/database';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import { useMessageShortcuts } from '../../hooks/useQueryes';
 
@@ -72,7 +72,7 @@ export function MessageInput({
   const timerIntervalRef = useRef<NodeJS.Timeout>();
   const [showAIModal, setShowAIModal] = useState(false);
   const [sending, setSending] = useState(false);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [shortcutFilter, setShortcutFilter] = useState('');
   const [selectedShortcutIndex, setSelectedShortcutIndex] = useState(0);
@@ -139,7 +139,7 @@ export function MessageInput({
       }
 
       // Enviar para a nova API de mensagens usando api
-      const response = await api.post(`/api/${currentOrganization?.id}/chat/${chatId}/message`, formData, {
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/chat/${chatId}/message`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -288,13 +288,13 @@ export function MessageInput({
           
           const { error } = await supabase.storage
             .from('attachments')
-            .upload(`${currentOrganization?.id}/chat-attachments/${fileName}`, file);
+            .upload(`${currentOrganizationMember?.organization.id}/chat-attachments/${fileName}`, file);
 
           if (error) throw error;
 
           const { data: storageData } = supabase.storage
             .from('attachments')
-            .getPublicUrl(`${currentOrganization?.id}/chat-attachments/${fileName}`);
+            .getPublicUrl(`${currentOrganizationMember?.organization.id}/chat-attachments/${fileName}`);
 
           // Usar a URL pública se necessário
           console.log('Arquivo disponível em:', storageData?.publicUrl);
@@ -727,7 +727,7 @@ export function MessageInput({
       {showFileUpload && (
         <FileUpload
           type={showFileUpload}
-          organizationId={currentOrganization?.id || ''}
+          organizationId={currentOrganizationMember?.organization.id || ''}
           onUploadComplete={handleFileUploadComplete}
           onError={setError}
           onClose={() => setShowFileUpload(null)}

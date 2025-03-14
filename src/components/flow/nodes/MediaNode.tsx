@@ -5,7 +5,7 @@ import { Music, Image, Video, FileText, Upload, X, Loader2, Trash2, Link, Extern
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import api from '../../../lib/api';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
+import { useAuthContext } from '../../../contexts/AuthContext';
 
 interface MediaNodeProps {
   id: string;
@@ -70,7 +70,7 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const Icon = typeConfig[type].icon;
 
-  const { currentOrganization }  = useOrganizationContext();
+  const { currentOrganizationMember }  = useAuthContext();
   // Extrair o nome do arquivo da URL
   const getFileNameFromUrl = (url: string) => {
     try {
@@ -106,7 +106,7 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
     
     try {
       // Chamar a API para excluir o arquivo usando o ID
-      const response = await api.delete(`/api/${currentOrganization?.id}/flow/${flowId}/file`, {
+      const response = await api.delete(`/api/${currentOrganizationMember?.organization.id}/flow/${flowId}/file`, {
         data: { fileId: data.fileId }
       });
       
@@ -153,7 +153,7 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
       formData.append('file', file, file.name);
       
       // Enviar o arquivo para o backend usando FormData
-      const response = await api.post(`/api/${currentOrganization?.id}/flow/${flowId}/file`, formData, {
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/flow/${flowId}/file`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

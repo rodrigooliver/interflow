@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Organization, Prompt, OrganizationMember } from '../types/database';
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember } from '../types/database';
 import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import { reloadTranslations } from '../i18n';
@@ -26,9 +26,10 @@ interface Funnel {
   stages: FunnelStage[];
 }
 
-interface TeamMemberWithProfile extends OrganizationMember {
-  profile: Profile | null;
-}
+// Remover a interface não utilizada
+// interface TeamMemberWithProfile extends OrganizationMember {
+//   profile: Profile | null;
+// }
 
 // Remover a interface MessageShortcut se não estiver sendo usada
 // interface MessageShortcut {
@@ -112,6 +113,86 @@ interface Invoice {
   metadata: Record<string, unknown> | null;
 }
 
+// Interface para representar uma organização com informações de membro
+export interface UserOrganization {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  role: string;
+  status: string;
+  member_id: string;
+}
+
+// Hook para buscar todas as organizações do usuário
+export const useUserOrganizations = (userId?: string) => {
+  return useQuery({
+    queryKey: ['user-organizations', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select(`
+          id,
+          role,
+          status,
+          organization:organizations(
+            id,
+            name,
+            logo_url
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+
+      // console.log('data ********************************', data, userId);
+      
+      // Se não houver dados, retornar array vazio
+      if (!data || data.length === 0) return [];
+      
+      // Transformar os dados para o formato desejado
+      // Usar tipagem segura com unknown primeiro
+      const result: UserOrganization[] = [];
+      
+      for (const item of data as unknown[]) {
+        // Verificar se o item tem a estrutura esperada
+        if (
+          typeof item === 'object' && 
+          item !== null && 
+          'organization' in item && 
+          typeof item.organization === 'object' && 
+          item.organization !== null &&
+          'id' in item.organization &&
+          'name' in item.organization
+        ) {
+          // Acessar logo_url de forma segura
+          const org = item.organization as Record<string, unknown>;
+          const logoUrl = 'logo_url' in org ? org.logo_url as string | null : null;
+          
+          if ('role' in item && 'status' in item && 'id' in item) {
+            result.push({
+              id: String(org.id),
+              name: String(org.name),
+              logo_url: logoUrl,
+              role: String(item.role),
+              status: String(item.status),
+              member_id: String(item.id)
+            });
+          }
+        }
+      }
+      
+      return result;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+};
+
 // Hooks individuais para cada tipo de filtro
 export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 'owner' | 'member')[]) => {
   return useQuery({
@@ -124,6 +205,7 @@ export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 
         organization_id: string;
         user_id: string;
         role: string;
+        status: string;
         created_at: string;
         profile: {
           id: string;
@@ -142,6 +224,7 @@ export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 
           organization_id,
           user_id,
           role,
+          status,
           created_at,
           profile:profiles!fk_organization_members_profile(
             id,
@@ -179,33 +262,6 @@ export const useTeams = (organizationId?: string) => {
 
       if (error) throw error;
       return data as ServiceTeam[];
-    },
-    enabled: !!organizationId,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
-  });
-};
-
-export const useUsers = (organizationId?: string) => {
-  return useQuery({
-    queryKey: ['users', organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select(`
-          user:profiles!user_id(
-            id,
-            full_name
-          )
-        `)
-        .eq('organization_id', organizationId)
-        .order('user(full_name)');
-
-      if (error) throw error;
-      
-      return data.map(item => item.user);
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -400,11 +456,14 @@ export const useCurrentSubscription = (organizationId?: string) => {
         .select('*')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
       if (error) throw error;
-      return data as Subscription;
+      
+      // Se não houver resultados, retornar null
+      if (!data || data.length === 0) return null;
+      
+      return data[0] as Subscription;
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -552,16 +611,23 @@ export function useProfile(userId?: string) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('id', userId);
 
       if (error) throw error;
+      
+      // Se não houver resultados, retornar null
+      if (!data || data.length === 0) return null;
+      
+      // Usar o primeiro perfil encontrado
+      // Nota: Normalmente só deve existir um perfil por usuário
+      const profile = data[0] as Profile;
 
-      if (data && data.language && data.language !== i18n.language) {
-        await reloadTranslations(data.language);
+      // Atualizar o idioma da aplicação se o perfil tiver um idioma diferente do atual
+      if (profile.language && profile.language !== i18n.language) {
+        await reloadTranslations(profile.language);
       }
 
-      return data as Profile;
+      return profile;
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -569,23 +635,48 @@ export function useProfile(userId?: string) {
   });
 }
 
-export function useOrganization(userId?: string) {
+export function useOrganizationMember(userId?: string) {
   return useQuery({
     queryKey: ['organization', userId],
     queryFn: async () => {
       if (!userId) return null;
+      
+      // // Verificar se há uma organização selecionada no localStorage
+      const selectedOrgId = localStorage.getItem('selectedOrganizationId');
+      
+      if (selectedOrgId) {
+        // Lógica padrão: buscar a organização mais recente do usuário
+          const { data, error } = await supabase
+          .from('organization_members')
+          .select(`
+            *,
+            organization:organizations(*)
+          `)
+          .eq('user_id', userId)
+          .eq('organization_id', selectedOrgId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+          // console.log('data ----------------------------', data);
 
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select(`
-          *,
-          organization:organizations(*)
-        `)
-        .eq('user_id', userId)
-        .single();
+          if (error) throw error;
 
-      if (error) throw error;
-      return (data as any).organization as Organization;
+          return data.length > 0 ? data[0] as OrganizationMember : null;
+      } else {
+        return null;
+        // const { data, error } = await supabase
+        //   .from('organization_members')
+        //   .select(`
+        //     *,
+        //     organization:organizations(*)
+        //   `)
+        //   .eq('user_id', userId)
+        //   .eq('status', 'active')
+        //   .order('created_at', { ascending: false });
+
+        //   if (error) throw error;
+
+        //   return data.length > 0 ? data[0] as OrganizationMember : null;
+      }
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -607,6 +698,28 @@ export function useIntegrations(organizationId?: string) {
 
       if (error) throw error;
       return data as Integration[];
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+// Hook para buscar todos os tipos de encerramento de uma organização
+export function useClosureTypes(organizationId?: string) {
+  return useQuery({
+    queryKey: ['closure_types', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      const { data, error } = await supabase
+        .from('closure_types')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos

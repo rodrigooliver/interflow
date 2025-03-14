@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { GitMerge, Plus, Loader2, X, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { CRMFunnel } from '../../types/crm';
 
 export default function CRMFunnels() {
   const { t } = useTranslation(['crm', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [funnels, setFunnels] = useState<CRMFunnel[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -23,19 +23,19 @@ export default function CRMFunnels() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadFunnels();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   async function loadFunnels() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .from('crm_funnels')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,7 +50,7 @@ export default function CRMFunnels() {
 
   async function handleCreateFunnel(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     
     setCreating(true);
     setError('');
@@ -60,7 +60,7 @@ export default function CRMFunnels() {
         .from('crm_funnels')
         .insert([
           {
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: formData.name,
             description: formData.description,
             is_active: true
@@ -99,7 +99,7 @@ export default function CRMFunnels() {
   }
 
   async function handleDeleteFunnel() {
-    if (!selectedFunnel || !currentOrganization) return;
+    if (!selectedFunnel || !currentOrganizationMember) return;
 
     setDeleting(true);
     try {
@@ -131,7 +131,7 @@ export default function CRMFunnels() {
         .from('crm_funnels')
         .delete()
         .eq('id', selectedFunnel.id)
-        .eq('organization_id', currentOrganization.id);
+        .eq('organization_id', currentOrganizationMember.organization.id);
 
       if (error) throw error;
 
@@ -147,7 +147,7 @@ export default function CRMFunnels() {
     }
   }
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">

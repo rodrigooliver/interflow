@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GitFork, Plus, Loader2, X, AlertTriangle, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Flow } from '../../types/database';
 import { Trigger } from '../../types/flow';
@@ -12,7 +12,7 @@ import FlowCreateModal from '../../components/flow/FlowCreateModal';
 export default function FlowList() {
   const navigate = useNavigate();
   const { t } = useTranslation(['flows', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateFlowModal, setShowCreateFlowModal] = useState(false);
@@ -22,13 +22,13 @@ export default function FlowList() {
   const [showEditFlowModal, setShowEditFlowModal] = useState(false);
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadFlows();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   async function loadFlows() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data: flowsData, error: flowsError } = await supabase
@@ -48,7 +48,7 @@ export default function FlowList() {
             title
           )
         `)
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('name');
 
       if (flowsError) throw flowsError;
@@ -108,7 +108,7 @@ export default function FlowList() {
 
   // Função para salvar os triggers
   const handleSaveTriggers = async (newTriggers: Trigger[]) => {
-    if (!selectedFlow || !currentOrganization) return;
+    if (!selectedFlow || !currentOrganizationMember) return;
 
     try {
       // Excluir triggers existentes
@@ -127,7 +127,7 @@ export default function FlowList() {
             newTriggers.map(trigger => ({
               ...trigger,
               flow_id: selectedFlow.id,
-              organization_id: currentOrganization.id,
+              organization_id: currentOrganizationMember.organization.id,
               updated_at: new Date().toISOString()
             }))
           );
@@ -145,7 +145,7 @@ export default function FlowList() {
     }
   };
 
-  if (!currentOrganization) {
+  if (!currentOrganizationMember) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">

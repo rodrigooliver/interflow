@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertTriangle, RefreshCw, ArrowRight, Check, X, MessageSquare, Trash } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../../contexts/OrganizationContext';
-import { supabase } from '../../../lib/supabase';
-import api from '../../../lib/api';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import { toast } from 'react-hot-toast';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -44,7 +44,7 @@ export default function WhatsAppOfficialForm() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -205,7 +205,7 @@ export default function WhatsAppOfficialForm() {
       const newChannel = {
         name: formData.name,
         type: 'whatsapp_official',
-        organization_id: currentOrganization?.id,
+        organization_id: currentOrganizationMember?.organization.id,
         status: 'inactive',
         is_connected: false,
         is_tested: false,
@@ -296,7 +296,7 @@ export default function WhatsAppOfficialForm() {
       console.log("Código recebido:", code, "Session Info:", currentSessionInfo);
       
       // Enviar o código para o backend para processar a etapa de troca de código
-      const response = await api.post(`/api/${currentOrganization?.id}/channel/whatsapp/${id}/process-step`, {
+      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${id}/process-step`, {
         step: 'exchange_code',
         code,
         sessionInfo: currentSessionInfo
@@ -337,7 +337,7 @@ export default function WhatsAppOfficialForm() {
       const currentSessionInfo = sessionInfoRef.current;
       
       // Enviar a solicitação para processar a próxima etapa
-      await api.post(`/api/${currentOrganization?.id}/channel/whatsapp/${id}/process-step`, {
+      await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${id}/process-step`, {
         step,
         sessionInfo: currentSessionInfo
       });
@@ -393,7 +393,7 @@ export default function WhatsAppOfficialForm() {
     setError('');
 
     try {
-      const response = await api.delete(`/api/${currentOrganization?.id}/channel/whatsapp/${id}`);
+      const response = await api.delete(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${id}`);
 
       if (!response.data.success) {
         throw new Error(response.data.error || t('common:error'));
@@ -420,7 +420,7 @@ export default function WhatsAppOfficialForm() {
     try {
       setLoading(true);
       // Enviar o token para o backend para verificação usando a nova abordagem de etapas
-      await api.post(`/api/${currentOrganization?.id}/channel/whatsapp/${id}/process-step`, {
+      await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${id}/process-step`, {
         step: 'verify_token',
         token: tokenInput
       });

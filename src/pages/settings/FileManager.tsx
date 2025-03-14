@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HardDrive, Loader2, AlertTriangle, FileText, Image, Music, Video, File } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 interface StorageFile {
   id: string;
@@ -16,7 +16,7 @@ interface StorageFile {
 
 export default function FileManager() {
   const { t } = useTranslation(['settings', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [files, setFiles] = useState<StorageFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -29,20 +29,20 @@ export default function FileManager() {
   } | null>(null);
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (currentOrganizationMember) {
       loadFiles();
       loadStorageInfo();
     }
-  }, [currentOrganization]);
+  }, [currentOrganizationMember]);
 
   async function loadFiles() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .from('files')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
@@ -57,13 +57,13 @@ export default function FileManager() {
   }
 
   async function loadStorageInfo() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
 
     try {
       const { data, error } = await supabase
         .from('organizations')
         .select('storage_used, storage_limit')
-        .eq('id', currentOrganization.id)
+        .eq('id', currentOrganizationMember.organization.id)
         .single();
 
       if (error) throw error;
@@ -92,7 +92,7 @@ export default function FileManager() {
       if (filePath) {
         await supabase.storage
           .from('attachments')
-          .remove([`${currentOrganization?.id}/chat-attachments/${filePath}`]);
+          .remove([`${currentOrganizationMember?.organization.id}/chat-attachments/${filePath}`]);
       }
 
       await loadFiles();

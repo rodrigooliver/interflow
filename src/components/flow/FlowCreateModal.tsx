@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GitFork, Loader2, X, MessageSquareText, ArrowLeft, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useOrganizationContext } from '../../contexts/OrganizationContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Prompt } from '../../types/database';
 import { createFlowFromPrompt } from '../../components/prompts/PromptFormMain';
@@ -41,7 +41,7 @@ interface FlowCreateModalProps {
 export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectToFlow = true }: FlowCreateModalProps) {
   const navigate = useNavigate();
   const { t } = useTranslation(['flows', 'common']);
-  const { currentOrganization } = useOrganizationContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [creatingFlow, setCreatingFlow] = useState(false);
   const [newFlowData, setNewFlowData] = useState({ name: '', description: '' });
   const [flowCreationType, setFlowCreationType] = useState<'free' | 'agent' | null>(null);
@@ -54,7 +54,7 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
   const [createTrigger, setCreateTrigger] = useState(true);
   
   // Usar o hook useChannels para carregar os canais
-  const { data: chatChannels, isLoading: loadingChannels } = useChannels(currentOrganization?.id);
+  const { data: chatChannels, isLoading: loadingChannels } = useChannels(currentOrganizationMember?.organization.id);
   
   // Transformar os canais no formato esperado pelo componente Select
   const channels = chatChannels?.map(channel => ({
@@ -69,14 +69,14 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
   }, [isOpen]);
 
   async function loadPrompts() {
-    if (!currentOrganization) return;
+    if (!currentOrganizationMember) return;
     setLoadingPrompts(true);
 
     try {
       const { data, error } = await supabase
         .from('prompts')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', currentOrganizationMember.organization.id)
         .order('title');
 
       if (error) throw error;
@@ -89,7 +89,7 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
   }
 
   async function handleCreateFlow() {
-    if (!currentOrganization || !newFlowData.name.trim()) return;
+    if (!currentOrganizationMember || !newFlowData.name.trim()) return;
     setCreatingFlow(true);
 
     try {
@@ -99,14 +99,14 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
         if (selectedPrompt) {
           const flowData = await createFlowFromPrompt(
             selectedPromptId, 
-            currentOrganization.id, 
+            currentOrganizationMember.organization.id, 
             newFlowData.name || selectedPrompt.title
           );
           
           if (flowData) {
             // Criar trigger para o flow baseado em agente se a opção estiver ativada
             if (createTrigger) {
-              const trigger = createDefaultTrigger(flowData.id, currentOrganization.id);
+              const trigger = createDefaultTrigger(flowData.id, currentOrganizationMember.organization.id);
               trigger.type = triggerType;
               
               // Adicionar regra de canal se houver canais selecionados
@@ -142,7 +142,7 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
         const { data: flowData, error: flowError } = await supabase
           .from('flows')
           .insert([{
-            organization_id: currentOrganization.id,
+            organization_id: currentOrganizationMember.organization.id,
             name: newFlowData.name,
             description: newFlowData.description,
             nodes: [],
@@ -159,7 +159,7 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
 
         // Criar trigger para o flow se a opção estiver ativada
         if (flowData && createTrigger) {
-          const trigger = createDefaultTrigger(flowData.id, currentOrganization.id);
+          const trigger = createDefaultTrigger(flowData.id, currentOrganizationMember.organization.id);
           trigger.type = triggerType;
           
           // Adicionar regra de canal se houver canais selecionados

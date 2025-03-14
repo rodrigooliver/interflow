@@ -6,7 +6,7 @@ import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useCurrentSubscription } from '../hooks/useQueryes';
-import { useOrganizationContext } from '../contexts/OrganizationContext';
+
 interface SidebarProps {
   onClose?: () => void;
   isMobile?: boolean;
@@ -16,11 +16,10 @@ interface SidebarProps {
 
 const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: SidebarProps) => {
   const location = useLocation();
-  const { signOut, profile } = useAuthContext();
-  const { currentOrganization } = useOrganizationContext();
+  const { signOut, profile, currentOrganizationMember } = useAuthContext();
   const { isDark, setIsDark } = useDarkMode();
   const { t } = useTranslation(['navigation', 'common']);
-  const { data: subscription } = useCurrentSubscription(currentOrganization?.id);
+  const { data: subscription } = useCurrentSubscription(currentOrganizationMember?.organization.id);
 
   // Verificar se é trial
   const isTrial = subscription?.status === 'trialing';
