@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, Smile, Paperclip, Send, Mic, Loader2, Image, FileText, X, Sparkles } from 'lucide-react';
+import { Bold, Italic, Smile, Send, Mic, Loader2, Image, FileText, X, Sparkles, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -80,6 +80,80 @@ export function MessageInput({
   const { messageShortcuts, isLoading: isLoadingShortcuts } = useMessageShortcuts(organizationId);
   const [filteredShortcuts, setFilteredShortcuts] = useState<ShortcutSuggestion[]>([]);
   const selectedItemRef = useRef<HTMLLIElement>(null);
+  const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  
+  // Função para detectar se o dispositivo é móvel
+  // Usada para alterar o comportamento da tecla Enter (quebra de linha em vez de enviar)
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           (window.innerWidth <= 768);
+  };
+
+  // Adicionar estilos CSS para a barra de formatação flutuante
+  useEffect(() => {
+    // Estilos CSS para a barra de formatação flutuante em dispositivos móveis
+    const styles = `
+      @media (max-width: 768px) {
+        .mobile-formatting-toolbar {
+          position: absolute;
+          bottom: 100%;
+          left: 0;
+          right: 0;
+          background-color: var(--bg-color, white);
+          border-radius: 8px 8px 0 0;
+          padding: 8px;
+          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+          z-index: 10;
+          margin-bottom: 8px;
+          transition: all 0.3s ease;
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          border: 1px solid var(--border-color, #e5e7eb);
+        }
+        
+        .mobile-formatting-toolbar.hidden {
+          transform: translateY(10px);
+          opacity: 0;
+          pointer-events: none;
+          visibility: hidden;
+        }
+        
+        .mobile-formatting-toolbar.visible {
+          transform: translateY(0);
+          opacity: 1;
+          visibility: visible;
+        }
+        
+        :root {
+          --bg-color: white;
+          --border-color: #e5e7eb;
+        }
+        
+        .dark {
+          --bg-color: #1f2937;
+          --border-color: #374151;
+        }
+      }
+    `;
+
+    // Adicionar os estilos ao documento apenas uma vez
+    const styleId = 'message-input-mobile-styles';
+    if (!document.getElementById(styleId)) {
+      const styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      styleElement.textContent = styles;
+      document.head.appendChild(styleElement);
+    }
+
+    // Limpar os estilos quando o componente for desmontado
+    return () => {
+      const styleElement = document.getElementById(styleId);
+      if (styleElement) {
+        styleElement.remove();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -102,6 +176,21 @@ export function MessageInput({
       textareaRef.current.style.height = `${Math.min(scrollHeight, 120)}px`;
     }
   }, [message]);
+
+  // Manipuladores de eventos para o foco do textarea
+  const handleTextareaFocus = () => {
+    setIsTextareaFocused(true);
+  };
+
+  const handleTextareaBlur = () => {
+    // Não esconder imediatamente para permitir cliques nos botões
+    setTimeout(() => {
+      // Verificar se o foco não está em um dos botões de formatação
+      if (!document.activeElement?.closest('.formatting-toolbar')) {
+        setIsTextareaFocused(false);
+      }
+    }, 100);
+  };
 
   const handleFileUploadComplete = (file: File, type: string, name: string) => {
     const reader = new FileReader();
@@ -243,6 +332,13 @@ export function MessageInput({
     
     // Comportamento original para Enter
     if (e.key === 'Enter' && !e.shiftKey) {
+      // Em dispositivos móveis, permitir quebra de linha com Enter
+      if (isMobileDevice()) {
+        // Não faz nada, permitindo o comportamento padrão de quebra de linha
+        return;
+      }
+      
+      // Em desktop, enviar a mensagem
       e.preventDefault();
       handleSend();
     }
@@ -352,9 +448,13 @@ export function MessageInput({
       const start = textareaRef.current.selectionStart;
       const end = textareaRef.current.selectionEnd;
       const selectedText = message.substring(start, end);
+      const prefix = format === 'bold' ? '**' : '_';
 
+      // Salvar o estado de foco atual
+      const textareaHasFocus = document.activeElement === textareaRef.current;
+      
+      // Se há texto selecionado, aplicar formatação ao texto selecionado
       if (selectedText) {
-        const prefix = format === 'bold' ? '**' : '_';
         const newText = 
           message.substring(0, start) +
           `${prefix}${selectedText}${prefix}` +
@@ -362,27 +462,99 @@ export function MessageInput({
         
         setMessage(newText);
         
-        // Restaurar o foco no textarea
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-            textareaRef.current.setSelectionRange(
-              start + prefix.length,
-              end + prefix.length
-            );
-          }
-        }, 0);
+        // Restaurar o foco e a seleção imediatamente
+        if (textareaHasFocus) {
+          // Usar requestAnimationFrame para garantir que a atualização do DOM ocorra antes de tentar focar
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+              textareaRef.current.setSelectionRange(
+                start + prefix.length,
+                end + prefix.length
+              );
+            }
+          });
+        }
+      } else {
+        // Se não há texto selecionado, inserir os marcadores de formatação na posição atual
+        // e posicionar o cursor entre eles
+        const newText = 
+          message.substring(0, start) +
+          `${prefix}${prefix}` +
+          message.substring(end);
+        
+        setMessage(newText);
+        
+        // Posicionar o cursor entre os marcadores
+        if (textareaHasFocus) {
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+              textareaRef.current.setSelectionRange(
+                start + prefix.length,
+                start + prefix.length
+              );
+            }
+          });
+        }
       }
     }
   };
 
-  // Atualizar os handlers dos botões de formatação
-  const handleBoldClick = () => {
-    applyFormatting('bold');
+  // Função para garantir que o textarea mantenha o foco
+  const ensureTextareaFocus = () => {
+    if (textareaRef.current && document.activeElement !== textareaRef.current) {
+      textareaRef.current.focus();
+    }
   };
 
-  const handleItalicClick = () => {
+  // Atualizar os handlers dos botões de formatação
+  const handleBoldClick = (e: React.MouseEvent) => {
+    // Prevenir comportamento padrão para evitar perda de foco
+    e.preventDefault();
+    applyFormatting('bold');
+    // Garantir que o textarea mantenha o foco
+    requestAnimationFrame(ensureTextareaFocus);
+  };
+
+  const handleItalicClick = (e: React.MouseEvent) => {
+    // Prevenir comportamento padrão para evitar perda de foco
+    e.preventDefault();
     applyFormatting('italic');
+    // Garantir que o textarea mantenha o foco
+    requestAnimationFrame(ensureTextareaFocus);
+  };
+
+  // Handler para o botão de IA
+  const handleAIClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Desfocar o textarea para esconder o teclado virtual em dispositivos móveis
+    if (textareaRef.current) {
+      textareaRef.current.blur();
+    }
+    
+    // Pequeno atraso para garantir que o teclado tenha tempo de sumir antes de abrir o modal
+    setTimeout(() => {
+      setShowAIModal(true);
+      
+      // Não restauramos o foco imediatamente para manter o teclado escondido
+      // O foco será restaurado quando o modal for fechado, se necessário
+    }, 100);
+  };
+
+  // Handler para o fechamento do modal de IA
+  const handleAIModalClose = () => {
+    setShowAIModal(false);
+    
+    // Em dispositivos desktop, restaurar o foco no textarea
+    if (!isMobileDevice()) {
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      });
+    }
   };
 
   // Limpa o erro quando a subscrição fica pronta
@@ -511,6 +683,13 @@ export function MessageInput({
     // Não é necessário fazer nada aqui
   }, [messageShortcuts, isLoadingShortcuts]);
 
+  // Handler para o botão de anexo
+  const handleAttachmentClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowAttachmentMenu(!showAttachmentMenu);
+    setShowEmojiPicker(false);
+  };
+
   return (
     <div className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700">
       {replyTo && (
@@ -578,147 +757,165 @@ export function MessageInput({
         </div>
       )}
 
-      <div className="flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap">
-        <button
-          onClick={handleBoldClick}
-          className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
-          title={t('formatting.bold')}
+      {/* Container para a barra de formatação e o textarea */}
+      <div className="relative">
+        {/* Barra de formatação - visível sempre em desktop, e apenas quando em foco em mobile */}
+        <div 
+          className={`formatting-toolbar flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap
+            ${isMobileDevice() ? 'mobile-formatting-toolbar' : ''}
+            ${isMobileDevice() && isTextareaFocused ? 'visible' : ''}
+            ${isMobileDevice() && !isTextareaFocused ? 'hidden' : ''}
+          `}
         >
-          <Bold className="w-5 h-5" />
-        </button>
-        <button
-          onClick={handleItalicClick}
-          className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
-          title={t('formatting.italic')}
-        >
-          <Italic className="w-5 h-5" />
-        </button>
-        <div className="relative" ref={attachmentMenuRef}>
           <button
-            onClick={() => {
-              setShowAttachmentMenu(!showAttachmentMenu);
-              setShowEmojiPicker(false);
-            }}
-            className={`p-1 rounded-lg transition-colors ${
-              showAttachmentMenu
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-            }`}
-            title={t('attachments.title')}
+            onMouseDown={handleBoldClick}
+            className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+            title={t('formatting.bold')}
           >
-            <Paperclip className="w-5 h-5" />
+            <Bold className="w-5 h-5" />
           </button>
-          {showAttachmentMenu && (
-            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px] z-50">
-              <button
-                onClick={() => {
-                  setShowFileUpload('image');
-                  setShowAttachmentMenu(false);
-                }}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <Image className="w-4 h-4 mr-2" />
-                <span>{t('attachments.image')}</span>
-              </button>
-              <button
-                onClick={() => {
-                  setShowFileUpload('document');
-                  setShowAttachmentMenu(false);
-                }}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                <span>{t('attachments.document')}</span>
-              </button>
-            </div>
-          )}
-        </div>
-        <button
-          onClick={() => setShowAIModal(true)}
-          className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
-          title={t('ai.improve')}
-        >
-          <Sparkles className="w-5 h-5" />
-        </button>
-        <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
           <button
-            onClick={() => {
-              setShowEmojiPicker(!showEmojiPicker);
-              setShowAttachmentMenu(false);
-            }}
-            className={`p-1 rounded-lg transition-colors ${
-              showEmojiPicker
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-            }`}
-            title={t('emoji.title')}
+            onMouseDown={handleItalicClick}
+            className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+            title={t('formatting.italic')}
           >
-            <Smile className="w-5 h-5" />
+            <Italic className="w-5 h-5" />
           </button>
-          {showEmojiPicker && (
-            <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
-              <Picker
-                data={data}
-                onEmojiSelect={onEmojiSelect}
-                locale={i18n.language}
-                theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                previewPosition="none"
-                skinTonePosition="none"
-                perLine={9}
-              />
-            </div>
-          )}
+          <button
+            onMouseDown={handleAIClick}
+            className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
+            title={t('ai.improve')}
+          >
+            <Sparkles className="w-5 h-5" />
+          </button>
+          {/* Botão de emoji - visível apenas em desktop */}
+          <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
+            <button
+              onClick={() => {
+                setShowEmojiPicker(!showEmojiPicker);
+                setShowAttachmentMenu(false);
+              }}
+              className={`p-1 rounded-lg transition-colors ${
+                showEmojiPicker
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+              }`}
+              title={t('emoji.title')}
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            {showEmojiPicker && (
+              <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
+                <Picker
+                  data={data}
+                  onEmojiSelect={onEmojiSelect}
+                  locale={i18n.language}
+                  theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                  previewPosition="none"
+                  skinTonePosition="none"
+                  perLine={9}
+                />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center space-x-2">
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={handleMessageChange}
-          onKeyDown={handleKeyPress}
-          placeholder={t('input.placeholder')}
-          className="flex-1 max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
-        />
-        <button
-          onClick={isRecording ? stopRecording : startRecording}
-          className={`p-2 rounded-lg transition-colors flex items-center ${
-            isRecording
-              ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-          }`}
-          title={t(isRecording ? 'voice.stop' : 'voice.start')}
-        >
-          <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
-          {isRecording && (
-            <span className="ml-2 text-sm">
-              {Math.floor(recordingDuration / 60)}:
-              {(recordingDuration % 60).toString().padStart(2, '0')}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={handleSend}
-          disabled={
-            sending || 
-            (!message.trim() && pendingAttachments.length === 0) || 
-            !isSubscriptionReady
-          }
-          className="p-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title={
-            !isSubscriptionReady 
-              ? t('waitingConnection') 
-              : t('send')
-          }
-        >
-          {sending ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : !isSubscriptionReady ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+        <div className="flex items-center space-x-2">
+          {/* Botão de anexo (Plus) no lado esquerdo */}
+          <div className="relative" ref={attachmentMenuRef}>
+            <button
+              onMouseDown={handleAttachmentClick}
+              className={`p-2 rounded-lg transition-colors ${
+                showAttachmentMenu
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+              }`}
+              title={t('attachments.title')}
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            {showAttachmentMenu && (
+              <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px] z-50">
+                <button
+                  onClick={() => {
+                    setShowFileUpload('image');
+                    setShowAttachmentMenu(false);
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <Image className="w-4 h-4 mr-2" />
+                  <span>{t('attachments.image')}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowFileUpload('document');
+                    setShowAttachmentMenu(false);
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  <span>{t('attachments.document')}</span>
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleMessageChange}
+            onKeyDown={handleKeyPress}
+            onFocus={handleTextareaFocus}
+            onBlur={handleTextareaBlur}
+            placeholder={t('input.placeholder')}
+            className="flex-1 max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+            // Em dispositivos móveis, Enter quebra linha; em desktop, envia a mensagem
+          />
+          
+          {/* Mostrar botão de gravação apenas quando não há mensagem ou anexos */}
+          {!message.trim() && pendingAttachments.length === 0 ? (
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`p-2 rounded-lg transition-colors flex items-center ${
+                isRecording
+                  ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+              }`}
+              title={t(isRecording ? 'voice.stop' : 'voice.start')}
+            >
+              <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
+              {isRecording && (
+                <span className="ml-2 text-sm">
+                  {Math.floor(recordingDuration / 60)}:
+                  {(recordingDuration % 60).toString().padStart(2, '0')}
+                </span>
+              )}
+            </button>
           ) : (
-            <Send className="w-5 h-5" />
+            <button
+              onClick={handleSend}
+              disabled={
+                sending || 
+                (!message.trim() && pendingAttachments.length === 0) || 
+                !isSubscriptionReady
+              }
+              className="p-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title={
+                !isSubscriptionReady 
+                  ? t('waitingConnection') 
+                  : t('send')
+              }
+            >
+              {sending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : !isSubscriptionReady ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {showFileUpload && (
@@ -734,8 +931,9 @@ export function MessageInput({
       {showAIModal && (
         <AIImproveModal
           text={message}
-          onClose={() => setShowAIModal(false)}
+          onClose={handleAIModalClose}
           onTextUpdate={(newText) => setMessage(newText)}
+          chatId={chatId}
         />
       )}
 

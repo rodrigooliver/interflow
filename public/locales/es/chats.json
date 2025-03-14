@@ -109,13 +109,19 @@
   "ai": {
     "title": "Mejorar texto con IA",
     "improve": "Mejorar con IA",
+    "with": "con IA",
+    "generateInfo": "La IA generará una respuesta basada en el historial de la conversación. Haz clic en el botón azul para continuar.",
+    "generateSuccess": "¡Texto procesado con éxito! Puedes editar el resultado a continuación antes de aplicarlo.",
     "selectAccount": "Seleccionar cuenta OpenAI",
     "selectAccountPlaceholder": "Elige una cuenta",
-    "selectPrompt": "Seleccionar prompt",
-    "selectPromptPlaceholder": "Elige un prompt",
+    "selectAgent": "Seleccionar Agente IA",
+    "selectAgentPlaceholder": "Elige un agente",
     "improvementType": "Tipo de mejora",
+    "responseLanguage": "Idioma de respuesta",
     "customPrompt": "Prompt personalizado",
-    "customPromptPlaceholder": "Escribe instrucciones específicas...",
+    "customPromptPlaceholder": "Ingresa instrucciones específicas...",
+    "customInstructions": "Instrucciones personalizadas",
+    "customInstructionsPlaceholder": "Ingresa instrucciones específicas para la IA, por ejemplo: 'Reescribe el texto en formato de lista con viñetas'",
     "result": "Resultado",
     "cancel": "Cancelar",
     "apply": "Aplicar",
@@ -125,7 +131,19 @@
       "shorten": "Acortar",
       "improve": "Mejorar escritura",
       "formal": "Más formal",
-      "casual": "Más casual"
+      "casual": "Más casual",
+      "custom": "Personalizado"
+    },
+    "errors": {
+      "noAccount": "Por favor, selecciona una cuenta OpenAI",
+      "noOption": "Por favor, selecciona un tipo de mejora",
+      "noChatId": "El ID del chat es necesario para generar una respuesta",
+      "noPrompt": "Por favor, selecciona un agente IA",
+      "noText": "Por favor, ingresa un texto para mejorar",
+      "noTextForOption": "Por favor, ingresa un texto para {{option}}",
+      "noCustomInstructions": "Por favor, ingresa instrucciones personalizadas",
+      "noIntegration": "El agente seleccionado no tiene una integración configurada",
+      "generic": "Ocurrió un error al mejorar el texto"
     }
   },
   "systemMessages": {

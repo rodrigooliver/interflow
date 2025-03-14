@@ -107,13 +107,19 @@
   "ai": {
     "title": "Improve text with AI",
     "improve": "Improve with AI",
+    "with": "with AI",
+    "generateInfo": "AI will generate a response based on the conversation history. Click the blue button to continue.",
+    "generateSuccess": "Text processed successfully! You can edit the result below before applying it.",
     "selectAccount": "Select OpenAI account",
     "selectAccountPlaceholder": "Choose an account",  
-    "selectPrompt": "Select prompt",
-    "selectPromptPlaceholder": "Choose a prompt",
+    "selectAgent": "Select AI Agent",
+    "selectAgentPlaceholder": "Choose an agent",
     "improvementType": "Improvement type",
+    "responseLanguage": "Response language",
     "customPrompt": "Custom prompt",
     "customPromptPlaceholder": "Enter specific instructions...",
+    "customInstructions": "Custom instructions",
+    "customInstructionsPlaceholder": "Enter specific instructions for the AI, for example: 'Rewrite the text in bullet point format'",
     "result": "Result",
     "cancel": "Cancel",
     "apply": "Apply",
@@ -123,7 +129,19 @@
       "shorten": "Shorten",
       "improve": "Improve writing",
       "formal": "More formal",
-      "casual": "More casual"
+      "casual": "More casual",
+      "custom": "Custom"
+    },
+    "errors": {
+      "noAccount": "Please select an OpenAI account",
+      "noOption": "Please select an improvement type",
+      "noChatId": "Chat ID is required for generating a response",
+      "noPrompt": "Please select an AI agent",
+      "noText": "Please enter text to improve",
+      "noTextForOption": "Please enter text to {{option}}",
+      "noCustomInstructions": "Please enter custom instructions",
+      "noIntegration": "The selected agent does not have a configured integration",
+      "generic": "An error occurred while improving the text"
     }
   },  
   "systemMessages": {

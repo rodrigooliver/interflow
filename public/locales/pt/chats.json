@@ -109,13 +109,19 @@
   "ai": {
     "title": "Melhorar texto com IA",
     "improve": "Melhorar com IA",
+    "with": "com IA",
+    "generateInfo": "A IA irá gerar uma resposta com base no histórico da conversa. Clique no botão azul para continuar.",
+    "generateSuccess": "Texto processado com sucesso! Você pode editar o resultado abaixo antes de aplicá-lo.",
     "selectAccount": "Selecionar conta OpenAI",
     "selectAccountPlaceholder": "Escolha uma conta",
-    "selectPrompt": "Selecionar prompt",
-    "selectPromptPlaceholder": "Escolha um prompt",
+    "selectAgent": "Selecionar Agente IA",
+    "selectAgentPlaceholder": "Escolha um agente",
     "improvementType": "Tipo de melhoria",
+    "responseLanguage": "Idioma da resposta",
     "customPrompt": "Prompt personalizado",
     "customPromptPlaceholder": "Digite instruções específicas...",
+    "customInstructions": "Instruções personalizadas",
+    "customInstructionsPlaceholder": "Digite instruções específicas para a IA, por exemplo: 'Reescreva o texto em formato de lista com marcadores'",
     "result": "Resultado",
     "cancel": "Cancelar",
     "apply": "Aplicar",
@@ -125,7 +131,19 @@
       "shorten": "Encurtar",
       "improve": "Melhorar escrita",
       "formal": "Mais formal",
-      "casual": "Mais casual"
+      "casual": "Mais casual",
+      "custom": "Personalizado"
+    },
+    "errors": {
+      "noAccount": "Por favor, selecione uma conta OpenAI",
+      "noOption": "Por favor, selecione um tipo de melhoria",
+      "noChatId": "ID do chat é necessário para gerar uma resposta",
+      "noPrompt": "Por favor, selecione um agente IA",
+      "noText": "Por favor, digite um texto para melhorar",
+      "noTextForOption": "Por favor, digite um texto para {{option}}",
+      "noCustomInstructions": "Por favor, digite instruções personalizadas",
+      "noIntegration": "O agente selecionado não possui uma integração configurada",
+      "generic": "Ocorreu um erro ao melhorar o texto"
     }
   },
   "systemMessages": {

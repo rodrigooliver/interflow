@@ -496,7 +496,7 @@ function App() {
           </ThemeProvider>
         </I18nextProvider>
       </AuthProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
     </QueryClientProvider>
   );
 }
