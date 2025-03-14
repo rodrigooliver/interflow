@@ -60,7 +60,8 @@
   },
   "time": {
     "start": "Inicio",
-    "end": "Fin"
+    "end": "Fin",
+    "yesterday": "Ayer"
   },
   "input": {
     "placeholder": "Escribe tu mensaje...",

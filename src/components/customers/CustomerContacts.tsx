@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { getChannelIcon } from '../../utils/channel';
 import { useState } from 'react';
 import { ContactChannelModal } from './ContactChannelModal';
-
+import { Customer } from '../../types/database';
 type ContactType = 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram';
 
 interface CustomerContact {
@@ -16,9 +16,10 @@ interface CustomerContact {
 
 interface CustomerContactsProps {
   contacts?: CustomerContact[];
+  customer?: Customer;
 }
 
-export function CustomerContacts({ contacts }: CustomerContactsProps) {
+export function CustomerContacts({ contacts, customer }: CustomerContactsProps) {
   const { t } = useTranslation(['customers', 'common']);
   const [selectedContact, setSelectedContact] = useState<CustomerContact | null>(null);
   
@@ -58,6 +59,7 @@ export function CustomerContacts({ contacts }: CustomerContactsProps) {
 
       {selectedContact && (
         <ContactChannelModal
+          customer={customer}
           contactType={selectedContact.type}
           contactValue={selectedContact.value}
           onClose={() => setSelectedContact(null)}

@@ -3,16 +3,26 @@ import { X, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ChatChannel, ServiceTeam } from '../../types/database';
+import { ChatChannel, Customer } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { getChannelIcon } from '../../utils/channel';
+
+interface ServiceTeam {
+  id: string;
+  organization_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface ContactChannelModalProps {
   contactType: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram';
   contactValue: string;
+  customer?: Customer;
   onClose: () => void;
 }
 
-export function ContactChannelModal({ contactType, contactValue, onClose }: ContactChannelModalProps) {
+export function ContactChannelModal({ contactType, contactValue, customer, onClose }: ContactChannelModalProps) {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
   const { session, currentOrganizationMember } = useAuthContext();
@@ -82,15 +92,23 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
       if (membersError) throw membersError;
 
       // Extract teams from the response and remove nulls
-      const teams = teamMembers
-        ?.map(tm => ({
-          id: tm.team.id,
-          organization_id: tm.team.organization_id,
-          name: tm.team.name,
-          created_at: tm.team.created_at,
-          updated_at: tm.team.updated_at
-        } as ServiceTeam))
-        .filter(Boolean) || [];
+      const teams: ServiceTeam[] = [];
+      
+      if (teamMembers) {
+        // Desabilitar temporariamente a regra de lint para any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (teamMembers as any[]).forEach(member => {
+          if (member.team) {
+            teams.push({
+              id: member.team.id,
+              organization_id: member.team.organization_id,
+              name: member.team.name,
+              created_at: member.team.created_at,
+              updated_at: member.team.updated_at
+            });
+          }
+        });
+      }
 
       setUserTeams(teams);
     } catch (error) {
@@ -116,42 +134,60 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
         }
       }
 
-      // First, find the customer by contact
-      const { data: customers, error: customerError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('organization_id', currentOrganizationMember.organization.id)
-        .eq(contactType, contactValue)
-        .limit(1);
-
-      if (customerError) throw customerError;
-
       let customerId: string;
 
-      if (!customers || customers.length === 0) {
-        // Create new customer if not found
-        const { data: newCustomer, error: createError } = await supabase
-          .from('customers')
-          .insert([{
-            organization_id: currentOrganizationMember.organization.id,
-            name: contactValue, // Use contact as temporary name
-            [contactType]: contactValue
-          }])
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        customerId = newCustomer.id;
+      if (customer) {
+        // Se o cliente já foi fornecido, use o ID diretamente
+        customerId = customer.id;
       } else {
-        customerId = customers[0].id;
+        // Caso contrário, busque o cliente pelo contato
+        const { data: contacts, error: contactsError } = await supabase
+          .from('customer_contacts')
+          .select('customer_id')
+          .eq('type', contactType)
+          .eq('value', contactValue)
+          .limit(1);
+
+        if (contactsError) throw contactsError;
+
+        if (contacts && contacts.length > 0) {
+          customerId = contacts[0].customer_id;
+        } else {
+          // Se não encontrar o cliente, crie um novo
+          const { data: newCustomer, error: createError } = await supabase
+            .from('customers')
+            .insert([{
+              organization_id: currentOrganizationMember.organization.id,
+              name: contactValue // Use o valor do contato como nome temporário
+            }])
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          
+          customerId = newCustomer.id;
+          
+          // Adicionar o contato ao novo cliente
+          const { error: addContactError } = await supabase
+            .from('customer_contacts')
+            .insert([{
+              customer_id: customerId,
+              type: contactType,
+              value: contactValue,
+              label: contactType === 'email' ? 'Email principal' : 'WhatsApp principal'
+            }]);
+            
+          if (addContactError) throw addContactError;
+        }
       }
 
-      // Find existing chat
+      // Verificar se já existe um chat ativo
       const { data: existingChats, error: chatsError } = await supabase
         .from('chats')
         .select('*')
         .eq('organization_id', currentOrganizationMember.organization.id)
         .eq('channel_id', channel.id)
+        .eq('customer_id', customerId)
         .in('status', ['in_progress', 'pending']);
 
       if (chatsError) throw chatsError;
@@ -159,10 +195,10 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
       let chatId;
 
       if (existingChats && existingChats.length > 0) {
-        // Use existing chat
+        // Use o chat existente
         chatId = existingChats[0].id;
 
-        // Update assigned agent if not set
+        // Atualizar o agente designado se não estiver definido
         if (!existingChats[0].assigned_to) {
           await supabase
             .from('chats')
@@ -174,17 +210,17 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
             .eq('id', chatId);
         }
       } else {
-        // Get user's team (use first team if user belongs to multiple)
+        // Obter a equipe do usuário (usar a primeira equipe se pertencer a várias)
         const teamId = userTeams.length > 0 ? userTeams[0].id : null;
 
-        // Create new chat
+        // Criar um novo chat
         const { data: newChat, error: createError } = await supabase
           .from('chats')
           .insert([{
             organization_id: currentOrganizationMember.organization.id,
             channel_id: channel.id,
             customer_id: customerId,
-            external_id: formattedValue, // Usar o valor formatado aqui
+            external_id: formattedValue,
             status: 'in_progress',
             assigned_to: session.user.id,
             team_id: teamId,
@@ -206,7 +242,7 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
         chatId = newChat.id;
       }
 
-      // Navigate to chat
+      // Navegar para o chat
       navigate(`/app/chats/${chatId}`);
       onClose();
     } catch (error) {
@@ -245,7 +281,9 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
         <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            Selecionar Canal
+            {customer 
+              ? t('channels:selectChannelForCustomer', { name: customer.name }) 
+              : t('channels:selectChannel')}
           </h3>
           <button
             onClick={onClose}
@@ -264,7 +302,11 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
             </div>
           ) : channels.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400">
-              Nenhum canal {contactType === 'email' ? 'de email' : 'do WhatsApp'} ativo encontrado
+              {contactType === 'email' 
+                ? t('channels:noEmailChannels') 
+                : contactType === 'whatsapp' || contactType === 'phone'
+                ? t('channels:noWhatsAppChannels')
+                : t('channels:noChannelsForType', { type: contactType })}
             </div>
           ) : (
             <div className="space-y-2">
@@ -275,6 +317,11 @@ export function ContactChannelModal({ contactType, contactValue, onClose }: Cont
                   disabled={startingChat}
                   className="w-full flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  <img 
+                    src={getChannelIcon(channel.type)} 
+                    alt={getChannelTypeLabel(channel.type)}
+                    className="w-6 h-6 mr-3"
+                  />
                   <div className="flex-1">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                       {channel.name}

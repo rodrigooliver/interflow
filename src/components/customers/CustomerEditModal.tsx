@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Loader2, Tag, Plus } from 'lucide-react';
+import { X, Loader2, Tag, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { Customer, ContactType } from '../../types/database';
@@ -58,6 +58,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3B82F6');
   const [showNewTagForm, setShowNewTagForm] = useState(false);
+  const [showAvailableTags, setShowAvailableTags] = useState(false);
   const [creatingTag, setCreatingTag] = useState(false);
   
   // Estado para gerenciar os contatos
@@ -811,36 +812,18 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                   <ContactsFormSection 
                     contacts={contacts}
                     setContacts={setContacts}
-                    dropdownRef={dropdownRef}
+                    customer={customer}
+                    onChatModalClose={onClose}
                   />
 
                   {/* Seção de Tags */}
-                  <div className="border-t dark:border-gray-700 pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <Tag className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
-                        <h4 className="text-base font-medium text-gray-900 dark:text-white">
-                          {t('customers:tags.title')}
-                        </h4>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowNewTagForm(!showNewTagForm)}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        {t('customers:tags.addNew')}
-                      </button>
-                    </div>
+                  <div className="border-t dark:border-gray-700 pt-4">
 
                     {/* Tags selecionadas */}
                     <div className="mb-4">
-                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Tags do cliente
-                      </h5>
                       {selectedTags.length === 0 ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
-                          Nenhuma tag atribuída a este cliente
+                          {t('customers:noTags')}
                         </p>
                       ) : (
                         <div className="flex flex-wrap gap-2">
@@ -919,45 +902,73 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                       </div>
                     )}
 
-                    {/* Seletor de tags existentes */}
-                    <div className="mt-4">
-                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Adicionar tags existentes
-                      </h5>
-                      {loadingTags ? (
-                        <div className="flex justify-center py-4">
-                          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto p-1">
-                          {tags
-                            .filter(tag => !selectedTags.includes(tag.id))
-                            .length === 0 ? (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
-                              Todas as tags já foram adicionadas
-                            </p>
+                    {/* Botão para mostrar/ocultar tags disponíveis */}
+                    {!loadingTags && tags.filter(tag => !selectedTags.includes(tag.id)).length > 0 && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowAvailableTags(!showAvailableTags)}
+                          className="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          {showAvailableTags ? (
+                            <>
+                              <ChevronDown className="w-4 h-4 mr-1" />
+                              {t('customers:tags.hideAvailable')}
+                            </>
                           ) : (
-                            tags
-                              .filter(tag => !selectedTags.includes(tag.id))
-                              .map(tag => (
-                                <button
-                                  key={tag.id}
-                                  type="button"
-                                  onClick={() => handleTagToggle(tag.id)}
-                                  className="px-3 py-1.5 rounded-full text-sm flex items-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                >
-                                  <div
-                                    className="w-2.5 h-2.5 rounded-full mr-1.5"
-                                    style={{ backgroundColor: tag.color }}
-                                  />
-                                  {tag.name}
-                                  <Plus className="w-3 h-3 ml-1.5 text-gray-500" />
-                                </button>
-                              ))
+                            <>
+                              <ChevronRight className="w-4 h-4 mr-1" />
+                              {t('customers:tags.showAvailable', { count: tags.filter(tag => !selectedTags.includes(tag.id)).length })}
+                            </>
                           )}
-                        </div>
-                      )}
-                    </div>
+                        </button>
+                        
+                        {/* Tags disponíveis para adicionar */}
+                        {showAvailableTags && (
+                          <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <div className="flex justify-between items-center mb-3">
+                              <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {t('customers:tags.availableTags')}
+                              </h5>
+                              <button
+                                type="button"
+                                onClick={() => setShowNewTagForm(!showNewTagForm)}
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                {t('customers:tags.addNew')}
+                              </button>
+                            </div>
+                            
+                            {loadingTags ? (
+                              <div className="flex justify-center py-4">
+                                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto p-1">
+                                {tags
+                                  .filter(tag => !selectedTags.includes(tag.id))
+                                  .map(tag => (
+                                    <button
+                                      key={tag.id}
+                                      type="button"
+                                      onClick={() => handleTagToggle(tag.id)}
+                                      className="px-3 py-1.5 rounded-full text-sm flex items-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                    >
+                                      <div
+                                        className="w-2.5 h-2.5 rounded-full mr-1.5"
+                                        style={{ backgroundColor: tag.color }}
+                                      />
+                                      {tag.name}
+                                      <Plus className="w-3 h-3 ml-1.5 text-gray-500" />
+                                    </button>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, Mail, Phone, Instagram, Facebook, ChevronDown, Search } from 'lucide-react';
+import { Plus, Trash2, Mail, Phone, Instagram, Facebook, ChevronDown, Search, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { ContactType } from '../../types/database';
+import { ContactType, Customer } from '../../types/database';
 import { countryCodes } from '../../utils/countryCodes';
+import { ContactChannelModal } from './ContactChannelModal';
 
 export interface ContactFormData {
   id?: string;
@@ -17,21 +18,23 @@ export interface ContactFormData {
 interface ContactsFormSectionProps {
   contacts: ContactFormData[];
   setContacts: React.Dispatch<React.SetStateAction<ContactFormData[]>>;
-  dropdownRef?: React.RefObject<HTMLDivElement>;
+  customer?: Customer;
+  onChatModalClose?: () => void;
 }
 
 export function ContactsFormSection({ 
   contacts, 
   setContacts,
-  dropdownRef
+  customer,
+  onChatModalClose
 }: ContactsFormSectionProps) {
   const { t } = useTranslation(['customers', 'common']);
   const [countrySearch, setCountrySearch] = useState('');
   const [showCountryDropdown, setShowCountryDropdown] = useState<number | null>(null);
+  const [showChatModal, setShowChatModal] = useState<{index: number, type: ContactType, value: string} | null>(null);
   
   // Criar um ref local se não for fornecido um
   const localDropdownRef = useRef<HTMLDivElement>(null);
-  const effectiveDropdownRef = dropdownRef || localDropdownRef;
   
   // Ref específico para o dropdown de países
   const countryDropdownRef = useRef<HTMLDivElement>(null);
@@ -114,6 +117,28 @@ export function ContactsFormSection({
     return type === ContactType.WHATSAPP || type === ContactType.PHONE || type === ContactType.TELEGRAM;
   };
 
+  // Função para mapear o tipo de contato para o tipo esperado pelo ContactChannelModal
+  const mapContactTypeToChannelType = (type: ContactType): 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram' => {
+    switch (type) {
+      case ContactType.EMAIL:
+        return 'email';
+      case ContactType.WHATSAPP:
+        return 'whatsapp';
+      case ContactType.PHONE:
+        return 'phone';
+      case ContactType.INSTAGRAM:
+      case ContactType.INSTAGRAM_ID:
+        return 'instagram';
+      case ContactType.FACEBOOK:
+      case ContactType.FACEBOOK_ID:
+        return 'facebook';
+      case ContactType.TELEGRAM:
+        return 'telegram';
+      default:
+        return 'whatsapp';
+    }
+  };
+
   // Filtrar países com base na pesquisa
   const filteredCountries = countrySearch 
     ? countryCodes.filter(country => 
@@ -138,7 +163,7 @@ export function ContactsFormSection({
 
       {contacts.map((contact, index) => (
         <div key={index} className="flex items-start mb-3 gap-2">
-          <div className={`${contact.showTypeDropdown ? 'w-full sm:w-auto flex-1 min-w-[120px]' : 'w-auto'} relative`}>
+          <div className="w-auto relative">
             {/* Dropdown personalizado com ícones */}
             <div className="relative" ref={activeTypeDropdownIndex === index ? typeDropdownRef : null}>
               <button
@@ -159,138 +184,120 @@ export function ContactsFormSection({
                   // Fechar dropdown de países se estiver aberto
                   setShowCountryDropdown(null);
                 }}
-                className={`h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500 px-3 flex items-center justify-between ${contact.showTypeDropdown ? 'w-full' : 'w-12'} transition-all duration-200`}
+                className="h-10 w-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500 flex items-center justify-center relative"
               >
-                <span className="flex items-center">
-                  {getContactIcon(contact.type)}
-                  {contact.showTypeDropdown && (
-                    <span className="ml-2 text-sm">
-                      {contact.type === ContactType.WHATSAPP ? 'WhatsApp' :
-                       contact.type === ContactType.EMAIL ? 'Email' :
-                       contact.type === ContactType.PHONE ? 'Telefone' :
-                       contact.type === ContactType.INSTAGRAM ? 'Instagram' :
-                       contact.type === ContactType.FACEBOOK ? 'Facebook' :
-                       contact.type === ContactType.TELEGRAM ? 'Telegram' : 'Outro'}
-                    </span>
-                  )}
-                </span>
-                <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                {getContactIcon(contact.type)}
+                <ChevronDown className="w-3 h-3 text-gray-500 dark:text-gray-400 absolute bottom-1 right-1" />
               </button>
               
               {contact.showTypeDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto">
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    onClick={() => {
-                      const newContacts = [...contacts];
-                      newContacts[index].type = ContactType.WHATSAPP;
-                      newContacts[index].showTypeDropdown = false;
-                      if (needsCountryCode(ContactType.WHATSAPP) && !newContacts[index].countryCode) {
-                        newContacts[index].countryCode = 'BR';
-                      }
-                      setContacts(newContacts);
-                      setActiveTypeDropdownIndex(null);
-                    }}
-                  >
-                    <img src="/images/logos/whatsapp.svg" alt="WhatsApp" className="w-5 h-5 mr-2" />
-                    <span>WhatsApp</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    onClick={() => {
-                      const newContacts = [...contacts];
-                      newContacts[index].type = ContactType.EMAIL;
-                      newContacts[index].showTypeDropdown = false;
-                      setContacts(newContacts);
-                      setActiveTypeDropdownIndex(null);
-                    }}
-                  >
-                    <Mail className="w-5 h-5 mr-2 text-blue-500" />
-                    <span>Email</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    onClick={() => {
-                      const newContacts = [...contacts];
-                      newContacts[index].type = ContactType.PHONE;
-                      newContacts[index].showTypeDropdown = false;
-                      if (needsCountryCode(ContactType.PHONE) && !newContacts[index].countryCode) {
-                        newContacts[index].countryCode = 'BR';
-                      }
-                      setContacts(newContacts);
-                      setActiveTypeDropdownIndex(null);
-                    }}
-                  >
-                    <Phone className="w-5 h-5 mr-2 text-purple-500" />
-                    <span>Telefone</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    onClick={() => {
-                      const newContacts = [...contacts];
-                      newContacts[index].type = ContactType.INSTAGRAM;
-                      newContacts[index].showTypeDropdown = false;
-                      setContacts(newContacts);
-                      setActiveTypeDropdownIndex(null);
-                    }}
-                  >
-                    <Instagram className="w-5 h-5 mr-2 text-pink-500" />
-                    <span>Instagram</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    onClick={() => {
-                      const newContacts = [...contacts];
-                      newContacts[index].type = ContactType.FACEBOOK;
-                      newContacts[index].showTypeDropdown = false;
-                      setContacts(newContacts);
-                      setActiveTypeDropdownIndex(null);
-                    }}
-                  >
-                    <Facebook className="w-5 h-5 mr-2 text-blue-600" />
-                    <span>Facebook</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    onClick={() => {
-                      const newContacts = [...contacts];
-                      newContacts[index].type = ContactType.TELEGRAM;
-                      newContacts[index].showTypeDropdown = false;
-                      if (needsCountryCode(ContactType.TELEGRAM) && !newContacts[index].countryCode) {
-                        newContacts[index].countryCode = 'BR';
-                      }
-                      setContacts(newContacts);
-                      setActiveTypeDropdownIndex(null);
-                    }}
-                  >
-                    <img src="/images/logos/telegram.svg" alt="Telegram" className="w-5 h-5 mr-2" />
-                    <span>Telegram</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    onClick={() => {
-                      const newContacts = [...contacts];
-                      newContacts[index].type = ContactType.OTHER;
-                      newContacts[index].showTypeDropdown = false;
-                      setContacts(newContacts);
-                      setActiveTypeDropdownIndex(null);
-                    }}
-                  >
-                    <span className="ml-7">Outro</span>
-                  </button>
+                <div className="absolute z-10 mt-1 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto">
+                  <div className="grid grid-cols-3 gap-1 p-1">
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.WHATSAPP;
+                        newContacts[index].showTypeDropdown = false;
+                        if (needsCountryCode(ContactType.WHATSAPP) && !newContacts[index].countryCode) {
+                          newContacts[index].countryCode = 'BR';
+                        }
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <img src="/images/logos/whatsapp.svg" alt="WhatsApp" className="w-6 h-6 mb-1" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">WhatsApp</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.EMAIL;
+                        newContacts[index].showTypeDropdown = false;
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <Mail className="w-6 h-6 mb-1 text-blue-500" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Email</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.PHONE;
+                        newContacts[index].showTypeDropdown = false;
+                        if (needsCountryCode(ContactType.PHONE) && !newContacts[index].countryCode) {
+                          newContacts[index].countryCode = 'BR';
+                        }
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <Phone className="w-6 h-6 mb-1 text-purple-500" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Telefone</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.INSTAGRAM;
+                        newContacts[index].showTypeDropdown = false;
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <Instagram className="w-6 h-6 mb-1 text-pink-500" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Instagram</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.FACEBOOK;
+                        newContacts[index].showTypeDropdown = false;
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <Facebook className="w-6 h-6 mb-1 text-blue-600" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Facebook</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.TELEGRAM;
+                        newContacts[index].showTypeDropdown = false;
+                        if (needsCountryCode(ContactType.TELEGRAM) && !newContacts[index].countryCode) {
+                          newContacts[index].countryCode = 'BR';
+                        }
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <img src="/images/logos/telegram.svg" alt="Telegram" className="w-6 h-6 mb-1" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Telegram</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
           
-          <div className={`${contact.showTypeDropdown ? 'flex-[2] min-w-[200px]' : 'flex-1'}`}>
+          <div className="flex-1">
             <div className="flex items-center">
               {needsCountryCode(contact.type) && (
                 <div className="relative" ref={showCountryDropdown === index ? countryDropdownRef : null}>
@@ -379,16 +386,49 @@ export function ContactsFormSection({
             </div>
           </div>
           
-          <button
-            type="button"
-            onClick={() => handleRemoveContact(index)}
-            className="inline-flex items-center justify-center h-10 w-10 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-            disabled={contacts.length === 1}
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="flex items-center">
+            {/* Botão de chat - apenas mostrar se o contato tiver valor e o cliente estiver definido */}
+            {contact.value && customer && (
+              <button
+                type="button"
+                onClick={() => setShowChatModal({
+                  index,
+                  type: contact.type,
+                  value: formatContactValue(contact)
+                })}
+                className="inline-flex items-center justify-center h-10 w-10 rounded-md text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                title={t('common:startChat')}
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
+            )}
+            
+            <button
+              type="button"
+              onClick={() => handleRemoveContact(index)}
+              className="inline-flex items-center justify-center h-10 w-10 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+              disabled={contacts.length === 1}
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       ))}
+
+      {/* Modal de chat */}
+      {showChatModal && (
+        <ContactChannelModal
+          contactType={mapContactTypeToChannelType(showChatModal.type)}
+          contactValue={showChatModal.value}
+          customer={customer}
+          onClose={() => {
+            setShowChatModal(null);
+            if (onChatModalClose) {
+              onChatModalClose();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

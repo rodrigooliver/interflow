@@ -4,8 +4,12 @@
   "deleteSuccess": "Canal eliminado con éxito",
   "noChannelsYet": "Aún no hay canales creados",
   "selectChannel": "Seleccionar Canal",
+  "selectChannelForCustomer": "Seleccionar Canal para {{name}}",
   "noChannelsDescription": "Los canales le permiten conectarse con sus clientes a través de diferentes plataformas. Cree su primer canal para comenzar.",
   "createFirstChannel": "Crear primer canal",
+  "noEmailChannels": "No hay canales de correo electrónico configurados",
+  "noWhatsAppChannels": "No hay canales de WhatsApp configurados",
+  "noChannelsForType": "No hay canales configurados para {{type}}",
   "form": {
     "title": {
       "create": "Nuevo Canal de Servicio",

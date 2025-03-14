@@ -9,7 +9,7 @@ import { Chat } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useQueryes';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { StartChatModal } from '../../components/chat/StartChatModal';
+import { ChatFlowModal } from '../../components/chat/ChatFlowModal';
 import { useNavbarVisibility } from '../../contexts/NavbarVisibilityContext';
 
 // Novos tipos para os filtros
@@ -227,7 +227,7 @@ export default function Chats() {
       .single();
 
     if (chatData) {
-      console.log('chatData', chatData);
+      // console.log('chatData', chatData);
       // Verificar se o chat corresponde aos filtros atuais
       const shouldIncludeChat = () => {
         switch (selectedFilter) {
@@ -779,7 +779,7 @@ export default function Chats() {
 
       {/* Modal para iniciar nova conversa */}
       {showStartChatModal && (
-        <StartChatModal onClose={() => setShowStartChatModal(false)} />
+        <ChatFlowModal onClose={() => setShowStartChatModal(false)} />
       )}
     </div>
   );

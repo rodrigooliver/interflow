@@ -7,7 +7,6 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { CustomerAddModal } from '../../components/customers/CustomerAddModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { CustomerDeleteModal } from '../../components/customers/CustomerDeleteModal';
-import { ContactChannelModal } from '../../components/customers/ContactChannelModal';
 import { CRMStage } from '../../types/crm';
 import StageProgressBar from '../../components/customers/StageProgressBar';
 import CustomerTags from '../../components/customers/CustomerTags';
@@ -70,16 +69,6 @@ interface ColumnConfig {
   field_id?: string;
 }
 
-// Atualizar a tipagem do tagRelation para evitar o erro de lint
-interface TagRelation {
-  tags: {
-    id: string;
-    name: string;
-    color: string;
-  };
-  tag_id: string;
-}
-
 // Adicionar uma interface específica para os modais
 interface CustomerWithTagRelations extends Omit<Customer, 'tags'> {
   tags: { 
@@ -90,6 +79,44 @@ interface CustomerWithTagRelations extends Omit<Customer, 'tags'> {
       color: string;
     };
   }[];
+}
+
+// Interface para o retorno da função RPC search_customers
+interface SearchCustomersResult {
+  id: string;
+  name: string;
+  organization_id: string;
+  stage_id: string | null;
+  created_at: string;
+  contacts: {
+    id: string;
+    customer_id: string;
+    type: string; // Tipo string para compatibilidade com a API
+    value: string;
+    created_at: string;
+    updated_at: string;
+  }[];
+  tags: {
+    id: string;
+    name: string;
+    color: string;
+  }[];
+  field_values: Record<string, string>;
+  crm_stages: {
+    id: string;
+    name: string;
+    color: string;
+    position: number;
+    funnel_id: string;
+    created_at: string;
+    crm_funnels: {
+      id: string;
+      name: string;
+      description: string;
+      created_at: string;
+    } | null;
+  } | null;
+  total_count: number;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -404,160 +431,82 @@ export default function Customers() {
     setError('');
     
     try {
-      // Construção da consulta - vamos verificar cada campo na consulta de contatos
-      let query = supabase
-        .from('customers')
-        .select(`
-          *,
-          tags:customer_tags(tag_id, tags:tags(*)),
-          field_values:customer_field_values(
-            id,
-            field_definition_id,
-            value,
-            updated_at
-          ),
-          contacts:customer_contacts(
-            id,
-            customer_id,
-            type,
-            value,
-            created_at,
-            updated_at
-          ),
-          crm_stages!inner(
-            id,
-            name,
-            color,
-            position,
-            funnel_id,
-            created_at,
-            crm_funnels!inner(
-              id,
-              name,
-              description,
-              created_at
-            )
-          )
-        `, { count: 'exact' })
-        .eq('organization_id', currentOrganizationMember.organization.id);
-      
-      // Aplicar filtros de pesquisa se necessário
-      if (debouncedSearchTerm) {
-        query = query.ilike('name', `%${debouncedSearchTerm}%`);
-      }
-      
-      // Aplicar filtro de estágio se selecionado
-      if (selectedStageId) {
-        query = query.eq('stage_id', selectedStageId);
-      }
-      
-      // Aplicar filtro de tags se houver tags selecionadas
-      if (selectedTagIds.length > 0) {
-        const { data: customerIdsWithTags } = await supabase
-          .from('customer_tags')
-          .select('customer_id')
-          .in('tag_id', selectedTagIds);
-          
-        if (customerIdsWithTags && customerIdsWithTags.length > 0) {
-          const customerIds = customerIdsWithTags.map(item => item.customer_id);
-          query = query.in('id', customerIds);
-        } else {
-          setCustomers([]);
-          setTotalCustomers(0);
-          if (!isSilent) setLoading(false);
-          return;
-        }
-      }
-      
-      // Aplicar ordenação à query principal
-      if (sortConfig?.key) {
-        const orderColumn = sortConfig.key;
-        
-        // Ajustar a coluna de ordenação para campos personalizados
-        if (orderColumn.startsWith('custom_field_')) {
-          // Para campos personalizados, aplicamos ordenação após buscar os dados
-        } else {
-          query = query.order(orderColumn, { ascending: sortConfig.direction === 'asc' });
-        }
-      } else {
-        query = query.order('name', { ascending: true });
-      }
+      // Usar a função RPC search_customers para buscar clientes e seus contatos
+      const { data, error } = await supabase
+        .rpc('search_customers', {
+          p_organization_id: currentOrganizationMember.organization.id,
+          p_search_query: debouncedSearchTerm,
+          p_limit: ITEMS_PER_PAGE,
+          p_offset: (currentPage - 1) * ITEMS_PER_PAGE,
+          p_funnel_id: selectedFunnelId,
+          p_stage_id: selectedStageId,
+          p_tag_ids: selectedTagIds.length > 0 ? selectedTagIds : null,
+          p_sort_column: sortConfig?.key || 'name',
+          p_sort_direction: sortConfig?.direction || 'asc'
+        });
 
-      
-      // Consulta única para obter dados e contagem
-      const { data: customerData, count, error: queryError } = await query
-      .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
-      
-      
-      if (queryError) {
-        console.error('Erro ao buscar dados dos clientes:', queryError);
+      if (error) {
+        console.error('Erro ao buscar dados dos clientes:', error);
         setError('Erro ao carregar clientes. Por favor, tente novamente.');
         if (!isSilent) setLoading(false);
         return;
       }
       
-      // Processar os dados dos clientes
-      if (customerData) {
-        const formattedCustomers: Customer[] = customerData.map(customer => {
-          // Processar tags
-          const tags = customer.tags
-            ? customer.tags
-                .filter((tagRelation: TagRelation) => tagRelation.tags)
-                .map((tagRelation: TagRelation) => ({
-                  id: tagRelation.tags.id,
-                  name: tagRelation.tags.name,
-                  color: tagRelation.tags.color
-                }))
-            : [];
-          
-          // Processar contatos - ajustando para a estrutura correta
-          const contacts = customer.contacts 
-            ? customer.contacts.map((contact: CustomerContact) => ({
-                id: contact.id,
-                customer_id: contact.customer_id,
-                type: contact.type,
-                value: contact.value,
-                created_at: contact.created_at,
-                updated_at: contact.updated_at
-              }))
-            : [];
-          
-          // Processar valores de campos personalizados
-          const field_values = customer.field_values || [];
-          const fieldValuesMap: Record<string, string> = {};
-          if (Array.isArray(field_values)) {
-            field_values.forEach((fv: { field_definition_id: string; value: string }) => {
-              fieldValuesMap[fv.field_definition_id] = fv.value;
-            });
-          }
-          
-          // Processar funis e estágios
-          const crm_stages = customer.crm_stages ? {
-            id: customer.crm_stages.id,
-            name: customer.crm_stages.name,
-            color: customer.crm_stages.color,
-            position: customer.crm_stages.position,
-            funnel_id: customer.crm_stages.funnel_id,
-            created_at: customer.crm_stages.created_at,
-            crm_funnels: customer.crm_stages.crm_funnels ? {
-              id: customer.crm_stages.crm_funnels.id,
-              name: customer.crm_stages.crm_funnels.name,
-              description: customer.crm_stages.crm_funnels.description,
-              created_at: customer.crm_stages.crm_funnels.created_at
+      if (data && data.length > 0) {
+        // Processar os dados retornados
+        const formattedCustomers = data.map((customer: SearchCustomersResult) => {
+          // Converter os tipos de dados para o formato esperado pela interface Customer
+          const formattedCustomer = {
+            id: customer.id,
+            name: customer.name,
+            organization_id: customer.organization_id,
+            stage_id: customer.stage_id,
+            created_at: customer.created_at,
+            updated_at: customer.created_at, // Usamos created_at como fallback já que updated_at não existe
+            // Converter tags de JSONB para o formato esperado
+            tags: (customer.tags || []).map((tag) => ({
+              id: tag.id,
+              name: tag.name,
+              color: tag.color
+            })),
+            // Converter contacts de JSONB para o formato esperado
+            contacts: (customer.contacts || []).map((contact) => ({
+              id: contact.id,
+              customer_id: contact.customer_id,
+              type: contact.type,
+              value: contact.value,
+              created_at: contact.created_at,
+              updated_at: contact.updated_at
+            })),
+            // Converter field_values de JSONB para o formato esperado
+            field_values: customer.field_values || {},
+            // Converter crm_stages de JSONB para o formato esperado
+            crm_stages: customer.crm_stages ? {
+              id: customer.crm_stages.id,
+              name: customer.crm_stages.name,
+              color: customer.crm_stages.color,
+              position: customer.crm_stages.position,
+              funnel_id: customer.crm_stages.funnel_id,
+              created_at: customer.crm_stages.created_at,
+              crm_funnels: customer.crm_stages.crm_funnels ? {
+                id: customer.crm_stages.crm_funnels.id,
+                name: customer.crm_stages.crm_funnels.name,
+                description: customer.crm_stages.crm_funnels.description,
+                created_at: customer.crm_stages.crm_funnels.created_at
+              } : null
             } : null
-          } : null;
-          
-          return {
-            ...customer,
-            tags,
-            contacts,
-            field_values: fieldValuesMap,
-            crm_stages
           };
+          
+          // Usar uma conversão de tipo explícita para evitar erros de tipo
+          return formattedCustomer as unknown as Customer;
         });
         
         setCustomers(formattedCustomers);
-        setTotalCustomers(count || 0);
+        
+        // Obter o total de clientes do primeiro resultado (todos têm o mesmo valor)
+        if (data.length > 0) {
+          setTotalCustomers(data[0].total_count || 0);
+        }
         
         // Construir mapa de valores de campo personalizado
         const newCustomFieldValues: Record<string, Record<string, string>> = {};
@@ -567,6 +516,9 @@ export default function Customers() {
           }
         });
         setCustomFieldValues(newCustomFieldValues);
+      } else {
+        setCustomers([]);
+        setTotalCustomers(0);
       }
       
       if (!isSilent) setLoading(false);
@@ -579,6 +531,13 @@ export default function Customers() {
 
   const handleContactClick = (type: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram', value: string) => {
     setContactModalState({ type, value });
+    // Encontrar o cliente correspondente ao contato
+    const customer = customers.find(c => 
+      c.contacts.some(contact => contact.value === value && contact.type === type)
+    );
+    if (customer) {
+      setSelectedCustomer(customer);
+    }
     setShowContactModal(true);
   };
 
@@ -625,16 +584,6 @@ export default function Customers() {
     });
     setCurrentPage(1);
   };
-
-  // Configurar a função de manipulação de contato no objeto window para que o componente CustomerContacts possa acessá-la
-  useEffect(() => {
-    window.handleContactClick = handleContactClick;
-    
-    // Limpar a função ao desmontar o componente
-    return () => {
-      window.handleContactClick = undefined;
-    };
-  }, []);
 
   // Função para salvar configurações de colunas
   const saveColumnConfigs = (configs: ColumnConfig[]) => {
@@ -780,6 +729,17 @@ export default function Customers() {
       feedbackElement.remove();
     }, 3000);
   };
+
+  // Configurar a função de manipulação de contato no objeto window para que o componente CustomerContacts possa acessá-la
+  useEffect(() => {
+    // @ts-ignore - Ignorar erros de tipo para a função handleContactClick
+    window.handleContactClick = handleContactClick;
+    
+    // Limpar a função ao desmontar o componente
+    return () => {
+      window.handleContactClick = undefined;
+    };
+  }, [customers]); // Adicionar customers como dependência para garantir que a função tenha acesso à lista atualizada
 
   if (!currentOrganizationMember) {
     return (
@@ -1205,7 +1165,7 @@ export default function Customers() {
                               
                               {column.id === 'contacts' && (
                                 <div>
-                                  <CustomerContacts contacts={customer.contacts} />
+                                  <CustomerContacts contacts={customer.contacts} customer={customer} />
                                 </div>
                               )}
                               
@@ -1407,17 +1367,6 @@ export default function Customers() {
         />
       )}
 
-      {/* Contact Channel Modal */}
-      {showContactModal && contactModalState && (
-        <ContactChannelModal
-          contactType={contactModalState.type}
-          contactValue={contactModalState.value}
-          onClose={() => {
-            setShowContactModal(false);
-            setContactModalState(null);
-          }}
-        />
-      )}
     </div>
   );
 }

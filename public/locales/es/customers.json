@@ -2,6 +2,8 @@
   "title": "Clientes",
   "addCustomer": "Agregar Cliente",
   "addContact": "Agregar contacto",
+  "addNewCustomer": "Agregar nuevo cliente",
+  "allContacts": "Todos los contactos",
   "viewCRM": "Ver CRM",
   "name": "Nombre",
   "contact": "Contacto",
@@ -26,7 +28,10 @@
     "createNew": "Crear nueva etiqueta",
     "name": "Nombre de etiqueta",
     "color": "Color",
-    "noTags": "No hay etiquetas disponibles"
+    "noTags": "No hay etiquetas disponibles",
+    "hideAvailable": "Ocultar etiquetas disponibles",
+    "showAvailable": "Mostrar etiquetas disponibles ({{count}})",
+    "availableTags": "Etiquetas disponibles"
   },
   "noTags": "Sin etiquetas",
   "noContacts": "Sin contactos",
@@ -38,6 +43,9 @@
   "configureVisibleColumns": "Configurar columnas visibles",
   "resetSettings": "Restablecer configuración",
   "searchPlaceholder": "Buscar por nombre, correo o WhatsApp...",
+  "searchByNameOrContact": "Buscar por nombre o contacto...",
+  "searchToFindCustomers": "Busque para encontrar clientes o agregue uno nuevo",
+  "selectContactToStartChat": "Seleccione un contacto para iniciar la conversación",
   "activeFilters": "Filtros activos",
   "clearAll": "Limpiar todo",
   "registeredOn": "Registrado el",
@@ -58,6 +66,11 @@
   "enterWhatsAppDescription": "Ingrese el número de WhatsApp del cliente para verificar si ya existe.",
   "nameRequired": "El nombre es obligatorio",
   "namePlaceholder": "Nombre del cliente",
+  "noCustomersFound": "No se encontraron clientes",
+  "searchCustomer": "Buscar cliente",
+  "selectedCustomer": "Cliente seleccionado",
+  "startChat": "Iniciar chat",
+  "startChatWithCustomer": "Iniciar chat con {{name}}",
   "whatsapp": "WhatsApp",
   "whatsappFormatHint": "Ingrese solo números, sin espacios ni caracteres especiales."
 }

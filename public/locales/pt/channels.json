@@ -9,6 +9,7 @@
   },
   "deleteSuccess": "Canal removido com sucesso",
   "selectChannel": "Selecionar Canal",
+  "selectChannelForCustomer": "Selecionar Canal para {{name}}",
   "descriptions": {
     "email": "Atendimento via Email com suporte IMAP/SMTP",
     "facebook": "Integração com Messenger do Facebook",
@@ -24,6 +25,9 @@
   "noChannelsYet": "Nenhum canal criado ainda",
   "noChannelsDescription": "Canais permitem que você se conecte com seus clientes através de diferentes plataformas. Crie seu primeiro canal para começar.",
   "createFirstChannel": "Criar primeiro canal",
+  "noEmailChannels": "Não há canais de email configurados",
+  "noWhatsAppChannels": "Não há canais de WhatsApp configurados",
+  "noChannelsForType": "Não há canais configurados para {{type}}",
   "form": {
     "email": {
       "error": "Erro ao conectar com o servidor de email",

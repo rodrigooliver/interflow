@@ -1,5 +1,4 @@
-import React from 'react';
-import { Power, PowerOff, Loader2, X, Pencil, CheckCircle2, XCircle as XCircle2, Edit2, Trash2 } from 'lucide-react';
+import { Power, PowerOff, Loader2, Pencil, CheckCircle2, XCircle as XCircle2, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ChatChannel } from '../../types/database';
@@ -18,7 +17,6 @@ export function ChannelCard({
   channel,
   canManage,
   onToggleStatus,
-  onEdit,
   onDelete,
   updatingStatus
 }: ChannelCardProps) {

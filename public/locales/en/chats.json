@@ -60,7 +60,8 @@
   },
   "time": {
     "start": "Start",
-    "end": "End"
+    "end": "End",
+    "yesterday": "Yesterday"
   },
   "input": {
     "placeholder": "Type your message...",

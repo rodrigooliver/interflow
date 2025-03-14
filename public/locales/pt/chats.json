@@ -60,7 +60,8 @@
   },
   "time": {
     "start": "Início",
-    "end": "Fim"
+    "end": "Fim",
+    "yesterday": "Ontem"
   },
   "input": {
     "placeholder": "Digite sua mensagem...",

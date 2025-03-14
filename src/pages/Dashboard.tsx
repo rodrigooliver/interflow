@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
+import { ChatFlowModal } from '../components/chat/ChatFlowModal';
 
 interface StatCard {
   id: string;
@@ -62,6 +63,7 @@ export default function Dashboard() {
   const [recentChats, setRecentChats] = useState<ChatData[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [selectedTimeRange, setSelectedTimeRange] = useState('week');
+  const [showChatFlowModal, setShowChatFlowModal] = useState(false);
 
   useEffect(() => {
     if (currentOrganizationMember) {
@@ -562,12 +564,12 @@ export default function Dashboard() {
           </div>
           
           <div className="mt-6">
-            <Link
-              to="/app/chats/new"
+            <button
+              onClick={() => setShowChatFlowModal(true)}
               className="block w-full py-2 px-4 text-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
             >
               {t('startNewChat')}
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -703,6 +705,11 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modal para iniciar nova conversa */}
+      {showChatFlowModal && (
+        <ChatFlowModal onClose={() => setShowChatFlowModal(false)} />
+      )}
     </div>
   );
 }
