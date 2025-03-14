@@ -60,6 +60,13 @@ import { useAutoLogin } from './hooks/useAutoLogin';
 import { ConnectionStatus } from './components/common/ConnectionStatus';
 import OrganizationSelector from './components/auth/OrganizationSelector';
 
+// Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
+declare global {
+  interface Window {
+    removeInitialLoader?: () => void;
+  }
+}
+
 // Criar uma instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,12 +80,15 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { session, profile, loading, userOrganizations, loadingCurrentOrganizationMember, loadingOrganizations, currentOrganizationMember, setCurrentOrganizationId } = useAuthContext();
+  const { session, profile, loading, userOrganizations, loadingOrganizations, currentOrganizationMember, setCurrentOrganizationId } = useAuthContext();
+  // console.log('userOrganizations', userOrganizations);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [modalOrganization, setModalOrganization] = useState(false);
+  const [appInitialized, setAppInitialized] = useState(true);
+  
   const location = useLocation();
   
   // Usar o hook de autologin para garantir que a sessão seja estabelecida após o cadastro
@@ -106,6 +116,45 @@ function AppContent() {
     };
   }, []);
   
+  // Efeito para controlar o estado de inicialização da aplicação
+  useEffect(() => {
+    // Tempo mínimo reduzido para o loading inicial
+    const minLoadingTime = 500; // 500ms
+    const startTime = Date.now();
+    
+    // Função para finalizar o loading após o tempo mínimo
+    const finishLoading = () => {
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+      
+      // Se já passou o tempo mínimo, finaliza imediatamente
+      if (remainingTime <= 0) {
+        setAppInitialized(true);
+      } else {
+        // Caso contrário, espera apenas o tempo restante
+        setTimeout(() => {
+          setAppInitialized(true);
+        }, remainingTime);
+      }
+    };
+    
+    // Verificar se os dados essenciais já estão disponíveis
+    const essentialDataLoaded = !loading && profile !== undefined;
+    
+    // Se os dados essenciais já estiverem carregados, finalizar o loading
+    if (essentialDataLoaded) {
+      finishLoading();
+    }
+    
+    // Definir um timeout máximo para evitar que o usuário fique preso na tela de loading
+    const maxLoadingTimeout = setTimeout(() => {
+      setAppInitialized(true);
+    }, 2000); // 2 segundos no máximo
+    
+    return () => {
+      clearTimeout(maxLoadingTimeout);
+    };
+  }, [loading, profile]);
 
   // Função para lidar com a seleção de organização
   const handleOrganizationSelect = async (orgId: string) => {
@@ -122,14 +171,16 @@ function AppContent() {
     }
   };
 
-  // Enquanto estiver carregando, mostra o loading em todas as rotas
-  if (loading || loadingOrganizations) {
+  // Se a aplicação ainda não foi inicializada, mostrar tela de loading
+  if (!appInitialized) {
+    return <LoadingScreen />;
+  }
+
+  // Mostrar loading apenas se os dados essenciais não estiverem disponíveis
+  // Agora só mostramos o loading se não tivermos o perfil do usuário
+  if (loading && !profile) {
     // console.log('[AppContent] Carregando dados do usuário ou organizações...');
-    return (
-      <Routes>
-        <Route path="*" element={<LoadingScreen />} />
-      </Routes>
-    );
+    return <LoadingScreen />;
   }
 
   // Se não estiver autenticado, permite acesso apenas às rotas públicas
@@ -313,6 +364,47 @@ function AppContent() {
 }
 
 function App() {
+  const [globalLoading, setGlobalLoading] = useState(true);
+  const [contentReady, setContentReady] = useState(false);
+  
+  // Efeito para garantir que o LoadingScreen seja exibido durante todo o processo de carregamento
+  useEffect(() => {
+    // Adicionar um estilo global para evitar flash de tela branca
+    const style = document.createElement('style');
+    style.innerHTML = `
+      body {
+        background-color: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#111827' : '#f9fafb'};
+        transition: background-color 0.3s ease;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Remover o estilo quando o componente for desmontado
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  
+  // Efeito para remover o loader inicial quando o React estiver pronto
+  useEffect(() => {
+    // Remover o loader inicial
+    if (typeof window.removeInitialLoader === 'function') {
+      window.removeInitialLoader();
+    } else {
+      // Fallback para remover o loader se a função não estiver disponível
+      const initialLoader = document.getElementById('initial-loader');
+      if (initialLoader && initialLoader.parentNode) {
+        initialLoader.style.opacity = '0';
+        initialLoader.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+          if (initialLoader.parentNode) {
+            initialLoader.parentNode.removeChild(initialLoader);
+          }
+        }, 300);
+      }
+    }
+  }, []);
+  
   useEffect(() => {
     // Fix para iOS
     const appHeight = () => {
@@ -322,9 +414,76 @@ function App() {
 
     window.addEventListener('resize', appHeight);
     appHeight();
-
-    return () => window.removeEventListener('resize', appHeight);
+    
+    // Tempo mínimo de loading para mostrar a tela inicial
+    const minLoadingTime = 800; // Reduzido para 800ms
+    
+    // Usar requestAnimationFrame para verificar quando o DOM estiver pronto para renderizar
+    requestAnimationFrame(() => {
+      const startTime = Date.now();
+      
+      // Função para finalizar o loading após o tempo mínimo
+      const finishLoading = () => {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        
+        // Se já passou o tempo mínimo, finaliza imediatamente
+        if (remainingTime <= 0) {
+          setGlobalLoading(false);
+        } else {
+          // Caso contrário, espera apenas o tempo restante
+          setTimeout(() => {
+            setGlobalLoading(false);
+          }, remainingTime);
+        }
+      };
+      
+      // Usar o evento 'DOMContentLoaded' para detectar quando o DOM estiver pronto
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        finishLoading();
+      } else {
+        document.addEventListener('DOMContentLoaded', finishLoading);
+      }
+      
+      // Definir um timeout máximo para evitar que o usuário fique preso na tela de loading
+      const maxLoadingTimeout = setTimeout(() => {
+        setGlobalLoading(false);
+      }, 2000); // 2 segundos no máximo
+      
+      return () => {
+        clearTimeout(maxLoadingTimeout);
+      };
+    });
+    
+    return () => {
+      window.removeEventListener('resize', appHeight);
+      document.removeEventListener('DOMContentLoaded', () => {
+        setGlobalLoading(false);
+      });
+    };
   }, []);
+
+  // Efeito para detectar quando o conteúdo principal estiver pronto
+  useEffect(() => {
+    if (!globalLoading) {
+      // Usar um pequeno timeout para garantir que o conteúdo esteja realmente pronto
+      const readyTimeout = setTimeout(() => {
+        setContentReady(true);
+      }, 100);
+      
+      return () => clearTimeout(readyTimeout);
+    }
+  }, [globalLoading]);
+
+  // Se ainda estiver no carregamento global inicial, mostrar tela de loading
+  // Nota: Precisamos envolver o LoadingScreen com o ThemeProvider para que o tema seja aplicado
+  if (globalLoading || !contentReady) {
+    return (
+      <ThemeProvider>
+        <LoadingScreen />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

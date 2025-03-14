@@ -7,9 +7,141 @@
     <meta name="theme-color" content="#7064e9" />
     <link rel="icon" type="image/svg+xml" href="/images/logos/interflow.svg" />
     <title>Interflow Chat</title>
+    <style>
+      /* Estilo para evitar flash de tela branca durante o carregamento */
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      
+      body {
+        background-color: #f9fafb;
+        transition: background-color 0.3s ease;
+      }
+      
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #111827;
+        }
+      }
+      
+      /* Estilo para o loader inicial */
+      #initial-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        background-color: inherit;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+
+      #initial-loader.visible {
+        display: flex;
+      }
+      
+      #initial-loader.show {
+        opacity: 1;
+      }
+      
+      #initial-loader.fade-out {
+        opacity: 0;
+      }
+      
+      #initial-loader img {
+        height: 64px;
+        width: auto;
+        margin-bottom: 24px;
+        animation: pulse 2s infinite;
+      }
+      
+      #initial-loader .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(59, 130, 246, 0.2);
+        border-radius: 50%;
+        border-top-color: #3b82f6;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+      
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <script>
+      // Definir os logos como variáveis globais
+      const darkLogo = `data:image/svg+xml;base64,${btoa('<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg id="svg4" xml:space="preserve" viewBox="0 0 700 180" y="0px" x="0px" version="1.1" width="700" height="180" xmlns="http://www.w3.org/2000/svg"><path id="path2" d="m 24.742373,38.588644 c -3.2,0 -5.96,2.77 -5.96,5.97 v 89.879996 c 0,3.2 2.76,5.96 5.96,5.96 3.35,0 6.11,-2.76 6.11,-5.96 V 44.558644 c 0,-3.2 -2.76,-5.97 -6.11,-5.97 z" fill="#ffffff"/><path d="m 358.92237,38.588644 h -51.777 c -3.1997,0 -5.963,2.7634 -5.963,5.963 0,3.3451 2.7634,6.1085 5.963,6.1085 h 51.78 c 3.3451,0 6.1085,-2.7634 6.1085,-6.1085 0,-3.1997 -2.7634,-5.963 -6.1085,-5.963 z" fill="#ffffff"/><path d="m 443.47237,38.588644 c -3.2,0 -5.96,2.77 -5.96,5.97 v 89.879996 c 0,3.2 2.76,5.96 5.96,5.96 3.35,0 6.11,-2.76 6.11,-5.96 V 44.558644 c 0,-3.2 -2.76,-5.97 -6.11,-5.97 z" fill="#ffffff"/><path d="m 159.15237,38.888644 c -2.91,0 -5.24,2.32 -5.24,5.23 v 66.609996 c 0,15.13 10.33,27.78 24.29,30.69 3.2,0.73 6.26,-1.74 6.26,-5.09 v -1.6 c 0,-2.33 -1.6,-4.51 -3.93,-5.09 -8.29,-1.89 -14.54,-9.6 -14.54,-18.91 V 74.808644 h 13.23 c 2.91,0 5.24,-2.33 5.24,-5.24 0,-2.91 -2.33,-5.38 -5.24,-5.38 h -13.23 v -20.07 c 0,-2.91 -2.33,-5.23 -5.24,-5.23 z" fill="#ffffff"/><path d="m 513.89237,61.548644 c -18.76,0 -34.03,15.71 -34.03,34.91 v 37.519996 c 0,3.2 2.76,5.96 5.96,5.96 3.35,0 6.11,-2.76 6.11,-5.96 V 96.918644 c 0,-12.66 9.89,-22.84 21.96,-22.84 12.07,0 21.96,10.18 21.96,22.84 v 37.519996 c 0,3.2 2.62,5.96 5.96,5.96 3.35,0 6.11,-2.76 6.11,-5.96 V 96.918644 c 0,-19.2 -15.27,-34.91 -34.03,-34.91 z" fill="#ffffff"/><path d="m 660.92237,61.548644 c -21.38,0 -38.83,17.89 -38.83,39.999996 0,21.96 17.45,39.85 38.83,39.85 12.07,0 22.83,-5.53 29.81,-14.4 3.2,-3.93 0.29,-9.75 -4.65,-9.75 -1.89,0 -3.64,0.88 -4.8,2.33 -4.8,5.96 -12.22,9.75 -20.36,9.75 -9.17,0 -17.16,-4.66 -22.11,-12.08 -2.04,-3.05 -3.49,-6.69 -4.22,-10.47 h 59.93 c 2.9,0 5.23,-2.32 5.23,-5.23 0,-1.89 -0.15,-3.639996 -0.29,-5.379996 -2.47,-19.49 -18.76,-34.62 -38.54,-34.62 z" fill="#ffffff"/></svg>')}`;
+      const lightLogo = `data:image/svg+xml;base64,${btoa('<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg id="svg14" xml:space="preserve" viewBox="0 0 700 180" y="0px" x="0px" version="1.1" width="700" height="180" xmlns="http://www.w3.org/2000/svg"><path stroke-miterlimit="2" d="m 184.2,331.17 c -3.1997,0 -5.963,2.7634 -5.963,5.963 v 89.882 c 0,3.1997 2.7634,5.963 5.963,5.963 3.3451,0 6.1085,-2.7634 6.1085,-5.963 v -89.882 c 0,-3.1997 -2.7634,-5.963 -6.1085,-5.963 z" style="fill:#7064e9;stroke-width:0;stroke-miterlimit:2" id="path42230"/><path stroke-miterlimit="2" d="m 252.82,354.59 c -18.762,0 -34.033,15.708 -34.033,34.906 v 37.524 c 0,3.1997 2.7634,5.963 5.963,5.963 3.3451,0 6.1085,-2.7634 6.1085,-5.963 v -37.524 c 0,-12.653 9.8899,-22.834 21.961,-22.834 12.072,0 21.961,10.181 21.961,22.834 v 37.524 c 0,3.1997 2.6179,5.963 5.963,5.963 3.3451,0 6.1085,-2.7634 6.1085,-5.963 v -37.524 c 0,-19.198 -15.271,-34.906 -34.033,-34.906 z" style="fill:#7064e9;stroke-width:0;stroke-miterlimit:2" id="path42232"/></svg>')}`;
+
+      // Definir o logo assim que possível
+      const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const logoSrc = isDarkMode ? darkLogo : lightLogo;
+
+      // Pré-carregar a imagem
+      const preloadImage = new Image();
+      preloadImage.src = logoSrc;
+      
+      preloadImage.onload = function() {
+        const loader = document.getElementById('initial-loader');
+        const logoElement = document.getElementById('initial-loader-logo');
+        
+        if (logoElement && loader) {
+          logoElement.src = logoSrc;
+          // Primeiro tornar visível
+          loader.classList.add('visible');
+          // Depois de um frame, adicionar a opacidade
+          requestAnimationFrame(() => {
+            loader.classList.add('show');
+          });
+        }
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Loader inicial que será exibido antes do React carregar -->
+    <div id="initial-loader">
+      <img id="initial-loader-logo" alt="Interflow Logo"/>
+      <div class="spinner"></div>
+    </div>
+    
+    <script>
+      // Remover o loader inicial quando o React estiver pronto
+      window.removeInitialLoader = function() {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+          loader.classList.remove('show');
+          setTimeout(() => {
+            if (loader.parentNode) {
+              loader.parentNode.removeChild(loader);
+            }
+          }, 500);
+        }
+      };
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

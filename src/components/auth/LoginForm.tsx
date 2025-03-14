@@ -135,29 +135,6 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
             </p>
           </div>
         )}
-        
-        {/* Botão de depuração - remover em produção */}
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="mt-4 border-t pt-4">
-            <p className="text-xs text-gray-500 mb-2">Ferramentas de depuração:</p>
-            <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  // Verificar se já temos um usuário logado
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (session?.user) {
-                    // Redirecionar para o dashboard
-                    navigate('/app');
-                  }
-                }}
-                className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded"
-              >
-                Ir para dashboard
-              </button>
-            </div>
-          </div>
-        )}
       </form>
     </>
   );
