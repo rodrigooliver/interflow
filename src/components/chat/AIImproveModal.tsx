@@ -249,13 +249,13 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
                     <button
                       key={option.id}
                       onClick={() => setSelectedOption(option.id)}
-                      className={`flex-1 min-w-[calc(25%-6px)] sm:min-w-[calc(20%-6px)] md:min-w-[calc(16.66%-6px)] px-2 py-1.5 rounded-lg flex flex-row items-center justify-center gap-1 text-xs transition-colors ${
+                      className={`flex-1 min-w-[calc(33.33%-6px)] sm:min-w-[calc(20%-6px)] md:min-w-[calc(16.66%-6px)] px-2 py-1.5 rounded-lg flex flex-row items-center justify-center gap-1.5 text-xs transition-colors ${
                         selectedOption === option.id
                           ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 ring-1 ring-blue-500'
                           : 'bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5" />
+                      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                       <span className="whitespace-nowrap">{option.label}</span>
                     </button>
                   );
