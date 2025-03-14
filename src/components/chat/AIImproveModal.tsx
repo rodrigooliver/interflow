@@ -242,20 +242,20 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('ai.improvementType')}
               </label>
-              <div className="flex flex-wrap gap-1.5 pb-1">
+              <div className="flex flex-wrap gap-2 pb-1">
                 {improvementOptions.map((option) => {
                   const Icon = option.icon;
                   return (
                     <button
                       key={option.id}
                       onClick={() => setSelectedOption(option.id)}
-                      className={`flex-1 min-w-[calc(33.33%-6px)] sm:min-w-[calc(20%-6px)] md:min-w-[calc(16.66%-6px)] px-2 py-1.5 rounded-lg flex flex-row items-center justify-center gap-1.5 text-xs transition-colors ${
+                      className={`flex-1 min-w-[calc(50%-4px)] sm:min-w-[calc(33.33%-8px)] md:min-w-[calc(33.33%-8px)] px-3 py-2 rounded-lg flex flex-row items-center justify-center gap-2 text-xs transition-colors ${
                         selectedOption === option.id
                           ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 ring-1 ring-blue-500'
                           : 'bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                      <Icon className="w-4 h-4 flex-shrink-0" />
                       <span className="whitespace-nowrap">{option.label}</span>
                     </button>
                   );
@@ -329,31 +329,31 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
             // Layout para mobile - botões empilhados
             <div className="flex flex-col w-full gap-2">
               <button
-                onClick={handleApply}
-                disabled={isProcessing || !improvedText.trim()}
-                className="w-full py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 hover:bg-green-700 text-sm font-medium transition-colors"
+                onClick={handleImprove}
+                disabled={
+                  isProcessing || 
+                  !selectedPrompt || 
+                  !selectedOption || 
+                  (selectedOption !== 'generate' && !text.trim() && !improvedText.trim()) ||
+                  (selectedOption === 'custom' && !customInstructions.trim())
+                }
+                className="w-full py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 text-sm font-medium transition-colors"
               >
-                {t('ai.apply')}
+                {isProcessing ? (
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                ) : (
+                  selectedOption ? 
+                    `${improvementOptions.find(opt => opt.id === selectedOption)?.label} ${t('ai.with')}` : 
+                    t('ai.improve')
+                )}
               </button>
               <div className="flex gap-2 w-full">
                 <button
-                  onClick={handleImprove}
-                  disabled={
-                    isProcessing || 
-                    !selectedPrompt || 
-                    !selectedOption || 
-                    (selectedOption !== 'generate' && !text.trim() && !improvedText.trim()) ||
-                    (selectedOption === 'custom' && !customInstructions.trim())
-                  }
-                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 text-sm font-medium transition-colors"
+                  onClick={handleApply}
+                  disabled={isProcessing || !improvedText.trim()}
+                  className="flex-1 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 hover:bg-green-700 text-sm font-medium transition-colors"
                 >
-                  {isProcessing ? (
-                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                  ) : (
-                    selectedOption ? 
-                      `${improvementOptions.find(opt => opt.id === selectedOption)?.label} ${t('ai.with')}` : 
-                      t('ai.improve')
-                  )}
+                  {t('ai.apply')}
                 </button>
                 <button
                   onClick={onClose}
