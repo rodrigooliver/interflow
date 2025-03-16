@@ -1,0 +1,1 @@
+  "responseTimePeriodDescription": "Average first response time in {{period}}",

@@ -1,16 +1,9 @@
 import React from 'react';
-import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
-import { ptBR, enUS, es } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { Chat } from '../../types/database';
 import { ChatAvatar } from './ChatAvatar';
 import { MessageStatus } from './MessageStatus';
-
-const locales = {
-  pt: ptBR,
-  en: enUS,
-  es: es
-};
+import { formatLastMessageTime } from '../../utils/date';
 
 interface ChatListProps {
   chats: Chat[];
@@ -20,25 +13,6 @@ interface ChatListProps {
 
 export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
   const { t, i18n } = useTranslation('chats');
-
-  const formatLastMessageTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const locale = locales[i18n.language as keyof typeof locales] || enUS;
-    
-    if (isToday(date)) {
-      // Se for hoje, mostra apenas o horário
-      return format(date, 'HH:mm', { locale });
-    } else if (isYesterday(date)) {
-      // Se for ontem, mostra "Ontem"
-      return t('time.yesterday');
-    } else if (isThisWeek(date)) {
-      // Se for esta semana, mostra o dia da semana
-      return format(date, 'EEEE', { locale });
-    } else {
-      // Se for anterior à semana atual, mostra a data completa
-      return format(date, 'dd/MM/yyyy', { locale });
-    }
-  };
 
   const getStatusBadge = (chat: Chat) => {
     switch (chat.status) {
@@ -94,7 +68,7 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
                   {chat.customer?.name || 'Sem nome'}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
-                  {formatLastMessageTime(chat.last_message?.created_at || chat.created_at)}
+                  {formatLastMessageTime(chat.last_message?.created_at || chat.created_at, i18n.language, t)}
                 </span>
               </div>
               

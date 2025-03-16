@@ -1,11 +1,11 @@
 {
-  "title": "Chats",
-  "searchPlaceholder": "Search chats...", 
+  "title": "Conversations",
+  "searchPlaceholder": "Search conversation...",
   "resolve": "Resolve",
   "attend": "Attend",
   "backToList": "Back to list",
-  "chatClosed": "Chat closed",
-  "startNewChat": "Start new chat",
+  "chatClosed": "Conversation closed",
+  "startNewChat": "Start new conversation",
   "customer": "Customer",
   "you": "You",
   "connected": "Connected",
@@ -162,5 +162,10 @@
   "loading": "Loading...",
   "showAllMessages": "Show all messages",
   "showCurrentChat": "Show current chat",
-  "unnamed": "Unnamed"
+  "unnamed": "Unnamed",
+  "history": "Conversation History",
+  "untitledConversation": "Untitled conversation",
+  "noMessages": "No messages",
+  "assignedTo": "Agent",
+  "channel": "Channel"
 }

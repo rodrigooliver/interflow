@@ -22,6 +22,10 @@
     "confirmation": "¿Estás seguro de que deseas eliminar el cliente {{name}}?",
     "warning": "Esta acción no se puede deshacer."
   },
+  "tabs": {
+    "general": "General",
+    "chats": "Conversaciones"
+  },
   "tags": {
     "title": "Etiquetas",
     "addNew": "Nueva etiqueta",

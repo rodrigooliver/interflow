@@ -10,11 +10,45 @@
   "totalCustomersDescription": "Clientes cadastrados na plataforma",
   "todayMessages": "Mensagens Hoje",
   "todayMessagesDescription": "Total de mensagens enviadas hoje",
+  "weekMessages": "Mensagens da Semana",
+  "monthMessages": "Mensagens do Mês",
+  "yearMessages": "Mensagens do Ano",
+  "periodMessagesDescription": "Total de mensagens enviadas na {{period}}",
+  "specificDayMessages": "Mensagens do Dia",
+  "specificMonthMessages": "Mensagens do Mês",
+  "specificYearMessages": "Mensagens do Ano",
+  "specificPeriodMessagesDescription": "Total de mensagens enviadas em {{period}}",
+  "useSpecificPeriod": "Usar Período Específico",
+  "useRelativePeriod": "Usar Período Relativo",
+  "specificDay": "Dia",
+  "specificMonth": "Mês",
+  "specificYear": "Ano",
+  "selectDate": "Selecione uma data",
+  "datePickerPlaceholder": "Clique para selecionar uma data",
   "responseTime": "Tempo de Resposta",
-  "responseTimeDescription": "Tempo médio de primeira resposta",
+  "responseTimeDescription": "Tempo médio de resposta",
+  "responseTimePeriodDescription": "Tempo médio de resposta em {{period}}",
   "activityOverview": "Visão Geral de Atividade",
+  "activityByTeam": "Atividade por Equipe",
+  "teamActivity": "Atividade da Equipe",
+  "messagesByTeam": "Mensagens por Equipe",
+  "noTeamData": "Nenhum dado de equipe disponível",
+  "teamComparison": "Comparação entre Equipes",
+  "teamPerformance": "Desempenho das Equipes",
+  "topTeams": "Equipes com Melhor Desempenho",
+  "teamDistribution": "Distribuição por Equipe",
+  "withoutTeam": "Sem equipe",
+  "allTeams": "Todas as Equipes",
+  "selectTeam": "Selecionar Equipe",
+  "filterByTeam": "Filtrar por Equipe",
+  "hourlyActivity": "Atividade por Hora",
+  "dailyActivity": "Atividade Diária",
+  "weeklyActivity": "Atividade Semanal",
+  "monthlyActivity": "Atividade Mensal",
   "messages": "Mensagens",
+  "noMessages": "Sem mensagens",
   "chats": "Conversas",
+  "recentChats": "Conversas Recentes",
   "recentConversations": "Conversas Recentes",
   "viewAll": "Ver Todas",
   "noRecentChats": "Nenhuma conversa recente",
@@ -47,6 +81,10 @@
   "decrease": "diminuição",
   "compared": "comparado com",
   "lastPeriod": "período anterior",
+  "lastDay": "Hoje",
+  "lastWeek": "Última Semana",
+  "lastMonth": "Último Mês",
+  "lastYear": "Último Ano",
   "whatsapp": "WhatsApp",
   "instagram": "Instagram",
   "facebook": "Facebook",
@@ -129,8 +167,6 @@
   "warning": "Aviso",
   "info": "Informação",
   "critical": "Crítico",
-  "recentChats": "Conversas Recentes",
-  "lastWeek": "Última Semana",
   "statisticsFor": "Estatísticas para",
   "quickSetup": {
     "title": "Configuração Rápida",
@@ -162,5 +198,29 @@
     "closedLostStageDesc": "Negócio perdido ou cancelado",
     "resolvedClosureType": "Resolvido",
     "unresolvedClosureType": "Não Resolvido"
+  },
+  "customer": {
+    "anonymous": "Cliente"
+  },
+  "time": {
+    "yesterday": "Ontem"
+  },
+  "calendar": {
+    "months": {
+      "short": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"],
+      "long": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    },
+    "weekdays": {
+      "short": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+      "long": ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
+    }
+  },
+  "datePicker": {
+    "selectDay": "Selecionar dia",
+    "selectMonth": "Selecionar mês",
+    "selectYear": "Selecionar ano",
+    "today": "Hoje",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar"
   }
 }

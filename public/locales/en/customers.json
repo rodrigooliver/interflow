@@ -22,6 +22,10 @@
     "confirmation": "Are you sure you want to delete customer {{name}}?",
     "warning": "This action cannot be undone."
   },
+  "tabs": {
+    "general": "General",
+    "chats": "Conversations"
+  },
   "tags": {
     "title": "Tags",
     "addNew": "New tag",

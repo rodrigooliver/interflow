@@ -58,6 +58,10 @@
   "startChat": "Iniciar conversa",
   "startChatWithCustomer": "Iniciar conversa com {{name}}",
   "startConversation": "Iniciar conversa",
+  "tabs": {
+    "general": "Geral",
+    "chats": "Atendimentos"
+  },
   "tags": {
     "addNew": "Nova tag",
     "color": "Cor",

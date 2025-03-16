@@ -10,10 +10,43 @@
   "totalCustomersDescription": "Customers registered on the platform",
   "todayMessages": "Today's Messages",
   "todayMessagesDescription": "Total messages sent today",
+  "weekMessages": "Week Messages",
+  "monthMessages": "Month Messages",
+  "yearMessages": "Year Messages",
+  "periodMessagesDescription": "Total messages sent in {{period}}",
+  "specificDayMessages": "Day Messages",
+  "specificMonthMessages": "Month Messages",
+  "specificYearMessages": "Year Messages",
+  "specificPeriodMessagesDescription": "Total messages sent on {{period}}",
+  "useSpecificPeriod": "Use Specific Period",
+  "useRelativePeriod": "Use Relative Period",
+  "specificDay": "Day",
+  "specificMonth": "Month",
+  "specificYear": "Year",
+  "selectDate": "Select a date",
+  "datePickerPlaceholder": "Click to select a date",
   "responseTime": "Response Time",
   "responseTimeDescription": "Average first response time",
+  "responseTimePeriodDescription": "Average first response time in {{period}}",
   "activityOverview": "Activity Overview",
+  "activityByTeam": "Activity by Team",
+  "teamActivity": "Team Activity",
+  "messagesByTeam": "Messages by Team",
+  "noTeamData": "No team data available",
+  "teamComparison": "Team Comparison",
+  "teamPerformance": "Team Performance",
+  "topTeams": "Top Performing Teams",
+  "teamDistribution": "Team Distribution",
+  "withoutTeam": "Without team",
+  "allTeams": "All Teams",
+  "selectTeam": "Select Team",
+  "filterByTeam": "Filter by Team",
+  "hourlyActivity": "Hourly Activity",
+  "dailyActivity": "Daily Activity",
+  "weeklyActivity": "Weekly Activity",
+  "monthlyActivity": "Monthly Activity",
   "messages": "Messages",
+  "noMessages": "No messages",
   "chats": "Chats",
   "recentConversations": "Recent Conversations",
   "viewAll": "View All",
@@ -47,6 +80,10 @@
   "decrease": "decrease",
   "compared": "compared with",
   "lastPeriod": "last period",
+  "lastDay": "Today",
+  "lastWeek": "Last Week",
+  "lastMonth": "Last Month",
+  "lastYear": "Last Year",
   "whatsapp": "WhatsApp",
   "instagram": "Instagram",
   "facebook": "Facebook",
@@ -130,7 +167,6 @@
   "info": "Information",
   "critical": "Critical",
   "recentChats": "Recent Chats",
-  "lastWeek": "Last Week",
   "statisticsFor": "Statistics for",
   "quickSetup": {
     "title": "Quick Setup",
@@ -162,5 +198,29 @@
     "closedLostStageDesc": "Deal lost or cancelled",
     "resolvedClosureType": "Resolved",
     "unresolvedClosureType": "Unresolved"
+  },
+  "customer": {
+    "anonymous": "Customer"
+  },
+  "time": {
+    "yesterday": "Yesterday"
+  },
+  "calendar": {
+    "months": {
+      "short": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      "long": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    },
+    "weekdays": {
+      "short": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "long": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    }
+  },
+  "datePicker": {
+    "selectDay": "Select day",
+    "selectMonth": "Select month",
+    "selectYear": "Select year",
+    "today": "Today",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   }
 }

@@ -1,10 +1,10 @@
 {
-  "title": "Chats",
-  "searchPlaceholder": "Buscar chat...",
+  "title": "Conversaciones",
+  "searchPlaceholder": "Buscar conversación...",
   "resolve": "Resolver",
   "attend": "Atender",
   "backToList": "Volver a la lista",
-  "chatClosed": "Chat cerrado", 
+  "chatClosed": "Conversación finalizada",
   "startNewChat": "Iniciar nueva conversación",
   "customer": "Cliente",
   "you": "Tú",
@@ -164,5 +164,10 @@
   "loading": "Cargando...",
   "showAllMessages": "Mostrar todos los mensajes",
   "showCurrentChat": "Mostrar chat actual",
-  "unnamed": "Sin nombre"
+  "unnamed": "Sin nombre",
+  "history": "Historial de Conversaciones",
+  "untitledConversation": "Conversación sin título",
+  "noMessages": "Sin mensajes",
+  "assignedTo": "Agente",
+  "channel": "Canal"
 }

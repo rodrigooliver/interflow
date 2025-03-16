@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle, Share2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -8,6 +8,9 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
 import { Chat } from '../../types/database';
 import { Customer } from '../../types/database';
+import { getChannelIcon } from '../../utils/channel';
+import { ChatMessages } from '../../components/chat/ChatMessages';
+
 const locales = {
   pt: ptBR,
   en: enUS,
@@ -22,6 +25,8 @@ export default function CustomerChats() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [showChatModal, setShowChatModal] = useState(false);
 
   useEffect(() => {
     if (currentOrganizationMember && id) {
@@ -41,7 +46,7 @@ export default function CustomerChats() {
       if (customerError) throw customerError;
       setCustomer(customerData);
 
-      // Load customer's chats with assigned agent details and last message
+      // Load customer's chats with assigned agent details, last message, and channel details
       const { data: chatsData, error: chatsError } = await supabase
         .from('chats')
         .select(`
@@ -55,6 +60,11 @@ export default function CustomerChats() {
             status,
             error_message,
             created_at
+          ),
+          channel_details:chat_channels(
+            id,
+            name,
+            type
           )
         `)
         .eq('customer_id', id)
@@ -68,7 +78,8 @@ export default function CustomerChats() {
         last_message: chat.last_message ? {
           content: chat.last_message.content,
           status: chat.last_message.status,
-          error_message: chat.last_message.error_message
+          error_message: chat.last_message.error_message,
+          created_at: chat.last_message.created_at
         } : undefined
       }));
 
@@ -97,6 +108,52 @@ export default function CustomerChats() {
         return null;
     }
   };
+
+  const handleChatClick = (e: React.MouseEvent, chatId: string) => {
+    e.preventDefault();
+    setSelectedChatId(chatId);
+    setShowChatModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowChatModal(false);
+    setSelectedChatId(null);
+  };
+
+  // Adicionamos um estilo para o modal
+  useEffect(() => {
+    // Adicionar estilo para esconder o botão de voltar no modal
+    if (showChatModal) {
+      const style = document.createElement('style');
+      style.id = 'chat-modal-style';
+      style.innerHTML = `
+        .chat-modal-wrapper [aria-label="Voltar para a lista"] {
+          display: none !important;
+        }
+        .chat-modal-wrapper [aria-label="Voltar para a lista de atendimentos"] {
+          display: none !important;
+        }
+        .chat-modal-wrapper [aria-label="backToList"] {
+          display: none !important;
+        }
+        .chat-modal-wrapper .border-b.border-gray-200 {
+          border-top: none !important;
+        }
+        .chat-modal-wrapper {
+          padding-top: 0 !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Limpar o estilo quando o modal for fechado
+    return () => {
+      const existingStyle = document.getElementById('chat-modal-style');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, [showChatModal]);
 
   if (loading) {
     return (
@@ -134,7 +191,8 @@ export default function CustomerChats() {
                 {customer.name}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {customer.email || customer.whatsapp}
+                {customer.contacts?.find(c => c.type === 'email')?.value || 
+                 customer.contacts?.find(c => c.type === 'whatsapp')?.value}
               </p>
             </div>
           </div>
@@ -152,30 +210,33 @@ export default function CustomerChats() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {chats.map((chat) => (
-              <Link
+              <div
                 key={chat.id}
-                to={`/app/chat/${chat.id}`}
-                className="block bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow"
+                onClick={(e) => handleChatClick(e, chat.id)}
+                className="block bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700 cursor-pointer"
               >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-4">
+                <div className="p-4">
+                  {/* Cabeçalho do atendimento com status e data */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         chat.status === 'in_progress'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400'
+                          : chat.status === 'closed'
+                            ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400'
                       }`}>
                         {t(`chats:status.${chat.status}`)}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {format(new Date(chat.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {format(new Date(chat.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: locales[i18n.language as keyof typeof locales] || enUS })}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       {chat.last_message?.status && getStatusIcon(chat.last_message.status)}
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {formatDistanceToNow(new Date(chat.created_at), {
                           addSuffix: true,
                           locale: locales[i18n.language as keyof typeof locales] || enUS
@@ -183,43 +244,119 @@ export default function CustomerChats() {
                       </span>
                     </div>
                   </div>
-
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {chat.last_message && (
-                        <p className="text-gray-600 dark:text-gray-300 line-clamp-2">
-                          {chat.last_message.content}
-                        </p>
+                  
+                  {/* Título do atendimento */}
+                  <div className="mb-2">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                      <MessageSquare className="w-4 h-4 mr-1.5 text-blue-500" />
+                      {chat.title || t('chats:untitledConversation', 'Atendimento sem título')} 
+                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                        #{chat.ticket_number}
+                      </span>
+                    </h4>
+                    <div className="flex flex-wrap items-center mt-1.5 text-xs text-gray-500 dark:text-gray-400 gap-2">
+                      {chat.channel_details && (
+                        <div className="flex items-center bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                          <Share2 className="w-3.5 h-3.5 mr-1 text-gray-500 dark:text-gray-400" />
+                          <span className="font-medium">{chat.channel_details.name}</span>
+                        </div>
+                      )}
+                      {chat.external_id && (
+                        <div className="flex items-center text-xs text-gray-400 dark:text-gray-500">
+                          <img 
+                            src={getChannelIcon(chat.channel_details?.type || 'whatsapp_official')} 
+                            alt="Canal" 
+                            className="w-3.5 h-3.5 mr-1"
+                          />
+                          <code className="bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs">
+                            {chat.external_id}
+                          </code>
+                        </div>
                       )}
                     </div>
-                    {chat.assigned_agent && (
-                      <div className="ml-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                        <User className="w-4 h-4 mr-1" />
-                        {chat.assigned_agent.full_name}
-                      </div>
-                    )}
                   </div>
 
-                  {chat.start_time && (
-                    <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1" />
-                        {t('chats:time.start')}: {format(new Date(chat.start_time), "HH:mm")}
-                      </div>
+                  {/* Conteúdo da última mensagem */}
+                  <div className="mt-2">
+                    <div className="flex-1">
+                      {chat.last_message ? (
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded p-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 italic">
+                          {chat.last_message.content}
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded p-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                          {t('chats:noMessages', 'Sem mensagens')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rodapé com informações adicionais */}
+                  <div className="mt-3 flex flex-wrap items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-3">
+                      {chat.start_time && (
+                        <div className="flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {t('chats:time.start')}: {format(new Date(chat.start_time), "HH:mm")}
+                        </div>
+                      )}
                       {chat.end_time && (
                         <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
+                          <Calendar className="w-3 h-3 mr-1" />
                           {t('chats:time.end')}: {format(new Date(chat.end_time), "HH:mm")}
                         </div>
                       )}
                     </div>
-                  )}
+                    
+                    <div className="flex items-center space-x-3 mt-2 sm:mt-0">
+                      {chat.assigned_agent && (
+                        <div className="flex items-center">
+                          <User className="w-3 h-3 mr-1" />
+                          {t('chats:assignedTo', 'Atendente')}: {chat.assigned_agent.full_name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal para exibir o chat */}
+      {showChatModal && selectedChatId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
+                {chats.find(chat => chat.id === selectedChatId)?.title || t('chats:viewChat', 'Visualizar Atendimento')}
+                {selectedChatId && (
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    #{chats.find(chat => chat.id === selectedChatId)?.ticket_number}
+                  </span>
+                )}
+              </h2>
+              <button 
+                onClick={handleCloseModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 relative chat-modal-wrapper overflow-hidden">
+              <div className="absolute inset-0 flex flex-col h-full">
+                <ChatMessages 
+                  chatId={selectedChatId} 
+                  organizationId={currentOrganizationMember?.organization.id || ''} 
+                  onBack={handleCloseModal}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
