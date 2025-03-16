@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Message, ClosureType } from '../../types/database';
 import { supabase } from '../../lib/supabase';
@@ -11,7 +11,9 @@ import { ChatAvatar } from './ChatAvatar';
 import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { ArrowDown } from 'lucide-react';
+import './styles.css';
 
 interface ChatMessagesProps {
   chatId: string;
@@ -47,10 +49,13 @@ interface Chat {
 export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesProps) {
   const { t } = useTranslation('chats');
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [chat, setChat] = useState<Chat | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubscriptionReady, setIsSubscriptionReady] = useState(false);
   const [showEditCustomer, setShowEditCustomer] = useState(false);
@@ -61,13 +66,29 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [hasMore, setHasMore] = useState(true);
   const MESSAGES_PER_PAGE = 20;
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [headerLoading, setHeaderLoading] = useState(true);
-  const [footerLoading, setFooterLoading] = useState(true);
+  const [headerLoading, setHeaderLoading] = useState(false);
+  const [footerLoading, setFooterLoading] = useState(false);
   const [isMessageWindowClosed, setIsMessageWindowClosed] = useState(false);
   const [canSendMessage, setCanSendMessage] = useState(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [isLoadingSpecificMessage, setIsLoadingSpecificMessage] = useState(false);
+  const [showScrollToHighlighted, setShowScrollToHighlighted] = useState(false);
+  const previousChatIdRef = useRef<string | null>(null);
+  const isFirstLoadRef = useRef(true);
+  const messagesLoadedRef = useRef(false);
+  const initialRenderRef = useRef(true);
+
+  // Função para verificar se o componente está sendo montado pela primeira vez
+  const isInitialRender = useCallback(() => {
+    if (initialRenderRef.current) {
+      initialRenderRef.current = false;
+      return true;
+    }
+    return false;
+  }, []);
 
   useEffect(() => {
     const checkFiltersVisibility = () => {
@@ -96,17 +117,48 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
 
+    // Verificar se o chatId mudou realmente
+    const isChatIdChanged = chatId !== previousChatIdRef.current;
+    
+    // Só atualizar o previousChatIdRef se o chatId realmente mudou
+    if (isChatIdChanged) {
+      console.log(`ChatMessages: chatId mudou de ${previousChatIdRef.current || 'null'} para ${chatId}`);
+      previousChatIdRef.current = chatId;
+    } else {
+      console.log(`ChatMessages: chatId não mudou (${chatId}), provavelmente apenas os filtros foram alterados`);
+    }
+
     if (chatId) {
-      setLoading(true);
-      setHeaderLoading(true);
-      setFooterLoading(true);
-      setMessages([]);
-      setPage(1);
-      setHasMore(true);
-      setError('');
+      // Só mostrar loading e recarregar mensagens se o chatId realmente mudou ou se for o primeiro carregamento
+      if (isChatIdChanged || isInitialRender()) {
+        console.log('ChatMessages: Carregando mensagens para novo chat ou primeiro carregamento');
+        setLoading(true);
+        setInitialLoading(true);
+        setHeaderLoading(true);
+        setFooterLoading(true);
+        setMessages([]);
+        setPage(1);
+        setHasMore(true);
+        setError('');
+        messagesLoadedRef.current = false;
+        
+        // Verificar se há um messageId na URL
+        const messageId = searchParams.get('messageId');
+        if (messageId) {
+          setHighlightedMessageId(messageId);
+          loadSpecificMessage(messageId);
+        } else {
+          // Só carregar mensagens se o chatId mudou ou se for o primeiro carregamento
+          loadMessages(1, false);
+          isFirstLoadRef.current = false;
+          messagesLoadedRef.current = true;
+        }
+        
+        // Sempre carregamos os detalhes do chat quando o chatId muda
+        loadChat();
+      }
       
-      loadChat();
-      loadMessages(1, false);
+      // Sempre nos inscrevemos para atualizações de mensagens
       subscription = subscribeToMessages();
     }
 
@@ -115,7 +167,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         subscription.unsubscribe();
       }
     };
-  }, [chatId]);
+  }, [chatId, searchParams]);
 
   useEffect(() => {
     if (page === 1) {
@@ -156,6 +208,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       setIsMessageWindowClosed(false);
     }
   }, [chat]);
+
+  // Efeito para remover o destaque após alguns segundos
+  useEffect(() => {
+    if (highlightedMessageId) {
+      const timer = setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedMessageId]);
 
   const subscribeToMessages = () => {
     const subscription = supabase
@@ -225,13 +288,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       setError(t('errors.loading'));
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
     return;
   };
 
   const loadChat = async () => {
-    setHeaderLoading(true);
-    setFooterLoading(true);
     try {
       const { data, error } = await supabase
         .from('chats')
@@ -402,9 +464,58 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Verificar se a mensagem destacada está visível
+  const checkHighlightedMessageVisibility = () => {
+    if (!highlightedMessageId) {
+      setShowScrollToHighlighted(false);
+      return;
+    }
+
+    const messageElement = document.getElementById(`message-${highlightedMessageId}`);
+    if (!messageElement) {
+      setShowScrollToHighlighted(false);
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+    if (!container) {
+      setShowScrollToHighlighted(false);
+      return;
+    }
+
+    const messageRect = messageElement.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Verificar se a mensagem está visível no container
+    const isVisible = 
+      messageRect.top >= containerRect.top && 
+      messageRect.bottom <= containerRect.bottom;
+
+    setShowScrollToHighlighted(!isVisible);
+  };
+
+  // Adicionar evento de scroll para verificar visibilidade da mensagem destacada
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || !highlightedMessageId) return;
+
+    const handleScroll = () => {
+      checkHighlightedMessageVisibility();
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    // Verificar inicialmente
+    checkHighlightedMessageVisibility();
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [highlightedMessageId, messages]);
+
+  // Modificar a função handleScroll para preservar o destaque
   const handleScroll = () => {
     const container = messagesContainerRef.current;
-    if (!container || !hasMore) return;
+    if (!container || !hasMore || isLoadingSpecificMessage) return;
 
     if (container.scrollTop === 0) {
       // Salva a altura do primeiro elemento antes de carregar mais
@@ -419,6 +530,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               container.scrollTop = container.scrollHeight - oldScrollHeight;
             });
           }
+          // Verificar visibilidade da mensagem destacada após carregar mais mensagens
+          checkHighlightedMessageVisibility();
         });
         return newPage;
       });
@@ -465,7 +578,129 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
-  if (loading) {
+  // Função para carregar uma mensagem específica e seu contexto
+  const loadSpecificMessage = async (messageId: string) => {
+    setIsLoadingSpecificMessage(true);
+    try {
+      // Primeiro, buscar a mensagem específica para obter sua data
+      const { data: specificMessage, error: specificError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('id', messageId)
+        .single();
+      
+      if (specificError) throw specificError;
+      if (!specificMessage) throw new Error('Mensagem não encontrada');
+      
+      // Buscar mensagens ao redor da mensagem específica (antes e depois)
+      const { data: contextMessages, error: contextError } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender_agent:messages_sender_agent_id_fkey(
+            id,
+            full_name
+          ),
+          response_to:response_message_id(
+            id,
+            content,
+            sender_type,
+            sender_agent_response:messages_sender_agent_id_fkey(
+              id,
+              full_name
+            )
+          )
+        `)
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: false })
+        .limit(MESSAGES_PER_PAGE);
+      
+      if (contextError) throw contextError;
+      
+      if (contextMessages) {
+        // Verificar se a mensagem específica está no conjunto de resultados
+        const hasSpecificMessage = contextMessages.some(msg => msg.id === messageId);
+        
+        if (hasSpecificMessage) {
+          // Se a mensagem estiver nos resultados, usar este conjunto
+          setMessages(contextMessages.reverse());
+          
+          // Rolar para a mensagem após o carregamento
+          setTimeout(() => {
+            scrollToMessage(messageId);
+          }, 500);
+        } else {
+          // Se a mensagem não estiver nos resultados, precisamos buscar mais mensagens
+          // Isso pode acontecer se a mensagem for muito antiga
+          
+          // Buscar mais mensagens antes da data da mensagem específica
+          const { data: olderMessages, error: olderError } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              sender_agent:messages_sender_agent_id_fkey(
+                id,
+                full_name
+              ),
+              response_to:response_message_id(
+                id,
+                content,
+                sender_type,
+                sender_agent_response:messages_sender_agent_id_fkey(
+                  id,
+                  full_name
+                )
+              )
+            `)
+            .eq('chat_id', chatId)
+            .lte('created_at', specificMessage.created_at)
+            .order('created_at', { ascending: false })
+            .limit(MESSAGES_PER_PAGE);
+          
+          if (olderError) throw olderError;
+          
+          if (olderMessages) {
+            setMessages(olderMessages.reverse());
+            
+            // Rolar para a mensagem após o carregamento
+            setTimeout(() => {
+              scrollToMessage(messageId);
+            }, 500);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar mensagem específica:', error);
+      setError(t('errors.loading'));
+      // Carregar mensagens normalmente como fallback
+      loadMessages(1, false);
+    } finally {
+      setIsLoadingSpecificMessage(false);
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  };
+
+  // Função para rolar até uma mensagem específica
+  const scrollToMessage = (messageId: string) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  if (!chatId) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center text-gray-500 dark:text-gray-400">
+          <p>{t('selectChat.title')}</p>
+          <p className="text-sm mt-2">{t('selectChat.description')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (initialLoading && !messagesLoadedRef.current) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="space-y-4 w-full max-w-lg">
@@ -484,7 +719,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full relative">
       <div className="border-b border-gray-200 dark:border-gray-700 p-2">
         <div className="grid grid-cols-[auto_1fr_auto] items-center w-full">
           {/* Botão de voltar (apenas em mobile) */}
@@ -572,7 +807,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-16 md:pb-4"
+        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-16 md:pb-4 smooth-scroll custom-scrollbar"
         onScroll={handleScroll}
       >
         {loading ? (
@@ -614,6 +849,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                       onReply={(message) => {
                         setReplyingTo(message);
                       }}
+                      isHighlighted={message.id === highlightedMessageId}
                     />
                   ))}
                 </div>
@@ -623,6 +859,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           </>
         )}
       </div>
+
+      {/* Botão para rolar até a mensagem destacada */}
+      {showScrollToHighlighted && highlightedMessageId && (
+        <button 
+          className="scroll-to-highlighted"
+          onClick={() => scrollToMessage(highlightedMessageId)}
+          aria-label={t('scrollToHighlightedMessage')}
+        >
+          <ArrowDown className="w-5 h-5" />
+        </button>
+      )}
 
       {footerLoading ? (
         <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
@@ -721,7 +968,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           onSendTemplate={handleSendTemplate}
         />
       )}
-    </>
+    </div>
   );
 }
 

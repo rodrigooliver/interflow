@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, MessageSquare, Users, UserCheck, Loader2, Bot, Share2, Tags, X, Plus } from 'lucide-react';
+import { Search, Filter, MessageSquare, Users, UserCheck, Bot, Share2, Tags, X, Plus, GitMerge } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ChatList } from '../../components/chat/ChatList';
 import { ChatMessages } from '../../components/chat/ChatMessages';
-import { Chat } from '../../types/database';
+import '../../components/chat/styles.css';
+import { Chat, Customer } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useQueryes';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChatFlowModal } from '../../components/chat/ChatFlowModal';
 import { useNavbarVisibility } from '../../contexts/NavbarVisibilityContext';
+import { SearchModal } from '../../components/chat/SearchModal';
+import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 
 // Novos tipos para os filtros
 type FilterOption = {
@@ -31,16 +34,20 @@ export default function Chats() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedFunnel, setSelectedFunnel] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('');
+  const [funnelStages, setFunnelStages] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedAutomation, setSelectedAutomation] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [showStartChatModal, setShowStartChatModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const { showNavbar } = useNavbarVisibility();
 
   // Hooks para buscar dados dos filtros
@@ -126,12 +133,67 @@ export default function Chats() {
     }
   ];
 
+  // Adicionar filtro de estágio dinamicamente se um funil estiver selecionado
+  if (selectedFunnel && funnelStages.length > 0) {
+    filters.push({
+      id: 'stage',
+      label: t('chats:filters.stage'),
+      icon: GitMerge,
+      type: 'select',
+      options: funnelStages.map(stage => ({
+        id: stage.id,
+        label: stage.name
+      }))
+    });
+  }
+
   useEffect(() => {
     if (currentOrganizationMember && session?.user) {
       loadChats();
       subscribeToChats();
     }
-  }, [currentOrganizationMember, session?.user, selectedFilter, searchTerm]);
+  }, [
+    currentOrganizationMember, 
+    session?.user, 
+    selectedFilter, 
+    selectedAgent, 
+    selectedTeam, 
+    selectedChannel, 
+    selectedTags, 
+    selectedFunnel, 
+    selectedStage,
+    selectedAutomation
+  ]);
+
+  // Efeito para carregar os estágios do funil selecionado
+  useEffect(() => {
+    if (selectedFunnel && currentOrganizationMember) {
+      const loadFunnelStages = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('crm_stages')
+            .select('id, name')
+            .eq('funnel_id', selectedFunnel)
+            .order('position', { ascending: true });
+          
+          if (error) throw error;
+          setFunnelStages(data || []);
+        } catch (error) {
+          console.error('Erro ao carregar estágios do funil:', error);
+          setFunnelStages([]);
+        }
+      };
+      
+      loadFunnelStages();
+    } else {
+      // Limpar os estágios se nenhum funil estiver selecionado
+      setFunnelStages([]);
+      // Limpar o estágio selecionado
+      if (selectedStage) {
+        setSelectedStage('');
+      }
+    }
+  }, [selectedFunnel, currentOrganizationMember]);
 
   // Efeito para verificar o ID do chat na URL
   useEffect(() => {
@@ -142,15 +204,11 @@ export default function Chats() {
       // Se houver um ID na URL e for diferente do chat selecionado atualmente
       setSelectedChat(chatIdFromUrl);
       
-      // Verificar se o chat já está carregado na lista
-      const chatExists = chats.some(chat => chat.id === chatIdFromUrl);
-      
-      // Se o chat não estiver na lista atual, carregá-lo individualmente
-      if (!chatExists && !loading) {
-        loadChatById(chatIdFromUrl);
-      }
+      // Não vamos mais adicionar o chat à lista automaticamente
+      // Apenas selecionamos o chat da URL, mesmo que ele não esteja na lista atual
+      // Isso permite visualizar um chat específico mesmo que ele não corresponda aos filtros atuais
     }
-  }, [location.pathname, chats, loading, selectedChat]);
+  }, [location.pathname, selectedChat]);
 
   useEffect(() => {
     const checkMobileView = () => {
@@ -206,9 +264,19 @@ export default function Chats() {
       .select(`
         *,
         customer:customers(
+          id,
           name,
           email,
-          whatsapp
+          whatsapp,
+          stage_id,
+          tags:customer_tags(
+            tag_id,
+            tags:tags(
+              id,
+              name,
+              color
+            )
+          )
         ),
         channel:chat_channels(
           type,
@@ -247,33 +315,57 @@ export default function Chats() {
       };
 
       // Verificar filtros adicionais
-      const matchesAdditionalFilters = () => {
+      const matchesAdditionalFilters = async () => {
         if (selectedAgent && chatData.assigned_to !== selectedAgent) return false;
         if (selectedTeam && chatData.team_id !== selectedTeam) return false;
         if (selectedChannel && chatData.channel_id !== selectedChannel) return false;
-        if (selectedTags.length > 0 && !selectedTags.every(tag => chatData.tags?.includes(tag))) return false;
-        if (selectedFunnel && chatData.funnel_id !== selectedFunnel) return false;
-        if (selectedStage && chatData.funnel_stage_id !== selectedStage) return false;
         
-        // Verificar termo de busca
-        if (searchTerm) {
-          const searchLower = searchTerm.toLowerCase();
-          const matchesSearch = 
-            chatData.customer?.name?.toLowerCase().includes(searchLower) ||
-            chatData.customer?.email?.toLowerCase().includes(searchLower) ||
-            chatData.customer?.whatsapp?.toLowerCase().includes(searchLower);
-          if (!matchesSearch) return false;
+        // Verificação de tags usando os dados obtidos diretamente
+        if (selectedTags.length > 0) {
+          const customerTags = chatData.customer?.tags || [];
+          return selectedTags.every(tagId => 
+            customerTags.some((tag: { tag_id: string }) => tag.tag_id === tagId)
+          );
         }
+        
+        // Verificação de funil e estágio
+        if (selectedFunnel) {
+          const customerStageId = chatData.customer?.stage_id;
+          
+          // Se temos um estágio específico selecionado
+          if (selectedStage) {
+            return customerStageId === selectedStage;
+          } 
+          // Se temos apenas o funil selecionado, verificar se o estágio do cliente pertence a este funil
+          else if (customerStageId) {
+            // Obter o estágio para verificar se pertence ao funil selecionado
+            const { data: stageData } = await supabase
+              .from('crm_stages')
+              .select('funnel_id')
+              .eq('id', customerStageId)
+              .single();
+            
+            return stageData && stageData.funnel_id === selectedFunnel;
+          }
+          
+          return false;
+        }
+        
+        if (selectedAutomation === 'active' && chatData.flow_session_id === null) return false;
+        if (selectedAutomation === 'inactive' && chatData.flow_session_id !== null) return false;
         
         return true;
       };
 
+      // Como matchesAdditionalFilters agora é assíncrono, precisamos chamar de forma diferente
+      const additionalFiltersMatch = await matchesAdditionalFilters();
+      
       setChats(prev => {
         // Remover o chat atual da lista
         const newChats = prev.filter(chat => chat.id !== chatId);
         
         // Se o chat não corresponder aos filtros, retornar a lista sem ele
-        if (!shouldIncludeChat() || !matchesAdditionalFilters()) {
+        if (!shouldIncludeChat() || !additionalFiltersMatch) {
           return newChats;
         }
 
@@ -299,19 +391,38 @@ export default function Chats() {
     }
   };
 
-  async function loadChats() {
+  // Função para carregar os chats
+  const loadChats = async (silentRefresh: boolean = false) => {
+    if (!silentRefresh) {
+      setLoading(true);
+    }
+    setError('');
+    
     if (!currentOrganizationMember || !session?.user) return;
 
-    setLoading(true);
     try {
       let query = supabase
         .from('chats')
         .select(`
           *,
-          customer:customers(
+          customer:customers!chats_customer_id_fkey(
+            id,
             name,
             email,
-            whatsapp
+            whatsapp,
+            stage_id,
+            tags:customer_tags(
+              tag_id,
+              tags:tags(
+                id,
+                name,
+                color
+              )
+            ),
+            stage:crm_stages(
+              id,
+              name
+            )
           ),
           channel:chat_channels(
             type,
@@ -327,7 +438,7 @@ export default function Chats() {
           )
         `)
         .eq('organization_id', currentOrganizationMember.organization.id)
-        .order('last_message(created_at)', { ascending: false });
+        .order('last_message_at', { ascending: false });
 
       // Mover declarações para fora do switch
       let teamMembers;
@@ -378,26 +489,63 @@ export default function Chats() {
       }
 
       if (selectedTags.length > 0) {
-        query = query.contains('tags', selectedTags);
+        // Não precisamos fazer uma consulta separada, pois vamos filtrar os resultados após obter os dados
+        // Deixamos a consulta sem filtro de tags e filtramos depois de receber os resultados
       }
 
       if (selectedFunnel) {
-        query = query.eq('funnel_id', selectedFunnel);
-        if (selectedStage) {
-          query = query.eq('funnel_stage_id', selectedStage);
+        // Primeiro, garantir que o cliente não seja nulo
+        query = query.not('customer', 'is', null);
+        
+        // Se temos um funil selecionado, mas não temos um estágio específico,
+        // precisamos obter todos os estágios desse funil e filtrar por eles
+        if (!selectedStage) {
+          // Obter todos os estágios do funil selecionado
+          const { data: stagesData } = await supabase
+            .from('crm_stages')
+            .select('id')
+            .eq('funnel_id', selectedFunnel);
+          
+          if (stagesData && stagesData.length > 0) {
+            // Filtrar clientes que estão em qualquer estágio deste funil
+            const stageIds = stagesData.map(stage => stage.id);
+            query = query.in('customer.stage_id', stageIds);
+          }
+        } else {
+          // Se temos um estágio específico selecionado, filtrar diretamente por ele
+          query = query.eq('customer.stage_id', selectedStage);
         }
       }
 
-      // Apply search if there's a term
-      if (searchTerm) {
-        query = query.or(`customer.name.ilike.%${searchTerm}%,customer.email.ilike.%${searchTerm}%,customer.whatsapp.ilike.%${searchTerm}%`);
+      // Aplicar filtro de automação
+      if (selectedAutomation) {
+        switch (selectedAutomation) {
+          case 'active':
+            query = query.not('flow_session_id', 'is', null);
+            break;
+          case 'inactive':
+            query = query.is('flow_session_id', null);
+            break;
+        }
       }
 
       const { data, error: chatsError } = await query;
 
       if (chatsError) throw chatsError;
 
-      const processedChats = (data || []).map(chat => ({
+      // Filtrar os chats com base nas tags selecionadas, se houver
+      let filteredData = data || [];
+      if (selectedTags.length > 0 && filteredData.length > 0) {
+        filteredData = filteredData.filter(chat => {
+          // Verificar se o cliente tem todas as tags selecionadas
+          const customerTags = chat.customer?.tags || [];
+          return selectedTags.every(tagId => 
+            customerTags.some((tag: { tag_id: string }) => tag.tag_id === tagId)
+          );
+        });
+      }
+
+      const processedChats = (filteredData).map(chat => ({
         ...chat,
         // channel_type: chat.channel?.type,
         channel_id: chat.channel,
@@ -417,66 +565,7 @@ export default function Chats() {
     } finally {
       setLoading(false);
     }
-  }
-
-  // Função para carregar um chat específico pelo ID
-  async function loadChatById(chatId: string) {
-    try {
-      const { data: chatData, error: chatError } = await supabase
-        .from('chats')
-        .select(`
-          *,
-          customer:customers(
-            name,
-            email,
-            whatsapp
-          ),
-          channel:chat_channels(
-            type,
-            is_connected,
-            name
-          ),
-          last_message:messages!chats_last_message_id_fkey(
-            content,
-            status,
-            error_message,
-            created_at,
-            sender_type
-          )
-        `)
-        .eq('id', chatId)
-        .single();
-
-      if (chatError) throw chatError;
-
-      if (chatData) {
-        const processedChat = {
-          ...chatData,
-          channel_id: chatData.channel,
-          last_message: chatData.last_message ? {
-            content: chatData.last_message.content,
-            status: chatData.last_message.status,
-            error_message: chatData.last_message.error_message,
-            created_at: chatData.last_message.created_at,
-            sender_type: chatData.last_message.sender_type
-          } : undefined
-        };
-
-        // Adicionar o chat à lista se ele não existir
-        setChats(prev => {
-          // Verificar se o chat já existe na lista
-          if (prev.some(chat => chat.id === chatId)) {
-            return prev;
-          }
-          // Adicionar o novo chat à lista
-          return [processedChat, ...prev];
-        });
-      }
-    } catch (error) {
-      console.error('Error loading chat by ID:', error);
-      setError(t('common:error'));
-    }
-  }
+  };
 
   // Função para lidar com a alteração de filtros
   const handleFilterChange = (filterId: string, value: string | string[]) => {
@@ -499,16 +588,20 @@ export default function Chats() {
         break;
       case 'funnel':
         setSelectedFunnel(value as string);
+        // Limpar o estágio selecionado quando o funil muda
+        setSelectedStage('');
         break;
       case 'stage':
         setSelectedStage(value as string);
         break;
+      case 'automation':
+        setSelectedAutomation(value as string);
+        break;
     }
 
-    // Se a tela for menor que 1300px e um chat estiver selecionado, voltar para a lista
-    if (window.innerWidth < 1300 && selectedChat) {
-      setSelectedChat(null);
-    }
+    // Não vamos mais limpar o chat selecionado em telas menores
+    // Isso evita que o componente ChatMessages seja remontado desnecessariamente
+    // Se o usuário quiser voltar para a lista, ele pode usar o botão de voltar no ChatMessages
   };
 
   // Atualizar a URL quando um chat for selecionado
@@ -521,6 +614,26 @@ export default function Chats() {
     } else {
       navigate('/app/chats', { replace: true });
     }
+  };
+
+  // Função para abrir o modal de edição do cliente
+  const handleEditCustomer = (customer: Customer) => {
+    console.log('handleEditCustomer - customer:', customer);
+    setSelectedCustomer(customer);
+    setShowEditCustomerModal(true);
+  };
+
+  // Função para fechar o modal de edição do cliente
+  const handleCloseEditCustomerModal = () => {
+    setShowEditCustomerModal(false);
+    setSelectedCustomer(null);
+  };
+
+  // Função para atualizar a lista de chats após editar o cliente
+  const handleCustomerEditSuccess = (silentRefresh: boolean = false) => {
+    handleCloseEditCustomerModal();
+    // Recarregar a lista de chats
+    loadChats(silentRefresh);
   };
 
   // Garantir que a barra de navegação seja exibida quando o componente for montado
@@ -541,12 +654,29 @@ export default function Chats() {
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                 {t('chats:filters.title')}
               </h3>
-              <button
-                onClick={() => setShowFilters(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-              >
-                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    setSelectedFilter('');
+                    setSelectedAgent('');
+                    setSelectedTeam('');
+                    setSelectedChannel('');
+                    setSelectedTags([]);
+                    setSelectedFunnel('');
+                    setSelectedStage('');
+                    setSelectedAutomation('');
+                  }}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                >
+                  {t('common:resetFilters')}
+                </button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                >
+                  <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
             </div>
             <div className="space-y-4">
               {filters.map((filter) => {
@@ -563,7 +693,16 @@ export default function Chats() {
                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                           cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                          value={selectedFilter}
+                          value={
+                            filter.id === 'status' ? selectedFilter :
+                            filter.id === 'agent' ? selectedAgent :
+                            filter.id === 'team' ? selectedTeam :
+                            filter.id === 'channel' ? selectedChannel :
+                            filter.id === 'funnel' ? selectedFunnel :
+                            filter.id === 'stage' ? selectedStage :
+                            filter.id === 'automation' ? selectedAutomation :
+                            ''
+                          }
                         onChange={(e) => {
                           switch (filter.id) {
                             case 'status':
@@ -577,6 +716,15 @@ export default function Chats() {
                               break;
                             case 'channel':
                               handleFilterChange('channel', e.target.value);
+                              break;
+                            case 'funnel':
+                              handleFilterChange('funnel', e.target.value);
+                              break;
+                            case 'stage':
+                              handleFilterChange('stage', e.target.value);
+                              break;
+                            case 'automation':
+                              handleFilterChange('automation', e.target.value);
                               break;
                           }
                         }}
@@ -594,6 +742,66 @@ export default function Chats() {
                           </option>
                         ))}
                       </select>
+                    </div>
+                  );
+                } else if (filter.type === 'multi-select' && filter.id === 'tags') {
+                  return (
+                    <div key={filter.id} className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                        <Icon className="w-4 h-4 mr-2" />
+                        {t('chats:filters.tags')}
+                      </label>
+                      <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700">
+                        {/* Tags selecionadas */}
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {selectedTags.length === 0 && (
+                            <div className="text-sm text-gray-500 dark:text-gray-400 py-1 px-2">
+                              {t('common:all')}
+                            </div>
+                          )}
+                          {selectedTags.map(tagId => {
+                            const tagOption = filter.options?.find(opt => opt.id === tagId);
+                            return tagOption ? (
+                              <div 
+                                key={tagId} 
+                                className="flex items-center bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-md text-sm"
+                              >
+                                <span>{tagOption.label}</span>
+                                <button
+                                  onClick={() => {
+                                    const newTags = selectedTags.filter(id => id !== tagId);
+                                    handleFilterChange('tags', newTags);
+                                  }}
+                                  className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                        
+                        {/* Lista de tags disponíveis */}
+                        <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                          {filter.options?.filter(opt => !selectedTags.includes(opt.id)).map(option => (
+                            <div 
+                              key={option.id}
+                              onClick={() => {
+                                const newTags = [...selectedTags, option.id];
+                                handleFilterChange('tags', newTags);
+                              }}
+                              className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer rounded-md text-sm text-gray-800 dark:text-gray-200"
+                            >
+                              {option.label}
+                            </div>
+                          ))}
+                          {filter.options?.filter(opt => !selectedTags.includes(opt.id)).length === 0 && (
+                            <div className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400 italic">
+                              {t('chats:noChatsFound')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   );
                 }
@@ -615,6 +823,12 @@ export default function Chats() {
           </h2>
           <div className="flex space-x-2">
             <button
+              onClick={() => setShowSearchModal(true)}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            <button
               onClick={() => setShowFilters(!showFilters)}
               className={`p-2 rounded-md ${
                 showFilters ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -628,25 +842,6 @@ export default function Chats() {
             >
               <Plus className="w-5 h-5" />
             </button>
-          </div>
-        </div>
-
-        {/* Search input */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder={t('chats:searchPlaceholder')}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                if (window.innerWidth < 1300 && selectedChat) {
-                  setSelectedChat(null);
-                }
-              }}
-            />
-            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
           </div>
         </div>
 
@@ -702,7 +897,7 @@ export default function Chats() {
           >
             {t('chats:filters.completed')}
           </button>
-          <button
+          {/* <button
             onClick={() => handleFilterChange('status', 'spam')}
             className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
               selectedFilter === 'spam' 
@@ -711,7 +906,7 @@ export default function Chats() {
             }`}
           >
             {t('chats:filters.spam')}
-          </button>
+          </button> */}
         </div>
 
         {/* Chat List */}
@@ -722,22 +917,13 @@ export default function Chats() {
                 {error}
               </p>
             </div>
-          ) : loading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-            </div>
-          ) : chats.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-              <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">
-                {t('chats:noChatsFound')}
-              </p>
-            </div>
           ) : (
             <ChatList 
               chats={chats}
               selectedChat={selectedChat}
-              onSelectChat={handleSelectChat} 
+              onSelectChat={handleSelectChat}
+              isLoading={loading}
+              onEditCustomer={handleEditCustomer}
             />
           )}
         </div>
@@ -750,6 +936,7 @@ export default function Chats() {
         {selectedChat ? (
           <div className="flex-1 flex flex-col overflow-hidden">
             <ChatMessages 
+              key={`chat-messages-${selectedChat}`}
               chatId={selectedChat}
               organizationId={currentOrganizationMember?.organization.id || ''}
               onBack={() => handleSelectChat(null)}
@@ -780,6 +967,21 @@ export default function Chats() {
       {/* Modal para iniciar nova conversa */}
       {showStartChatModal && (
         <ChatFlowModal onClose={() => setShowStartChatModal(false)} />
+      )}
+
+      {/* Modal de pesquisa */}
+      <SearchModal 
+        isOpen={showSearchModal} 
+        onClose={() => setShowSearchModal(false)} 
+      />
+
+      {/* Modal de edição do cliente */}
+      {showEditCustomerModal && selectedCustomer && (
+        <CustomerEditModal
+          customer={selectedCustomer}
+          onClose={handleCloseEditCustomerModal}
+          onSuccess={handleCustomerEditSuccess}
+        />
       )}
     </div>
   );

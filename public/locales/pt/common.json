@@ -87,6 +87,7 @@
   "clear": "Limpar",
   "apply": "Aplicar",
   "reset": "Resetar",
+  "resetFilters": "Limpar filtros",
   "joinOrganization": "Entrar na organização",
   "joinSuccess": "Você foi adicionado à organização com sucesso!",
   "redirecting": "Redirecionando para o dashboard...",

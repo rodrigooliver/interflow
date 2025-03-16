@@ -220,9 +220,8 @@ export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 
       const { data, error } = await supabase
         .from('organization_members')
         .select(`
-          id,
           organization_id,
-          user_id,
+          id:user_id,
           role,
           status,
           created_at,

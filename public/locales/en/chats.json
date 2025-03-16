@@ -10,6 +10,8 @@
   "you": "You",
   "connected": "Connected",
   "disconnected": "Disconnected",
+  "scrollToHighlightedMessage": "Scroll to highlighted message",
+  "noFunnelStage": "No stage defined",
   "filters": {
     "title": "Filters",
     "unassigned": "Unassigned",
@@ -23,9 +25,19 @@
     "team": "Team",
     "funnel": "Funnel",
     "tag": "Tag",
+    "tags": "Tags",
     "automation": "Automation",
     "automationActive": "Active",
-    "automationInactive": "Inactive"
+    "automationInactive": "Inactive",
+    "stage": "Stage"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Type to search messages...",
+    "noResults": "No results found",
+    "minChars": "Type at least 3 characters to search",
+    "startTyping": "Type to start searching",
+    "footer": "Search by message content"
   },
   "actions": {
     "reply": "Reply"

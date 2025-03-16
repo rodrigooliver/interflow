@@ -269,16 +269,27 @@ export function MessageInput({
 
     if (!message.trim() && pendingAttachments.length === 0) return;
     
+    // Armazenar a mensagem e anexos atuais antes de limpar
+    const currentMessage = message;
+    const currentAttachments = [...pendingAttachments];
+    
+    // Limpar o campo de mensagem e anexos imediatamente
+    setMessage('');
+    setPendingAttachments([]);
+    setShowEmojiPicker(false);
+    setShowAttachmentMenu(false);
+    
+    // Iniciar o processo de envio
     setSending(true);
     setError('');
 
     try {
-      let formattedMessage = message;
+      let formattedMessage = currentMessage;
       if (textFormat.bold) formattedMessage = `**${formattedMessage}**`;
       if (textFormat.italic) formattedMessage = `_${formattedMessage}_`;
 
       // Preparar arquivos para upload
-      const attachmentFiles = pendingAttachments.map(attachment => attachment.file);
+      const attachmentFiles = currentAttachments.map(attachment => attachment.file);
 
       // Enviar mensagem com possíveis anexos
       await handleSendMessage(
@@ -286,11 +297,7 @@ export function MessageInput({
         attachmentFiles
       );
 
-      // Limpar estados após envio
-      setMessage('');
-      setPendingAttachments([]);
-      setShowEmojiPicker(false);
-      setShowAttachmentMenu(false);
+      // Limpar erro se houver
       setError('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -872,8 +879,8 @@ export function MessageInput({
             // Em dispositivos móveis, Enter quebra linha; em desktop, envia a mensagem
           />
           
-          {/* Mostrar botão de gravação apenas quando não há mensagem ou anexos */}
-          {!message.trim() && pendingAttachments.length === 0 ? (
+          {/* Mostrar botão de gravação apenas quando não há mensagem ou anexos E não está enviando */}
+          {!sending && !message.trim() && pendingAttachments.length === 0 ? (
             <button
               onClick={isRecording ? stopRecording : startRecording}
               className={`p-2 rounded-lg transition-colors flex items-center ${

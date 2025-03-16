@@ -10,6 +10,8 @@
   "you": "Tú",
   "connected": "Conectado",
   "disconnected": "Desconectado",
+  "scrollToHighlightedMessage": "Desplazarse hasta el mensaje destacado",
+  "noFunnelStage": "Sin etapa definida",
   "filters": {
     "title": "Filtros",
     "unassigned": "Sin asignar",
@@ -23,9 +25,19 @@
     "team": "Equipo",
     "funnel": "Embudo",
     "tag": "Etiqueta",
+    "tags": "Etiquetas",
     "automation": "Automatización",
     "automationActive": "Activo",
-    "automationInactive": "Inactivo"
+    "automationInactive": "Inactivo",
+    "stage": "Etapa"
+  },
+  "search": {
+    "title": "Buscar",
+    "placeholder": "Escribe para buscar mensajes...",
+    "noResults": "No se encontraron resultados",
+    "minChars": "Escribe al menos 3 caracteres para buscar",
+    "startTyping": "Escribe para comenzar a buscar",
+    "footer": "Busca por contenido de mensajes"
   },
   "actions": {
     "reply": "Responder"

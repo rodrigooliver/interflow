@@ -4,6 +4,7 @@ import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, Mor
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
+import './styles.css';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,9 +16,10 @@ interface MessageBubbleProps {
   message: Message
   chatStatus: string;
   onReply?: (message: Message) => void;
+  isHighlighted?: boolean;
 }
 
-export function MessageBubble({ message, chatStatus, onReply }: MessageBubbleProps) {
+export function MessageBubble({ message, chatStatus, onReply, isHighlighted = false }: MessageBubbleProps) {
   const { t } = useTranslation('chats');
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
@@ -84,7 +86,9 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
   if (isSystem) {
     return (
       <div className="flex justify-center my-2 relative group">
-        <div className="flex items-center flex-row gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
+        <div className={`flex items-center flex-row gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-300 ${
+          isHighlighted ? 'ring-2 ring-blue-500 dark:ring-blue-400 animate-pulse' : ''
+        }`}>
           {renderSystemIcon()}
           <span className=''>{getSystemMessage()}</span>
           <span className="text-xs text-gray-500">
@@ -168,7 +172,7 @@ export function MessageBubble({ message, chatStatus, onReply }: MessageBubblePro
     <>
       <div 
         id={`message-${message.id}`}
-        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full`}
+        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}
         onDoubleClick={handleReply}
       >
         <div

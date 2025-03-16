@@ -26,6 +26,7 @@ export interface Chat {
   start_time?: string;
   end_time?: string;
   last_message?: Message;
+  last_message_at?: string;
   assigned_to?: string;
   external_id?: string;
   title?: string;

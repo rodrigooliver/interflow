@@ -86,6 +86,7 @@
   "clear": "Clear",
   "apply": "Apply",
   "reset": "Reset",
+  "resetFilters": "Reset filters",
   "joinOrganization": "Join organization",
   "joinSuccess": "You have been successfully added to the organization!",
   "redirecting": "Redirecting to dashboard...",

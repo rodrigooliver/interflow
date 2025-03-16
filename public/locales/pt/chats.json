@@ -15,6 +15,8 @@
   "noMessages": "Sem mensagens",
   "assignedTo": "Atendente",
   "channel": "Canal",
+  "scrollToHighlightedMessage": "Rolar até a mensagem destacada",
+  "noFunnelStage": "Sem estágio definido",
   "filters": {
     "title": "Filtros",
     "unassigned": "Não atribuídos",
@@ -25,11 +27,22 @@
     "status": "Status",
     "agent": "Agente",
     "team": "Equipe",
-    "funnel": "Funnel",
+    "channel": "Canal",
+    "funnel": "Funil",
     "tag": "Tag",
+    "tags": "Tags",
     "automation": "Automação",
     "automationActive": "Ativo",
-    "automationInactive": "Inativo"
+    "automationInactive": "Inativo",
+    "stage": "Estágio"
+  },
+  "search": {
+    "title": "Pesquisar",
+    "placeholder": "Digite para pesquisar mensagens...",
+    "noResults": "Nenhum resultado encontrado",
+    "minChars": "Digite pelo menos 3 caracteres para pesquisar",
+    "startTyping": "Digite para começar a pesquisar",
+    "footer": "Pesquise por conteúdo de mensagens"
   },
   "actions": {
     "reply": "Responder"
@@ -106,10 +119,10 @@
     "loading": "Erro ao carregar mensagens",
     "sending": "Erro ao enviar mensagem",
     "microphoneAccess": "Não foi possível acessar o microfone. Verifique suas permissões.",
-    "uploadFailed": "Falha ao enviar o arquivo de áudio",
+    "uploadFailed": "Falha ao enviar arquivo de áudio",
     "waitingConnection": "Aguardando conexão com o servidor...",
-    "instagram24HourWindow": "Não é possível enviar mensagem para este cliente pois já se passaram mais de 24 horas desde a última interação dele",
-    "instagramNoCustomerMessage": "Não é possível enviar mensagem para este cliente pois ele ainda não enviou nenhuma mensagem. Somente através de template."
+    "instagram24HourWindow": "Não é possível enviar mensagem para este cliente pois já se passaram mais de 24 horas desde a última interação",
+    "instagramNoCustomerMessage": "Não é possível enviar mensagem para este cliente pois ele ainda não enviou nenhuma mensagem. Apenas através de template."
   },
   "ai": {
     "title": "Melhorar texto com IA",
@@ -126,7 +139,7 @@
     "customPrompt": "Prompt personalizado",
     "customPromptPlaceholder": "Digite instruções específicas...",
     "customInstructions": "Instruções personalizadas",
-    "customInstructionsPlaceholder": "Digite instruções específicas para a IA, por exemplo: 'Reescreva o texto em formato de lista com marcadores'",
+    "customInstructionsPlaceholder": "Digite instruções específicas para a IA, por exemplo: 'Reescreva o texto em formato de tópicos'",
     "result": "Resultado",
     "cancel": "Cancelar",
     "apply": "Aplicar",
@@ -142,7 +155,7 @@
     "errors": {
       "noAccount": "Por favor, selecione uma conta OpenAI",
       "noOption": "Por favor, selecione um tipo de melhoria",
-      "noChatId": "ID do chat é necessário para gerar uma resposta",
+      "noChatId": "O ID do chat é necessário para gerar uma resposta",
       "noPrompt": "Por favor, selecione um agente IA",
       "noText": "Por favor, digite um texto para melhorar",
       "noTextForOption": "Por favor, digite um texto para {{option}}",
@@ -152,7 +165,7 @@
     }
   },
   "systemMessages": {
-    "userStart": "Atendimento iniciado por {{name}}",
+    "userStart": "Chat iniciado por {{name}}",
     "userEntered": "{{name}} entrou no chat",
     "userLeft": "{{name}} saiu do chat",
     "userTransferred": "Chat transferido para {{name}}",
@@ -160,7 +173,7 @@
   },
   "noChatsFound": "Nenhum atendimento encontrado",
   "resolution": {
-    "title": "Resolver Conversa",
+    "title": "Resolver Atendimento",
     "summaryPlaceholder": "Digite um breve resumo da conversa..."
   },
   "confirm": "Confirmar",
