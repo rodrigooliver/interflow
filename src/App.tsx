@@ -194,6 +194,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/app" element={<Login />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/join" element={<JoinPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
