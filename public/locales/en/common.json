@@ -2,7 +2,7 @@
   "search": "Search",
   "add": "Add",
   "contacts": "Contacts",
-  "loading": "Loading...",
+  "loading": "Loading",
   "saving": "Saving...",
   "create": "Create",
   "creating": "Creating...",
@@ -98,5 +98,8 @@
   "newSchedule": "New Schedule",
   "upcomingSchedules": "Upcoming Schedules",
   "noSchedulesYet": "No schedules found",
-  "createScheduleMessage": "Create a new schedule to get started"
+  "createScheduleMessage": "Create a new schedule to get started",
+  "today": "Today",
+  "filters": "Filters",
+  "clearAll": "Clear all"
 }

@@ -5,6 +5,7 @@ import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import { reloadTranslations } from '../i18n';
 import { PostgrestResponse } from '@supabase/supabase-js';
+import { Appointment, AppointmentFilters, AppointmentFormData, AvailableSlot, FindAvailableSlotsParams } from '../types/schedules';
 
 interface Tag {
   id: string;
@@ -723,5 +724,514 @@ export function useClosureTypes(organizationId?: string) {
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+// ======= HOOKS PARA O SISTEMA DE AGENDAMENTOS =======
+
+/**
+ * Hook para buscar todas as agendas de uma organização
+ */
+export function useSchedules(organizationId?: string) {
+  return useQuery({
+    queryKey: ['schedules', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      const { data, error } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('title');
+
+      if (error) throw error;
+      return data as Schedule[];
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+/**
+ * Hook para buscar uma agenda específica por ID
+ */
+export function useSchedule(scheduleId?: string) {
+  return useQuery({
+    queryKey: ['schedule', scheduleId],
+    queryFn: async () => {
+      if (!scheduleId) return null;
+
+      const { data, error } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('id', scheduleId)
+        .single();
+
+      if (error) throw error;
+      return data as Schedule;
+    },
+    enabled: !!scheduleId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+/**
+ * Hook para buscar os profissionais de uma agenda
+ */
+export function useScheduleProviders(scheduleId?: string) {
+  return useQuery({
+    queryKey: ['schedule-providers', scheduleId],
+    queryFn: async () => {
+      if (!scheduleId) return [];
+
+      // Buscar todos os profissionais vinculados a esta agenda
+      const { data: providers, error: providersError } = await supabase
+        .from('schedule_providers')
+        .select(`
+          id,
+          schedule_id,
+          profile_id,
+          status,
+          available_services,
+          created_at,
+          updated_at,
+          profiles:profile_id(
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('schedule_id', scheduleId);
+
+      if (providersError) throw providersError;
+
+      // Transformar os dados para o formato da interface ScheduleProvider
+      return (providers || []).map(provider => ({
+        id: provider.id,
+        schedule_id: provider.schedule_id,
+        profile_id: provider.profile_id,
+        name: provider.profiles?.full_name,
+        avatar_url: provider.profiles?.avatar_url,
+        status: provider.status,
+        available_services: Array.isArray(provider.available_services) ? provider.available_services : [],
+        created_at: provider.created_at,
+        updated_at: provider.updated_at
+      })) as ScheduleProvider[];
+    },
+    enabled: !!scheduleId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+/**
+ * Hook para buscar serviços de uma agenda
+ */
+export function useScheduleServices(scheduleId?: string) {
+  return useQuery({
+    queryKey: ['schedule-services', scheduleId],
+    queryFn: async () => {
+      if (!scheduleId) return [];
+
+      const { data, error } = await supabase
+        .from('schedule_services')
+        .select('*')
+        .eq('schedule_id', scheduleId)
+        .order('title');
+
+      if (error) throw error;
+      return data as ScheduleService[];
+    },
+    enabled: !!scheduleId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+/**
+ * Hook para buscar a disponibilidade de um profissional
+ */
+export function useProviderAvailability(providerId?: string) {
+  return useQuery({
+    queryKey: ['provider-availability', providerId],
+    queryFn: async () => {
+      if (!providerId) return [];
+
+      const { data, error } = await supabase
+        .from('schedule_availability')
+        .select('*')
+        .eq('provider_id', providerId)
+        .order('day_of_week')
+        .order('start_time');
+
+      if (error) throw error;
+      return data as ScheduleAvailability[];
+    },
+    enabled: !!providerId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+/**
+ * Hook para buscar feriados e folgas de uma agenda ou profissional
+ */
+export function useScheduleHolidays(scheduleId?: string, providerId?: string) {
+  return useQuery({
+    queryKey: ['schedule-holidays', scheduleId, providerId],
+    queryFn: async () => {
+      if (!scheduleId && !providerId) return [];
+
+      let query = supabase
+        .from('schedule_holidays')
+        .select('*');
+
+      if (scheduleId) {
+        query = query.eq('schedule_id', scheduleId);
+      }
+
+      if (providerId) {
+        query = query.eq('provider_id', providerId);
+      }
+
+      const { data, error } = await query.order('date', { ascending: true });
+
+      if (error) throw error;
+      return data as ScheduleHoliday[];
+    },
+    enabled: !!(scheduleId || providerId),
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+/**
+ * Hook para buscar agendamentos com filtros
+ */
+export function useAppointments(filters: AppointmentFilters) {
+  return useQuery({
+    queryKey: ['appointments', filters],
+    queryFn: async () => {
+      // Verificar se há filtros mínimos necessários
+      const hasMinimumFilters = filters.schedule_id || 
+        (filters.provider_id && (filters.start_date || filters.end_date));
+      
+      if (!hasMinimumFilters) return [];
+
+      let query = supabase
+        .from('appointments')
+        .select(`
+          *,
+          provider:provider_id(
+            full_name,
+            avatar_url
+          ),
+          service:service_id(
+            id,
+            title,
+            color
+          ),
+          customer:customer_id(
+            id,
+            name,
+            email
+          )
+        `);
+
+      // Aplicar filtros
+      if (filters.schedule_id) {
+        query = query.eq('schedule_id', filters.schedule_id);
+      }
+
+      if (filters.provider_id) {
+        query = query.eq('provider_id', filters.provider_id);
+      }
+
+      if (filters.service_id) {
+        query = query.eq('service_id', filters.service_id);
+      }
+
+      if (filters.customer_id) {
+        query = query.eq('customer_id', filters.customer_id);
+      }
+
+      if (filters.status && filters.status.length > 0) {
+        query = query.in('status', filters.status);
+      }
+
+      if (filters.start_date) {
+        query = query.gte('date', filters.start_date);
+      }
+
+      if (filters.end_date) {
+        query = query.lte('date', filters.end_date);
+      }
+
+      // Ordenar por data e hora
+      query = query.order('date').order('start_time');
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Transformar os dados para o formato da interface Appointment
+      return (data || []).map(appointment => ({
+        ...appointment,
+        customer_name: appointment.customer?.name || null
+      })) as Appointment[];
+    },
+    enabled: !!(filters.schedule_id || 
+      (filters.provider_id && (filters.start_date || filters.end_date))),
+    staleTime: 1 * 60 * 1000, // 1 minuto (menos tempo pois agendamentos mudam com frequência)
+    gcTime: 5 * 60 * 1000, // 5 minutos
+  });
+}
+
+/**
+ * Hook para buscar um agendamento específico por ID
+ */
+export function useAppointment(appointmentId?: string) {
+  return useQuery({
+    queryKey: ['appointment', appointmentId],
+    queryFn: async () => {
+      if (!appointmentId) return null;
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          provider:provider_id(
+            id,
+            profile:profile_id(
+              full_name,
+              avatar_url
+            )
+          ),
+          service:service_id(
+            id,
+            title,
+            color,
+            duration,
+            price,
+            currency
+          ),
+          customer:customer_id(
+            id,
+            name,
+            email,
+            phone
+          )
+        `)
+        .eq('id', appointmentId)
+        .single();
+
+      if (error) throw error;
+
+      // Adicionar propriedade customer_name para facilitar o acesso
+      return {
+        ...data,
+        customer_name: data.customer?.name || null
+      } as Appointment;
+    },
+    enabled: !!appointmentId,
+    staleTime: 1 * 60 * 1000, // 1 minuto
+    gcTime: 5 * 60 * 1000, // 5 minutos
+  });
+}
+
+/**
+ * Hook para buscar slots disponíveis para agendamento
+ */
+export function useAvailableSlots(params: FindAvailableSlotsParams) {
+  return useQuery({
+    queryKey: ['available-slots', params],
+    queryFn: async () => {
+      // Verificar se há parâmetros mínimos necessários
+      const hasRequiredParams = params.schedule_id && 
+        params.provider_id && 
+        params.service_id && 
+        params.start_date && 
+        params.end_date;
+      
+      if (!hasRequiredParams) return [];
+
+      // Chamar a função RPC personalizada no Supabase
+      const { data, error } = await supabase
+        .rpc('find_available_slots', {
+          p_schedule_id: params.schedule_id,
+          p_provider_id: params.provider_id,
+          p_service_id: params.service_id,
+          p_start_date: params.start_date,
+          p_end_date: params.end_date,
+          p_slot_duration: params.slot_duration
+        });
+
+      if (error) throw error;
+      return data as AvailableSlot[];
+    },
+    enabled: !!(params.schedule_id && 
+      params.provider_id && 
+      params.service_id && 
+      params.start_date && 
+      params.end_date),
+    staleTime: 1 * 60 * 1000, // 1 minuto (os slots disponíveis podem mudar se alguém agendar)
+    gcTime: 5 * 60 * 1000, // 5 minutos
+  });
+}
+
+/**
+ * Hook para buscar todos os dados da agenda em uma única chamada
+ */
+export function useScheduleData(scheduleId?: string) {
+  const schedule = useSchedule(scheduleId);
+  const providers = useScheduleProviders(scheduleId);
+  const services = useScheduleServices(scheduleId);
+  const holidays = useScheduleHolidays(scheduleId);
+
+  return {
+    schedule: schedule.data,
+    providers: providers.data || [],
+    services: services.data || [],
+    holidays: holidays.data || [],
+    isLoading: schedule.isLoading || providers.isLoading || services.isLoading || holidays.isLoading,
+    error: schedule.error || providers.error || services.error || holidays.error
+  };
+}
+
+// Buscar uma agenda específica pelo ID
+export const useScheduleById = (scheduleId?: string) => {
+  return useQuery({
+    queryKey: ['schedule', scheduleId],
+    queryFn: async () => {
+      if (!scheduleId) {
+        throw new Error("Schedule ID is required");
+      }
+      
+      const { data, error } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('id', scheduleId)
+        .single();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data;
+    },
+    enabled: !!scheduleId
+  });
+};
+
+// Hook para buscar clientes da organização
+export function useCustomers(organizationId?: string, searchTerm?: string) {
+  return useQuery({
+    queryKey: ['customers', organizationId, searchTerm],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      let query = supabase
+        .from('customers')
+        .select(`
+          *,
+          tags:customer_tags(
+            id,
+            tag:tags(id, name, color)
+          ),
+          contacts:customer_contacts(
+            id,
+            type,
+            value
+          )
+        `)
+        .eq('organization_id', organizationId)
+        .order('name', { ascending: true });
+
+      // Adicionar filtro de busca se fornecido
+      if (searchTerm && searchTerm.trim()) {
+        query = query.or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Processar os resultados para formatar corretamente os dados
+      return (data || []).map(customer => ({
+        ...customer,
+        tags: (customer.tags || [])
+          .filter(tag => tag.tag)
+          .map(tagRel => ({
+            id: tagRel.id,
+            ...tagRel.tag
+          })),
+        // Apenas ordenar os contatos pelo tipo (não há coluna is_primary)
+        contacts: (customer.contacts || [])
+      }));
+    },
+    enabled: !!organizationId,
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 10 * 60 * 1000,   // 10 minutos
+  });
+}
+
+// Hook para buscar um cliente específico
+export function useCustomer(customerId?: string) {
+  return useQuery({
+    queryKey: ['customer', customerId],
+    queryFn: async () => {
+      if (!customerId) return null;
+
+      const { data, error } = await supabase
+        .from('customers')
+        .select(`
+          *,
+          tags:customer_tags(
+            id,
+            tag:tags(id, name, color)
+          ),
+          contacts:customer_contacts(
+            id,
+            type,
+            value
+          ),
+          custom_fields:customer_custom_fields(
+            id,
+            field_id,
+            field_definition:custom_field_definitions(id, name, type, options),
+            value
+          )
+        `)
+        .eq('id', customerId)
+        .single();
+
+      if (error) throw error;
+
+      if (!data) return null;
+
+      return {
+        ...data,
+        tags: (data.tags || [])
+          .filter(tag => tag.tag)
+          .map(tagRel => ({
+            id: tagRel.id,
+            ...tagRel.tag
+          })),
+        contacts: (data.contacts || []),
+        custom_fields: (data.custom_fields || []).map(cf => ({
+          id: cf.id,
+          field_id: cf.field_id,
+          field_name: cf.field_definition?.name || '',
+          field_type: cf.field_definition?.type || 'text',
+          field_options: cf.field_definition?.options || [],
+          value: cf.value
+        }))
+      };
+    },
+    enabled: !!customerId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 } 

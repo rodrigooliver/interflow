@@ -38,7 +38,6 @@ import Profile from './pages/Profile';
 import Tags from './pages/Tags';
 import Prompts from './pages/prompts/Prompts';
 import PromptFormPage from './pages/prompts/PromptForm';
-import Schedules from './pages/Schedules';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { I18nextProvider } from 'react-i18next';
@@ -48,7 +47,7 @@ import SignupPage from './pages/public/signup/page';
 import JoinPage from './pages/public/join/page';
 import { AuthProvider, useAuthContext } from './contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ClosureTypesPage } from './pages/ClosureTypesPage';
 
 import PrivacyPolicy from './pages/public/privacy-policy';
@@ -61,6 +60,9 @@ import { useAutoLogin } from './hooks/useAutoLogin';
 import { ConnectionStatus } from './components/common/ConnectionStatus';
 import OrganizationSelector from './components/auth/OrganizationSelector';
 import { NavbarVisibilityProvider } from './contexts/NavbarVisibilityContext';
+import SchedulesPage from './pages/schedules/SchedulesPage';
+import ScheduleDetailsPage from './pages/schedules/ScheduleDetailsPage';
+import ScheduleManagementPage from './pages/schedules/management/ScheduleManagementPage';
 
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
@@ -293,7 +295,9 @@ function AppContent() {
                         <Route path="chat/:id" element={<Chat />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="customers/:id/chats" element={<CustomerChats />} />
-                        <Route path="schedules" element={<Schedules />} />
+                        <Route path="schedules" element={<SchedulesPage />} />
+                        <Route path="schedules/:scheduleId" element={<ScheduleDetailsPage />} />
+                        <Route path="schedules/:scheduleId/management" element={<ScheduleManagementPage />} />
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="settings/billing" element={<BillingPage />} />
                         <Route path="settings/integrations" element={<IntegrationsPage />} />

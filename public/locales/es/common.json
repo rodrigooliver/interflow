@@ -1,7 +1,7 @@
 {
   "search": "Buscar",
   "add": "Agregar",
-  "loading": "Cargando...",
+  "loading": "Cargando",
   "saving": "Guardando...",
   "create": "Crear",
   "contacts": "Contactos",
@@ -98,5 +98,8 @@
   "newSchedule": "Nuevo Agendamiento",
   "upcomingSchedules": "Próximos Agendamientos",
   "noSchedulesYet": "No se encontraron agendamientos",
-  "createScheduleMessage": "Crea un nuevo agendamiento para comenzar"
+  "createScheduleMessage": "Crea un nuevo agendamiento para comenzar",
+  "today": "Hoy",
+  "filters": "Filtros",
+  "clearAll": "Limpiar todos"
 }
