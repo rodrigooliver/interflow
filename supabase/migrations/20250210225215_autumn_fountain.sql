@@ -51,8 +51,7 @@ CREATE TABLE chat_collaborators (
   user_id UUID NOT NULL REFERENCES profiles(id),
   organization_id UUID NOT NULL REFERENCES organizations(id),
   joined_at TIMESTAMPTZ DEFAULT now(),
-  left_at TIMESTAMPTZ,
-  UNIQUE(chat_id, user_id, organization_id)
+  left_at TIMESTAMPTZ
 );
 
 -- Enable RLS

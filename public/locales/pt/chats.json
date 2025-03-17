@@ -17,6 +17,27 @@
   "channel": "Canal",
   "scrollToHighlightedMessage": "Rolar até a mensagem destacada",
   "noFunnelStage": "Sem estágio definido",
+  "collaborator": {
+    "collaborators": "Colaboradores",
+    "attendedBy": "Atendido por {{name}}",
+    "join": "Participar",
+    "joinShort": "Participar",
+    "transfer": "Transferir para mim",
+    "transferShort": "Pra mim",
+    "leave": "Sair da colaboração",
+    "leaveShort": "Sair",
+    "leaveAttendance": "Sair do atendimento",
+    "cannotInteract": "Você não pode enviar mensagens neste atendimento. Você pode participar como colaborador ou transferir o atendimento para você.",
+    "cannotResolve": "Como colaborador, você pode enviar mensagens, mas apenas o atendente principal pode resolver o atendimento.",
+    "joinedSuccess": "Você agora é um colaborador neste atendimento",
+    "joinError": "Erro ao se tornar colaborador",
+    "transferSuccess": "Atendimento transferido para você",
+    "transferError": "Erro ao transferir atendimento",
+    "leaveSuccess": "Você saiu da colaboração",
+    "leaveError": "Erro ao sair da colaboração",
+    "leaveAttendanceSuccess": "Você saiu do atendimento",
+    "leaveAttendanceError": "Erro ao sair do atendimento"
+  },
   "filters": {
     "title": "Filtros",
     "unassigned": "Não atribuídos",
@@ -45,7 +66,8 @@
     "footer": "Pesquise por conteúdo de mensagens"
   },
   "actions": {
-    "reply": "Responder"
+    "reply": "Responder",
+    "details": "Detalhes"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -168,8 +190,28 @@
     "userStart": "Chat iniciado por {{name}}",
     "userEntered": "{{name}} entrou no chat",
     "userLeft": "{{name}} saiu do chat",
-    "userTransferred": "Chat transferido para {{name}}",
-    "userClosed": "Chat encerrado por {{name}}"
+    "userTransfer": "{{name}} transferiu o chat para si",
+    "userClosed": "Chat encerrado por {{name}}",
+    "userJoin": "{{name}} entrou como colaborador",
+    "userLeftAttendance": "{{name}} saiu do atendimento"
+  },
+  "messageDetails": {
+    "title": "Detalhes da Mensagem",
+    "id": "ID",
+    "type": "Tipo",
+    "senderType": "Tipo de Remetente",
+    "status": "Status",
+    "createdAt": "Data de Criação",
+    "sentBy": "Enviado por",
+    "externalId": "ID Externo",
+    "sessionId": "ID da Sessão",
+    "responseMessageId": "ID da Mensagem de Resposta",
+    "errorMessage": "Mensagem de Erro",
+    "content": "Conteúdo",
+    "attachments": "Anexos",
+    "name": "Nome",
+    "url": "URL",
+    "metadata": "Metadados"
   },
   "noChatsFound": "Nenhum atendimento encontrado",
   "resolution": {
@@ -181,5 +223,13 @@
   "loading": "Carregando...",
   "showAllMessages": "Mostrar todas as mensagens",
   "showCurrentChat": "Mostrar chat atual",
-  "unnamed": "Sem nome"
+  "unnamed": "Sem nome",
+  "leaveSuccess": "Você saiu da colaboração",
+  "leaveError": "Erro ao sair da colaboração",
+  "leaveAttendanceSuccess": "Você saiu do atendimento",
+  "leaveAttendanceError": "Erro ao sair do atendimento",
+  "chatReassigned": "Este atendimento foi transferido para outro atendente",
+  "chatAssignedToYou": "Este atendimento foi transferido para você",
+  "chatClosed": "Este atendimento foi encerrado",
+  "chatReopened": "Este atendimento foi reaberto"
 }

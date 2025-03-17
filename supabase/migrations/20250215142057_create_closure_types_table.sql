@@ -70,6 +70,7 @@ ALTER TYPE message_type ADD VALUE 'user_left';
 ALTER TYPE message_type ADD VALUE 'user_transferred';
 ALTER TYPE message_type ADD VALUE 'user_closed';
 ALTER TYPE message_type ADD VALUE 'user_start';
+ALTER TYPE message_type ADD VALUE 'user_join';
 ALTER TYPE message_type ADD VALUE 'template';
 
 -- Atualiza o comentário da coluna type

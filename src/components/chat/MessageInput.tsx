@@ -12,6 +12,15 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import { useMessageShortcuts } from '../../hooks/useQueryes';
 
+// Interface para configurações de funcionalidades por canal
+interface ChannelFeatures {
+  canReplyToMessages: boolean;
+  canSendAudio: boolean;
+  canSendTemplates: boolean;
+  has24HourWindow: boolean;
+  canSendAfter24Hours: boolean;
+}
+
 interface MessageInputProps {
   chatId: string;
   organizationId: string;
@@ -21,6 +30,7 @@ interface MessageInputProps {
     onClose: () => void;
   };
   isSubscriptionReady?: boolean;
+  channelFeatures?: ChannelFeatures;
 }
 
 interface EmojiData {
@@ -44,7 +54,14 @@ export function MessageInput({
   organizationId,
   onMessageSent, 
   replyTo, 
-  isSubscriptionReady = false
+  isSubscriptionReady = false,
+  channelFeatures = {
+    canReplyToMessages: true,
+    canSendAudio: false,
+    canSendTemplates: false,
+    has24HourWindow: false,
+    canSendAfter24Hours: true
+  }
 }: MessageInputProps) {
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -697,24 +714,87 @@ export function MessageInput({
     setShowEmojiPicker(false);
   };
 
+  // Renderizar o botão de enviar ou gravar áudio
+  const renderSendButton = () => {
+    if (sending) {
+      return (
+        <button
+          className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+          disabled
+        >
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </button>
+      );
+    }
+
+    if (message.trim() || pendingAttachments.length > 0) {
+      return (
+        <button
+          onClick={handleSend}
+          className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+          aria-label={t('send')}
+        >
+          <Send className="w-5 h-5" />
+        </button>
+      );
+    }
+
+    // Mostrar botão de gravação apenas se o canal permitir áudio
+    if (channelFeatures.canSendAudio) {
+      return (
+        <button
+          onMouseDown={startRecording}
+          onMouseUp={stopRecording}
+          onTouchStart={startRecording}
+          onTouchEnd={stopRecording}
+          className={`p-2 rounded-full ${
+            isRecording
+              ? "bg-red-600 hover:bg-red-700"
+              : "bg-blue-600 hover:bg-blue-700"
+          } text-white transition-colors flex items-center`}
+          aria-label={isRecording ? t('recording') : t('record')}
+        >
+          <Mic className="w-5 h-5" />
+          {isRecording && (
+            <span className="ml-2 text-sm">
+              {Math.floor(recordingDuration / 60)}:
+              {(recordingDuration % 60).toString().padStart(2, '0')}
+            </span>
+          )}
+        </button>
+      );
+    } else {
+      // Se não puder enviar áudio, mostrar botão de enviar desabilitado
+      return (
+        <button
+          className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+          disabled
+          aria-label={t('send')}
+        >
+          <Send className="w-5 h-5" />
+        </button>
+      );
+    }
+  };
+
   return (
     <div className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700">
       {replyTo && (
-        <div className="p-2 bg-gray-50 dark:bg-gray-800 flex items-start space-x-2">
-          <div className="flex-1 text-sm border-l-2 border-blue-500 pl-2">
+        <div className="p-2 mb-2 rounded-lg bg-gray-50 dark:bg-gray-800 grid grid-cols-[1fr,auto] gap-2 max-w-full">
+          <div className="text-sm border-l-2 border-blue-500 pl-2 overflow-hidden">
             <div className="text-blue-500 font-medium">
               {replyTo.message.sender_type === 'agent' 
                 ? t('you') 
                 : t('customer')
               }
             </div>
-            <div className="text-gray-600 dark:text-gray-300 truncate">
+            <div className="text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis">
               {replyTo.message.content}
             </div>
           </div>
           <button 
             onClick={replyTo.onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="self-start text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
             <X className="w-4 h-4" />
           </button>
@@ -879,49 +959,7 @@ export function MessageInput({
             // Em dispositivos móveis, Enter quebra linha; em desktop, envia a mensagem
           />
           
-          {/* Mostrar botão de gravação apenas quando não há mensagem ou anexos E não está enviando */}
-          {!sending && !message.trim() && pendingAttachments.length === 0 ? (
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`p-2 rounded-lg transition-colors flex items-center ${
-                isRecording
-                  ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-              }`}
-              title={t(isRecording ? 'voice.stop' : 'voice.start')}
-            >
-              <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
-              {isRecording && (
-                <span className="ml-2 text-sm">
-                  {Math.floor(recordingDuration / 60)}:
-                  {(recordingDuration % 60).toString().padStart(2, '0')}
-                </span>
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={handleSend}
-              disabled={
-                sending || 
-                (!message.trim() && pendingAttachments.length === 0) || 
-                !isSubscriptionReady
-              }
-              className="p-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title={
-                !isSubscriptionReady 
-                  ? t('waitingConnection') 
-                  : t('send')
-              }
-            >
-              {sending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : !isSubscriptionReady ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </button>
-          )}
+          {renderSendButton()}
         </div>
       </div>
 

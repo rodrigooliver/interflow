@@ -12,7 +12,7 @@ import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, UserPlus, UserCheck, RefreshCw } from 'lucide-react';
 import './styles.css';
 
 interface ChatMessagesProps {
@@ -38,12 +38,41 @@ interface Chat {
   profile_picture?: string;
   ticket_number?: string;
   assigned_to?: string;
+  assigned_agent?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+  };
   start_time?: string;
   end_time?: string;
   closure_type_id?: string;
   title?: string;
   last_customer_message_at?: string;
   [key: string]: any;
+}
+
+// Interface para colaboradores do chat
+interface ChatCollaborator {
+  id: string;
+  chat_id: string;
+  user_id: string;
+  organization_id: string;
+  joined_at: string;
+  left_at: string | null;
+  user?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+  };
+}
+
+// Interface para configurações de funcionalidades por canal
+interface ChannelFeatures {
+  canReplyToMessages: boolean;
+  canSendAudio: boolean;
+  canSendTemplates: boolean;
+  has24HourWindow: boolean;
+  canSendAfter24Hours: boolean;
 }
 
 export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesProps) {
@@ -80,6 +109,23 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const isFirstLoadRef = useRef(true);
   const messagesLoadedRef = useRef(false);
   const initialRenderRef = useRef(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [collaborators, setCollaborators] = useState<ChatCollaborator[]>([]);
+  const [isCollaborator, setIsCollaborator] = useState(false);
+  const [isAssignedAgent, setIsAssignedAgent] = useState(false);
+  const [canInteract, setCanInteract] = useState(false);
+  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [isLeavingCollaboration, setIsLeavingCollaboration] = useState(false);
+  const [isLeavingChat, setIsLeavingChat] = useState(false);
+  const [isAttending, setIsAttending] = useState(false);
+  const [channelFeatures, setChannelFeatures] = useState<ChannelFeatures>({
+    canReplyToMessages: true,
+    canSendAudio: false,
+    canSendTemplates: false,
+    has24HourWindow: false,
+    canSendAfter24Hours: false
+  });
 
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
@@ -88,6 +134,63 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       return true;
     }
     return false;
+  }, []);
+
+  // Função para determinar as funcionalidades disponíveis com base no tipo de canal
+  const updateChannelFeatures = useCallback((channelType: string | undefined) => {
+    if (!channelType) {
+      // Configuração padrão se não houver tipo de canal
+      setChannelFeatures({
+        canReplyToMessages: true,
+        canSendAudio: false,
+        canSendTemplates: false,
+        has24HourWindow: false,
+        canSendAfter24Hours: false
+      });
+      return;
+    }
+
+    switch (channelType) {
+      case 'whatsapp_official':
+        setChannelFeatures({
+          canReplyToMessages: false, // Não permite responder mensagens específicas
+          canSendAudio: true,        // Permite enviar áudio
+          canSendTemplates: true,    // Permite enviar templates
+          has24HourWindow: true,     // Tem janela de 24 horas
+          canSendAfter24Hours: true  // Pode enviar após 24h (com templates)
+        });
+        break;
+      case 'whatsapp_wapi':
+      case 'whatsapp_zapi':
+      case 'whatsapp_evo':
+        setChannelFeatures({
+          canReplyToMessages: true,  // Permite responder mensagens específicas
+          canSendAudio: true,        // Permite enviar áudio
+          canSendTemplates: false,   // Não permite enviar templates
+          has24HourWindow: false,    // Não tem janela de 24 horas
+          canSendAfter24Hours: true  // Pode enviar a qualquer momento
+        });
+        break;
+      case 'instagram':
+      case 'facebook':
+        setChannelFeatures({
+          canReplyToMessages: false, // Não permite responder mensagens específicas
+          canSendAudio: false,       // Não permite enviar áudio
+          canSendTemplates: false,   // Não permite enviar templates
+          has24HourWindow: true,     // Tem janela de 24 horas
+          canSendAfter24Hours: false // Não pode enviar após 24h
+        });
+        break;
+      default:
+        // Configuração padrão para outros canais
+        setChannelFeatures({
+          canReplyToMessages: false,
+          canSendAudio: false,
+          canSendTemplates: false,
+          has24HourWindow: false,
+          canSendAfter24Hours: true
+        });
+    }
   }, []);
 
   useEffect(() => {
@@ -156,10 +259,30 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         
         // Sempre carregamos os detalhes do chat quando o chatId muda
         loadChat();
+        // Carregar colaboradores
+        loadCollaborators();
       }
       
       // Sempre nos inscrevemos para atualizações de mensagens
       subscription = subscribeToMessages();
+      
+      // Inscrever para atualizações de colaboradores
+      const collaboratorsSubscription = subscribeToCollaborators();
+      
+      // Inscrever para atualizações do chat
+      const chatSubscription = subscribeToChat();
+      
+      return () => {
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+        if (collaboratorsSubscription) {
+          collaboratorsSubscription.unsubscribe();
+        }
+        if (chatSubscription) {
+          chatSubscription.unsubscribe();
+        }
+      };
     }
 
     return () => {
@@ -182,11 +305,18 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   useEffect(() => {
     if (!chat) return;
     
+    // Atualizar as funcionalidades do canal com base no tipo
+    updateChannelFeatures(chat?.channel_details?.type);
+    
     const isInstagramChannel = chat?.channel_details?.type === 'instagram';
-    const isWhatsAppChannel = chat?.channel_details?.type === 'whatsapp_official';
+    const isFacebookChannel = chat?.channel_details?.type === 'facebook';
+    const isWhatsAppOfficialChannel = chat?.channel_details?.type === 'whatsapp_official';
     const lastCustomerMessageAt = chat?.last_customer_message_at;
     
-    if (isInstagramChannel || isWhatsAppChannel) {
+    // Verificar se o canal tem janela de 24 horas
+    const hasTimeWindow = isInstagramChannel || isFacebookChannel || isWhatsAppOfficialChannel;
+    
+    if (hasTimeWindow) {
       if (!lastCustomerMessageAt) {
         setCanSendMessage(false);
         return;
@@ -198,16 +328,23 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       
       if (hoursDifference > 24) {
         setIsMessageWindowClosed(true);
-        setCanSendMessage(false);
+        
+        // WhatsApp Official pode enviar templates após 24h
+        if (isWhatsAppOfficialChannel) {
+          setCanSendMessage(false); // Não pode enviar mensagem normal, mas pode enviar template
+        } else {
+          setCanSendMessage(false); // Instagram e Facebook não podem enviar nada após 24h
+        }
       } else {
         setIsMessageWindowClosed(false);
         setCanSendMessage(true);
       }
     } else {
+      // Outros canais não têm restrição de tempo
       setCanSendMessage(true);
       setIsMessageWindowClosed(false);
     }
-  }, [chat]);
+  }, [chat, updateChannelFeatures]);
 
   // Efeito para remover o destaque após alguns segundos
   useEffect(() => {
@@ -228,13 +365,62 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         schema: 'public',
         table: 'messages',
         filter: `chat_id=eq.${chatId}`
-      }, (payload) => {
+      }, async (payload) => {
         if (payload.eventType === 'INSERT') {
-          // console.log('payload', payload);
-          setMessages(prev => [...prev, payload.new as Message]);
+          const newMessage = payload.new as Message;
+          
+          // Se for mensagem do sistema, buscar informações adicionais do agente
+          if (newMessage.sender_type === 'system' && newMessage.sender_agent_id) {
+            try {
+              const { data: agentData } = await supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .eq('id', newMessage.sender_agent_id)
+                .single();
+                
+              if (agentData) {
+                // Adicionar informações do agente à mensagem
+                // @ts-expect-error - Simplificando o tipo para corresponder ao que é usado na função loadMessages
+                newMessage.sender_agent = {
+                  id: agentData.id,
+                  full_name: agentData.full_name,
+                  avatar_url: agentData.avatar_url
+                };
+              }
+            } catch (error) {
+              console.error('Erro ao buscar informações do agente:', error);
+            }
+          }
+          
+          setMessages(prev => [...prev, newMessage]);
         } else if (payload.eventType === 'UPDATE') {
+          const updatedMessage = payload.new as Message;
+          
+          // Se for mensagem do sistema, buscar informações adicionais do agente
+          if (updatedMessage.sender_type === 'system' && updatedMessage.sender_agent_id) {
+            try {
+              const { data: agentData } = await supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .eq('id', updatedMessage.sender_agent_id)
+                .single();
+                
+              if (agentData) {
+                // Adicionar informações do agente à mensagem
+                // @ts-expect-error - Simplificando o tipo para corresponder ao que é usado na função loadMessages
+                updatedMessage.sender_agent = {
+                  id: agentData.id,
+                  full_name: agentData.full_name,
+                  avatar_url: agentData.avatar_url
+                };
+              }
+            } catch (error) {
+              console.error('Erro ao buscar informações do agente:', error);
+            }
+          }
+          
           setMessages(prev => prev.map(msg => 
-            msg.id === payload.new.id ? payload.new as Message : msg
+            msg.id === updatedMessage.id ? updatedMessage : msg
           ));
         }
       })
@@ -301,7 +487,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           *,
           customer:customer_id(*),
           channel_details:channel_id(*),
-          assigned_agent:assigned_to(*)
+          assigned_agent:assigned_to(
+            id,
+            full_name,
+            avatar_url
+          )
         `)
         .eq('id', chatId)
         .single();
@@ -414,6 +604,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   };
 
   const handleAttend = async () => {
+    setIsAttending(true);
+    
     try {
       const user = await supabase.auth.getUser();
       
@@ -461,6 +653,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     } catch (error: any) {
       console.error('Error attending chat:', error);
       setError(error.message || t('errors.attend'));
+    } finally {
+      setIsAttending(false);
     }
   };
 
@@ -537,8 +731,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       });
     }
   };
-
-  const isWhatsAppChat = chat?.channel_details?.type === 'whatsapp_official';
 
   const handleSendTemplate = async (template: WhatsAppTemplate, variables: { [key: string]: string }) => {
     try {
@@ -689,6 +881,380 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Carregar o ID do usuário atual
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        setCurrentUserId(data.user.id);
+      }
+    };
+    
+    getCurrentUser();
+  }, []);
+
+  // Verificar permissões do usuário atual no chat
+  useEffect(() => {
+    if (!chat || !currentUserId) return;
+    
+    // Verificar se o usuário é o atendente designado
+    const isUserAssigned = chat.assigned_to === currentUserId;
+    setIsAssignedAgent(isUserAssigned);
+    
+    // Verificar se o usuário é um colaborador ativo
+    const isUserCollaborator = collaborators.some(
+      collab => collab.user_id === currentUserId && !collab.left_at
+    );
+    setIsCollaborator(isUserCollaborator);
+    
+    // Usuário pode interagir se for o atendente ou um colaborador
+    setCanInteract(isUserAssigned || isUserCollaborator);
+  }, [chat, currentUserId, collaborators]);
+
+  // Carregar colaboradores do chat
+  const loadCollaborators = async () => {
+    if (!chatId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_collaborators')
+        .select(`
+          *,
+          user:user_id(
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('chat_id', chatId)
+        .is('left_at', null);
+        
+      if (error) throw error;
+      
+      setCollaborators(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar colaboradores:', error);
+    }
+  };
+
+  // Inscrever para atualizações de colaboradores
+  const subscribeToCollaborators = () => {
+    const subscription = supabase
+      .channel('collaborators')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'chat_collaborators',
+        filter: `chat_id=eq.${chatId}`
+      }, () => {
+        // Recarregar colaboradores quando houver mudanças
+        loadCollaborators();
+      })
+      .subscribe();
+    
+    return subscription;
+  };
+
+  // Inscrever para atualizações do chat
+  const subscribeToChat = () => {
+    const subscription = supabase
+      .channel('chat_updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'chats',
+        filter: `id=eq.${chatId}`
+      }, (payload) => {
+        console.log('Chat atualizado:', payload);
+        
+        if (payload.eventType === 'UPDATE') {
+          const updatedChat = payload.new as Chat;
+          const previousChat = payload.old as Chat;
+          
+          // Verificar se houve mudança no responsável
+          if (updatedChat.assigned_to !== previousChat.assigned_to) {
+            console.log(`Responsável alterado: de ${previousChat.assigned_to || 'ninguém'} para ${updatedChat.assigned_to || 'ninguém'}`);
+            
+            // Se o chat foi atribuído a outro usuário e o usuário atual era o responsável
+            if (previousChat.assigned_to === currentUserId && updatedChat.assigned_to !== currentUserId) {
+              toast.error(t('chatReassigned'));
+            }
+            
+            // Se o chat foi atribuído ao usuário atual
+            if (updatedChat.assigned_to === currentUserId && previousChat.assigned_to !== currentUserId) {
+              toast.success(t('chatAssignedToYou'));
+            }
+            
+            // Buscar informações do novo agente atribuído se necessário
+            if (updatedChat.assigned_to && updatedChat.assigned_to !== previousChat.assigned_to) {
+              supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .eq('id', updatedChat.assigned_to)
+                .single()
+                .then(({ data: agentData }) => {
+                  if (agentData) {
+                    setChat(prevChat => {
+                      if (!prevChat) return null;
+                      return {
+                        ...prevChat,
+                        assigned_to: updatedChat.assigned_to,
+                        assigned_agent: agentData
+                      };
+                    });
+                  }
+                });
+            } else {
+              // Atualizar apenas o campo assigned_to
+              setChat(prevChat => {
+                if (!prevChat) return null;
+                return {
+                  ...prevChat,
+                  assigned_to: updatedChat.assigned_to,
+                  assigned_agent: updatedChat.assigned_to ? prevChat.assigned_agent : undefined
+                };
+              });
+            }
+          }
+          
+          // Verificar se houve mudança no status
+          if (updatedChat.status !== previousChat.status) {
+            console.log(`Status alterado: de ${previousChat.status} para ${updatedChat.status}`);
+            
+            // Se o chat foi fechado
+            if (updatedChat.status === 'closed' && previousChat.status !== 'closed') {
+              toast.success(t('chatClosed'));
+            }
+            
+            // Se o chat foi reaberto
+            if (updatedChat.status === 'in_progress' && previousChat.status === 'closed') {
+              toast.success(t('chatReopened'));
+            }
+            
+            // Atualizar apenas o campo status
+            setChat(prevChat => {
+              if (!prevChat) return null;
+              return {
+                ...prevChat,
+                status: updatedChat.status,
+                end_time: updatedChat.end_time || prevChat.end_time
+              };
+            });
+          }
+          
+          // Atualizar outros campos importantes sem substituir relacionamentos
+          setChat(prevChat => {
+            if (!prevChat) return null;
+            return {
+              ...prevChat,
+              title: updatedChat.title || prevChat.title,
+              start_time: updatedChat.start_time || prevChat.start_time,
+              last_customer_message_at: updatedChat.last_customer_message_at || prevChat.last_customer_message_at
+            };
+          });
+        }
+      })
+      .subscribe();
+    
+    return subscription;
+  };
+
+  // Função para se tornar colaborador
+  const handleBecomeCollaborator = async () => {
+    if (!currentUserId || !chatId || !organizationId) return;
+    
+    setIsAddingCollaborator(true);
+    
+    try {
+      // Inserir registro de colaborador
+      const { error } = await supabase
+        .from('chat_collaborators')
+        .insert({
+          chat_id: chatId,
+          user_id: currentUserId,
+          organization_id: organizationId,
+          joined_at: new Date().toISOString()
+        });
+        
+      if (error) throw error;
+      
+      // Inserir mensagem de sistema
+      await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          type: 'user_join',
+          sender_type: 'system',
+          sender_agent_id: currentUserId,
+          organization_id: organizationId,
+          created_at: new Date().toISOString()
+        });
+      
+      // Recarregar colaboradores
+      await loadCollaborators();
+      
+      toast.success(t('collaborator.joinedSuccess'));
+    } catch (error) {
+      console.error('Erro ao se tornar colaborador:', error);
+      toast.error(t('collaborator.joinError'));
+    } finally {
+      setIsAddingCollaborator(false);
+    }
+  };
+  
+  // Função para transferir o chat para si
+  const handleTransferToMe = async () => {
+    if (!currentUserId || !chatId) return;
+    
+    setIsTransferring(true);
+    
+    try {
+      // Atualizar o chat para o novo atendente
+      const { error } = await supabase
+        .from('chats')
+        .update({
+          assigned_to: currentUserId
+        })
+        .eq('id', chatId);
+        
+      if (error) throw error;
+      
+      // Inserir mensagem de sistema
+      await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          type: 'user_transferred',
+          sender_type: 'system',
+          sender_agent_id: currentUserId,
+          organization_id: organizationId,
+          created_at: new Date().toISOString()
+        });
+      
+      // Atualizar o estado local
+      setChat(prev => prev ? {
+        ...prev,
+        assigned_to: currentUserId
+      } : null);
+      
+      // Recarregar o chat para obter informações atualizadas
+      loadChat();
+      
+      toast.success(t('collaborator.transferSuccess'));
+    } catch (error) {
+      console.error('Erro ao transferir chat:', error);
+      toast.error(t('collaborator.transferError'));
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+  
+  // Função para sair da colaboração
+  const handleLeaveCollaboration = async () => {
+    if (!currentUserId || !chatId) return;
+    
+    setIsLeavingCollaboration(true);
+    
+    try {
+      // Encontrar o registro de colaboração do usuário atual
+      const { data: collaboratorData, error: findError } = await supabase
+        .from('chat_collaborators')
+        .select('id')
+        .eq('chat_id', chatId)
+        .eq('user_id', currentUserId)
+        .is('left_at', null)
+        .single();
+        
+      if (findError) throw findError;
+      
+      if (!collaboratorData) {
+        throw new Error('Registro de colaboração não encontrado');
+      }
+      
+      // Atualizar o registro com a data de saída
+      const { error: updateError } = await supabase
+        .from('chat_collaborators')
+        .update({
+          left_at: new Date().toISOString()
+        })
+        .eq('id', collaboratorData.id);
+        
+      if (updateError) throw updateError;
+      
+      // Inserir mensagem de sistema
+      await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          type: 'user_left',
+          sender_type: 'system',
+          sender_agent_id: currentUserId,
+          organization_id: organizationId,
+          created_at: new Date().toISOString()
+        });
+      
+      // Atualizar o estado local
+      setIsCollaborator(false);
+      setCanInteract(false);
+      
+      // Recarregar colaboradores
+      await loadCollaborators();
+      
+      toast.success(t('collaborator.leaveSuccess'));
+    } catch (error) {
+      console.error('Erro ao sair da colaboração:', error);
+      toast.error(t('collaborator.leaveError'));
+    } finally {
+      setIsLeavingCollaboration(false);
+    }
+  };
+
+  // Função para o atendente responsável sair do atendimento
+  const handleLeaveChat = async () => {
+    if (!currentUserId || !chatId) return;
+    
+    setIsLeavingChat(true);
+    
+    try {
+      // Inserir mensagem de sistema
+      await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          type: 'user_left',
+          sender_type: 'system',
+          sender_agent_id: currentUserId,
+          organization_id: organizationId,
+          created_at: new Date().toISOString()
+        });
+      
+      // Atualizar o status do chat para "pending"
+      const { error: chatError } = await supabase
+        .from('chats')
+        .update({
+          status: 'pending',
+          assigned_to: null as unknown as string // Corrigindo o tipo
+        })
+        .eq('id', chatId);
+        
+      if (chatError) throw chatError;
+      
+      // Atualizar o estado local
+      setChat(prev => prev ? {
+        ...prev,
+        status: 'pending',
+        assigned_to: undefined // Usando undefined em vez de null
+      } : null);
+      
+      toast.success(t('collaborator.leaveAttendanceSuccess'));
+    } catch (error) {
+      console.error('Erro ao sair do atendimento:', error);
+      toast.error(t('collaborator.leaveAttendanceError'));
+    } finally {
+      setIsLeavingChat(false);
+    }
+  };
+
   if (!chatId) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -771,38 +1337,216 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                       #{chat.ticket_number}
                     </div>
                   )}
+                  
+                  {/* Mostrar quem está atendendo */}
+                  {chat?.status === 'in_progress' && chat?.assigned_agent && !isAssignedAgent && !isCollaborator && (
+                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center">
+                      <UserCheck className="w-3 h-3 mr-1" />
+                      {t('collaborator.attendedBy', { name: chat.assigned_agent.full_name })}
+                    </div>
+                  )}
                 </>
               )}
             </div>
           </div>
           
-          {/* Botão de resolver */}
-          <div className="flex-shrink-0 justify-self-end">
-            {chat?.status === 'in_progress' && (
-              <button
-                className="md:px-4 md:py-2 p-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center"
-                onClick={() => setShowResolutionModal(true)}
-                aria-label={t('resolve')}
-              >
-                <span className="hidden md:inline">{t('resolve')}</span>
-                <svg 
-                  className="w-5 h-5 md:hidden" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24" 
-                  xmlns="http://www.w3.org/2000/svg"
+          {/* Botões de ação */}
+          <div className="flex-shrink-0 justify-self-end flex items-center space-x-2">
+            {/* Botões para colaboradores */}
+            {chat?.status === 'in_progress' && isCollaborator && !isAssignedAgent && (
+              <>
+                <button
+                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  onClick={handleTransferToMe}
+                  disabled={isTransferring}
+                  title={t('collaborator.transfer')}
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M5 13l4 4L19 7" 
-                  />
-                </svg>
-              </button>
+                  {isTransferring ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
+                      <span className="hidden md:inline ml-2">{t('loading')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-5 h-5" />
+                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.transferShort')}</span>
+                      <span className="hidden md:inline ml-2">{t('collaborator.transfer')}</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  className="p-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  onClick={handleLeaveCollaboration}
+                  disabled={isLeavingCollaboration}
+                  title={t('collaborator.leave')}
+                >
+                  {isLeavingCollaboration ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
+                      <span className="hidden md:inline ml-2">{t('loading')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg 
+                        className="w-5 h-5" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+                        />
+                      </svg>
+                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.leaveShort')}</span>
+                      <span className="hidden md:inline ml-2">{t('collaborator.leave')}</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+            
+            {/* Botões para usuários que não são atendentes nem colaboradores */}
+            {chat?.status === 'in_progress' && !isAssignedAgent && !isCollaborator && (
+              <>
+                <button
+                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  onClick={handleBecomeCollaborator}
+                  disabled={isAddingCollaborator}
+                  title={t('collaborator.join')}
+                >
+                  {isAddingCollaborator ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
+                      <span className="hidden md:inline ml-2">{t('loading')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5" />
+                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.joinShort')}</span>
+                      <span className="hidden md:inline ml-2">{t('collaborator.join')}</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  onClick={handleTransferToMe}
+                  disabled={isTransferring}
+                >
+                  {isTransferring ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="hidden xs:inline">{t('loading')}</span>
+                      <span className="xs:hidden inline">{t('loading')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      <span className="hidden xs:inline">{t('collaborator.transfer')}</span>
+                      <span className="xs:hidden inline">{t('collaborator.transferShort')}</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+            
+            {/* Botão de resolver (apenas para o atendente designado) */}
+            {chat?.status === 'in_progress' && isAssignedAgent && (
+              <>
+                <button
+                  className="md:px-4 md:py-2 p-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  onClick={handleLeaveChat}
+                  disabled={isLeavingChat}
+                  aria-label={t('collaborator.leaveAttendance')}
+                >
+                  {isLeavingChat ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
+                      <span className="hidden md:inline">{t('loading')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg 
+                        className="w-5 h-5 md:hidden" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+                        />
+                      </svg>
+                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.leaveShort')}</span>
+                      <span className="hidden md:inline">{t('collaborator.leaveAttendance')}</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  className="md:px-4 md:py-2 p-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  onClick={() => setShowResolutionModal(true)}
+                  aria-label={t('resolve')}
+                >
+                  <span className="hidden md:inline">{t('resolve')}</span>
+                  <svg 
+                    className="w-5 h-5 md:hidden" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M5 13l4 4L19 7" 
+                    />
+                  </svg>
+                </button>
+              </>
             )}
           </div>
         </div>
+        
+        {/* Lista de colaboradores */}
+        {collaborators.length > 0 && (
+          <div className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center">
+            <span className="mr-2">{t('collaborator.collaborators')}:</span>
+            {collaborators.map((collab) => (
+              <span key={collab.id} className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full mr-1 mb-1">
+                {collab.user?.full_name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div 
@@ -840,16 +1584,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   </span>
                 </div>
                 
-                <div className="space-y-4 w-full">
+                <div className="flex flex-col gap-2 w-full">
                   {dateMessages.map((message) => (
                     <MessageBubble
                       key={message.id}
                       message={message}
-                      chatStatus={chat?.status}
-                      onReply={(message) => {
+                      chatStatus={chat?.status || ''}
+                      onReply={channelFeatures.canReplyToMessages ? (message) => {
                         setReplyingTo(message);
-                      }}
+                      } : undefined}
                       isHighlighted={message.id === highlightedMessageId}
+                      channelFeatures={channelFeatures}
                     />
                   ))}
                 </div>
@@ -877,25 +1622,26 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         </div>
       ) : (
         <>
-          {chat?.status === 'in_progress' && canSendMessage && (
+          {chat?.status === 'in_progress' && canSendMessage && canInteract && (
             <MessageInput
               chatId={chatId}
               organizationId={organizationId}
               onMessageSent={() => {}}
               replyTo={
-                replyingTo ? {
+                replyingTo && channelFeatures.canReplyToMessages ? {
                   message: replyingTo,
                   onClose: () => setReplyingTo(null)
                 } : undefined
               }
               isSubscriptionReady={isSubscriptionReady}
+              channelFeatures={channelFeatures}
             />
           )}
 
-          {chat?.status === 'in_progress' && !canSendMessage && (
+          {chat?.status === 'in_progress' && !canSendMessage && canInteract && (
             <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
               <div className="p-3 bg-yellow-50 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 rounded-md">
-                {isWhatsAppChat ? (
+                {channelFeatures.canSendTemplates ? (
                   <div className="flex flex-col space-y-3">
                     <p>{t('channels:form.whatsapp.24HourWindow')}</p>
                     <button
@@ -914,13 +1660,54 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             </div>
           )}
 
+          {/* Mensagem para usuários que não podem interagir */}
+          {chat?.status === 'in_progress' && !canInteract && (
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-md flex flex-col space-y-3">
+                <p>{t('collaborator.cannotInteract')}</p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleBecomeCollaborator}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center"
+                    disabled={isAddingCollaborator}
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    <span className="hidden xs:inline">{t('collaborator.join')}</span>
+                    <span className="xs:hidden inline">{t('collaborator.joinShort')}</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleTransferToMe}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center"
+                    disabled={isTransferring}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    <span className="hidden xs:inline">{t('collaborator.transfer')}</span>
+                    <span className="xs:hidden inline">{t('collaborator.transferShort')}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {chat?.status === 'pending' && (
             <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
               <button
                 onClick={handleAttend}
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                disabled={isAttending}
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center"
               >
-                {t('attend')}
+                {isAttending ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {t('loading')}
+                  </>
+                ) : (
+                  t('attend')
+                )}
               </button>
             </div>
           )}
@@ -943,6 +1730,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       {showEditCustomer && chat?.customer && createPortal(
         <CustomerEditModal
+          // @ts-expect-error - Tipo do customer não corresponde exatamente ao esperado
           customer={chat.customer}
           onClose={() => setShowEditCustomer(false)}
           onSuccess={() => {

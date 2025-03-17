@@ -85,7 +85,7 @@ export interface Message {
   organization_id: Organization;
   content: string;
   type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'email' | 
-        'user_entered' | 'user_left' | 'user_transferred' | 'user_closed' | 'user_start';
+        'user_entered' | 'user_left' | 'user_transferred' | 'user_closed' | 'user_start' | 'user_join';
   sent_from_system: boolean;
   sender_type: 'customer' | 'agent' | 'system';
   status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
@@ -99,6 +99,8 @@ export interface Message {
   sender_agent_id?: string;
   sender_agent?: Profile;
   sender_customer_id?: string;
+  response_to?: Message;
+  metadata?: Record<string, unknown>;
 }
 
 /**

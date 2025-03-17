@@ -12,6 +12,27 @@
   "disconnected": "Desconectado",
   "scrollToHighlightedMessage": "Desplazarse hasta el mensaje destacado",
   "noFunnelStage": "Sin etapa definida",
+  "collaborator": {
+    "collaborators": "Colaboradores",
+    "attendedBy": "Atendido por {{name}}",
+    "join": "Participar",
+    "joinShort": "Participar",
+    "transfer": "Transferir a mí",
+    "transferShort": "A mí",
+    "leave": "Salir de la colaboración",
+    "leaveShort": "Salir",
+    "leaveAttendance": "Salir de la atención",
+    "cannotInteract": "No puedes enviar mensajes en esta conversación. Puedes participar como colaborador o transferir la conversación a ti.",
+    "cannotResolve": "Como colaborador, puedes enviar mensajes, pero solo el agente principal puede resolver la conversación.",
+    "joinedSuccess": "Ahora eres colaborador en esta conversación",
+    "joinError": "Error al convertirse en colaborador",
+    "transferSuccess": "Conversación transferida a ti",
+    "transferError": "Error al transferir conversación",
+    "leaveSuccess": "Has salido de la colaboración",
+    "leaveError": "Error al salir de la colaboración",
+    "leaveAttendanceSuccess": "Has salido de la atención",
+    "leaveAttendanceError": "Error al salir de la atención"
+  },
   "filters": {
     "title": "Filtros",
     "unassigned": "Sin asignar",
@@ -40,7 +61,8 @@
     "footer": "Busca por contenido de mensajes"
   },
   "actions": {
-    "reply": "Responder"
+    "reply": "Responder",
+    "details": "Detalles"
   },
   "dateHeaders": {
     "today": "Hoy",
@@ -163,8 +185,10 @@
     "userStart": "Chat iniciado por {{name}}",
     "userEntered": "{{name}} entró en el chat",
     "userLeft": "{{name}} salió del chat",
-    "userTransferred": "Chat transferido a {{name}}",
-    "userClosed": "Chat cerrado por {{name}}"
+    "userTransfer": "{{name}} transfirió el chat a sí mismo",
+    "userClosed": "Chat cerrado por {{name}}",
+    "userJoin": "{{name}} se unió como colaborador",
+    "userLeftAttendance": "{{name}} salió de la atención"
   },
   "noChatsFound": "No se encontraron chats",
   "resolution": {
@@ -181,5 +205,27 @@
   "untitledConversation": "Conversación sin título",
   "noMessages": "Sin mensajes",
   "assignedTo": "Agente",
-  "channel": "Canal"
+  "channel": "Canal",
+  "messageDetails": {
+    "title": "Detalles del Mensaje",
+    "id": "ID",
+    "type": "Tipo",
+    "senderType": "Tipo de Remitente",
+    "status": "Estado",
+    "createdAt": "Fecha de Creación",
+    "sentBy": "Enviado por",
+    "externalId": "ID Externo",
+    "sessionId": "ID de Sesión",
+    "responseMessageId": "ID del Mensaje de Respuesta",
+    "errorMessage": "Mensaje de Error",
+    "content": "Contenido",
+    "attachments": "Adjuntos",
+    "name": "Nombre",
+    "url": "URL",
+    "metadata": "Metadatos"
+  },
+  "chatReassigned": "Esta conversación ha sido transferida a otro agente",
+  "chatAssignedToYou": "Esta conversación ha sido transferida a ti",
+  "chatClosed": "Esta conversación ha sido cerrada",
+  "chatReopened": "Esta conversación ha sido reabierta"
 }
