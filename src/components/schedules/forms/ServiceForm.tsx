@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScheduleService } from '../../../types/schedules';
 import { supabase } from '../../../lib/supabase';
-import { Briefcase, Clock, DollarSign, Palette, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Briefcase, Clock, DollarSign, Palette, CheckCircle2, AlertTriangle, Users, ClipboardList } from 'lucide-react';
 
 interface ServiceFormProps {
   scheduleId: string;
@@ -19,6 +19,8 @@ interface ServiceFormData {
   duration: string;
   color: string;
   status: 'active' | 'inactive';
+  capacity: number;
+  by_arrival_time: boolean;
 }
 
 const ServiceForm: React.FC<ServiceFormProps> = ({ 
@@ -32,6 +34,14 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [durationMinutes, setDurationMinutes] = useState<string>(() => {
+    // Converter a duração inicial de HH:MM:SS para minutos
+    const match = (service?.duration || '01:00:00').match(/(\d+):(\d+):(\d+)/);
+    if (match && match.length >= 3) {
+      return String(parseInt(match[1]) * 60 + parseInt(match[2]));
+    }
+    return '60'; // valor padrão
+  });
   
   // Definir estado do formulário
   const [formData, setFormData] = useState<ServiceFormData>({
@@ -42,6 +52,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
     duration: service?.duration || '01:00:00', // 1 hora como padrão
     color: service?.color || '#3b82f6',
     status: service?.status || 'active',
+    capacity: service?.capacity || 1,
+    by_arrival_time: service?.by_arrival_time || false,
   });
   
   // Manipular mudanças nos campos de texto e select
@@ -49,7 +61,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
     const { name, value } = e.target;
     
     // Para campos numéricos, converter para número
-    if (name === 'price') {
+    if (name === 'price' || name === 'capacity') {
       setFormData(prev => ({
         ...prev,
         [name]: parseFloat(value)
@@ -60,6 +72,42 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
         [name]: value
       }));
     }
+  };
+
+  // Manipular mudanças no campo de duração
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDurationMinutes(value);
+  };
+
+  // Validar duração quando o campo perder o foco
+  const handleDurationBlur = () => {
+    let minutes = parseInt(durationMinutes) || 0;
+    
+    // Garantir que seja pelo menos 1 minuto
+    if (minutes < 1) minutes = 1;
+    
+    // Limitar a 480 minutos (8 horas)
+    if (minutes > 480) minutes = 480;
+    
+    // Atualizar o campo visível
+    setDurationMinutes(String(minutes));
+    
+    // Converter para o formato HH:MM:SS e atualizar o formData
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const duration = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
+    
+    setFormData(prev => ({ ...prev, duration }));
+  };
+  
+  // Manipular mudanças em checkboxes
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
   };
   
   // Manipular envio do formulário
@@ -82,6 +130,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
             duration: formData.duration,
             color: formData.color,
             status: formData.status,
+            capacity: formData.capacity,
+            by_arrival_time: formData.by_arrival_time,
             updated_at: new Date().toISOString()
           })
           .eq('id', service.id)
@@ -105,6 +155,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
             duration: formData.duration,
             color: formData.color,
             status: formData.status,
+            capacity: formData.capacity,
+            by_arrival_time: formData.by_arrival_time,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -189,35 +241,30 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
           
           {/* Duração */}
           <div>
-            <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+            <label htmlFor="duration_minutes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
               <Clock className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
               {t('schedules:serviceDuration')} *
             </label>
-            <div className="relative">
-              <select
-                id="duration"
-                name="duration"
-                value={formData.duration}
-                onChange={handleChange}
+            <div className="flex items-center">
+              <input 
+                id="duration_minutes"
+                type="number" 
+                name="duration_minutes"
+                min="1"
+                max="480" // Máximo de 8 horas
+                value={durationMinutes}
+                onChange={handleDurationChange}
+                onBlur={handleDurationBlur}
                 required
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10"
-              >
-                <option value="00:15:00">15 {t('schedules:minutes')}</option>
-                <option value="00:30:00">30 {t('schedules:minutes')}</option>
-                <option value="00:45:00">45 {t('schedules:minutes')}</option>
-                <option value="01:00:00">1 {t('schedules:hour')}</option>
-                <option value="01:30:00">1.5 {t('schedules:hours')}</option>
-                <option value="02:00:00">2 {t('schedules:hours')}</option>
-                <option value="02:30:00">2.5 {t('schedules:hours')}</option>
-                <option value="03:00:00">3 {t('schedules:hours')}</option>
-                <option value="04:00:00">4 {t('schedules:hours')}</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
+                className="w-24 p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mr-2"
+              />
+              <span className="text-gray-700 dark:text-gray-300">
+                {t('schedules:minutes')}
+              </span>
             </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t('schedules:serviceDurationDescription')}
+            </p>
           </div>
           
           {/* Status */}
@@ -242,6 +289,53 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
                   <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                 </svg>
               </div>
+            </div>
+          </div>
+          
+          {/* Capacidade - NOVO CAMPO */}
+          <div>
+            <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+              <Users className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+              {t('schedules:serviceCapacity')} *
+            </label>
+            <input 
+              id="capacity"
+              type="number" 
+              name="capacity"
+              min="1"
+              value={formData.capacity}
+              onChange={handleChange}
+              required
+              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t('schedules:serviceCapacityDescription')}
+            </p>
+            <p className="mt-1 text-xs italic text-amber-600 dark:text-amber-400">
+              {t('schedules:serviceCapacityNote')}
+            </p>
+          </div>
+          
+          {/* Atendimento por ordem de chegada - NOVO CAMPO */}
+          <div className="flex items-start">
+            <div className="flex items-center h-5 mt-1">
+              <input 
+                type="checkbox" 
+                id="by_arrival_time" 
+                name="by_arrival_time"
+                checked={formData.by_arrival_time}
+                onChange={handleCheckboxChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+              />
+            </div>
+            <div className="ml-3">
+              <label htmlFor="by_arrival_time" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex items-center">
+                <ClipboardList className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                {t('schedules:byArrivalTime')}
+              </label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {t('schedules:byArrivalTimeDescription')}
+              </p>
             </div>
           </div>
           
@@ -303,6 +397,18 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
             </div>
           </div>
         </div>
+        
+        {formData.by_arrival_time && formData.capacity > 1 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300">
+            <h3 className="text-sm font-medium mb-2 flex items-center">
+              <Users className="h-4 w-4 mr-1.5" />
+              {t('schedules:arrivalTimeHeader')}
+            </h3>
+            <p className="text-sm">
+              {t('schedules:arrivalTimeInfo', { capacity: formData.capacity })}
+            </p>
+          </div>
+        )}
         
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-4">
           <button

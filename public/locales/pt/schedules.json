@@ -170,6 +170,16 @@
   "serviceDuration": "Duração",
   "servicePrice": "Preço",
   "serviceColor": "Cor",
+  "serviceCapacity": "Capacidade",
+  "serviceCapacityDescription": "Quantos clientes podem ser atendidos simultaneamente",
+  "serviceCapacityNote": "Na duração, informe o tempo médio de cada atendimento individual.",
+  "byArrivalTime": "Atendimento por ordem de chegada",
+  "byArrivalTimeDescription": "Clientes são agendados por faixa de horário em vez de horário específico",
+  "arrivalTimeHeader": "Informações sobre atendimento por ordem de chegada",
+  "arrivalTimeInfo": "Este serviço permite atender {{capacity}} clientes simultaneamente no mesmo período. Os clientes serão informados sobre a faixa de horário para chegada, em vez de um horário específico.",
+  "arrivalTimeServiceAlert": "Atendimento por ordem de chegada",
+  "arrivalTimeServiceDescription": "Este serviço utiliza o sistema de atendimento por ordem de chegada. O cliente deve chegar durante a faixa de horário especificada ({{timeSlot}}). Capacidade máxima: {{capacity}} pessoas.",
+  "arrivalTimeServiceNote": "Nota: O cliente será informado que deve chegar dentro da faixa de horário e que poderá haver espera dependendo da ordem de chegada.",
   "serviceUpdatedSuccess": "Serviço atualizado com sucesso!",
   "serviceCreatedSuccess": "Serviço adicionado com sucesso!",
   "serviceDeletedSuccess": "Serviço excluído com sucesso!",
@@ -219,5 +229,8 @@
   "titleRequired": "O título é obrigatório",
   "dateRequired": "A data é obrigatória",
   "timeRequiredWhenNotAllDay": "Os horários de início e fim são obrigatórios quando não é o dia todo",
-  "holidayTitlePlaceholder": "Ex: Feriado Nacional, Folga, Férias, etc."
+  "holidayTitlePlaceholder": "Ex: Feriado Nacional, Folga, Férias, etc.",
+  "defaultSlotDuration": "Duração padrão das faixas de horário",
+  "defaultSlotDurationDescription": "Define o tamanho das faixas de horário para serviços com atendimento por ordem de chegada",
+  "serviceDurationDescription": "Digite a duração exata do serviço em minutos"
 } 

@@ -5,7 +5,7 @@ import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import { reloadTranslations } from '../i18n';
 import { PostgrestResponse } from '@supabase/supabase-js';
-import { Appointment, AppointmentFilters, AppointmentFormData, AvailableSlot, FindAvailableSlotsParams } from '../types/schedules';
+import { Appointment, AppointmentFilters, AppointmentFormData, AvailableSlot, FindAvailableSlotsParams, Schedule, ScheduleService } from '../types/schedules';
 
 interface Tag {
   id: string;
@@ -740,7 +740,19 @@ export function useSchedules(organizationId?: string) {
 
       const { data, error } = await supabase
         .from('schedules')
-        .select('*')
+        .select(`
+          *,
+          services:schedule_services (
+            id,
+            title,
+            description,
+            price,
+            currency,
+            duration,
+            color,
+            status
+          )
+        `)
         .eq('organization_id', organizationId)
         .order('title');
 

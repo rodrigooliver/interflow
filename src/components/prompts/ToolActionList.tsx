@@ -1,19 +1,27 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ToolAction, Variable } from '../../types/prompts';
+import { ToolAction } from '../../types/prompts';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import ToolActionModal from './ToolActionModal';
+
+interface ParameterDefinition {
+  type: string;
+  description?: string;
+  enum?: string[];
+  default?: unknown;
+}
 
 interface ToolActionFormProps {
   actions: ToolAction[];
   onActionsChange: (actions: ToolAction[]) => void;
-  variables?: Variable[];
-  teams?: { id: string; name: string }[];
-  funnels?: { id: string; name: string; stages?: { id: string; name: string }[] }[];
-  flows?: { id: string; name: string }[];
+  parameters?: Record<string, ParameterDefinition>;
 }
 
-const ToolActionForm: React.FC<ToolActionFormProps> = ({ actions, onActionsChange, variables = [], teams = [], funnels = [], flows = [] }) => {
+const ToolActionList: React.FC<ToolActionFormProps> = ({ 
+  actions, 
+  onActionsChange, 
+  parameters = {}
+}) => {
   const { t } = useTranslation(['prompts', 'common']);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAction, setEditingAction] = useState<ToolAction | null>(null);
@@ -28,14 +36,22 @@ const ToolActionForm: React.FC<ToolActionFormProps> = ({ actions, onActionsChang
     if (editingAction) {
       // Editando uma ação existente
       const updatedActions = actions.map(a => 
-        a.id === editingAction.id ? { ...action, id: editingAction.id } : a
+        a.id === editingAction.id ? { 
+          ...a,
+          ...action,
+          id: editingAction.id,
+          config: action.config || {},
+          filters: action.filters || []
+        } : a
       );
       onActionsChange(updatedActions);
     } else {
       // Adicionando uma nova ação
       const actionToAdd = {
         ...action,
-        id: generateId()
+        id: generateId(),
+        config: action.config || {},
+        filters: action.filters || []
       };
       onActionsChange([...actions, actionToAdd]);
     }
@@ -52,6 +68,7 @@ const ToolActionForm: React.FC<ToolActionFormProps> = ({ actions, onActionsChang
 
   // Função para iniciar a edição de uma ação
   const handleEditAction = (action: ToolAction) => {
+    console.log('action', action);
     setEditingAction(action);
     setIsModalOpen(true);
   };
@@ -93,11 +110,15 @@ const ToolActionForm: React.FC<ToolActionFormProps> = ({ actions, onActionsChang
                     {action.name}
                   </h4>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {t(`prompts:form.actions.types.${action.type}`)}
+                    {action.description}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Tipo: {action.type}
                   </p>
                 </div>
                 <div className="flex space-x-2">
                   <button
+                    type="button"
                     onClick={() => handleEditAction(action)}
                     className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                   >
@@ -113,7 +134,7 @@ const ToolActionForm: React.FC<ToolActionFormProps> = ({ actions, onActionsChang
               </div>
 
               {/* Exibir configuração */}
-              {Object.keys(action.config).length > 0 && (
+              {Object.keys(action.config || {}).length > 0 && (
                 <div className="mt-2">
                   <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto">
                     {JSON.stringify(action.config, null, 2)}
@@ -152,13 +173,10 @@ const ToolActionForm: React.FC<ToolActionFormProps> = ({ actions, onActionsChang
         }}
         onSave={handleSaveAction}
         action={editingAction || undefined}
-        variables={variables}
-        teams={teams}
-        funnels={funnels}
-        flows={flows}
+        parameters={parameters}
       />
     </div>
   );
 };
 
-export default ToolActionForm; 
+export default ToolActionList; 

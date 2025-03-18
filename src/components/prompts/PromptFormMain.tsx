@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, ListFilter, GitBranch, Trash2, ExternalLink, ChevronUp } from 'lucide-react';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
-import { PromptFormData, Tool, Variable } from '../../types/prompts';
+import { PromptFormData, Tool, ToolAction } from '../../types/prompts';
 import { Integration } from '../../types/database';
 import ContentEditor from './ContentEditor';
 import ToolForm from './ToolForm';
 import ToolsList from './ToolsList';
-import VariableForm from './VariableForm';
-import VariablesList from './VariablesList';
 import TestChat from './TestChat';
 import { Modal } from '../ui/Modal';
 import { useQueryClient } from '@tanstack/react-query';
@@ -192,10 +190,7 @@ const PromptFormMain: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'general' | 'tools'>('general');
   const [showToolModal, setShowToolModal] = useState(false);
-  const [showVariableModal, setShowVariableModal] = useState(false);
-  const [variables, setVariables] = useState<Variable[]>([]);
   const [editingTool, setEditingTool] = useState<{ tool: Tool, index: number } | null>(null);
-  const [editingVariable, setEditingVariable] = useState<{ variable: Variable, index: number } | null>(null);
   const [linkedFlow, setLinkedFlow] = useState<{ id: string; name: string } | null>(null);
   const [checkingFlow, setCheckingFlow] = useState(false);
   const [creatingFlow, setCreatingFlow] = useState(false);
@@ -271,11 +266,6 @@ const PromptFormMain: React.FC = () => {
         
         if (data.temperature !== null && data.temperature !== undefined) {
           setTemperature(data.temperature);
-        }
-        
-        // Carregar variáveis do config, se existirem
-        if (data.config && data.config.variables) {
-          setVariables(data.config.variables);
         }
       }
     } catch (error) {
@@ -401,8 +391,7 @@ const PromptFormMain: React.FC = () => {
     try {
       // Prepare data for saving
       const updatedConfig = {
-        ...formData.config,
-        variables: variables // Salvar variáveis no objeto config
+        ...formData.config
       };
       
       const promptData = {
@@ -495,29 +484,12 @@ const PromptFormMain: React.FC = () => {
     setFormData({ ...formData, tools: updatedTools });
   };
 
-  const handleAddVariable = (variable: Variable) => {
-    if (editingVariable !== null) {
-      // Estamos editando uma variável existente
-      const updatedVariables = [...variables];
-      updatedVariables[editingVariable.index] = variable;
-      setVariables(updatedVariables);
-      setEditingVariable(null);
-    } else {
-      // Estamos adicionando uma nova variável
-      setVariables([...variables, variable]);
-    }
-    setShowVariableModal(false);
-  };
-
-  const handleEditVariable = (index: number) => {
-    setEditingVariable({ variable: variables[index], index });
-    setShowVariableModal(true);
-  };
-
-  const handleRemoveVariable = (index: number) => {
-    const updatedVariables = [...variables];
-    updatedVariables.splice(index, 1);
-    setVariables(updatedVariables);
+  const handleDestinationsChange = (destinations: Record<string, ToolAction[]>) => {
+    console.log('destinations', destinations);
+    setFormData({
+      ...formData,
+      destinations
+    });
   };
 
   return (
@@ -807,58 +779,13 @@ const PromptFormMain: React.FC = () => {
                       </h3>
                       <p className="text-xs text-blue-700 dark:text-blue-400">
                         {t('prompts:form.toolsInfoDescription') || 'Ferramentas permitem que o modelo chame funções específicas. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ferramentas.'}
-                      </p>
-                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div className="bg-white dark:bg-gray-700 p-2 rounded-md">
-                          <h4 className="text-xs font-medium text-gray-800 dark:text-gray-200">GPT-4/GPT-4o</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Suporte completo para ferramentas</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-700 p-2 rounded-md">
-                          <h4 className="text-xs font-medium text-gray-800 dark:text-gray-200">GPT-3.5-Turbo</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Suporte para ferramentas básicas</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-700 p-2 rounded-md">
-                          <h4 className="text-xs font-medium text-gray-800 dark:text-gray-200">Outros modelos</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Sem suporte para ferramentas</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
-                        <a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" rel="noopener noreferrer" className="underline">
-                          {t('prompts:form.learnMore') || 'Saiba mais sobre Function Calling'}
-                        </a>
-                      </p>
+                      </p> 
                     </div>
                   </div>
                   
                   {/* Conteúdo com scroll principal */}
                   <div className="flex-1 overflow-y-auto pr-2 min-h-0 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent" style={{ maxHeight: 'calc(100vh - 400px)' }}>
                     <div className="space-y-6">
-                      {/* Seção de Variáveis */}
-                      <div>
-                        <div className="flex justify-between items-center mb-3">
-                          <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
-                            <ListFilter className="w-4 h-4 mr-2" />
-                            {t('prompts:form.variables') || 'Variáveis'}
-                          </h3>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingVariable(null);
-                              setShowVariableModal(true);
-                            }}
-                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            {t('prompts:form.addVariable') || '+ Adicionar Variável'}
-                          </button>
-                        </div>
-                        
-                        <VariablesList 
-                          variables={variables} 
-                          onEditVariable={handleEditVariable} 
-                          onRemoveVariable={handleRemoveVariable} 
-                        />
-                      </div>
-                      
                       {/* Seção de Ferramentas */}
                       <div>
                         <div className="flex justify-between items-center mb-3">
@@ -939,26 +866,9 @@ const PromptFormMain: React.FC = () => {
             setShowToolModal(false);
             setEditingTool(null);
           }} 
-          variables={variables}
           initialTool={editingTool?.tool} 
-        />
-      </Modal>
-      
-      <Modal 
-        isOpen={showVariableModal} 
-        onClose={() => {
-          setShowVariableModal(false);
-          setEditingVariable(null);
-        }}
-        title={editingVariable ? (t('prompts:form.editVariable') || 'Editar Variável') : (t('prompts:form.addVariable') || 'Adicionar Variável')}
-      >
-        <VariableForm 
-          onAddVariable={handleAddVariable} 
-          onCancel={() => {
-            setShowVariableModal(false);
-            setEditingVariable(null);
-          }}
-          initialVariable={editingVariable?.variable}
+          destinations={formData.destinations}
+          onDestinationsChange={handleDestinationsChange}
         />
       </Modal>
     </div>

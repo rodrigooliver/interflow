@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Appointment, AppointmentFormData } from '../../types/schedules';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Calendar, Clock, User, Calendar as CalendarIcon, MessageSquare, Video, Bell, AlertTriangle, CheckCircle2, Scissors } from 'lucide-react';
+import { Calendar, Clock, User, Calendar as CalendarIcon, MessageSquare, Video, Bell, AlertTriangle, CheckCircle2, Scissors, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { useScheduleProviders, useScheduleServices, useCustomers } from '../../hooks/useQueryes';
 
@@ -47,6 +47,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     date: appointment?.date || (initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')),
     start_time: appointment?.start_time || (initialDate ? format(initialDate, 'HH:mm:ss') : '09:00:00'),
     end_time: appointment?.end_time || (initialEndDate ? format(initialEndDate, 'HH:mm:ss') : '10:00:00'),
+    time_slot: appointment?.time_slot || '',
     notes: appointment?.notes || '',
     create_videoconference: appointment?.has_videoconference || false,
     send_reminders: true,
@@ -55,12 +56,24 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   
   // Estado para controlar a animação de destaque do campo de horário de término
   const [highlightEndTime, setHighlightEndTime] = useState(false);
+  
+  // Estado para armazenar informações do serviço selecionado
+  const [selectedServiceInfo, setSelectedServiceInfo] = useState<{
+    by_arrival_time: boolean;
+    capacity: number;
+  } | null>(null);
 
   // Efeito para atualizar o horário de término quando o serviço ou hora de início mudar
   useEffect(() => {
     if (formData.service_id && formData.start_time) {
       const selectedService = services?.find(s => s.id === formData.service_id);
       if (selectedService) {
+        // Atualizar informações do serviço selecionado
+        setSelectedServiceInfo({
+          by_arrival_time: selectedService.by_arrival_time || false,
+          capacity: selectedService.capacity || 1
+        });
+        
         // Converter o formato de duração HH:MM:SS para minutos
         let durationInMinutes = 0;
         
@@ -108,7 +121,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           
           // Atualizar o horário de término e ativar o destaque
           if (endTime !== formData.end_time) {
-            setFormData(prev => ({ ...prev, end_time: endTime }));
+            setFormData(prev => ({ 
+              ...prev, 
+              end_time: endTime,
+              // Atualizar time_slot se for por ordem de chegada
+              time_slot: selectedService.by_arrival_time 
+                ? `${formData.start_time.substring(0, 5)}-${endTime.substring(0, 5)}`
+                : formData.start_time.substring(0, 5)
+            }));
             setHighlightEndTime(true);
             
             // Desativar o destaque após 1.5 segundos
@@ -129,6 +149,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     if (serviceId && formData.start_time) {
       const selectedService = services?.find(s => s.id === serviceId);
       if (selectedService) {
+        // Atualizar informações do serviço selecionado
+        setSelectedServiceInfo({
+          by_arrival_time: selectedService.by_arrival_time || false,
+          capacity: selectedService.capacity || 1
+        });
+        
         // Converter o formato de duração HH:MM:SS para minutos
         let durationInMinutes = 0;
         
@@ -171,7 +197,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           const endTime = `${endHours}:${endMinutes}:00`;
           
           // Atualizar o horário de término e ativar o destaque
-          setFormData(prev => ({ ...prev, end_time: endTime }));
+          setFormData(prev => ({ 
+            ...prev, 
+            end_time: endTime,
+            // Atualizar time_slot se for por ordem de chegada
+            time_slot: selectedService.by_arrival_time 
+              ? `${formData.start_time.substring(0, 5)}-${endTime.substring(0, 5)}`
+              : formData.start_time.substring(0, 5)
+          }));
           setHighlightEndTime(true);
           
           // Desativar o destaque após 1.5 segundos
@@ -225,6 +258,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         date: formData.date,
         start_time: formData.start_time,
         end_time: formData.end_time,
+        time_slot: formData.time_slot || null,
         notes: formData.notes || null,
         has_videoconference: formData.create_videoconference || false,
       };
@@ -501,6 +535,25 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               placeholder={t('schedules:notesPlaceholder')}
             />
           </div>
+          
+          {/* Alerta de atendimento por ordem de chegada */}
+          {selectedServiceInfo?.by_arrival_time && (
+            <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 mb-4">
+              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center">
+                <Users className="h-4 w-4 mr-1.5" />
+                {t('schedules:arrivalTimeServiceAlert')}
+              </h3>
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                {t('schedules:arrivalTimeServiceDescription', { 
+                  timeSlot: formData.time_slot, 
+                  capacity: selectedServiceInfo.capacity 
+                })}
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-500 mt-2">
+                {t('schedules:arrivalTimeServiceNote')}
+              </p>
+            </div>
+          )}
           
           {/* Videoconferência */}
           <div className="flex items-start">

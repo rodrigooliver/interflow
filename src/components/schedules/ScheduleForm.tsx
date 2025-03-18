@@ -17,10 +17,11 @@ interface ScheduleFormData {
   type: 'service' | 'meeting';
   status: 'active' | 'inactive';
   color: string;
-  is_public: boolean;
-  requires_confirmation: boolean;
+  public_schedule: boolean;
+  require_confirmation: boolean;
   enable_ai_agent: boolean;
   timezone: string;
+  default_slot_duration: number;
 }
 
 const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCancel }) => {
@@ -38,16 +39,26 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
     type: schedule?.type || 'service',
     status: schedule?.status || 'active',
     color: schedule?.color || '#3b82f6',
-    is_public: schedule?.is_public || false,
-    requires_confirmation: schedule?.requires_confirmation || false,
+    public_schedule: schedule?.public_schedule || false,
+    require_confirmation: schedule?.require_confirmation || false,
     enable_ai_agent: schedule?.enable_ai_agent || false,
     timezone: schedule?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    default_slot_duration: schedule?.default_slot_duration || 60,
   });
 
   // Manipular mudanças nos campos
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Para campos numéricos, converter para número
+    if (name === 'default_slot_duration') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: parseInt(value, 10)
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // Manipular mudanças em checkboxes
@@ -259,6 +270,35 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
             </div>
           </div>
           
+          {/* Campo para duração padrão de slots */}
+          {formData.type === 'service' && (
+            <div>
+              <label htmlFor="default_slot_duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <Clock className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                {t('schedules:defaultSlotDuration')}
+              </label>
+              <div className="flex items-center">
+                <input 
+                  id="default_slot_duration"
+                  type="number" 
+                  name="default_slot_duration"
+                  min="1"
+                  max="240" // Máximo de 4 horas
+                  value={formData.default_slot_duration}
+                  onChange={handleChange}
+                  required
+                  className="w-24 p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mr-2"
+                />
+                <span className="text-gray-700 dark:text-gray-300">
+                  {t('schedules:minutes')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('schedules:defaultSlotDurationDescription')}
+              </p>
+            </div>
+          )}
+          
           <div className="md:col-span-2">
             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
@@ -269,14 +309,14 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="isPublic"
-                    name="is_public"
-                    checked={formData.is_public}
+                    id="public_schedule"
+                    name="public_schedule"
+                    checked={formData.public_schedule}
                     onChange={handleCheckboxChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label
-                    htmlFor="isPublic"
+                    htmlFor="public_schedule"
                     className="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t('schedules:publicSchedule')}
@@ -286,14 +326,14 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="requiresConfirmation"
-                    name="requires_confirmation"
-                    checked={formData.requires_confirmation}
+                    id="require_confirmation"
+                    name="require_confirmation"
+                    checked={formData.require_confirmation}
                     onChange={handleCheckboxChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label
-                    htmlFor="requiresConfirmation"
+                    htmlFor="require_confirmation"
                     className="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t('schedules:requireConfirmation')}
@@ -303,14 +343,14 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="enableAiAgent"
+                    id="enable_ai_agent"
                     name="enable_ai_agent"
                     checked={formData.enable_ai_agent}
                     onChange={handleCheckboxChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label
-                    htmlFor="enableAiAgent"
+                    htmlFor="enable_ai_agent"
                     className="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t('schedules:enableAiAgent')}

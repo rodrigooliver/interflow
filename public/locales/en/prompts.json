@@ -4,7 +4,7 @@
   "edit": "Edit AI Agent",
   "delete": "Delete",
   "deleteTitle": "Delete AI Agent",
-  "deleteConfirmation": "Are you sure you want to delete AI Agent {{name}}?",
+  "deleteConfirmation": "Are you sure you want to delete the AI Agent {{name}}?",
   "deleteWarning": "This action cannot be undone.",
   "lastUpdated": "Last updated",
   "noAgentsYet": "No AI Agents created yet",
@@ -19,7 +19,7 @@
   "checkingFlow": "Checking flow...",
   "creatingFlow": "Creating flow...",
   "syncingFlow": "Syncing flow...",
-  "flowLinkError": "Error linking to flow. Please try again.",
+  "flowLinkError": "Error linking with flow. Please try again.",
   "flowResetError": "Error resetting flow. Please try again.",
   "flowCreatedSuccess": "Flow created successfully!",
   "flowResetSuccess": "Flow reset successfully!",
@@ -27,220 +27,103 @@
   "flowOptions": "Flow Options",
   "form": {
     "title": "Title",
+    "titlePlaceholder": "Enter the prompt title",
     "description": "Description",
+    "descriptionPlaceholder": "Describe the purpose of this prompt",
     "content": "Content",
+    "contentPlaceholder": "Enter instructions for the AI",
     "tags": "Tags",
     "tagsPlaceholder": "Enter tags separated by commas",
-    "titlePlaceholder": "Enter the AI Agent title",
-    "descriptionPlaceholder": "Describe the purpose of this AI Agent",
-    "contentPlaceholder": "Enter instructions for the AI (system AI Agent)",
-    "contentHelp": "This is the system AI Agent that defines the AI's behavior.",
     "integration": "Integration",
     "selectIntegration": "Select an integration",
-    "tools": "Tools",
-    "toolsHelp": "Tools that the AI can use",
-    "destinations": "Destinations",
-    "destinationsHelp": "Where to send responses based on detected intents",
-    "tip": "Tip",
-    "markdownTip": "You can use Markdown formatting such as",
-    "bold": "bold",
-    "italic": "italic",
-    "code": "code",
-    "andMore": "lists and more",
-    "characters": "characters",
-    "tabs": {
-      "general": "General Settings",
-      "tools": "Tools"
-    },
-    "toolsDescription": "Configure the tools that the model can use. Tools allow the model to perform specific actions during the conversation.",
-    "toolsInfo": "Information about tools",
-    "toolsInfoDescription": "Tools allow the model to call specific functions. Only GPT-4, GPT-4o, and GPT-3.5-Turbo models support tools.",
-    "learnMore": "Learn more about Function Calling",
-    "noTools": "No tools configured",
-    "addTool": "+ Add Tool",
-    "newTool": "New Tool",
+    "model": "Model",
+    "temperature": "Temperature",
     "toolName": "Tool Name",
     "toolNamePlaceholder": "Ex: get_weather",
     "toolDescription": "Tool Description",
-    "toolDescriptionPlaceholder": "Ex: Gets current weather information for a specific location",
-    "toolParameters": "Parameters (JSON Schema)",
-    "toolParametersHelp": "Define the tool parameters using JSON Schema format.",
-    "parameters": "Parameters",
-    "collapse": "Collapse",
-    "expand": "Expand",
-    "variables": "Variables",
-    "addVariable": "Add Variable",
+    "toolDescriptionPlaceholder": "Ex: Gets weather information for a specific location",
+    "toolParameters": "Parameters",
+    "toolParametersHelp": "Define tool parameters using JSON Schema format.",
+    "addVariable": "+ Add Variable",
+    "editVariable": "Edit Variable",
     "variableName": "Variable Name",
     "variableType": "Variable Type",
     "variableDescription": "Variable Description",
     "variableRequired": "Required",
     "variableEnum": "Possible Values (Enum)",
-    "addEnum": "Add Value",
-    "addParameter": "Add Parameter",
-    "useVariable": "Use Variable",
-    "variableAdded": "Added",
-    "noVariables": "No variables defined",
-    "enumValues": "Possible values",
     "enumValuePlaceholder": "New value",
+    "addEnum": "Add",
+    "viewAsList": "View as List",
+    "viewAsJson": "View as JSON",
+    "noParameters": "No parameters defined",
+    "toolsDescription": "Configure the tools that the model can use. Tools allow the model to execute specific actions during the conversation.",
+    "toolsInfo": "Information about tools",
+    "toolsInfoDescription": "Tools allow the model to call specific functions. Only GPT-4, GPT-4o and GPT-3.5-Turbo models support tools.",
+    "tools": "Tools",
+    "addTool": "+ Add Tool",
     "editTool": "Edit Tool",
-    "editVariable": "Edit Variable",
-    "actions": {
-      "title": "Tool Actions",
-      "description": "Configure the actions that will be executed when this tool is called by the model.",
-      "name": "Action Name",
-      "namePlaceholder": "Ex: Update Customer",
-      "type": "Action Type",
-      "types": {
-        "update_customer": "Update Customer",
-        "update_chat": "Update Chat",
-        "start_flow": "Start Flow",
-        "custom": "Custom"
-      },
-      "fields": "Fields to update",
-      "chatFields": "Chat fields to update",
-      "flowId": "Flow ID",
-      "variables": "Initial variables (JSON)",
-      "customConfig": "Custom configuration (JSON)",
-      "add": "Add Action",
-      "addAction": "Add New Action",
-      "editAction": "Edit Action",
-      "noActions": "No actions configured",
-      "actionSingular": "action configured",
-      "actionPlural": "actions configured",
-      "selectField": "Select a field to configure",
-      "showAllFields": "Show all fields",
-      "useVariable": "Use variable",
-      "manualInput": "Manual input",
-      "customerNamePlaceholder": "Customer name",
-      "selectVariable": "Select a variable",
-      "funnel": "Funnel",
-      "selectFunnel": "Select a funnel",
-      "stage": "Stage",
-      "selectStage": "Select a stage",
-      "status": "Status",
-      "selectStatus": "Select a status",
-      "statusPending": "Pending",
-      "statusInProgress": "In Progress",
-      "statusClosed": "Closed",
-      "team": "Team",
-      "selectTeam": "Select a team",
-      "chatTitlePlaceholder": "Chat title",
-      "flow": "Flow",
-      "selectFlow": "Select a flow",
-      "filters": {
-        "title": "Filters",
-        "description": "Configure filters to determine when this action will be executed",
-        "add": "Add Filter",
-        "noFilters": "No filters configured",
-        "selectVariable": "Select a variable",
-        "selectValue": "Select a value",
-        "operator": "Operator",
-        "operators": {
-          "equals": "equals",
-          "not_equals": "not equals",
-          "contains": "contains",
-          "not_contains": "not contains",
-          "greater_than": "greater than",
-          "less_than": "less than"
-        }
-      }
-    },
     "examples": {
       "title": "Examples",
       "tools": {
         "weather": {
+          "label": "Weather (get_weather)",
           "name": "get_weather",
-          "description": "Gets current weather information or forecast for a specific location",
+          "description": "Gets weather information for a specific location",
           "parameters": {
-            "location": {
-              "description": "The city or place to get weather information for",
-              "type": "string",
-              "example": "New York"
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "City or location to get weather for"
+              },
+              "unit": {
+                "type": "enum",
+                "description": "Temperature unit",
+                "enum": ["celsius", "fahrenheit"]
+              }
             },
-            "days": {
-              "description": "Number of days for the forecast (1-7)",
-              "type": "integer",
-              "example": "3"
-            }
-          }
-        },
-        "calculator": {
-          "name": "calculate",
-          "description": "Performs complex mathematical calculations",
-          "parameters": {
-            "expression": {
-              "description": "The mathematical expression to calculate",
-              "type": "string",
-              "example": "(23 * 4.5) / 2 + 7"
-            }
+            "required": ["location"]
           }
         },
         "search": {
-          "name": "search",
-          "description": "Searches the internet for information about a specific topic",
+          "label": "Search (web_search)",
+          "name": "web_search",
+          "description": "Performs a web search and returns the most relevant results",
           "parameters": {
-            "query": {
-              "description": "The term or question to search for",
-              "type": "string",
-              "example": "What are the benefits of regular exercise?"
-            },
-            "limit": {
-              "description": "Maximum number of results to return",
-              "type": "integer",
-              "example": "5"
-            }
-          }
-        },
-        "calendar": {
-          "name": "schedule_event",
-          "description": "Schedules a new event in the calendar",
-          "parameters": {
-            "title": {
-              "description": "Event title",
-              "type": "string",
-              "example": "Meeting with marketing team"
-            },
-            "start_date": {
-              "description": "Start date and time (ISO format)",
-              "type": "string",
-              "example": "2023-11-15T14:00:00"
-            },
-            "end_date": {
-              "description": "End date and time (ISO format)",
-              "type": "string",
-              "example": "2023-11-15T15:30:00"
-            },
-            "participants": {
-              "description": "List of participants (emails)",
-              "type": "array",
-              "items": {
-                "type": "string"
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search terms"
               },
-              "example": ["mary@company.com", "john@company.com"]
-            }
+              "max_results": {
+                "type": "number",
+                "description": "Maximum number of results",
+                "default": 5
+              }
+            },
+            "required": ["query"]
           }
         },
-        "translate": {
-          "name": "translate_text",
-          "description": "Translates text to another language",
+        "calculator": {
+          "label": "Calculator (calculate)",
+          "name": "calculate",
+          "description": "Performs simple mathematical calculations",
           "parameters": {
-            "text": {
-              "description": "The text to translate",
-              "type": "string",
-              "example": "Hello, how are you today?"
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Mathematical expression to calculate"
+              }
             },
-            "target_language": {
-              "description": "The language to translate to",
-              "type": "string",
-              "enum": ["English", "Spanish", "French", "German", "Italian", "Japanese", "Chinese"],
-              "example": "Spanish"
-            }
+            "required": ["expression"]
           }
         }
       },
       "variables": {
         "name": {
-          "label": "Name",
+          "label": "Name (string)",
           "name": "name",
           "type": "string",
           "description": "Name of the user or entity",
@@ -248,7 +131,7 @@
           "enumValues": []
         },
         "email": {
-          "label": "Email",
+          "label": "Email (string)",
           "name": "email",
           "type": "string",
           "description": "Email address for contact",
@@ -261,7 +144,7 @@
           "type": "enum",
           "description": "Preferred language for communication",
           "required": false,
-          "enumValues": ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Chinese"]
+          "enumValues": ["português", "english", "español", "français", "deutsch"]
         },
         "age": {
           "label": "Age (number)",
@@ -288,25 +171,181 @@
           "enumValues": ["Prospecting", "Qualification", "Proposal", "Negotiation", "Closing", "Post-sale"]
         }
       }
+    },
+    "tabs": {
+      "general": "General Settings",
+      "tools": "Tools"
+    },
+    "noTools": "No tools configured",
+    "actions": {
+      "title": "Tool Actions",
+      "description": "Configure the actions that will be executed when this tool is called",
+      "add": "+ Add Action",
+      "addAction": "Add Action",
+      "edit": "Edit Action",
+      "noActions": "No actions defined",
+      "name": "Action Name",
+      "namePlaceholder": "Ex: Send to Flow",
+      "type": "Action Type",
+      "selectType": "Select the action type",
+      "selectField": "Select the field",
+      "funnel": "Funnel",
+      "selectFunnel": "Select the funnel",
+      "types": {
+        "flow": "Flow",
+        "function": "Function",
+        "url": "URL",
+        "update_customer": "Update Customer",
+        "update_chat": "Update Chat",
+        "start_flow": "Start Flow",
+        "custom": "Custom",
+        "check_schedule": "Appointment"
+      },
+      "manualInput": "Manual input",
+      "useVariable": "Use variable",
+      "descriptionPlaceholder": "Describe what this action does",
+      "parameters": "Parameters",
+      "parametersPlaceholder": "{\n  \"key\": \"value\"\n}",
+      "customerName": "Customer Name",
+      "status": "Chat Status",
+      "team": "Chat Team",
+      "chatFieldTitle": "Chat Title",
+      "selectStatus": "Select status",
+      "statusPending": "Pending",
+      "statusInProgress": "In Progress",
+      "statusClosed": "Closed",
+      "selectTeam": "Select team",
+      "flow": "Flow",
+      "selectFlow": "Select flow",
+      "stage": "Funnel stage",
+      "selectStage": "Select stage",
+      "chatTitlePlaceholder": "Chat Title",
+      "filters": {
+        "title": "Filters",
+        "add": "+ Add Filter",
+        "noFilters": "No filters defined",
+        "variable": "Variable",
+        "operator": "Operator",
+        "value": "Value",
+        "selectVariable": "Select variable",
+        "selectField": "Select field",
+        "manualInput": "Manual input",
+        "selectFunnel": "Select funnel",
+        "selectValue": "Select value",
+        "enterValue": "Enter value",
+        "description": "Only execute this action if the following conditions are met:",
+        "operators": {
+          "equals": "Equals",
+          "notEquals": "Not equals",
+          "contains": "Contains",
+          "notContains": "Not contains",
+          "startsWith": "Starts with",
+          "endsWith": "Ends with",
+          "greaterThan": "Greater than",
+          "lessThan": "Less than",
+          "greaterThanOrEqual": "Greater than or equal",
+          "lessThanOrEqual": "Less than or equal",
+          "exists": "Exists",
+          "notExists": "Not exists",
+          "not_exists": "Not exists"
+        }
+      },
+      "config": {
+        "title": "Configuration",
+        "flow": {
+          "title": "Flow Configuration",
+          "selectFlow": "Select flow",
+          "selectStage": "Select stage",
+          "variables": "Variables"
+        },
+        "function": {
+          "title": "Function Configuration",
+          "selectFunction": "Select function",
+          "parameters": "Function Parameters"
+        },
+        "url": {
+          "title": "URL Configuration",
+          "url": "URL",
+          "method": "Method",
+          "headers": "Headers",
+          "body": "Request Body"
+        }
+      },
+      "validation": {
+        "nameRequired": "Action name is required",
+        "typeRequired": "Action type is required",
+        "flowRequired": "Flow is required",
+        "functionRequired": "Function is required",
+        "urlRequired": "URL is required",
+        "invalidUrl": "Invalid URL",
+        "invalidJson": "Invalid JSON"
+      },
+      "buttons": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "addFilter": "Add Filter",
+        "removeFilter": "Remove Filter"
+      },
+      "customerNamePlaceholder": "Customer name",
+      "selectVariable": "Select variable",
+      "schedule": "Schedule",
+      "selectSchedule": "Select a schedule",
+      "scheduleOperation": "Operation",
+      "scheduleOperationTypes": {
+        "checkAvailability": "Check Availability",
+        "createAppointment": "Create Appointment",
+        "checkAppointment": "Check Appointment",
+        "deleteAppointment": "Delete Appointment"
+      },
+      "selectOperation": "Select operation",
+      "scheduleDay": "Day",
+      "scheduleService": "Service",
+      "serviceMapping": "Service Mapping",
+      "selectService": "Select service",
+      "directFunnel": "Direct Funnel",
+      "mappedFunnel": "Mapped Funnel",
+      "stageMapping": "Stage Mapping",
+      "directStatus": "Direct Status",
+      "mappedStatus": "Mapped Status",
+      "statusMapping": "Status Mapping",
+      "directTeam": "Direct Team",
+      "mappedTeam": "Mapped Team",
+      "teamMapping": "Team Mapping",
+      "directTitle": "Direct Title",
+      "mappedTitle": "Mapped Title",
+      "titleMapping": "Title Mapping",
+      "directName": "Direct Name",
+      "mappedName": "Mapped Name",
+      "nameMapping": "Name Mapping",
+      "directFlow": "Direct Flow",
+      "mappedFlow": "Mapped Flow",
+      "flowMapping": "Flow Mapping",
+      "flowNamePlaceholder": "Enter flow name",
+      "scheduleTime": "Time",
+      "scheduleNotes": "Notes/Observations",
+      "notesPlaceholder": "Enter notes or observations",
+      "directOperation": "Direct Operation",
+      "mappedOperation": "Mapped Operation",
+      "operationMapping": "Operation Mapping"
     }
   },
   "test": "Test AI Agent",
   "testPlaceholder": "Enter a message to test the AI Agent",
   "testEmpty": "Send a message to test the AI Agent",
-  "clearChat": "Clear conversation",
+  "clearChat": "Clear chat",
   "send": "Send",
   "testing": "Testing...",
   "testSuccess": "AI Agent tested successfully!",
-  "testError": "Error testing the AI Agent",
-  "testErrorBackend": "Error processing the AI Agent on the server",
+  "testError": "Error testing AI Agent",
+  "testErrorBackend": "Error processing AI Agent on server",
   "testNoIntegration": "No OpenAI integration available",
-  "selectIntegration": "Select the integration to test the AI Agent",
+  "selectIntegration": "Select integration to test AI Agent",
   "model": "Model",
   "temperature": "Temperature",
   "loadingModels": "Loading models...",
   "tokenUsage": "Token Usage",
   "promptTokens": "Prompt",
-  "completionTokens": "Completion",
+  "completionTokens": "Response",
   "totalTokens": "Total",
   "noModelsAvailable": "No models available",
   "loadingIntegrations": "Loading integrations...",

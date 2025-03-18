@@ -27,220 +27,103 @@
   "flowOptions": "Opciones de Flujo",
   "form": {
     "title": "Título",
+    "titlePlaceholder": "Ingresa el título del prompt",
     "description": "Descripción",
+    "descriptionPlaceholder": "Describe el propósito de este prompt",
     "content": "Contenido",
+    "contentPlaceholder": "Ingresa instrucciones para la IA",
     "tags": "Etiquetas",
     "tagsPlaceholder": "Ingresa etiquetas separadas por comas",
-    "titlePlaceholder": "Ingresa el título del Agente IA",
-    "descriptionPlaceholder": "Describe el propósito de este Agente IA",
-    "contentPlaceholder": "Ingresa instrucciones para la IA (Agente IA del sistema)",
-    "contentHelp": "Este es el Agente IA del sistema que define el comportamiento de la IA.",
     "integration": "Integración",
     "selectIntegration": "Selecciona una integración",
-    "tools": "Herramientas",
-    "toolsHelp": "Herramientas que la IA puede utilizar",
-    "destinations": "Destinos",
-    "destinationsHelp": "Dónde enviar respuestas basadas en intenciones detectadas",
-    "tip": "Consejo",
-    "markdownTip": "Puedes usar formato Markdown como",
-    "bold": "negrita",
-    "italic": "cursiva",
-    "code": "código",
-    "andMore": "listas y más",
-    "characters": "caracteres",
-    "tabs": {
-      "general": "Configuración General",
-      "tools": "Herramientas"
-    },
-    "toolsDescription": "Configura las herramientas que el modelo puede usar. Las herramientas permiten al modelo realizar acciones específicas durante la conversación.",
-    "toolsInfo": "Información sobre herramientas",
-    "toolsInfoDescription": "Las herramientas permiten al modelo llamar a funciones específicas. Solo los modelos GPT-4, GPT-4o y GPT-3.5-Turbo admiten herramientas.",
-    "learnMore": "Más información sobre Function Calling",
-    "noTools": "No hay herramientas configuradas",
-    "addTool": "+ Añadir Herramienta",
-    "newTool": "Nueva Herramienta",
+    "model": "Modelo",
+    "temperature": "Temperatura",
     "toolName": "Nombre de la Herramienta",
-    "toolNamePlaceholder": "Ej: obtener_clima",
+    "toolNamePlaceholder": "Ej: get_weather",
     "toolDescription": "Descripción de la Herramienta",
     "toolDescriptionPlaceholder": "Ej: Obtiene información del clima actual para una ubicación específica",
-    "toolParameters": "Parámetros (Esquema JSON)",
+    "toolParameters": "Parámetros",
     "toolParametersHelp": "Define los parámetros de la herramienta usando formato de Esquema JSON.",
-    "parameters": "Parámetros",
-    "collapse": "Colapsar",
-    "expand": "Expandir",
-    "variables": "Variables",
-    "addVariable": "Añadir Variable",
+    "addVariable": "+ Añadir Variable",
+    "editVariable": "Editar Variable",
     "variableName": "Nombre de Variable",
     "variableType": "Tipo de Variable",
     "variableDescription": "Descripción de Variable",
     "variableRequired": "Requerido",
     "variableEnum": "Valores Posibles (Enum)",
-    "addEnum": "Añadir Valor",
-    "addParameter": "Añadir Parámetro",
-    "useVariable": "Usar Variable",
-    "variableAdded": "Añadida",
-    "noVariables": "No hay variables definidas",
-    "enumValues": "Valores posibles",
     "enumValuePlaceholder": "Nuevo valor",
+    "addEnum": "Añadir",
+    "viewAsList": "Ver como Lista",
+    "viewAsJson": "Ver como JSON",
+    "noParameters": "No hay parámetros definidos",
+    "toolsDescription": "Configura las herramientas que el modelo puede usar. Las herramientas permiten al modelo realizar acciones específicas durante la conversación.",
+    "toolsInfo": "Información sobre herramientas",
+    "toolsInfoDescription": "Las herramientas permiten al modelo llamar a funciones específicas. Solo los modelos GPT-4, GPT-4o y GPT-3.5-Turbo admiten herramientas.",
+    "tools": "Herramientas",
+    "addTool": "+ Añadir Herramienta",
     "editTool": "Editar Herramienta",
-    "editVariable": "Editar Variable",
-    "actions": {
-      "title": "Acciones de la Herramienta",
-      "description": "Configure las acciones que se ejecutarán cuando esta herramienta sea llamada por el modelo.",
-      "name": "Nombre de la Acción",
-      "namePlaceholder": "Ej: Actualizar Cliente",
-      "type": "Tipo de Acción",
-      "types": {
-        "update_customer": "Actualizar Cliente",
-        "update_chat": "Actualizar Chat",
-        "start_flow": "Iniciar Flujo",
-        "custom": "Personalizado"
-      },
-      "fields": "Campos para actualizar",
-      "chatFields": "Campos del chat para actualizar",
-      "flowId": "ID del Flujo",
-      "variables": "Variables iniciales (JSON)",
-      "customConfig": "Configuración personalizada (JSON)",
-      "add": "Añadir Acción",
-      "addAction": "Añadir Nueva Acción",
-      "editAction": "Editar Acción",
-      "noActions": "No hay acciones configuradas",
-      "actionSingular": "acción configurada",
-      "actionPlural": "acciones configuradas",
-      "selectField": "Seleccione un campo para configurar",
-      "showAllFields": "Mostrar todos los campos",
-      "useVariable": "Usar variable",
-      "manualInput": "Entrada manual",
-      "customerNamePlaceholder": "Nombre del cliente",
-      "selectVariable": "Seleccione una variable",
-      "funnel": "Embudo",
-      "selectFunnel": "Seleccione un embudo",
-      "stage": "Etapa",
-      "selectStage": "Seleccione una etapa",
-      "status": "Estado",
-      "selectStatus": "Seleccione un estado",
-      "statusPending": "Pendiente",
-      "statusInProgress": "En Progreso",
-      "statusClosed": "Cerrado",
-      "team": "Equipo",
-      "selectTeam": "Seleccione un equipo",
-      "chatTitlePlaceholder": "Título del chat",
-      "flow": "Flujo",
-      "selectFlow": "Seleccione un flujo",
-      "filters": {
-        "title": "Filtros",
-        "description": "Configure los filtros para determinar cuándo se ejecutará esta acción",
-        "add": "Añadir Filtro",
-        "noFilters": "No hay filtros configurados",
-        "selectVariable": "Seleccione una variable",
-        "selectValue": "Seleccione un valor",
-        "operator": "Operador",
-        "operators": {
-          "equals": "igual a",
-          "not_equals": "diferente de",
-          "contains": "contiene",
-          "not_contains": "no contiene",
-          "greater_than": "mayor que",
-          "less_than": "menor que"
-        }
-      }
-    },
     "examples": {
       "title": "Ejemplos",
       "tools": {
         "weather": {
-          "name": "obtener_clima",
-          "description": "Obtiene información del clima actual o pronóstico para una ubicación específica",
+          "label": "Clima (get_weather)",
+          "name": "get_weather",
+          "description": "Obtiene información del clima actual para una ubicación específica",
           "parameters": {
-            "location": {
-              "description": "La ciudad o lugar para obtener información del clima",
-              "type": "string",
-              "example": "Madrid"
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "Ciudad o ubicación para obtener el clima"
+              },
+              "unit": {
+                "type": "enum",
+                "description": "Unidad de temperatura",
+                "enum": ["celsius", "fahrenheit"]
+              }
             },
-            "days": {
-              "description": "Número de días para el pronóstico (1-7)",
-              "type": "integer",
-              "example": "3"
-            }
-          }
-        },
-        "calculator": {
-          "name": "calcular",
-          "description": "Realiza cálculos matemáticos complejos",
-          "parameters": {
-            "expression": {
-              "description": "La expresión matemática a calcular",
-              "type": "string",
-              "example": "(23 * 4.5) / 2 + 7"
-            }
+            "required": ["location"]
           }
         },
         "search": {
-          "name": "buscar",
-          "description": "Busca en internet información sobre un tema específico",
+          "label": "Búsqueda (web_search)",
+          "name": "web_search",
+          "description": "Realiza una búsqueda en la web y devuelve los resultados más relevantes",
           "parameters": {
-            "query": {
-              "description": "El término o pregunta a buscar",
-              "type": "string",
-              "example": "¿Cuáles son los beneficios del ejercicio regular?"
-            },
-            "limit": {
-              "description": "Número máximo de resultados a devolver",
-              "type": "integer",
-              "example": "5"
-            }
-          }
-        },
-        "calendar": {
-          "name": "programar_evento",
-          "description": "Programa un nuevo evento en el calendario",
-          "parameters": {
-            "title": {
-              "description": "Título del evento",
-              "type": "string",
-              "example": "Reunión con el equipo de marketing"
-            },
-            "start_date": {
-              "description": "Fecha y hora de inicio (formato ISO)",
-              "type": "string",
-              "example": "2023-11-15T14:00:00"
-            },
-            "end_date": {
-              "description": "Fecha y hora de finalización (formato ISO)",
-              "type": "string",
-              "example": "2023-11-15T15:30:00"
-            },
-            "participants": {
-              "description": "Lista de participantes (correos electrónicos)",
-              "type": "array",
-              "items": {
-                "type": "string"
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Términos de búsqueda"
               },
-              "example": ["maria@empresa.com", "juan@empresa.com"]
-            }
+              "max_results": {
+                "type": "number",
+                "description": "Número máximo de resultados",
+                "default": 5
+              }
+            },
+            "required": ["query"]
           }
         },
-        "translate": {
-          "name": "traducir_texto",
-          "description": "Traduce texto a otro idioma",
+        "calculator": {
+          "label": "Calculadora (calculate)",
+          "name": "calculate",
+          "description": "Realiza cálculos matemáticos simples",
           "parameters": {
-            "text": {
-              "description": "El texto a traducir",
-              "type": "string",
-              "example": "Hola, ¿cómo estás hoy?"
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Expresión matemática para calcular"
+              }
             },
-            "target_language": {
-              "description": "El idioma al que traducir",
-              "type": "string",
-              "enum": ["Inglés", "Español", "Francés", "Alemán", "Italiano", "Japonés", "Chino"],
-              "example": "Inglés"
-            }
+            "required": ["expression"]
           }
         }
       },
       "variables": {
         "name": {
-          "label": "Nombre",
+          "label": "Nombre (string)",
           "name": "nombre",
           "type": "string",
           "description": "Nombre del usuario o entidad",
@@ -248,7 +131,7 @@
           "enumValues": []
         },
         "email": {
-          "label": "Email",
+          "label": "Email (string)",
           "name": "email",
           "type": "string",
           "description": "Dirección de correo electrónico para contacto",
@@ -288,6 +171,162 @@
           "enumValues": ["Prospección", "Calificación", "Propuesta", "Negociación", "Cierre", "Post-venta"]
         }
       }
+    },
+    "tabs": {
+      "general": "Configuración General",
+      "tools": "Herramientas"
+    },
+    "noTools": "No hay herramientas configuradas",
+    "actions": {
+      "title": "Acciones de la Herramienta",
+      "description": "Configura las acciones que se ejecutarán cuando esta herramienta sea llamada",
+      "add": "+ Añadir Acción",
+      "addAction": "Añadir Acción",
+      "edit": "Editar Acción",
+      "noActions": "No hay acciones definidas",
+      "name": "Nombre de la Acción",
+      "namePlaceholder": "Ej: Enviar a Flujo",
+      "type": "Tipo de Acción",
+      "selectType": "Selecciona el tipo de acción",
+      "selectField": "Selecciona el campo",
+      "funnel": "Embudo",
+      "selectFunnel": "Selecciona el embudo",
+      "types": {
+        "flow": "Flujo",
+        "function": "Función",
+        "url": "URL",
+        "update_customer": "Actualizar Cliente",
+        "update_chat": "Actualizar Chat",
+        "start_flow": "Iniciar Flujo",
+        "custom": "Personalizado",
+        "check_schedule": "Agenda"
+      },
+      "manualInput": "Entrada manual",
+      "useVariable": "Usar variable",
+      "descriptionPlaceholder": "Describe lo que hace esta acción",
+      "parameters": "Parámetros",
+      "parametersPlaceholder": "{\n  \"key\": \"value\"\n}",
+      "customerName": "Nombre del Cliente",
+      "status": "Estado del Chat",
+      "team": "Equipo del Chat",
+      "chatFieldTitle": "Título del Chat",
+      "selectStatus": "Selecciona el estado",
+      "statusPending": "Pendiente",
+      "statusInProgress": "En Progreso",
+      "statusClosed": "Cerrado",
+      "selectTeam": "Selecciona el equipo",
+      "flow": "Flujo",
+      "selectFlow": "Selecciona el flujo",
+      "stage": "Etapa del embudo",
+      "selectStage": "Selecciona la etapa",
+      "chatTitlePlaceholder": "Título del Chat",
+      "filters": {
+        "title": "Filtros",
+        "add": "+ Añadir Filtro",
+        "noFilters": "No hay filtros definidos",
+        "variable": "Variable",
+        "operator": "Operador",
+        "value": "Valor",
+        "selectVariable": "Selecciona la variable",
+        "selectField": "Selecciona el campo",
+        "manualInput": "Entrada manual",
+        "selectFunnel": "Selecciona el embudo",
+        "selectValue": "Selecciona el valor",
+        "enterValue": "Ingresa el valor",
+        "description": "Solo ejecutar esta acción si se cumplen las siguientes condiciones:",
+        "operators": {
+          "equals": "Igual a",
+          "notEquals": "Diferente de",
+          "contains": "Contiene",
+          "notContains": "No contiene",
+          "startsWith": "Comienza con",
+          "endsWith": "Termina con",
+          "greaterThan": "Mayor que",
+          "lessThan": "Menor que",
+          "greaterThanOrEqual": "Mayor o igual a",
+          "lessThanOrEqual": "Menor o igual a",
+          "exists": "Existe contenido",
+          "notExists": "No existe contenido",
+          "not_exists": "No existe contenido"
+        }
+      },
+      "config": {
+        "title": "Configuración",
+        "flow": {
+          "title": "Configuración del Flujo",
+          "selectFlow": "Selecciona el flujo",
+          "selectStage": "Selecciona la etapa",
+          "variables": "Variables"
+        },
+        "function": {
+          "title": "Configuración de la Función",
+          "selectFunction": "Selecciona la función",
+          "parameters": "Parámetros de la Función"
+        },
+        "url": {
+          "title": "Configuración de la URL",
+          "url": "URL",
+          "method": "Método",
+          "headers": "Cabeceras",
+          "body": "Cuerpo de la Petición"
+        }
+      },
+      "validation": {
+        "nameRequired": "El nombre de la acción es obligatorio",
+        "typeRequired": "El tipo de acción es obligatorio",
+        "flowRequired": "El flujo es obligatorio",
+        "functionRequired": "La función es obligatoria",
+        "urlRequired": "La URL es obligatoria",
+        "invalidUrl": "URL inválida",
+        "invalidJson": "JSON inválido"
+      },
+      "buttons": {
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "addFilter": "Añadir Filtro",
+        "removeFilter": "Eliminar Filtro"
+      },
+      "customerNamePlaceholder": "Nombre del cliente",
+      "selectVariable": "Selecciona la variable",
+      "schedule": "Agenda",
+      "selectSchedule": "Selecciona una agenda",
+      "scheduleOperation": "Operación",
+      "scheduleOperationTypes": {
+        "checkAvailability": "Consultar Disponibilidad",
+        "createAppointment": "Crear Cita",
+        "checkAppointment": "Consultar Cita",
+        "deleteAppointment": "Eliminar Cita"
+      },
+      "selectOperation": "Selecciona la operación",
+      "scheduleDay": "Día",
+      "scheduleService": "Servicio",
+      "serviceMapping": "Mapeo de Servicios",
+      "selectService": "Selecciona el servicio",
+      "directFunnel": "Embudo Directo",
+      "mappedFunnel": "Embudo Mapeado",
+      "stageMapping": "Mapeo de Etapas",
+      "directStatus": "Estado Directo",
+      "mappedStatus": "Estado Mapeado",
+      "statusMapping": "Mapeo de Estados",
+      "directTeam": "Equipo Directo",
+      "mappedTeam": "Equipo Mapeado",
+      "teamMapping": "Mapeo de Equipos",
+      "directTitle": "Título Directo",
+      "mappedTitle": "Título Mapeado",
+      "titleMapping": "Mapeo de Títulos",
+      "directName": "Nombre Directo",
+      "mappedName": "Nombre Mapeado",
+      "nameMapping": "Mapeo de Nombres",
+      "directFlow": "Flujo Directo",
+      "mappedFlow": "Flujo Mapeado",
+      "flowMapping": "Mapeo de Flujos",
+      "flowNamePlaceholder": "Ingresa el nombre del flujo",
+      "scheduleTime": "Hora",
+      "scheduleNotes": "Notas/Observaciones",
+      "notesPlaceholder": "Ingresa notas u observaciones",
+      "directOperation": "Operación Directa",
+      "mappedOperation": "Operación Mapeada",
+      "operationMapping": "Mapeo de Operaciones"
     }
   },
   "test": "Probar Agente IA",
@@ -306,7 +345,7 @@
   "loadingModels": "Cargando modelos...",
   "tokenUsage": "Uso de Tokens",
   "promptTokens": "Prompt",
-  "completionTokens": "Completado",
+  "completionTokens": "Respuesta",
   "totalTokens": "Total",
   "noModelsAvailable": "No hay modelos disponibles",
   "loadingIntegrations": "Cargando integraciones...",

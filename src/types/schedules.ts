@@ -5,16 +5,18 @@ export interface Schedule {
   id: string;
   organization_id: string;
   title: string;
-  description?: string;
-  color: string;
-  status: 'active' | 'inactive';
+  description: string | null;
   type: 'service' | 'meeting';
+  color: string;
   timezone: string;
-  is_public: boolean;
-  requires_confirmation: boolean;
+  status: 'active' | 'inactive';
+  public_schedule: boolean;
+  require_confirmation: boolean;
   enable_ai_agent: boolean;
   created_at: string;
   updated_at: string;
+  services: ScheduleService[];
+  default_slot_duration: number;
 }
 
 // Schedule Provider (Profissional)
@@ -36,12 +38,14 @@ export interface ScheduleService {
   id: string;
   schedule_id: string;
   title: string;
-  description?: string;
+  description: string | null;
   price: number;
   currency: string;
-  duration: string; // Representação de intervalo como string
-  color: string;
+  duration: string; // formato interval do PostgreSQL
+  color: string | null;
   status: 'active' | 'inactive';
+  capacity: number; // Novos campos para suportar múltiplos atendimentos
+  by_arrival_time: boolean; // Indica se o serviço opera por ordem de chegada
   created_at: string;
   updated_at: string;
 }
@@ -84,6 +88,7 @@ export interface Appointment {
   date: string; // Formato YYYY-MM-DD
   start_time: string; // Formato HH:MM:SS
   end_time: string; // Formato HH:MM:SS
+  time_slot?: string; // Faixa de horário para agendamentos por ordem de chegada
   notes?: string;
   metadata?: Record<string, unknown>;
   calendar_event_id?: string;
@@ -163,6 +168,7 @@ export interface AppointmentFormData {
   date: string; // Formato YYYY-MM-DD
   start_time: string; // Formato HH:MM:SS
   end_time: string; // Formato HH:MM:SS
+  time_slot?: string; // Faixa de horário para agendamentos por ordem de chegada
   notes?: string;
   create_videoconference?: boolean;
   send_reminders?: boolean;
