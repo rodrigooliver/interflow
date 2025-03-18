@@ -1,11 +1,33 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useLocation, Location } from 'react-router-dom';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useCurrentSubscription } from '../hooks/useQueryes';
+
+// Definindo tipos para interface de link
+interface LinkChild {
+  to: string;
+  label: string;
+  exact?: boolean;
+}
+
+interface NavigationLink {
+  to: string;
+  icon: React.FC<{ className?: string }>;
+  label: string;
+  exact?: boolean;
+  children?: LinkChild[];
+}
+
+interface SubmenuItemProps {
+  link: NavigationLink;
+  location: Location;
+  shouldCollapse: boolean;
+  onClose?: () => void;
+}
 
 interface SidebarProps {
   onClose?: () => void;
@@ -50,7 +72,15 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     { to: '/app/chats', icon: MessageSquare, label: t('navigation:chats') },
     { to: '/app/customers', icon: Users, label: t('navigation:customers') },
     { to: '/app/crm', icon: GitMerge, label: t('navigation:crm') },
-    { to: '/app/schedules', icon: Calendar, label: t('navigation:schedules') },
+    { 
+      to: '/app/schedules', 
+      icon: Calendar, 
+      label: t('navigation:schedules'),
+      children: [
+        { to: '/app/schedules', label: t('navigation:calendar'), exact: true },
+        { to: '/app/schedules/list', label: t('navigation:manageSchedules') }
+      ]
+    },
     { to: '/app/shortcuts', icon: Keyboard, label: t('navigation:shortcuts') },
     { to: '/app/tags', icon: Tag, label: t('navigation:tags') },
     { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
@@ -180,20 +210,29 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
       <div className="flex-1 overflow-y-auto min-h-0">
         <nav className="p-4">
           <ul className="space-y-2">
-            {links.map(({ to, icon: Icon, label }) => (
-              <li key={to}>
-                <Link
-                  to={to}
-                  onClick={onClose}
-                  className={`flex items-center ${shouldCollapse ? 'justify-center' : ''} rounded-lg transition-colors ${
-                    location.pathname === to
-                      ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                  } ${shouldCollapse ? 'px-2 py-2' : 'px-3 py-2'}`}
-                >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${!shouldCollapse && 'mr-3'}`} />
-                  {!shouldCollapse && <span>{label}</span>}
-                </Link>
+            {links.map((link) => (
+              <li key={link.to}>
+                {link.children ? (
+                  <SubmenuItem 
+                    link={link} 
+                    location={location} 
+                    shouldCollapse={shouldCollapse} 
+                    onClose={onClose}
+                  />
+                ) : (
+                  <Link
+                    to={link.to}
+                    onClick={onClose}
+                    className={`flex items-center ${shouldCollapse ? 'justify-center' : ''} rounded-lg transition-colors ${
+                      location.pathname === link.to
+                        ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    } ${shouldCollapse ? 'px-2 py-2' : 'px-3 py-2'}`}
+                  >
+                    <link.icon className={`w-5 h-5 flex-shrink-0 ${!shouldCollapse && 'mr-3'}`} />
+                    {!shouldCollapse && <span>{link.label}</span>}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
@@ -250,6 +289,53 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Componente para itens de submenu
+const SubmenuItem: React.FC<SubmenuItemProps> = ({ link, location, shouldCollapse, onClose }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const isActive = location.pathname.startsWith(link.to);
+
+  return (
+    <div>
+      <div
+        className={`flex items-center ${shouldCollapse ? 'justify-center' : 'justify-between'} rounded-lg transition-colors cursor-pointer
+          ${isActive
+            ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+          } ${shouldCollapse ? 'px-2 py-2' : 'px-3 py-2'}`}
+        onClick={() => !shouldCollapse && setIsOpen(!isOpen)}
+      >
+        <div className="flex items-center">
+          <link.icon className={`w-5 h-5 flex-shrink-0 ${!shouldCollapse && 'mr-3'}`} />
+          {!shouldCollapse && <span>{link.label}</span>}
+        </div>
+        {!shouldCollapse && link.children && (
+          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
+        )}
+      </div>
+      
+      {!shouldCollapse && isOpen && link.children && (
+        <ul className="mt-1 ml-5 space-y-1">
+          {link.children.map((child: LinkChild) => (
+            <li key={child.to}>
+              <Link
+                to={child.to}
+                onClick={onClose}
+                className={`flex items-center rounded-lg text-sm py-2 px-3 transition-colors
+                  ${(child.exact ? location.pathname === child.to : location.pathname.startsWith(child.to))
+                    ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  }`}
+              >
+                {child.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };

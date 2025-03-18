@@ -12,6 +12,7 @@ export interface Schedule {
   timezone: string;
   is_public: boolean;
   requires_confirmation: boolean;
+  enable_ai_agent: boolean;
   created_at: string;
   updated_at: string;
 }

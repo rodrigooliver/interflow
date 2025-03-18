@@ -432,4 +432,218 @@
 .schedule-calendar-inner {
   height: 100%;
   padding: 0 0.75rem 0.75rem;
+}
+
+/* Melhorar responsividade para dispositivos móveis */
+@media (max-width: 640px) {
+  .rbc-toolbar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .rbc-toolbar .rbc-toolbar-label {
+    font-size: 1rem;
+    padding: 0 0.5rem;
+  }
+  
+  .rbc-header {
+    padding: 0.5rem 0.25rem !important;
+    font-size: 0.75rem;
+  }
+  
+  .rbc-date-cell {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.75rem;
+  }
+  
+  .rbc-day-bg {
+    min-height: 5rem;
+  }
+  
+  .rbc-event {
+    padding: 0 !important;
+  }
+  
+  .rbc-month-view {
+    font-size: 0.75rem;
+  }
+  
+  .rbc-day-slot .rbc-events-container {
+    margin-right: 2px;
+  }
+}
+
+/* Ajustes de tema claro e escuro */
+:root {
+  --primary-color: #14b8a6; /* Cor primária (teal) */
+  --primary-hover: #0d9488;
+  --grid-border: #e5e7eb;
+  --grid-border-hover: #d1d5db;
+  --background-color: #ffffff;
+  --text-color: #111827;
+  --cell-hover: #f9fafb;
+  --day-header-bg: #f3f4f6;
+  --off-range-color: #6b7280;
+  --off-range-bg: #f9fafb;
+  --selected-bg: rgba(20, 184, 166, 0.1);
+  --selected-border: #14b8a6;
+}
+
+/* Modo escuro */
+.dark {
+  --primary-color: #14b8a6;
+  --primary-hover: #0d9488;
+  --grid-border: #374151;
+  --grid-border-hover: #4b5563;
+  --background-color: #1f2937;
+  --text-color: #f9fafb;
+  --cell-hover: #374151;
+  --day-header-bg: #374151;
+  --off-range-color: #9ca3af;
+  --off-range-bg: #111827;
+  --selected-bg: rgba(20, 184, 166, 0.15);
+  --selected-border: #14b8a6;
+}
+
+/* Estilizando as bordas da grade */
+.rbc-month-view {
+  border-color: var(--grid-border) !important;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.rbc-month-row {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-day-bg {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-day-bg:hover {
+  background-color: var(--cell-hover);
+}
+
+.rbc-off-range {
+  color: var(--off-range-color) !important;
+  background-color: var(--off-range-bg) !important;
+}
+
+.rbc-off-range-bg {
+  background-color: var(--off-range-bg) !important;
+}
+
+.rbc-header {
+  border-color: var(--grid-border) !important;
+  color: var(--text-color);
+  background-color: var(--day-header-bg);
+  padding: 0.5rem;
+  font-weight: 600;
+}
+
+.rbc-day-slot, .rbc-time-view, .rbc-time-header, .rbc-time-header-content {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-timeslot-group {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-agenda-view table.rbc-agenda-table {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  border-color: var(--grid-border) !important;
+  background-color: var(--day-header-bg);
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr:hover {
+  background-color: var(--cell-hover);
+}
+
+.rbc-today {
+  background-color: var(--selected-bg) !important;
+}
+
+/* Ajustar os eventos */
+.rbc-event {
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Melhorar o estilo dos botões na barra de ferramentas */
+.rbc-btn-group {
+  background-color: var(--background-color);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.rbc-btn-group button {
+  color: var(--text-color);
+  background-color: var(--background-color);
+  border-color: var(--grid-border);
+  transition: all 0.2s;
+}
+
+.rbc-btn-group button:hover {
+  background-color: var(--cell-hover);
+}
+
+.rbc-active {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Melhorar a visualização de semana e dia */
+.rbc-time-content {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-time-content > .rbc-time-gutter {
+  background-color: var(--day-header-bg);
+}
+
+.rbc-time-header-gutter {
+  background-color: var(--day-header-bg);
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-time-content > * + * > * {
+  border-color: var(--grid-border) !important;
+}
+
+.rbc-current-time-indicator {
+  background-color: var(--primary-color) !important;
+}
+
+/* Manter legível as informações no evento */
+.rbc-event-content {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Melhorar a aparência dos controles de resizing */
+.rbc-addons-dnd .rbc-resize-handle {
+  height: 6px;
+  width: 100%;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.rbc-addons-dnd .rbc-resize-handle-n {
+  top: 0;
+}
+
+.rbc-addons-dnd .rbc-resize-handle-s {
+  bottom: 0;
 } 

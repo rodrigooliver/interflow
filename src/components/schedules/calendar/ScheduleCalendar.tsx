@@ -70,6 +70,7 @@ interface ScheduleCalendarProps {
   isProfessionalMode?: boolean;
   onEventDrop?: (appointmentData: ExtendedAppointment, start: Date, end: Date) => void;
   onEventResize?: (appointmentData: ExtendedAppointment, start: Date, end: Date) => void;
+  currentProviderId?: string; // ID do provider logado
 }
 
 interface EventProps {
@@ -162,6 +163,7 @@ const ScheduleCalendar = ({
   isProfessionalMode = false,
   onEventDrop,
   onEventResize,
+  currentProviderId,
 }: ScheduleCalendarProps) => {
   const { t, i18n } = useTranslation(['schedules', 'common']);
   const [calendarView, setCalendarView] = useState<"month" | "week" | "day" | "agenda">(defaultView as "month" | "week" | "day" | "agenda");
@@ -169,6 +171,9 @@ const ScheduleCalendar = ({
   
   // Estado local para armazenar os eventos arrastados (para manter a posição visual)
   const [draggedAppointmentPositions, setDraggedAppointmentPositions] = useState<Record<string, { start: Date, end: Date }>>({});
+  
+  // Estado para filtrar apenas os agendamentos do provider atual
+  const [showOnlyMyAppointments, setShowOnlyMyAppointments] = useState(false);
   
   // Configurar o idioma do momento baseado no i18n
   useEffect(() => {
@@ -180,8 +185,18 @@ const ScheduleCalendar = ({
     setDraggedAppointmentPositions({});
   }, [appointments]);
 
+  // Filtrar os agendamentos com base no estado showOnlyMyAppointments
+  const filteredAppointments = useMemo(() => {
+    if (!showOnlyMyAppointments || !currentProviderId) {
+      return appointments;
+    }
+    return appointments.filter(appointment => 
+      appointment.provider_id === currentProviderId
+    );
+  }, [appointments, showOnlyMyAppointments, currentProviderId]);
+
   // Converter os agendamentos para o formato esperado pelo calendário
-  const events = useMemo(() => appointments
+  const events = useMemo(() => filteredAppointments
   .map(appointment => {
     // Encontrar o serviço e o provedor para dados adicionais
     const service = services.find(s => s.id === appointment.service_id);
@@ -240,7 +255,7 @@ const ScheduleCalendar = ({
         boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
       }
     } as CalendarEventType;
-  }), [appointments, services, providers, providerColorMode, t, draggedAppointmentPositions]);
+  }), [filteredAppointments, services, providers, providerColorMode, t, draggedAppointmentPositions]);
 
   // Manipulador para navegação de data
   const handleNavigate = (date: Date) => {
@@ -323,9 +338,9 @@ const ScheduleCalendar = ({
     // Renderizar a barra de ferramentas
     return (
       <div className="rbc-toolbar p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0">
           {/* Navegação de data */}
-          <div className="inline-flex rounded-md shadow-sm mr-3">
+          <div className="inline-flex rounded-md shadow-sm sm:mr-3">
             <button
               type="button"
               onClick={goToBack}
@@ -355,36 +370,53 @@ const ScheduleCalendar = ({
           </span>
 
           {/* Contador de agendamentos */}
-          <div className="ml-3 hidden sm:flex items-center">
+          <div className="ml-0 sm:ml-3 mt-2 sm:mt-0 flex items-center">
             <span className="px-2 py-0.5 rounded-full text-xs bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
               {t('schedules:showing')} {visibleEvents} {t('schedules:of')} {totalEvents} {t('schedules:appointments')}
             </span>
           </div>
         </div>
         
-        {/* Controles de visualização */}
-        <div className="inline-flex shadow-sm rounded-md overflow-hidden">
-          {allowedViews.map((viewName) => (
+        <div className="flex flex-col xs:flex-row gap-2">
+          {/* Botão para mostrar apenas agendamentos do colaborador atual */}
+          {currentProviderId && (
             <button
-              key={viewName}
               type="button"
-              onClick={() => onView(viewName)}
-              className={`px-3 py-1.5 text-sm font-medium ${
-                calendarView === viewName
+              onClick={() => setShowOnlyMyAppointments(!showOnlyMyAppointments)}
+              className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border ${
+                showOnlyMyAppointments
                   ? 'bg-teal-600 dark:bg-teal-700 text-white border-teal-600 dark:border-teal-700 shadow-inner'
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              } focus:z-10 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 relative border border-r-0 first:rounded-l-md first:border-r-0 last:rounded-r-md last:border-r`}
+              } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 mr-2`}
             >
-              {viewName === 'month' && t('schedules:monthView')}
-              {viewName === 'week' && t('schedules:weekView')}
-              {viewName === 'day' && t('schedules:dayView')}
-              {viewName === 'agenda' && t('schedules:agendaView')}
+              {showOnlyMyAppointments ? t('schedules:showingMyAppointments') : t('schedules:showMyAppointments')}
             </button>
-          ))}
+          )}
+          
+          {/* Controles de visualização */}
+          <div className="inline-flex shadow-sm rounded-md overflow-hidden self-start sm:self-auto">
+            {allowedViews.map((viewName) => (
+              <button
+                key={viewName}
+                type="button"
+                onClick={() => onView(viewName)}
+                className={`px-3 py-1.5 text-sm font-medium ${
+                  calendarView === viewName
+                    ? 'bg-teal-600 dark:bg-teal-700 text-white border-teal-600 dark:border-teal-700 shadow-inner'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                } focus:z-10 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 relative border border-r-0 first:rounded-l-md first:border-r-0 last:rounded-r-md last:border-r`}
+              >
+                {viewName === 'month' && t('schedules:monthView')}
+                {viewName === 'week' && t('schedules:weekView')}
+                {viewName === 'day' && t('schedules:dayView')}
+                {viewName === 'agenda' && t('schedules:agendaView')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     );
-  }, [t, calendarView, events.length, appointments.length, allowedViews]);
+  }, [t, calendarView, events.length, appointments.length, allowedViews, showOnlyMyAppointments, currentProviderId]);
 
   // Gerar classes para o componente do calendário
   const calendarClassNames = {
@@ -410,7 +442,7 @@ const ScheduleCalendar = ({
     return (
       <div className="h-full flex items-center justify-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col items-center py-10">
-          <Loader2 className="h-10 w-10 text-blue-600 dark:text-blue-400 animate-spin mb-3" />
+          <Loader2 className="h-10 w-10 text-teal-600 dark:text-teal-400 animate-spin mb-3" />
           <p className="text-gray-600 dark:text-gray-300 text-lg">{t('common:loading')}</p>
         </div>
       </div>

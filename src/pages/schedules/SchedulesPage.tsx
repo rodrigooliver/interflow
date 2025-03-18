@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Plus, Filter, ChevronRight, Settings, X, CalendarDays, User } from 'lucide-react';
+import { Calendar, Plus, Filter, CalendarDays, X } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useSchedules, useAppointments } from '../../hooks/useQueryes';
 import ScheduleCalendar from '../../components/schedules/calendar/ScheduleCalendar';
@@ -8,7 +8,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import ScheduleForm from '../../components/schedules/ScheduleForm';
 import AppointmentForm from '../../components/schedules/AppointmentForm';
 import { useNavigate } from 'react-router-dom';
-import { Schedule, Appointment } from '../../types/schedules';
+import { Schedule, Appointment, ScheduleProvider } from '../../types/schedules';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 
@@ -24,6 +24,7 @@ const SchedulesPage: React.FC = () => {
   const { t } = useTranslation(['schedules', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const organizationId = currentOrganizationMember?.organization?.id;
+  const currentProviderId = currentOrganizationMember?.profile_id;
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateAppointmentModal, setShowCreateAppointmentModal] = useState(false);
@@ -31,6 +32,9 @@ const SchedulesPage: React.FC = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
   const [isProfessionalMode, setIsProfessionalMode] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [showAllSchedules, setShowAllSchedules] = useState(false);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const navigate = useNavigate();
   
   // Definir o intervalo de datas inicial para o mês atual
@@ -45,7 +49,7 @@ const SchedulesPage: React.FC = () => {
   
   // Buscar agendamentos filtrados
   const { data: appointments, isLoading: isLoadingAppointments, refetch: refetchAppointments } = useAppointments({
-    schedule_id: selectedScheduleId || undefined,
+    schedule_id: showAllSchedules ? undefined : selectedScheduleId || undefined,
     start_date: dateRange.start,
     end_date: dateRange.end
   });
@@ -57,14 +61,22 @@ const SchedulesPage: React.FC = () => {
   const combinedAppointments = useMemo(() => {
     if (!appointments) return [];
     
-    return appointments.map(appointment => {
-      // Se temos uma versão modificada deste agendamento, use-a no lugar do original
-      if (optimisticAppointments[appointment.id]) {
-        return optimisticAppointments[appointment.id];
-      }
-      return appointment;
-    });
-  }, [appointments, optimisticAppointments]);
+    return appointments
+      .filter(appointment => {
+        // Se um provedor específico foi selecionado, filtrar por ele
+        if (selectedProviderId) {
+          return appointment.provider_id === selectedProviderId;
+        }
+        return true;
+      })
+      .map(appointment => {
+        // Se temos uma versão modificada deste agendamento, use-a no lugar do original
+        if (optimisticAppointments[appointment.id]) {
+          return optimisticAppointments[appointment.id];
+        }
+        return appointment;
+      });
+  }, [appointments, optimisticAppointments, selectedProviderId]);
 
   // Limpar o estado otimista quando os agendamentos forem recarregados
   useEffect(() => {
@@ -83,9 +95,9 @@ const SchedulesPage: React.FC = () => {
     ? schedules?.find(schedule => schedule.id === selectedScheduleId) 
     : null;
   
-  // Função para navegar para a página de detalhes da agenda
-  const handleGoToScheduleDetails = (scheduleId: string) => {
-    navigate(`/schedules/${scheduleId}`);
+  // Função para navegar para a página de gerenciamento de agendas
+  const handleGoToSchedulesList = () => {
+    navigate('/app/schedules/list');
   };
   
   // Função para criar uma nova agenda
@@ -126,6 +138,29 @@ const SchedulesPage: React.FC = () => {
     console.log('Abrindo modal de criação para o slot:', slotInfo);
     setSelectedSlot(slotInfo);
     setShowCreateAppointmentModal(true);
+  };
+  
+  // Toggle do filtro expandido
+  const toggleFilter = () => {
+    setIsFilterExpanded(!isFilterExpanded);
+  };
+
+  // Selecionar provedor específico
+  const handleProviderSelect = (providerId: string | null) => {
+    setSelectedProviderId(providerId);
+  };
+
+  // Toggle para mostrar todas as agendas
+  const toggleShowAllSchedules = () => {
+    setShowAllSchedules(!showAllSchedules);
+    if (!showAllSchedules) {
+      // Se estiver ativando "todas as agendas", manter o ID selecionado para referência
+    } else {
+      // Se estiver desativando, garantir que uma agenda esteja selecionada
+      if (!selectedScheduleId && schedules?.length) {
+        setSelectedScheduleId(schedules[0].id);
+      }
+    }
   };
   
   // Exibir mensagem de carregamento ou de nenhuma agenda
@@ -222,10 +257,23 @@ const SchedulesPage: React.FC = () => {
             </label>
           </div>
           <button
+            onClick={toggleFilter}
+            className={`inline-flex items-center px-3 py-2 border rounded-lg shadow-sm text-sm font-medium transition-colors ${
+              isFilterExpanded 
+                ? 'border-blue-500 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900`}
+          >
+            <Filter className={`h-4 w-4 mr-2 ${isFilterExpanded ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+            <span className="hidden sm:inline">{t('common:filter')}</span>
+          </button>
+          <button
+            onClick={handleGoToSchedulesList}
             className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
           >
-            <Filter className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-            <span className="hidden sm:inline">{t('common:filter')}</span>
+            <CalendarDays className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+            <span className="hidden sm:inline">{t('schedules:manageSchedules')}</span>
+            <span className="inline sm:hidden">{t('schedules:manage')}</span>
           </button>
           <button
             onClick={handleCreateAppointment}
@@ -238,85 +286,161 @@ const SchedulesPage: React.FC = () => {
         </div>
       </div>
       
-      {/* Seletor de agenda */}
-      <div className="mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-              {t('schedules:selectSchedule')}
-            </h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {schedules?.map(schedule => (
-                <button
-                  key={schedule.id}
-                  onClick={() => setSelectedScheduleId(schedule.id)}
-                  className={`flex items-center p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                    selectedScheduleId === schedule.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-700'
-                  }`}
-                >
-                  <div 
-                    className="w-4 h-4 rounded-full mr-3 flex-shrink-0" 
-                    style={{ backgroundColor: schedule.color }}
-                  ></div>
-                  <div className="text-left">
-                    <span className={`font-medium ${
-                      selectedScheduleId === schedule.id
-                        ? 'text-blue-700 dark:text-blue-400'
-                        : 'text-gray-800 dark:text-gray-100'
-                    }`}>
-                      {schedule.title}
-                    </span>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {schedule.type === 'service' 
-                        ? t('schedules:serviceType') 
-                        : t('schedules:meetingType')}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-            
-            {/* Informações da agenda selecionada */}
-            {selectedSchedule && (
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
+      {/* Seletor de agenda - Visível apenas quando o filtro estiver expandido */}
+      {isFilterExpanded && (
+        <div className="mb-6 animate-slideDown">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                  {t('schedules:filters')}
+                </h2>
+                
+                {/* Toggle para todas as agendas */}
+                <div className="flex items-center">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={showAllSchedules} 
+                      onChange={toggleShowAllSchedules}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 dark:peer-focus:ring-blue-600 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">{t('schedules:allAppointments')}</span>
+                  </label>
+                </div>
+              </div>
+              
+              <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                {t('schedules:selectSchedule')}
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+                {schedules?.map(schedule => (
+                  <button
+                    key={schedule.id}
+                    onClick={() => {
+                      setSelectedScheduleId(schedule.id);
+                      // Se selecionar uma agenda específica, desative o modo "todas"
+                      if (showAllSchedules) {
+                        setShowAllSchedules(false);
+                      }
+                    }}
+                    disabled={showAllSchedules}
+                    className={`flex items-center p-3 rounded-lg border transition-colors ${
+                      showAllSchedules 
+                        ? 'opacity-60 cursor-not-allowed border-gray-200 dark:border-gray-700'
+                        : selectedScheduleId === schedule.id
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
                     <div 
-                      className="w-4 h-4 rounded-full mr-2" 
-                      style={{ backgroundColor: selectedSchedule.color }}
+                      className="w-4 h-4 rounded-full mr-3 flex-shrink-0" 
+                      style={{ backgroundColor: schedule.color }}
                     ></div>
-                    <h3 className="text-lg font-medium text-gray-800 dark:text-white">
-                      {selectedSchedule.title}
-                    </h3>
-                  </div>
+                    <div className="text-left">
+                      <span className={`font-medium ${
+                        selectedScheduleId === schedule.id && !showAllSchedules
+                          ? 'text-blue-700 dark:text-blue-400'
+                          : 'text-gray-800 dark:text-gray-100'
+                      }`}>
+                        {schedule.title}
+                      </span>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {schedule.type === 'service' 
+                          ? t('schedules:serviceType') 
+                          : t('schedules:meetingType')}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              
+              {/* Seletor de Profissional */}
+              {(selectedSchedule?.providers?.length > 0 || showAllSchedules) && (
+                <>
+                  <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    {t('schedules:filterByProvider')}
+                  </h3>
                   
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     <button
-                      onClick={() => navigate(`/app/schedules/${selectedSchedule.id}/management`)}
-                      className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors focus:outline-none focus:underline"
+                      onClick={() => handleProviderSelect(null)}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm ${
+                        selectedProviderId === null
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-medium'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
                     >
-                      <User className="h-4 w-4 mr-1.5" />
-                      {t('schedules:manageProvidersServices')}
+                      {t('common:all')}
                     </button>
                     
                     <button
-                      onClick={() => handleGoToScheduleDetails(selectedSchedule.id)}
-                      className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors focus:outline-none focus:underline"
+                      onClick={() => handleProviderSelect(currentProviderId || null)}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm ${
+                        selectedProviderId === currentProviderId
+                          ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 font-medium'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
                     >
-                      <Settings className="h-4 w-4 mr-1.5" />
-                      {t('schedules:manageSchedule')}
-                      <ChevronRight className="h-4 w-4 ml-1" />
+                      {t('schedules:myAppointments')}
                     </button>
+                    
+                    {/* Lista de outros profissionais */}
+                    {selectedSchedule?.providers?.map((provider: ScheduleProvider) => (
+                      provider.profile_id !== currentProviderId && (
+                        <button
+                          key={provider.id}
+                          onClick={() => handleProviderSelect(provider.profile_id)}
+                          className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm ${
+                            selectedProviderId === provider.profile_id
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 font-medium'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {provider.name}
+                        </button>
+                      )
+                    ))}
+                  </div>
+                </>
+              )}
+              
+              {/* Resumo das opções selecionadas */}
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {showAllSchedules ? (
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {t('schedules:showingAllSchedules')}
+                      </span>
+                    ) : selectedSchedule && (
+                      <>
+                        <div 
+                          className="w-4 h-4 rounded-full mr-2" 
+                          style={{ backgroundColor: selectedSchedule.color }}
+                        ></div>
+                        <h3 className="text-lg font-medium text-gray-800 dark:text-white">
+                          {selectedSchedule.title}
+                        </h3>
+                      </>
+                    )}
+                    
+                    {selectedProviderId && (
+                      <span className="ml-3 px-2 py-1 bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200 text-xs rounded-full">
+                        {selectedProviderId === currentProviderId 
+                          ? t('schedules:onlyMyAppointments') 
+                          : `${t('schedules:onlyProviderAppointments')}: ${selectedSchedule?.providers?.find((p: ScheduleProvider) => p.profile_id === selectedProviderId)?.name || ''}`}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
       
       {/* Área do calendário */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 flex-1 min-h-0 overflow-hidden">
@@ -338,6 +462,7 @@ const SchedulesPage: React.FC = () => {
             isProfessionalMode={isProfessionalMode}
             allowedViews={['month', 'week', 'day', 'agenda']}
             defaultView="week"
+            currentProviderId={currentProviderId}
             onEventDrop={async (appointment, start, end) => {
               try {
                 // Formatar datas para o formato correto para o banco de dados

@@ -19,6 +19,7 @@ interface ScheduleFormData {
   color: string;
   is_public: boolean;
   requires_confirmation: boolean;
+  enable_ai_agent: boolean;
   timezone: string;
 }
 
@@ -39,6 +40,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
     color: schedule?.color || '#3b82f6',
     is_public: schedule?.is_public || false,
     requires_confirmation: schedule?.requires_confirmation || false,
+    enable_ai_agent: schedule?.enable_ai_agent || false,
     timezone: schedule?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
@@ -264,46 +266,55 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
               </h3>
               
               <div className="space-y-4">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input 
-                      type="checkbox" 
-                      id="is_public" 
-                      name="is_public"
-                      checked={formData.is_public}
-                      onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                    />
-                  </div>
-                  <div className="ml-3">
-                    <label htmlFor="is_public" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                      {t('schedules:publicSchedule')}
-                    </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {t('schedules:publicScheduleDescription')}
-                    </p>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isPublic"
+                    name="is_public"
+                    checked={formData.is_public}
+                    onChange={handleCheckboxChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="isPublic"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {t('schedules:publicSchedule')}
+                  </label>
                 </div>
-                
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input 
-                      type="checkbox" 
-                      id="requires_confirmation" 
-                      name="requires_confirmation"
-                      checked={formData.requires_confirmation}
-                      onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                    />
-                  </div>
-                  <div className="ml-3">
-                    <label htmlFor="requires_confirmation" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                      {t('schedules:requireConfirmation')}
-                    </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {t('schedules:requireConfirmationDescription')}
-                    </p>
-                  </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="requiresConfirmation"
+                    name="requires_confirmation"
+                    checked={formData.requires_confirmation}
+                    onChange={handleCheckboxChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="requiresConfirmation"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {t('schedules:requireConfirmation')}
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="enableAiAgent"
+                    name="enable_ai_agent"
+                    checked={formData.enable_ai_agent}
+                    onChange={handleCheckboxChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="enableAiAgent"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {t('schedules:enableAiAgent')}
+                  </label>
                 </div>
               </div>
             </div>

@@ -61,8 +61,10 @@ import { ConnectionStatus } from './components/common/ConnectionStatus';
 import OrganizationSelector from './components/auth/OrganizationSelector';
 import { NavbarVisibilityProvider } from './contexts/NavbarVisibilityContext';
 import SchedulesPage from './pages/schedules/SchedulesPage';
-import ScheduleDetailsPage from './pages/schedules/ScheduleDetailsPage';
 import ScheduleManagementPage from './pages/schedules/management/ScheduleManagementPage';
+import SchedulesListPage from './pages/schedules/SchedulesListPage';
+import ScheduleAvailabilityPage from './pages/schedules/management/ScheduleAvailabilityPage';
+import ScheduleHolidaysPage from './pages/schedules/management/ScheduleHolidaysPage';
 
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
@@ -296,8 +298,10 @@ function AppContent() {
                         <Route path="customers" element={<Customers />} />
                         <Route path="customers/:id/chats" element={<CustomerChats />} />
                         <Route path="schedules" element={<SchedulesPage />} />
-                        <Route path="schedules/:scheduleId" element={<ScheduleDetailsPage />} />
+                        <Route path="schedules/list" element={<SchedulesListPage />} />
                         <Route path="schedules/:scheduleId/management" element={<ScheduleManagementPage />} />
+                        <Route path="schedules/:scheduleId/availability" element={<ScheduleAvailabilityPage />} />
+                        <Route path="schedules/:scheduleId/holidays" element={<ScheduleHolidaysPage />} />
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="settings/billing" element={<BillingPage />} />
                         <Route path="settings/integrations" element={<IntegrationsPage />} />

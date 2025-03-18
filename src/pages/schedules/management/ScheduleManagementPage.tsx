@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Briefcase, PlusCircle, Edit, Trash2, AlertTriangle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { User, Briefcase, PlusCircle, Edit, Trash2, AlertTriangle, CheckCircle2, ArrowLeft, Clock, CalendarOff } from 'lucide-react';
 import { useSchedule, useScheduleProviders, useScheduleServices } from '../../../hooks/useQueryes';
 import { ScheduleProvider, ScheduleService } from '../../../types/schedules';
 import ProviderForm from '../../../components/schedules/forms/ProviderForm';
@@ -145,6 +145,24 @@ const ScheduleManagementPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
             {t('schedules:manageSchedule')}: {schedule.title}
           </h1>
+        </div>
+        <div className="mt-3 md:mt-0">
+          <div className="flex space-x-2">
+            <button
+              onClick={() => navigate(`/app/schedules/${scheduleId}/availability`)}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+              {t('schedules:manageAvailability')}
+            </button>
+            <button
+              onClick={() => navigate(`/app/schedules/${scheduleId}/holidays`)}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <CalendarOff className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+              {t('schedules:holidaysAndDaysOff')}
+            </button>
+          </div>
         </div>
       </div>
       
