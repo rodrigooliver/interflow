@@ -30,67 +30,77 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({ onOpenSidebar }) => {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40">
-      <div className="flex justify-around items-center h-16">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40 shadow-lg">
+      <div className="flex justify-around items-center h-16 px-2">
         {/* Botão para abrir a sidebar */}
         <button
           onClick={onOpenSidebar}
-          className="flex flex-col items-center justify-center w-full h-full text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+          className="flex flex-col items-center justify-center w-full h-full py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
         >
-          <Menu className="h-6 w-6" />
-          <span className="text-xs mt-1">{t('common:menu')}</span>
+          <div className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-700">
+            <Menu className="h-5 w-5" strokeWidth={2.2} />
+          </div>
+          <span className="text-xs font-medium mt-1">{t('common:menu')}</span>
         </button>
 
         {/* Link para dashboard */}
         <Link
           to="/app"
-          className={`flex flex-col items-center justify-center w-full h-full ${
+          className={`flex flex-col items-center justify-center w-full h-full py-2 transition-colors duration-200 ${
             isActive('/app') && location.pathname === '/app'
               ? 'text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
           }`}
         >
-          <Home className="h-6 w-6" />
-          <span className="text-xs mt-1">{t('navigation:dashboard')}</span>
+          <div className={`p-1.5 rounded-full ${isActive('/app') && location.pathname === '/app' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <Home className="h-5 w-5" strokeWidth={2.2} />
+          </div>
+          <span className="text-xs font-medium mt-1">{t('navigation:dashboard')}</span>
         </Link>
 
         {/* Link para conversas */}
         <Link
           to="/app/chats"
-          className={`flex flex-col items-center justify-center w-full h-full ${
+          className={`flex flex-col items-center justify-center w-full h-full py-2 transition-colors duration-200 ${
             isActive('/app/chats')
               ? 'text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
           }`}
         >
-          <MessageSquare className="h-6 w-6" />
-          <span className="text-xs mt-1">{t('navigation:chats')}</span>
+          <div className={`p-1.5 rounded-full ${isActive('/app/chats') ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <MessageSquare className="h-5 w-5" strokeWidth={2.2} />
+          </div>
+          <span className="text-xs font-medium mt-1">{t('navigation:chats')}</span>
         </Link>
 
         {/* Link para clientes */}
         <Link
           to="/app/customers"
-          className={`flex flex-col items-center justify-center w-full h-full ${
+          className={`flex flex-col items-center justify-center w-full h-full py-2 transition-colors duration-200 ${
             isActive('/app/customers')
               ? 'text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
           }`}
         >
-          <Users className="h-6 w-6" />
-          <span className="text-xs mt-1">{t('navigation:customers')}</span>
+          <div className={`p-1.5 rounded-full ${isActive('/app/customers') ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <Users className="h-5 w-5" strokeWidth={2.2} />
+          </div>
+          <span className="text-xs font-medium mt-1">{t('navigation:customers')}</span>
         </Link>
 
         {/* Link para agendamentos */}
         <Link
           to="/app/schedules"
-          className={`flex flex-col items-center justify-center w-full h-full ${
+          className={`flex flex-col items-center justify-center w-full h-full py-2 transition-colors duration-200 ${
             isActive('/app/schedules')
               ? 'text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
           }`}
         >
-          <Calendar className="h-6 w-6" />
-          <span className="text-xs mt-1">{t('common:schedules')}</span>
+          <div className={`p-1.5 rounded-full ${isActive('/app/schedules') ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <Calendar className="h-5 w-5" strokeWidth={2.2} />
+          </div>
+          <span className="text-xs font-medium mt-1">{t('common:schedules')}</span>
         </Link>
       </div>
     </div>

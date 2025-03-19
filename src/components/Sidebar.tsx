@@ -279,7 +279,14 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
             {!shouldCollapse && <span className="ml-2">{isDark ? t('common:lightMode') : t('common:darkMode')}</span>}
           </button>
           <button
-            onClick={() => signOut()}
+            onClick={() => {
+              // Deslogar do OneSignal se estiver em ambiente nativo
+              if (typeof window.isNativeApp === 'boolean' && window.isNativeApp && window.logoutFromOneSignal) {
+                console.log('Deslogando do OneSignal');
+                window.logoutFromOneSignal();
+              }
+              signOut();
+            }}
             className={`flex items-center ${shouldCollapse ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
               shouldCollapse ? 'p-2' : 'px-4 py-2'
             }`}

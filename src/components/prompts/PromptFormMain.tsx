@@ -28,7 +28,7 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
   try {
     // Create new flow with default nodes
     const defaultStartNode = {
-      id: 'start',
+      id: 'start-node',
       type: 'start',
       position: { x: 100, y: 100 },
       data: {}
@@ -79,7 +79,7 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
     const edges = [
       {
         id: `estart-${agentNode.id}--`,
-        source: 'start',
+        source: 'start-node',
         target: agentNode.id,
         sourceHandle: null,
         targetHandle: null

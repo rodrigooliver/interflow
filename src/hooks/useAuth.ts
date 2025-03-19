@@ -62,12 +62,15 @@ export function useAuth() {
     // console.log('[useAuth] Tentando fazer logout');
     try {
       localStorage.removeItem('selectedOrganizationId');
+
+      
       
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('[useAuth] Erro no logout:', error.message);
         throw error;
       }
+
       // console.log('[useAuth] Logout bem-sucedido');
       queryClient.invalidateQueries();
       setTimeout(() => {

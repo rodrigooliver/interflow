@@ -5,6 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
+// Estendendo a interface Window para incluir nossas propriedades personalizadas
+declare global {
+  interface Window {
+    isNativeApp?: boolean;
+    loginToOneSignal?: (userId: string) => void;
+    logoutFromOneSignal?: () => void;
+  }
+}
+
 interface LoginFormProps {
   onSuccess?: () => void;
   redirectPath?: string;
@@ -38,6 +47,15 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
         }
       } else {
         // Se o login for bem-sucedido
+        // Obter o userId do usuário atual
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Registrar no OneSignal se estiver em ambiente mobile
+        if (user && window.isNativeApp && window.loginToOneSignal) {
+          console.log('Registrando usuário no OneSignal:', user.id);
+          window.loginToOneSignal(user.id);
+        }
+
         if (onSuccess) {
           onSuccess();
         } else {
