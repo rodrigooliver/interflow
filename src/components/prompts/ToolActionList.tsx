@@ -25,6 +25,7 @@ const ToolActionList: React.FC<ToolActionFormProps> = ({
   const { t } = useTranslation(['prompts', 'common']);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAction, setEditingAction] = useState<ToolAction | null>(null);
+  const [editingConfig, setEditingConfig] = useState<{ id: string; config: string } | null>(null);
 
   // Função para gerar um ID único
   const generateId = () => {
@@ -71,6 +72,32 @@ const ToolActionList: React.FC<ToolActionFormProps> = ({
     console.log('action', action);
     setEditingAction(action);
     setIsModalOpen(true);
+  };
+
+  // Função para iniciar a edição do config
+  const handleEditConfig = (action: ToolAction) => {
+    setEditingConfig({
+      id: action.id,
+      config: JSON.stringify(action.config || {}, null, 2)
+    });
+  };
+
+  // Função para salvar as alterações do config
+  const handleSaveConfig = () => {
+    if (!editingConfig) return;
+
+    try {
+      const parsedConfig = JSON.parse(editingConfig.config);
+      const updatedActions = actions.map(action => 
+        action.id === editingConfig.id 
+          ? { ...action, config: parsedConfig }
+          : action
+      );
+      onActionsChange(updatedActions);
+      setEditingConfig(null);
+    } catch (error) {
+      console.error('Erro ao analisar JSON do config:', error);
+    }
   };
 
   return (
@@ -133,12 +160,48 @@ const ToolActionList: React.FC<ToolActionFormProps> = ({
                 </div>
               </div>
 
-              {/* Exibir configuração */}
+              {/* Exibir/editar configuração */}
               {Object.keys(action.config || {}).length > 0 && (
                 <div className="mt-2">
-                  <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto">
-                    {JSON.stringify(action.config, null, 2)}
-                  </pre>
+                  {editingConfig?.id === action.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingConfig.config}
+                        onChange={(e) => setEditingConfig({ ...editingConfig, config: e.target.value })}
+                        className="w-full text-xs font-mono bg-gray-100 dark:bg-gray-900 p-2 rounded border border-gray-300 dark:border-gray-600"
+                        rows={20}
+                      />
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingConfig(null)}
+                          className="text-xs text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                          {t('common:cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveConfig}
+                          className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          {t('common:save')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative group">
+                      <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto max-h-[100px] overflow-y-auto">
+                        {JSON.stringify(action.config, null, 2)}
+                      </pre>
+                      <button
+                        type="button"
+                        onClick={() => handleEditConfig(action)}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        {t('common:edit')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

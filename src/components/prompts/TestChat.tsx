@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, MessageSquare, Cpu, Thermometer, Send } from 'lucide-react';
+import { Loader2, MessageSquare, Thermometer, Send } from 'lucide-react';
 import { ChatMessage, TokenUsage } from '../../types/prompts';
 import { Integration } from '../../types/database';
 import api from '../../lib/api';
@@ -10,8 +10,19 @@ interface TestChatProps {
   selectedModel: string;
   temperature: number;
   systemPrompt: string;
-  loadingModels: boolean;
-  availableModels: { id: string; name: string }[];
+  placeholder?: string;
+  emptyMessage?: string;
+  clearChatText?: string;
+  sendButtonText?: string;
+  testingText?: string;
+  successMessage?: string;
+  noIntegrationMessage?: string;
+  tokenUsageLabel?: string;
+  promptTokensLabel?: string;
+  completionTokensLabel?: string;
+  totalTokensLabel?: string;
+  showIntegrationInfo?: boolean;
+  showTemperatureInfo?: boolean;
 }
 
 const TestChat: React.FC<TestChatProps> = ({
@@ -19,8 +30,19 @@ const TestChat: React.FC<TestChatProps> = ({
   selectedModel,
   temperature,
   systemPrompt,
-  loadingModels,
-  availableModels
+  placeholder,
+  emptyMessage,
+  clearChatText,
+  sendButtonText,
+  testingText,
+  successMessage,
+  noIntegrationMessage,
+  tokenUsageLabel,
+  promptTokensLabel,
+  completionTokensLabel,
+  totalTokensLabel,
+  showIntegrationInfo = true,
+  showTemperatureInfo = true
 }) => {
   const { t } = useTranslation(['prompts', 'common']);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -30,6 +52,7 @@ const TestChat: React.FC<TestChatProps> = ({
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [success, setSuccess] = useState('');
 
   // Effect to scroll to the end of the conversation when new messages are added
   useEffect(() => {
@@ -43,6 +66,7 @@ const TestChat: React.FC<TestChatProps> = ({
     
     setTesting(true);
     setError('');
+    setSuccess('');
     // Reset token usage information when starting a new test
     setTokenUsage(null);
     
@@ -105,6 +129,7 @@ const TestChat: React.FC<TestChatProps> = ({
           content: assistantMessage.content 
         }
       ]);
+      setSuccess(successMessage || t('prompts:test.success'));
     } catch (error: unknown) {
       console.error('Error testing prompt:', error);
       const apiError = error as { response?: { data?: { error?: string } }, message?: string };
@@ -121,61 +146,68 @@ const TestChat: React.FC<TestChatProps> = ({
   const handleClearChat = () => {
     setChatMessages([]);
     setTokenUsage(null);
+    setSuccess('');
   };
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+      <div className="flex items-center justify-between mb-0">
+        <h2 className="hidden md:flex text-xl font-semibold text-gray-700 dark:text-gray-300 items-center">
           <MessageSquare className="w-5 h-5 mr-2" />
-          {t('prompts:test')}
+          {t('prompts:test.title')}
         </h2>
         {chatMessages.length > 0 && (
           <button
             onClick={handleClearChat}
             className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
           >
-            {t('prompts:clearChat') || 'Limpar conversa'}
+            {clearChatText || t('prompts:clearChat') || 'Limpar conversa'}
           </button>
         )}
       </div>
-      
-      <div className="mb-4">
-        <div className="p-3 bg-gray-50 dark:bg-gray-700/30 rounded-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            <span className="font-medium">{t('prompts:form.integration') || 'Integração'}:</span>
-            <span className="ml-2">{selectedIntegration?.name || selectedIntegration?.title || t('prompts:form.selectIntegration')}</span>
-          </div>
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
-            <Cpu className="w-4 h-4 mr-2" />
-            <span className="font-medium">{t('prompts:model') || 'Modelo'}:</span>
-            <span className="ml-2">
-              {loadingModels ? (
-                <span className="flex items-center">
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  {t('prompts:loadingModels') || 'Carregando modelos...'}
-                </span>
+
+      {/* Informações de integração e modelo */}
+      <div className="hidden sm:block mb-4">
+        {showIntegrationInfo && (
+          <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              {selectedIntegration ? (
+                <span>{selectedIntegration.name}</span>
               ) : (
-                availableModels.find(m => m.id === selectedModel)?.name || selectedModel
+                <span className="text-red-500">{noIntegrationMessage || t('prompts:test.noIntegration')}</span>
               )}
-            </span>
+            </div>
+            {showTemperatureInfo && (
+              <div className="flex items-center">
+                <Thermometer className="w-4 h-4 mr-2" />
+                <span>{temperature}</span>
+              </div>
+            )}
           </div>
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <Thermometer className="w-4 h-4 mr-2" />
-            <span className="font-medium">{t('prompts:temperature') || 'Temperatura'}:</span>
-            <span className="ml-2">{temperature}</span>
-          </div>
-        </div>
+        )}
       </div>
 
+      {/* Mensagens de erro e sucesso */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-sm">
+          {success}
+        </div>
+      )}
+
+      {/* Container de mensagens */}
       <div 
         ref={chatContainerRef}
         className="flex-grow border rounded-md mb-4 p-4 overflow-y-auto border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/30 min-h-0"
       >
         {chatMessages.length === 0 && (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
-            {t('prompts:testEmpty') || 'Envie uma mensagem para testar o prompt'}
+            {emptyMessage || t('prompts:test.empty')}
           </div>
         )}
         {chatMessages.map((message, index) => (
@@ -193,39 +225,35 @@ const TestChat: React.FC<TestChatProps> = ({
 
       {/* Exibição de informações de uso de tokens */}
       {tokenUsage && (
-        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-md border border-gray-200 dark:border-gray-700 text-xs">
-          <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-1">{t('prompts:tokenUsage') || 'Uso de Tokens'}</h3>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
-              <div className="font-medium text-gray-600 dark:text-gray-400">{t('prompts:promptTokens') || 'Prompt'}</div>
-              <div className="text-blue-600 dark:text-blue-400 font-mono">{tokenUsage.prompt_tokens}</div>
+        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900/30 rounded-md text-sm">
+          <div className="font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {tokenUsageLabel || t('prompts:test.tokenUsage')}
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 dark:text-gray-400">
+            <div>
+              <span className="font-medium">{promptTokensLabel || t('prompts:test.promptTokens')}:</span>
+              <span className="ml-1">{tokenUsage.prompt_tokens}</span>
             </div>
-            <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded">
-              <div className="font-medium text-gray-600 dark:text-gray-400">{t('prompts:completionTokens') || 'Resposta'}</div>
-              <div className="text-green-600 dark:text-green-400 font-mono">{tokenUsage.completion_tokens}</div>
+            <div>
+              <span className="font-medium">{completionTokensLabel || t('prompts:test.completionTokens')}:</span>
+              <span className="ml-1">{tokenUsage.completion_tokens}</span>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
-              <div className="font-medium text-gray-600 dark:text-gray-400">{t('prompts:totalTokens') || 'Total'}</div>
-              <div className="text-purple-600 dark:text-purple-400 font-mono">{tokenUsage.total_tokens}</div>
+            <div>
+              <span className="font-medium">{totalTokensLabel || t('prompts:test.totalTokens')}:</span>
+              <span className="ml-1">{tokenUsage.total_tokens}</span>
             </div>
           </div>
         </div>
       )}
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-400">
-          <h3 className="font-medium mb-1">Erro</h3>
-          <p>{error}</p>
-        </div>
-      )}
-
+      {/* Input e botão de envio */}
       <div className="flex gap-2">
         <input
           ref={inputRef}
           type="text"
           value={testMessage}
           onChange={(e) => setTestMessage(e.target.value)}
-          placeholder={t('prompts:testPlaceholder') || 'Digite uma mensagem para testar'}
+          placeholder={placeholder || t('prompts:test.placeholder')}
           className="flex-1 p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && !testing && testMessage.trim() && selectedIntegration) {
@@ -239,7 +267,17 @@ const TestChat: React.FC<TestChatProps> = ({
           disabled={testing || !selectedIntegration || !testMessage.trim()}
           className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 hover:bg-blue-700 transition-colors flex items-center"
         >
-          {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {testing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              {testingText || t('prompts:test.testing')}
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 mr-2" />
+              {sendButtonText || t('prompts:test.send')}
+            </>
+          )}
         </button>
       </div>
     </div>

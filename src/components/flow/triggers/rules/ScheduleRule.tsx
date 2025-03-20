@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Select from 'react-select';
-import timezones from '../../../../utils/timezones';
+import { timezones } from '../../../../utils/timezones';
 
 interface TimeSlot {
   id: string;
@@ -115,6 +115,28 @@ export function ScheduleRule({ params, onChange }: ScheduleRuleProps) {
   const { t } = useTranslation('flows');
   const [localTimeSlots, setLocalTimeSlots] = useState(params.timeSlots);
 
+  // Usar o timezone do navegador se não houver um configurado
+  useEffect(() => {
+    if (!params.timezone) {
+      try {
+        // Tenta obter o timezone do navegador usando Intl.DateTimeFormat
+        const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        // Verifica se o timezone do navegador está na nossa lista, caso contrário usa UTC
+        const isValidTimezone = timezones.some(tz => tz.value === browserTimezone);
+        const defaultTimezone = isValidTimezone ? browserTimezone : 'UTC';
+        
+        // Aplica o timezone default
+        onChange({
+          ...params,
+          timezone: defaultTimezone
+        });
+      } catch (error) {
+        console.error('Erro ao obter o timezone do navegador:', error);
+      }
+    }
+  }, []);
+
   // Atualiza localTimeSlots quando params mudar
   useEffect(() => {
     setLocalTimeSlots(params.timeSlots);
@@ -176,10 +198,12 @@ export function ScheduleRule({ params, onChange }: ScheduleRuleProps) {
               timezone: selected?.value || params.timezone
             });
           }}
-          options={timezones.map(tz => ({ value: tz, label: tz }))}
+          options={timezones.map(tz => ({ value: tz.value, label: `${tz.label} (${tz.offset})` }))}
           className="react-select-container"
           classNamePrefix="react-select"
           placeholder={t('triggers.selectTimezone')}
+          isSearchable={true}
+          noOptionsMessage={() => t('triggers.noTimezoneFound') || 'Nenhum fuso horário encontrado'}
           styles={{
             control: (base, state) => ({
               ...base,

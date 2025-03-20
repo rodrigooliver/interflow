@@ -754,16 +754,16 @@ export default function Customers() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-full overflow-hidden">
+    <div className="p-4 md:p-6 max-w-full overflow-hidden pb-16 md:pb-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
           {t('customers:title')}
         </h1>
-        <div className="flex flex-wrap gap-2">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center h-9 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="inline-flex items-center justify-center h-9 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
             >
               <Plus className="mr-1 h-4 w-4" />
               {t('customers:addCustomer')}
@@ -771,35 +771,37 @@ export default function Customers() {
             
             <button
               onClick={() => setShowColumnSelector(true)}
-              className="inline-flex items-center h-9 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="inline-flex items-center justify-center h-9 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
             >
               <Settings className="mr-1 h-4 w-4" />
               {t('customers:columns')}
             </button>
           </div>
-          <Link
-            to="/app/crm"
-            className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <GitMerge className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-            <span className="whitespace-nowrap">{t('customers:viewCRM')}</span>
-          </Link>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              selectedFunnelId || selectedStageId || selectedTagIds.length > 0
-                ? "border-blue-500 text-white bg-blue-500 hover:bg-blue-600"
-                : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-            }`}
-          >
-            <Filter className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-            <span className="whitespace-nowrap">{t('customers:filters')}</span>
-            {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
-              <span className="ml-1.5 flex items-center justify-center w-5 h-5 text-xs bg-white text-blue-600 rounded-full">
-                {(selectedFunnelId ? 1 : 0) + (selectedStageId ? 1 : 0) + (selectedTagIds.length > 0 ? 1 : 0)}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Link
+              to="/app/crm"
+              className="inline-flex items-center justify-center px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex-1 sm:flex-none"
+            >
+              <GitMerge className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+              <span className="whitespace-nowrap">{t('customers:viewCRM')}</span>
+            </Link>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center justify-center px-3 py-1.5 md:px-4 md:py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex-1 sm:flex-none ${
+                selectedFunnelId || selectedStageId || selectedTagIds.length > 0
+                  ? "border-blue-500 text-white bg-blue-500 hover:bg-blue-600"
+                  : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+              }`}
+            >
+              <Filter className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+              <span className="whitespace-nowrap">{t('customers:filters')}</span>
+              {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
+                <span className="ml-1.5 flex items-center justify-center w-5 h-5 text-xs bg-white text-blue-600 rounded-full">
+                  {(selectedFunnelId ? 1 : 0) + (selectedStageId ? 1 : 0) + (selectedTagIds.length > 0 ? 1 : 0)}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1221,7 +1223,7 @@ export default function Customers() {
 
             {/* Visualização em cards para mobile */}
             {isMobileView && (
-              <div className="grid grid-cols-1 gap-4 p-4">
+              <div className="grid grid-cols-1 gap-4 p-4 mb-16 md:mb-0">
                 {sortedCustomers.map((customer) => (
                   <div 
                     key={customer.id} 
@@ -1229,7 +1231,13 @@ export default function Customers() {
                   >
                     <div className="p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate pr-2">
+                        <h3 
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setShowEditModal(true);
+                          }}
+                          className="text-base font-semibold text-gray-900 dark:text-white truncate pr-2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                        >
                           {customer.name}
                         </h3>
                         <div className="flex space-x-2">
@@ -1272,18 +1280,6 @@ export default function Customers() {
                           <CustomerTags tags={customer.tags} />
                         </div>
                       )}
-                      
-                      {/* Funil e estágio */}
-                      <div className="mb-3">
-                        {customer.crm_stages && (
-                          <StageProgressBar 
-                            customer={customer} 
-                            funnels={funnels} 
-                            stages={stages}
-                            onStageChange={handleStageChange}
-                          />
-                        )}
-                      </div>
                       
                       {/* Data de registro */}
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">

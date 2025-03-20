@@ -78,6 +78,8 @@
   "filters": "Filtros",
   "color": "Color",
   "timezone": "Zona Horaria",
+  "selectTimezone": "Seleccionar una zona horaria",
+  "noTimezoneFound": "No se encontró zona horaria",
   "options": "Opciones",
   "previous": "Anterior",
   "next": "Siguiente",

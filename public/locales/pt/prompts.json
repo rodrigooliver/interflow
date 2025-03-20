@@ -25,6 +25,10 @@
   "flowResetSuccess": "Fluxo resetado com sucesso!",
   "hasLinkedFlow": "Este agente IA tem um fluxo vinculado",
   "flowOptions": "Opções do Fluxo",
+  "timezone": "Fuso Horário",
+  "timezoneDescription": "Define o fuso horário para operações de data e hora.",
+  "selectTimezone": "Selecione um fuso horário",
+  "noTimezoneFound": "Nenhum fuso horário encontrado",
   "form": {
     "title": "Título",
     "titlePlaceholder": "Digite o título do prompt",
@@ -37,6 +41,7 @@
     "integration": "Integração",
     "selectIntegration": "Selecione uma integração",
     "model": "Modelo",
+    "selectModel": "Selecione um modelo",
     "temperature": "Temperatura",
     "toolName": "Nome da Ferramenta",
     "toolNamePlaceholder": "Ex: get_weather",
@@ -60,122 +65,18 @@
     "toolsInfo": "Informação sobre ferramentas",
     "toolsInfoDescription": "Ferramentas permitem que o modelo chame funções específicas. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ferramentas.",
     "tools": "Ferramentas",
-    "addTool": "+ Adicionar Ferramenta",
+    "addTool": "Adicionar Ferramenta",
     "editTool": "Editar Ferramenta",
     "examples": {
-      "title": "Exemplos",
-      "tools": {
-        "weather": {
-          "label": "Clima (get_weather)",
-          "name": "get_weather",
-          "description": "Obtém informações sobre o clima atual para uma localização específica",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "location": {
-                "type": "string",
-                "description": "Cidade ou localização para obter o clima"
-              },
-              "unit": {
-                "type": "enum",
-                "description": "Unidade de temperatura",
-                "enum": ["celsius", "fahrenheit"]
-              }
-            },
-            "required": ["location"]
-          }
-        },
-        "search": {
-          "label": "Busca (web_search)",
-          "name": "web_search",
-          "description": "Realiza uma busca na web e retorna os resultados mais relevantes",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "query": {
-                "type": "string",
-                "description": "Termos de busca"
-              },
-              "max_results": {
-                "type": "number",
-                "description": "Número máximo de resultados",
-                "default": 5
-              }
-            },
-            "required": ["query"]
-          }
-        },
-        "calculator": {
-          "label": "Calculadora (calculate)",
-          "name": "calculate",
-          "description": "Realiza cálculos matemáticos simples",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "expression": {
-                "type": "string",
-                "description": "Expressão matemática para calcular"
-              }
-            },
-            "required": ["expression"]
-          }
-        }
-      },
-      "variables": {
-        "name": {
-          "label": "Nome (string)",
-          "name": "name",
-          "type": "string",
-          "description": "Nome do usuário ou entidade",
-          "required": true,
-          "enumValues": []
-        },
-        "email": {
-          "label": "Email (string)",
-          "name": "email",
-          "type": "string",
-          "description": "Endereço de e-mail para contato",
-          "required": true,
-          "enumValues": []
-        },
-        "language": {
-          "label": "Idioma (enum)",
-          "name": "language",
-          "type": "enum",
-          "description": "Idioma preferido para comunicação",
-          "required": false,
-          "enumValues": ["português", "english", "español", "français", "deutsch"]
-        },
-        "age": {
-          "label": "Idade (number)",
-          "name": "age",
-          "type": "number",
-          "description": "Idade do usuário em anos",
-          "required": false,
-          "enumValues": []
-        },
-        "options": {
-          "label": "Opções (enum)",
-          "name": "options",
-          "type": "enum",
-          "description": "Opções disponíveis para seleção",
-          "required": true,
-          "enumValues": ["opção 1", "opção 2", "opção 3"]
-        },
-        "sales_stage": {
-          "label": "Estágio de Vendas (enum)",
-          "name": "sales_stage",
-          "type": "enum",
-          "description": "Estágio atual no funil de vendas",
-          "required": true,
-          "enumValues": ["Prospecção", "Qualificação", "Proposta", "Negociação", "Fechamento", "Pós-venda"]
-        }
-      }
+      "title": "Exemplos"
     },
     "tabs": {
       "general": "Configurações Gerais",
-      "tools": "Ferramentas"
+      "context": "Contexto",
+      "tools": "Ferramentas",
+      "test": "Testar"
     },
+    "contextDescription": "Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.",
     "noTools": "Nenhuma ferramenta configurada",
     "actions": {
       "title": "Ações da Ferramenta",
@@ -326,10 +227,34 @@
       "notesPlaceholder": "Digite as notas ou observações",
       "directOperation": "Operação Direta",
       "mappedOperation": "Operação Mapeada",
-      "operationMapping": "Mapeamento de Operações"
+      "operationMapping": "Mapeamento de Operações",
+      "appointmentId": "ID do Agendamento no formato YYYY-MM-DD-HH:MM"
     }
   },
-  "test": "Testar Agente IA",
+  "test": {
+    "title": "Testar Prompt",
+    "description": "Teste o comportamento do seu prompt em tempo real.",
+    "placeholder": "Digite uma mensagem para testar o prompt",
+    "empty": "Envie uma mensagem para testar o prompt",
+    "clearChat": "Limpar conversa",
+    "send": "Enviar",
+    "testing": "Testando...",
+    "success": "Prompt testado com sucesso!",
+    "error": "Erro ao testar o prompt",
+    "errorBackend": "Erro ao processar o prompt no servidor",
+    "noIntegration": "Nenhuma integração OpenAI disponível",
+    "selectIntegration": "Selecione a integração para testar o prompt",
+    "model": "Modelo",
+    "temperature": "Temperatura",
+    "loadingModels": "Carregando modelos...",
+    "tokenUsage": "Uso de Tokens",
+    "promptTokens": "Prompt",
+    "completionTokens": "Resposta",
+    "totalTokens": "Total",
+    "noModelsAvailable": "Nenhum modelo disponível",
+    "loadingIntegrations": "Carregando integrações...",
+    "noIntegrationsAvailable": "Nenhuma integração disponível"
+  },
   "testPlaceholder": "Digite uma mensagem para testar o Agente IA",
   "testEmpty": "Envie uma mensagem para testar o Agente IA",
   "clearChat": "Limpar conversa",

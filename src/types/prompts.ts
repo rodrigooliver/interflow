@@ -148,4 +148,21 @@ export interface PromptFormData {
   tools: Tool[];
   destinations: Record<string, ToolAction[]>;
   config: Record<string, unknown>;
+}
+
+export interface ToolExample {
+  label: string;
+  name: string;
+  description: string;
+  parameters: {
+    type: string;
+    required?: string[];
+    properties: Record<string, {
+      type: string;
+      description: string;
+      enum?: string[];
+      format?: string;
+      default?: number;
+    }>;
+  };
 } 

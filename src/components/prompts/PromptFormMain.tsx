@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp } from 'lucide-react';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
@@ -10,9 +10,11 @@ import { Integration } from '../../types/database';
 import ContentEditor from './ContentEditor';
 import ToolForm from './ToolForm';
 import ToolsList from './ToolsList';
-import TestChat from './TestChat';
 import { Modal } from '../ui/Modal';
 import { useQueryClient } from '@tanstack/react-query';
+import { timezones } from '../../utils/timezones';
+import Select from 'react-select';
+import TestPrompt from './TestPrompt';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -169,6 +171,21 @@ const PromptFormMain: React.FC = () => {
     config: {}
   });
   
+  // Adicionar estado para timezone usando o fuso horário padrão do navegador
+  const [timezone, setTimezone] = useState(() => {
+    try {
+      // Tenta obter o timezone do navegador usando Intl.DateTimeFormat
+      const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
+      // Verifica se o timezone do navegador está na nossa lista, caso contrário usa UTC
+      const isValidTimezone = timezones.some(tz => tz.value === browserTimezone);
+      return isValidTimezone ? browserTimezone : 'UTC';
+    } catch (error) {
+      console.error('Erro ao obter o timezone do navegador:', error);
+      return 'UTC';
+    }
+  });
+  
   // Using the useOpenAIIntegrations hook to fetch available integrations
   const { 
     data: integrations = [], 
@@ -188,7 +205,7 @@ const PromptFormMain: React.FC = () => {
     selectedIntegration?.id
   );
   
-  const [activeTab, setActiveTab] = useState<'general' | 'tools'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'context' | 'tools' | 'test'>('general');
   const [showToolModal, setShowToolModal] = useState(false);
   const [editingTool, setEditingTool] = useState<{ tool: Tool, index: number } | null>(null);
   const [linkedFlow, setLinkedFlow] = useState<{ id: string; name: string } | null>(null);
@@ -196,6 +213,7 @@ const PromptFormMain: React.FC = () => {
   const [creatingFlow, setCreatingFlow] = useState(false);
   const [resettingFlow, setResettingFlow] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [tabsDropdownOpen, setTabsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
@@ -266,6 +284,11 @@ const PromptFormMain: React.FC = () => {
         
         if (data.temperature !== null && data.temperature !== undefined) {
           setTemperature(data.temperature);
+        }
+        
+        // Carregar timezone do config se existir
+        if (data.config && data.config.timezone) {
+          setTimezone(data.config.timezone);
         }
       }
     } catch (error) {
@@ -391,7 +414,8 @@ const PromptFormMain: React.FC = () => {
     try {
       // Prepare data for saving
       const updatedConfig = {
-        ...formData.config
+        ...formData.config,
+        timezone: timezone
       };
       
       const promptData = {
@@ -493,36 +517,119 @@ const PromptFormMain: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen pb-16 md:pb-0">
       <div className="p-4 md:p-6 flex-grow overflow-hidden">
         <div className="flex flex-col lg:flex-row gap-6 h-full">
           <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col overflow-hidden">
-            <div className="flex items-center mb-4">
-              <button
-                onClick={() => navigate('/app/prompts')}
-                className="mr-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                aria-label={t('common:back')}
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {id ? t('prompts:edit') : t('prompts:add')}
-              </h1>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 mb-4">
+              <div className="flex items-center justify-between w-full sm:w-auto">
+                <div className="flex items-center">
+                  <button
+                    onClick={() => navigate('/app/prompts')}
+                    className="mr-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    aria-label={t('common:back')}
+                  >
+                    <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  </button>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                    {id ? t('prompts:edit') : t('prompts:add')}
+                  </h1>
+                </div>
+                
+                {id && (
+                  <div className="flex items-center space-x-2 sm:hidden">
+                    {checkingFlow ? (
+                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {t('prompts:checkingFlow')}
+                      </div>
+                    ) : creatingFlow ? (
+                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {t('prompts:creatingFlow')}
+                      </div>
+                    ) : resettingFlow ? (
+                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {t('prompts:resettingFlow')}
+                      </div>
+                    ) : (
+                      <>
+                        {linkedFlow ? (
+                          <div className="flex items-center" ref={dropdownRef}>
+                            <div className="relative">
+                              <button
+                                onClick={() => setDropdownOpen(!dropdownOpen)}
+                                className="flex items-center px-2 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              >
+                                <GitBranch className="w-4 h-4" />
+                                {dropdownOpen ? (
+                                  <ChevronUp className="w-4 h-4 ml-1" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 ml-1" />
+                                )}
+                              </button>
+                              
+                              {dropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
+                                  <ul className="py-1">
+                                    <li>
+                                      <button
+                                        onClick={() => {
+                                          setDropdownOpen(false);
+                                          createOrSyncFlow();
+                                        }}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                      >
+                                        <ExternalLink className="w-4 h-4 mr-2" />
+                                        {t('prompts:viewLinkedFlow')}
+                                      </button>
+                                    </li>
+                                    <li>
+                                      <button
+                                        onClick={() => {
+                                          setDropdownOpen(false);
+                                          resetFlow();
+                                        }}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        {t('prompts:resetFlow')}
+                                      </button>
+                                    </li>
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={createOrSyncFlow}
+                            className="flex items-center px-2 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <GitBranch className="w-4 h-4" />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
               
               {id && (
-                <div className="ml-auto flex items-center space-x-2">
+                <div className="hidden sm:flex items-center space-x-2 ml-auto">
                   {checkingFlow ? (
-                    <div className="flex items-center text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {t('prompts:checkingFlow')}
                     </div>
                   ) : creatingFlow ? (
-                    <div className="flex items-center text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {t('prompts:creatingFlow')}
                     </div>
                   ) : resettingFlow ? (
-                    <div className="flex items-center text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {t('prompts:resettingFlow')}
                     </div>
@@ -602,39 +709,96 @@ const PromptFormMain: React.FC = () => {
                 </div>
               )}
 
-              <div className="mb-4">
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Type className="w-4 h-4 mr-2" />
-                  {t('prompts:form.title')} *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors"
-                  placeholder={t('prompts:form.titlePlaceholder') || 'Digite o título do prompt'}
-                />
-              </div>
-
               {/* Tabs */}
               <div className="mb-4">
                 <div className="sm:hidden">
-                  <label htmlFor="tabs" className="sr-only">Selecione uma aba</label>
                   <div className="relative">
-                    <select
-                      id="tabs"
-                      name="tabs"
-                      className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
-                      value={activeTab}
-                      onChange={(e) => setActiveTab(e.target.value as 'general' | 'tools')}
+                    <button
+                      type="button"
+                      onClick={() => setTabsDropdownOpen(!tabsDropdownOpen)}
+                      className="w-full flex items-center justify-between bg-white dark:bg-gray-700 rounded-lg shadow-sm p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      <option value="general">{t('prompts:form.tabs.general') || 'Configurações Gerais'}</option>
-                      <option value="tools">{t('prompts:form.tabs.tools') || 'Ferramentas'}</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                      <ChevronDown className="h-4 w-4" />
-                    </div>
+                      <div className="flex items-center space-x-2">
+                        {activeTab === 'general' && <Settings className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                        {activeTab === 'context' && <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                        {activeTab === 'tools' && <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                        {activeTab === 'test' && <Play className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {activeTab === 'general' && (t('prompts:form.tabs.general') || 'Configurações Gerais')}
+                          {activeTab === 'context' && (t('prompts:form.tabs.context') || 'Contexto')}
+                          {activeTab === 'tools' && (t('prompts:form.tabs.tools') || 'Ferramentas')}
+                          {activeTab === 'test' && (t('prompts:form.tabs.test') || 'Testar')}
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${tabsDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {tabsDropdownOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                        <div className="py-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('general');
+                              setTabsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                              activeTab === 'general'
+                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            <Settings className="w-4 h-4 mr-2" />
+                            {t('prompts:form.tabs.general') || 'Configurações Gerais'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('context');
+                              setTabsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                              activeTab === 'context'
+                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            <Info className="w-4 h-4 mr-2" />
+                            {t('prompts:form.tabs.context') || 'Contexto'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('tools');
+                              setTabsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                              activeTab === 'tools'
+                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            <Wrench className="w-4 h-4 mr-2" />
+                            {t('prompts:form.tabs.tools') || 'Ferramentas'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('test');
+                              setTabsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                              activeTab === 'test'
+                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            {t('prompts:form.tabs.test') || 'Testar'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="hidden sm:block">
@@ -647,10 +811,22 @@ const PromptFormMain: React.FC = () => {
                           activeTab === 'general'
                             ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                        } w-1/2 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                       >
                         <Settings className="w-4 h-4 mr-2" />
                         {t('prompts:form.tabs.general') || 'Configurações Gerais'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('context')}
+                        className={`${
+                          activeTab === 'context'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                      >
+                        <Info className="w-4 h-4 mr-2" />
+                        {t('prompts:form.tabs.context') || 'Contexto'}
                       </button>
                       <button
                         type="button"
@@ -659,10 +835,22 @@ const PromptFormMain: React.FC = () => {
                           activeTab === 'tools'
                             ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                        } w-1/2 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                       >
                         <Wrench className="w-4 h-4 mr-2" />
                         {t('prompts:form.tabs.tools') || 'Ferramentas'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('test')}
+                        className={`${
+                          activeTab === 'test'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        {t('prompts:form.tabs.test') || 'Testar'}
                       </button>
                     </nav>
                   </div>
@@ -671,7 +859,22 @@ const PromptFormMain: React.FC = () => {
 
               {/* Tab Content */}
               {activeTab === 'general' && (
-                <>
+                <div className="mb-6">
+                  <div className="mb-4">
+                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Type className="w-4 h-4 mr-2" />
+                      {t('prompts:form.title')} *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors"
+                      placeholder={t('prompts:form.titlePlaceholder') || 'Digite o título do prompt'}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                       <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -758,34 +961,104 @@ const PromptFormMain: React.FC = () => {
                       />
                     </div>
                   </div>
+                  
+                  {/* Campo de timezone */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <Clock className="w-4 h-4 mr-2" />
+                        {t('prompts:timezone') || 'Fuso Horário'}
+                      </label>
+                      <Select
+                        value={{ value: timezone, label: `${timezones.find(tz => tz.value === timezone)?.label || timezone} (${timezones.find(tz => tz.value === timezone)?.offset || 'UTC'})` }}
+                        onChange={(selected) => setTimezone(selected?.value || 'UTC')}
+                        options={timezones.map(tz => ({ 
+                          value: tz.value, 
+                          label: `${tz.label} (${tz.offset})` 
+                        }))}
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        placeholder={t('prompts:selectTimezone') || 'Selecione um fuso horário'}
+                        isSearchable={true}
+                        noOptionsMessage={() => t('prompts:noTimezoneFound') || 'Nenhum fuso horário encontrado'}
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            backgroundColor: 'var(--select-bg, #fff)',
+                            borderColor: state.isFocused ? 'var(--select-focus-border, #3b82f6)' : 'var(--select-border, #d1d5db)',
+                            '&:hover': {
+                              borderColor: 'var(--select-hover-border, #9ca3af)'
+                            },
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                            borderRadius: '0.375rem'
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            backgroundColor: 'var(--select-bg, #fff)',
+                            border: '1px solid var(--select-border, #d1d5db)',
+                            zIndex: 50
+                          }),
+                          option: (base, { isFocused, isSelected }) => ({
+                            ...base,
+                            backgroundColor: isSelected 
+                              ? 'var(--select-selected-bg, #2563eb)'
+                              : isFocused 
+                                ? 'var(--select-hover-bg, #dbeafe)'
+                                : 'transparent',
+                            color: isSelected 
+                              ? 'var(--select-selected-text, white)'
+                              : 'var(--select-text, #111827)'
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            color: 'var(--select-text, #111827)'
+                          })
+                        }}
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {t('prompts:timezoneDescription') || 'Define o fuso horário para operações de data e hora.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
+              {activeTab === 'context' && (
+                <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-6">
+                  <div className="mb-4 hidden sm:block">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
+                      {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
+                    </p>
+                  </div>
+                  
                   <ContentEditor 
                     content={formData.content} 
                     onChange={(content) => setFormData({ ...formData, content })} 
                   />
-                </>
+                </div>
               )}
 
               {activeTab === 'tools' && (
-                <div className="flex-grow flex flex-col min-h-0 overflow-hidden">
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                      {t('prompts:form.toolsDescription') || 'Configure as ferramentas que o modelo pode utilizar. Ferramentas permitem que o modelo execute ações específicas durante a conversa.'}
-                    </p>
-                    
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6">
-                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-                        {t('prompts:form.toolsInfo') || 'Informação sobre ferramentas'}
-                      </h3>
-                      <p className="text-xs text-blue-700 dark:text-blue-400">
-                        {t('prompts:form.toolsInfoDescription') || 'Ferramentas permitem que o modelo chame funções específicas. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ferramentas.'}
-                      </p> 
-                    </div>
-                  </div>
-                  
+                <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-2">
                   {/* Conteúdo com scroll principal */}
-                  <div className="flex-1 overflow-y-auto pr-2 min-h-0 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent" style={{ maxHeight: 'calc(100vh - 400px)' }}>
+                  <div className="flex-1 overflow-y-auto pr-2 min-h-0 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                     <div className="space-y-6">
+                      {/* Descrição e Informações */}
+                      <div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                          {t('prompts:form.toolsDescription') || 'Configure as ferramentas que o modelo pode utilizar. Ferramentas permitem que o modelo execute ações específicas durante a conversa.'}
+                        </p>
+                        
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6">
+                          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
+                            {t('prompts:form.toolsInfo') || 'Informação sobre ferramentas'}
+                          </h3>
+                          <p className="text-xs text-blue-700 dark:text-blue-400">
+                            {t('prompts:form.toolsInfoDescription') || 'Ferramentas permitem que o modelo chame funções específicas. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ferramentas.'}
+                          </p> 
+                        </div>
+                      </div>
+
                       {/* Seção de Ferramentas */}
                       <div>
                         <div className="flex justify-between items-center mb-3">
@@ -816,36 +1089,47 @@ const PromptFormMain: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => navigate('/app/prompts')}
-                  disabled={saving}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  {t('common:back')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {t('common:save')}
-                </button>
-              </div>
+              {activeTab === 'test' && (
+                <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-2">
+                  <TestPrompt
+                    selectedIntegration={selectedIntegration}
+                    selectedModel={selectedModel}
+                    temperature={temperature}
+                    systemPrompt={formData.content}
+                  />
+                </div>
+              )}
+
+              {activeTab !== 'test' && (
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/app/prompts')}
+                    disabled={saving}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  >
+                    {t('common:back')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {t('common:save')}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
 
           {/* Seção de teste - visível apenas em telas grandes */}
-          <div className="hidden lg:flex lg:flex-col w-[450px] bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 overflow-hidden">
-            <TestChat 
+          <div className="hidden sm:hidden md:hidden lg:hidden xl:hidden 2xl:flex 2xl:flex-col w-[450px] p-6 bg-white dark:bg-gray-800 rounded-lg">
+            <TestPrompt
               selectedIntegration={selectedIntegration}
               selectedModel={selectedModel}
               temperature={temperature}
               systemPrompt={formData.content}
-              loadingModels={loadingModels}
-              availableModels={availableModels}
             />
           </div>
         </div>

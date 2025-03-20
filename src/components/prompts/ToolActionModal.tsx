@@ -62,6 +62,7 @@ interface ScheduleActionConfig {
   serviceVariable?: string;
   timeVariable?: string;
   notes?: string;
+  appointmentIdVariable?: string;
   operation?: 'checkAvailability' | 'createAppointment' | 'checkAppointment' | 'deleteAppointment';
   operationMapping?: {
     variable?: string;
@@ -778,6 +779,30 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
                           <option value="">{t('prompts:form.actions.selectVariable')}</option>
                           {getAvailableParameters()
                             .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
+                            .map((param) => (
+                              <option key={param.name} value={param.name}>{param.label}</option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('prompts:form.actions.appointmentId')}
+                        </label>
+                        <select
+                          value={getConfig<ScheduleActionConfig>().appointmentIdVariable || ''}
+                          onChange={(e) => {
+                            const newConfig = { ...editingAction.config, appointmentIdVariable: e.target.value };
+                            setEditingAction({
+                              ...editingAction,
+                              config: newConfig
+                            });
+                          }}
+                          className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                        >
+                          <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                          {getAvailableParameters()
+                            .filter(param => !Array.isArray(parameters[param.name]?.enum) || parameters[param.name]?.enum?.length === 0)
                             .map((param) => (
                               <option key={param.name} value={param.name}>{param.label}</option>
                             ))}

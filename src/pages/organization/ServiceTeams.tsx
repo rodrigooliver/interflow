@@ -9,7 +9,7 @@ interface TeamMemberWithProfile extends ServiceTeamMember {
   profile: Profile;
 }
 
-interface TeamWithMembers extends ServiceTeam {
+interface TeamWithMembers extends Omit<ServiceTeam, 'organization_id'> {
   members: TeamMemberWithProfile[];
   _count?: {
     members: number;
@@ -23,7 +23,7 @@ interface LoadingState {
 
 export default function ServiceTeams() {
   const { t } = useTranslation(['serviceTeams', 'common']);
-  const { currentOrganizationMember, membership } = useAuthContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
   const [availableUsers, setAvailableUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ export default function ServiceTeams() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showRemoveTeamModal, setShowRemoveTeamModal] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<ServiceTeam | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<TeamWithMembers | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<TeamMemberWithProfile | null>(null);
   const [addingMember, setAddingMember] = useState<LoadingState | null>(null);
   const [removingMember, setRemovingMember] = useState(false);
@@ -244,7 +244,7 @@ export default function ServiceTeams() {
           <Users className="w-6 h-6 mr-2" />
           {t('serviceTeams:title')}
         </h1>
-        {(membership?.role === 'owner' || membership?.role === 'admin') && (
+        {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -281,7 +281,7 @@ export default function ServiceTeams() {
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
-                    {(membership?.role === 'owner' || membership?.role === 'admin') && (
+                    {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
                       <>
                         <button
                           onClick={() => {
@@ -338,15 +338,15 @@ export default function ServiceTeams() {
                             </p>
                           </div>
                         </div>
-                        {(membership?.role === 'owner' || membership?.role === 'admin') && (
+                        {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
                           <button
                             onClick={() => {
                               setMemberToRemove(member);
                               setShowRemoveModal(true);
                             }}
-                            className="text-sm text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            className="inline-flex items-center p-1 border border-transparent rounded-full text-red-400 hover:text-red-500"
                           >
-                            {t('common:confirmDelete')}
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         )}
                       </div>
@@ -367,7 +367,7 @@ export default function ServiceTeams() {
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
               {t('serviceTeams:noTeamsDescription')}
             </p>
-            {(membership?.role === 'owner' || membership?.role === 'admin') && (
+            {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -510,7 +510,7 @@ export default function ServiceTeams() {
                         <button
                           onClick={() => handleAddMember(user.id, 'member')}
                           disabled={addingMember?.userId === user.id}
-                          className="flex items-center space-x-2 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center space-x-2 px-3 py-1.5 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {addingMember?.userId === user.id && addingMember?.role === 'member' ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -522,7 +522,7 @@ export default function ServiceTeams() {
                         <button
                           onClick={() => handleAddMember(user.id, 'leader')}
                           disabled={addingMember?.userId === user.id}
-                          className="flex items-center space-x-2 px-3 py-1.5 text-sm text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 border border-green-200 dark:border-green-800 rounded-md hover:bg-green-50 dark:hover:bg-green-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center space-x-2 px-3 py-1.5 text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 border border-green-200 dark:border-green-800 rounded-md hover:bg-green-50 dark:hover:bg-green-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {addingMember?.userId === user.id && addingMember?.role === 'leader' ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

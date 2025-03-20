@@ -25,6 +25,10 @@
   "flowResetSuccess": "Flow reset successfully!",
   "hasLinkedFlow": "This AI agent has a linked flow",
   "flowOptions": "Flow Options",
+  "timezone": "Timezone",
+  "timezoneDescription": "Sets the timezone for date and time operations.",
+  "selectTimezone": "Select a timezone",
+  "noTimezoneFound": "No timezone found",
   "form": {
     "title": "Title",
     "titlePlaceholder": "Enter the prompt title",
@@ -37,6 +41,7 @@
     "integration": "Integration",
     "selectIntegration": "Select an integration",
     "model": "Model",
+    "selectModel": "Select a model",
     "temperature": "Temperature",
     "toolName": "Tool Name",
     "toolNamePlaceholder": "Ex: get_weather",
@@ -63,119 +68,15 @@
     "addTool": "+ Add Tool",
     "editTool": "Edit Tool",
     "examples": {
-      "title": "Examples",
-      "tools": {
-        "weather": {
-          "label": "Weather (get_weather)",
-          "name": "get_weather",
-          "description": "Gets weather information for a specific location",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "location": {
-                "type": "string",
-                "description": "City or location to get weather for"
-              },
-              "unit": {
-                "type": "enum",
-                "description": "Temperature unit",
-                "enum": ["celsius", "fahrenheit"]
-              }
-            },
-            "required": ["location"]
-          }
-        },
-        "search": {
-          "label": "Search (web_search)",
-          "name": "web_search",
-          "description": "Performs a web search and returns the most relevant results",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "query": {
-                "type": "string",
-                "description": "Search terms"
-              },
-              "max_results": {
-                "type": "number",
-                "description": "Maximum number of results",
-                "default": 5
-              }
-            },
-            "required": ["query"]
-          }
-        },
-        "calculator": {
-          "label": "Calculator (calculate)",
-          "name": "calculate",
-          "description": "Performs simple mathematical calculations",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "expression": {
-                "type": "string",
-                "description": "Mathematical expression to calculate"
-              }
-            },
-            "required": ["expression"]
-          }
-        }
-      },
-      "variables": {
-        "name": {
-          "label": "Name (string)",
-          "name": "name",
-          "type": "string",
-          "description": "Name of the user or entity",
-          "required": true,
-          "enumValues": []
-        },
-        "email": {
-          "label": "Email (string)",
-          "name": "email",
-          "type": "string",
-          "description": "Email address for contact",
-          "required": true,
-          "enumValues": []
-        },
-        "language": {
-          "label": "Language (enum)",
-          "name": "language",
-          "type": "enum",
-          "description": "Preferred language for communication",
-          "required": false,
-          "enumValues": ["português", "english", "español", "français", "deutsch"]
-        },
-        "age": {
-          "label": "Age (number)",
-          "name": "age",
-          "type": "number",
-          "description": "User's age in years",
-          "required": false,
-          "enumValues": []
-        },
-        "options": {
-          "label": "Options (enum)",
-          "name": "options",
-          "type": "enum",
-          "description": "Available options for selection",
-          "required": true,
-          "enumValues": ["option 1", "option 2", "option 3"]
-        },
-        "sales_stage": {
-          "label": "Sales Stage (enum)",
-          "name": "sales_stage",
-          "type": "enum",
-          "description": "Current stage in the sales funnel",
-          "required": true,
-          "enumValues": ["Prospecting", "Qualification", "Proposal", "Negotiation", "Closing", "Post-sale"]
-        }
-      }
+      "title": "Examples"
     },
     "tabs": {
       "general": "General Settings",
-      "tools": "Tools"
+      "context": "Context",
+      "tools": "Tools",
+      "test": "Test"
     },
+    "contextDescription": "Configure the context that will be sent to the model. This context defines the model's behavior and environment during the conversation.",
     "noTools": "No tools configured",
     "actions": {
       "title": "Tool Actions",
@@ -199,7 +100,7 @@
         "update_chat": "Update Chat",
         "start_flow": "Start Flow",
         "custom": "Custom",
-        "check_schedule": "Appointment"
+        "check_schedule": "Schedule"
       },
       "manualInput": "Manual input",
       "useVariable": "Use variable",
@@ -326,10 +227,34 @@
       "notesPlaceholder": "Enter notes or observations",
       "directOperation": "Direct Operation",
       "mappedOperation": "Mapped Operation",
-      "operationMapping": "Operation Mapping"
+      "operationMapping": "Operation Mapping",
+      "appointmentId": "Appointment ID in YYYY-MM-DD-HH:MM format"
     }
   },
-  "test": "Test AI Agent",
+  "test": {
+    "title": "Test Prompt",
+    "description": "Test your prompt's behavior in real-time.",
+    "placeholder": "Enter a message to test the prompt",
+    "empty": "Send a message to test the prompt",
+    "clearChat": "Clear chat",
+    "send": "Send",
+    "testing": "Testing...",
+    "success": "Prompt tested successfully!",
+    "error": "Error testing prompt",
+    "errorBackend": "Error processing prompt on server",
+    "noIntegration": "No OpenAI integration available",
+    "selectIntegration": "Select integration to test the prompt",
+    "model": "Model",
+    "temperature": "Temperature",
+    "loadingModels": "Loading models...",
+    "tokenUsage": "Token Usage",
+    "promptTokens": "Prompt",
+    "completionTokens": "Response",
+    "totalTokens": "Total",
+    "noModelsAvailable": "No models available",
+    "loadingIntegrations": "Loading integrations...",
+    "noIntegrationsAvailable": "No integrations available"
+  },
   "testPlaceholder": "Enter a message to test the AI Agent",
   "testEmpty": "Send a message to test the AI Agent",
   "clearChat": "Clear chat",

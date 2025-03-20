@@ -312,6 +312,8 @@
       "startTime": "Horário inicial"
     },
     "timezone": "Fuso horário",
+    "selectTimezone": "Selecione um fuso horário",
+    "noTimezoneFound": "Nenhum fuso horário encontrado",
     "title": "Gatilhos de Automação",
     "useSchedule": "Apenas em horários específicos"
   },

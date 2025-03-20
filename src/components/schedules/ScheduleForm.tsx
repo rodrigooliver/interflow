@@ -4,6 +4,8 @@ import { Schedule } from '../../types/schedules';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { CalendarDays, Clock, Globe, Info, Palette, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { timezones } from '../../utils/timezones';
+import Select from 'react-select';
 
 interface ScheduleFormProps {
   schedule?: Schedule;
@@ -17,8 +19,8 @@ interface ScheduleFormData {
   type: 'service' | 'meeting';
   status: 'active' | 'inactive';
   color: string;
-  public_schedule: boolean;
-  require_confirmation: boolean;
+  is_public: boolean;
+  requires_confirmation: boolean;
   enable_ai_agent: boolean;
   timezone: string;
   default_slot_duration: number;
@@ -39,8 +41,8 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
     type: schedule?.type || 'service',
     status: schedule?.status || 'active',
     color: schedule?.color || '#3b82f6',
-    public_schedule: schedule?.public_schedule || false,
-    require_confirmation: schedule?.require_confirmation || false,
+    is_public: schedule?.is_public || false,
+    requires_confirmation: schedule?.requires_confirmation || false,
     enable_ai_agent: schedule?.enable_ai_agent || false,
     timezone: schedule?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     default_slot_duration: schedule?.default_slot_duration || 60,
@@ -119,20 +121,6 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
       setIsLoading(false);
     }
   };
-
-  // Lista de fusos horários populares
-  const popularTimezones = [
-    { value: 'America/Sao_Paulo', label: 'América/São Paulo (GMT-3)' },
-    { value: 'America/New_York', label: 'América/Nova York (GMT-5/GMT-4)' },
-    { value: 'America/Los_Angeles', label: 'América/Los Angeles (GMT-8/GMT-7)' },
-    { value: 'America/Chicago', label: 'América/Chicago (GMT-6/GMT-5)' },
-    { value: 'Europe/London', label: 'Europa/Londres (GMT/BST)' },
-    { value: 'Europe/Paris', label: 'Europa/Paris (GMT+1/GMT+2)' },
-    { value: 'Europe/Berlin', label: 'Europa/Berlim (GMT+1/GMT+2)' },
-    { value: 'Asia/Tokyo', label: 'Ásia/Tóquio (GMT+9)' },
-    { value: 'Asia/Shanghai', label: 'Ásia/Xangai (GMT+8)' },
-    { value: 'Australia/Sydney', label: 'Austrália/Sydney (GMT+10/GMT+11)' },
-  ];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
@@ -226,25 +214,61 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
               <Globe className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
               {t('schedules:timezone')} *
             </label>
-            <div className="relative">
-              <select
-                id="timezone"
-                name="timezone"
-                value={formData.timezone}
-                onChange={handleChange}
-                required
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10"
-              >
-                {popularTimezones.map(tz => (
-                  <option key={tz.value} value={tz.value}>{tz.label}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
+            <Select
+              id="timezone"
+              name="timezone"
+              value={{ value: formData.timezone, label: `${timezones.find(tz => tz.value === formData.timezone)?.label || formData.timezone} (${timezones.find(tz => tz.value === formData.timezone)?.offset || 'UTC'})` }}
+              onChange={(selected) => 
+                handleChange({ 
+                  target: { 
+                    name: 'timezone', 
+                    value: selected?.value || Intl.DateTimeFormat().resolvedOptions().timeZone 
+                  } 
+                } as React.ChangeEvent<HTMLSelectElement>)
+              }
+              options={timezones.map(tz => ({ 
+                value: tz.value, 
+                label: `${tz.label} (${tz.offset})` 
+              }))}
+              className="react-select-container"
+              classNamePrefix="react-select"
+              placeholder={t('schedules:selectTimezone') || 'Selecione um fuso horário'}
+              isSearchable={true}
+              noOptionsMessage={() => t('schedules:noTimezoneFound') || 'Nenhum fuso horário encontrado'}
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  backgroundColor: 'var(--select-bg, #fff)',
+                  borderColor: state.isFocused ? 'var(--select-focus-border, #3b82f6)' : 'var(--select-border, #d1d5db)',
+                  '&:hover': {
+                    borderColor: 'var(--select-hover-border, #9ca3af)'
+                  },
+                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                  borderRadius: '0.375rem'
+                }),
+                menu: (base) => ({
+                  ...base,
+                  backgroundColor: 'var(--select-bg, #fff)',
+                  border: '1px solid var(--select-border, #d1d5db)',
+                  zIndex: 50
+                }),
+                option: (base, { isFocused, isSelected }) => ({
+                  ...base,
+                  backgroundColor: isSelected 
+                    ? 'var(--select-selected-bg, #2563eb)'
+                    : isFocused 
+                      ? 'var(--select-hover-bg, #dbeafe)'
+                      : 'transparent',
+                  color: isSelected 
+                    ? 'var(--select-selected-text, white)'
+                    : 'var(--select-text, #111827)'
+                }),
+                singleValue: (base) => ({
+                  ...base,
+                  color: 'var(--select-text, #111827)'
+                })
+              }}
+            />
           </div>
           
           <div>
@@ -309,14 +333,14 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="public_schedule"
-                    name="public_schedule"
-                    checked={formData.public_schedule}
+                    id="is_public"
+                    name="is_public"
+                    checked={formData.is_public}
                     onChange={handleCheckboxChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label
-                    htmlFor="public_schedule"
+                    htmlFor="is_public"
                     className="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t('schedules:publicSchedule')}
@@ -326,14 +350,14 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="require_confirmation"
-                    name="require_confirmation"
-                    checked={formData.require_confirmation}
+                    id="requires_confirmation"
+                    name="requires_confirmation"
+                    checked={formData.requires_confirmation}
                     onChange={handleCheckboxChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label
-                    htmlFor="require_confirmation"
+                    htmlFor="requires_confirmation"
                     className="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t('schedules:requireConfirmation')}

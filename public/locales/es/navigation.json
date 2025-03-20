@@ -6,6 +6,7 @@
   "shortcuts": "Atajos",
   "settings": "Configuración",
   "team": "Atendentes",
+  
   "serviceTeams": "Equipos de Servicio",
   "channels": "Canales",
   "flows": "Flujos",
@@ -14,5 +15,6 @@
   "prompts": "Agentes IA",
   "closureTypes": "Tipos de Cierre",
   "subscriptionPlans": "Planes de Suscripción",
-  "schedules": "Agendamientos"
+  "schedules": "Agendamientos",
+  "calendar": "Calendario"
 }

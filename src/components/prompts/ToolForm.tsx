@@ -5,6 +5,7 @@ import VariableForm from './VariableForm';
 import ToolActionList from './ToolActionList';
 import { Modal } from '../ui/Modal';
 import { Pencil } from 'lucide-react';
+import { toolExamples } from '../../examples/tools';
 
 interface ToolExample {
   label: string;
@@ -28,7 +29,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
   destinations = {},
   onDestinationsChange,
 }) => {
-  const { t } = useTranslation(['prompts', 'common']);
+  const { t, i18n } = useTranslation(['prompts', 'common']);
   const [newTool, setNewTool] = useState<Tool>({
     name: '',
     description: '',
@@ -143,13 +144,30 @@ const ToolForm: React.FC<ToolFormProps> = ({
 
   // Função para carregar um exemplo de ferramenta
   const loadToolExample = (exampleKey: string) => {
-    const example = t(`prompts:form.examples.tools.${exampleKey}`, { returnObjects: true }) as ToolExample;
-    setNewTool({
-      name: example.name,
-      description: example.description,
-      parameters: example.parameters,
-      actions: []
-    });
+    const currentLanguage = i18n.language.split('-')[0]; // Pega o código da língua principal (ex: 'pt' de 'pt-BR')
+    const examples = toolExamples[currentLanguage] || toolExamples['en']; // Fallback para inglês se a língua não existir
+    
+    // Verifica se a chave já existe
+    let finalKey = exampleKey;
+    let counter = 1;
+    while (examples[finalKey]) {
+      finalKey = `${exampleKey}_${counter}`;
+      counter++;
+    }
+
+    const example = examples[exampleKey];
+    
+    if (example) {
+      setNewTool({
+        name: finalKey === exampleKey ? example.name : `${example.name}_${counter - 1}`,
+        description: example.description,
+        parameters: {
+          ...example.parameters,
+          required: example.parameters.required || []
+        },
+        actions: []
+      });
+    }
   };
 
   // Função para atualizar as ações da ferramenta
@@ -165,9 +183,9 @@ const ToolForm: React.FC<ToolFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-auto p-1">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-1">
       {/* Abas de visualização */}
-      <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 py-1">
+      <div className="border-b border-gray-200 dark:border-gray-700 sticky bg-white dark:bg-gray-800 z-10 pb-0">
         <nav className="-mb-px flex" aria-label="Tabs">
           <button
             type="button"
@@ -278,21 +296,28 @@ const ToolForm: React.FC<ToolFormProps> = ({
                   onClick={() => loadToolExample('weather')}
                   className="p-2 text-xs border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
-                  {t('prompts:form.examples.tools.weather.label') || 'Clima (get_weather)'}
+                  {toolExamples[i18n.language.split('-')[0]].weather.label}
                 </button>
                 <button
                   type="button"
                   onClick={() => loadToolExample('search')}
                   className="p-2 text-xs border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
-                  {t('prompts:form.examples.tools.search.label') || 'Busca (web_search)'}
+                  {toolExamples[i18n.language.split('-')[0]].search.label}
                 </button>
                 <button
                   type="button"
                   onClick={() => loadToolExample('calculator')}
                   className="p-2 text-xs border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
-                  {t('prompts:form.examples.tools.calculator.label') || 'Calculadora (calculate)'}
+                  {toolExamples[i18n.language.split('-')[0]].calculator.label}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => loadToolExample('schedule')}
+                  className="p-2 text-xs border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  {toolExamples[i18n.language.split('-')[0]].schedule.label}
                 </button>
               </div>
             </div>
@@ -312,7 +337,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
               </button>
             </div>
             
-            <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+            <div className="space-y-2 pr-1">
               {Object.entries(newTool.parameters.properties).map(([name, property]) => (
                 <div key={name} className="flex items-start justify-between p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
                   <div className="flex-1">
@@ -363,7 +388,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
         </>
       )}
 
-      <div className="flex justify-end space-x-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-800 z-10 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <div className="flex justify-end space-x-3 pt-4 sticky bg-white dark:bg-gray-800 z-10 border-t border-gray-200 dark:border-gray-700 mt-4">
         <button
           type="button"
           onClick={onCancel}

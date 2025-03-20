@@ -77,7 +77,59 @@ const SchedulesPage: React.FC = () => {
         return appointment;
       });
   }, [appointments, optimisticAppointments, selectedProviderId]);
+  
+  // Configurar subscrições em tempo real para agendamentos
+  useEffect(() => {
+    if (!organizationId) return;
 
+    // Canal para mudanças em agendamentos
+    const appointmentsSubscription = supabase
+      .channel('appointments-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'appointments',
+        filter: `schedule_id=eq.${selectedScheduleId}`
+      }, async (payload) => {
+        console.log('Mudança em agendamento detectada:', payload);
+        
+        // Recarregar os agendamentos quando houver mudanças
+        await refetchAppointments();
+        
+        // Exibir notificação baseada no tipo de mudança
+        if (payload.eventType === 'INSERT') {
+          toast.success(t('schedules:appointmentCreatedSuccess'));
+        } else if (payload.eventType === 'UPDATE') {
+          toast.success(t('schedules:appointmentUpdatedSuccess'));
+        } else if (payload.eventType === 'DELETE') {
+          toast.success(t('schedules:appointmentDeletedSuccess'));
+        }
+      })
+      .subscribe();
+
+    // Canal para mudanças em lembretes de agendamento
+    const remindersSubscription = supabase
+      .channel('appointment-reminders-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'appointment_reminders',
+        filter: `appointment_id=in.(${combinedAppointments.map(a => a.id).join(',')})`
+      }, async (payload) => {
+        console.log('Mudança em lembrete detectada:', payload);
+        
+        // Recarregar os agendamentos para atualizar os lembretes
+        await refetchAppointments();
+      })
+      .subscribe();
+
+    // Cleanup das subscrições quando o componente for desmontado
+    return () => {
+      appointmentsSubscription.unsubscribe();
+      remindersSubscription.unsubscribe();
+    };
+  }, [organizationId, selectedScheduleId, combinedAppointments, refetchAppointments, t]);
+  
   // Limpar o estado otimista quando os agendamentos forem recarregados
   useEffect(() => {
     setOptimisticAppointments({});
