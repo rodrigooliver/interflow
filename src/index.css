@@ -321,8 +321,8 @@
   font-size: 14px !important;
   line-height: 1.6 !important;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-  position: relative !important;
-  z-index: 1 !important;
+  /* position: relative !important; */
+  /* z-index: 1 !important; */
 }
 
 .w-md-editor-preview {
