@@ -14,7 +14,7 @@ import {
   X
 } from 'lucide-react';
 import { useSchedule, useScheduleProviders, useProviderAvailability } from '../../../hooks/useQueryes';
-import { ScheduleAvailability } from '../../../types/schedules';
+import { ScheduleAvailability } from '../../../types/database';
 import { supabase } from '../../../lib/supabase';
 
 interface AvailabilityFormData {

@@ -1,35 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Plus, Filter, CalendarDays, X, Clock, CheckCircle2, AlertCircle, Video } from 'lucide-react';
+import { Calendar, Plus, Filter, CalendarDays, X, Clock, CheckCircle2, AlertCircle, Video, User, MessageSquare } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useSchedules, useAppointments } from '../../hooks/useQueryes';
 import ScheduleCalendar from '../../components/schedules/calendar/ScheduleCalendar';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import ScheduleForm from '../../components/schedules/ScheduleForm';
 import AppointmentForm from '../../components/schedules/AppointmentForm';
+import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { useNavigate } from 'react-router-dom';
-import { Schedule, Appointment, ScheduleProvider } from '../../types/schedules';
+import { Customer, Appointment, Schedule, ScheduleProvider, Chat } from '../../types/database';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { ptBR } from 'date-fns/locale';
-
-// Estender o tipo Appointment para incluir propriedades adicionais que podem existir na API
-interface ExtendedAppointment extends Appointment {
-  customer?: {
-    id: string;
-    name: string;
-    email?: string;
-  };
-  service?: {
-    id: string;
-    title: string;
-    color: string;
-  };
-  provider?: {
-    full_name: string;
-    avatar_url?: string | null;
-  };
-}
 
 // Tipo para o slot selecionado
 interface SelectedSlot {
@@ -39,7 +22,7 @@ interface SelectedSlot {
   action: 'select' | 'click' | 'doubleClick';
 }
 
-const SchedulesPage: React.FC = () => {
+const AppointmentsPage: React.FC = () => {
   const { t } = useTranslation(['schedules', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const organizationId = currentOrganizationMember?.organization?.id;
@@ -62,6 +45,8 @@ const SchedulesPage: React.FC = () => {
     newStatus: Appointment['status'];
   } | null>(null);
   const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [showCustomerEditModal, setShowCustomerEditModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const navigate = useNavigate();
   
   // Definir o intervalo de datas inicial para o mês atual
@@ -97,7 +82,7 @@ const SchedulesPage: React.FC = () => {
           return optimisticAppointments[appointment.id];
         }
         return appointment;
-      }) as ExtendedAppointment[];
+      }) as Appointment[];
   }, [appointments, optimisticAppointments]);
   
   // Calcular número de agendamentos pendentes
@@ -252,19 +237,6 @@ const SchedulesPage: React.FC = () => {
   const handleProviderSelect = (providerId: string | null) => {
     setSelectedProviderId(providerId);
   };
-
-  // Toggle para mostrar todas as agendas
-  const toggleShowAllSchedules = () => {
-    setShowAllSchedules(!showAllSchedules);
-    if (!showAllSchedules) {
-      // Se estiver ativando "todas as agendas", manter o ID selecionado para referência
-    } else {
-      // Se estiver desativando, garantir que uma agenda esteja selecionada
-      if (!selectedScheduleId && schedules?.length) {
-        setSelectedScheduleId(schedules[0].id);
-      }
-    }
-  };
   
   // Função para lidar com a seleção de status
   const handleStatusSelect = (status: Appointment['status']) => {
@@ -320,35 +292,6 @@ const SchedulesPage: React.FC = () => {
         return <AlertCircle className="h-4 w-4" />;
       default:
         return null;
-    }
-  };
-  
-  // Adicionar a função handleAppointmentStatusChange antes do return
-  const handleAppointmentStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
-    try {
-      setLoadingAppointmentId(appointmentId);
-      
-      // Atualizar o agendamento no banco de dados
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: newStatus })
-        .eq('id', appointmentId);
-
-      if (error) {
-        console.error('Erro ao atualizar status do agendamento:', error);
-        toast.error(t('common:errorUpdatingAppointment'));
-      } else {
-        // Exibir mensagem de sucesso
-        toast.success(t(`schedules:appointment${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}Success`));
-        
-        // Recarregar os agendamentos
-        refetchAppointments();
-      }
-    } catch (error) {
-      console.error('Erro ao processar mudança de status:', error);
-      toast.error(t('common:unknownError'));
-    } finally {
-      setLoadingAppointmentId(null);
     }
   };
   
@@ -425,6 +368,20 @@ const SchedulesPage: React.FC = () => {
       default:
         return '';
     }
+  };
+  
+  // Função para lidar com o sucesso da edição do cliente
+  const handleCustomerUpdated = () => {
+    setShowCustomerEditModal(false);
+    setSelectedCustomer(null);
+    refetchAppointments();
+  };
+  
+  // Dentro do componente, adicionar a função de navegação para o chat
+  const handleGoToChat = (chatId: Chat | undefined) => {
+    if(!chatId)
+      return;
+    navigate(`/app/chat/${chatId}`);
   };
   
   // Exibir mensagem de carregamento ou de nenhuma agenda
@@ -781,6 +738,36 @@ const SchedulesPage: React.FC = () => {
                                     </span>
                                   )}
                                   <div className="flex items-center gap-1 ml-auto">
+                                    {appointment.customer && (
+                                      <>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedCustomer(appointment.customer || null);
+                                            setShowCustomerEditModal(true);
+                                          }}
+                                          className="p-2 sm:p-2.5 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                                          title={t('schedules:editCustomer')}
+                                        >
+                                          <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                                        </button>
+                                        {
+                                          appointment.chat_id ? (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleGoToChat(appointment.chat_id);
+                                              }}
+                                              className="p-2 sm:p-2.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                              title={t('schedules:openChat')}
+                                            >
+                                              <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+                                            </button>
+                                          ) : null
+                                        }
+                                        
+                                      </>
+                                    )}
                                     {appointment.status === 'scheduled' && (
                                       <>
                                         <button
@@ -857,18 +844,6 @@ const SchedulesPage: React.FC = () => {
                                         </button>
                                       </>
                                     )}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedAppointment(appointment);
-                                        setShowEditAppointmentModal(true);
-                                      }}
-                                      className="p-2 sm:p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    >
-                                      <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                      </svg>
-                                    </button>
                                   </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
@@ -1131,7 +1106,7 @@ const SchedulesPage: React.FC = () => {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-2 md:p-6">
               <AppointmentForm 
                 scheduleId={selectedScheduleId}
                 initialDate={selectedSlot ? selectedSlot.start : undefined}
@@ -1176,7 +1151,7 @@ const SchedulesPage: React.FC = () => {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-2 md:p-6">
               <AppointmentForm 
                 scheduleId={selectedScheduleId}
                 appointment={selectedAppointment}
@@ -1276,8 +1251,20 @@ const SchedulesPage: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Modal de edição de cliente */}
+      {showCustomerEditModal && selectedCustomer && (
+        <CustomerEditModal
+          customer={selectedCustomer}
+          onClose={() => {
+            setShowCustomerEditModal(false);
+            setSelectedCustomer(null);
+          }}
+          onSuccess={handleCustomerUpdated}
+        />
+      )}
     </div>
   );
 };
 
-export default SchedulesPage; 
+export default AppointmentsPage; 

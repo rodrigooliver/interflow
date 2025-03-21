@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, Briefcase, PlusCircle, Edit, Trash2, AlertTriangle, CheckCircle2, ArrowLeft, Clock, CalendarOff } from 'lucide-react';
 import { useSchedule, useScheduleProviders, useScheduleServices } from '../../../hooks/useQueryes';
-import { ScheduleProvider, ScheduleService } from '../../../types/schedules';
+import { ScheduleProvider, ScheduleService } from '../../../types/database';
 import ProviderForm from '../../../components/schedules/forms/ProviderForm';
 import ServiceForm from '../../../components/schedules/forms/ServiceForm';
 import { supabase } from '../../../lib/supabase';

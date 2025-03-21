@@ -234,5 +234,22 @@
   "holidayTitlePlaceholder": "E.g. National Holiday, Day Off, Vacation, etc.",
   "defaultSlotDuration": "Default time slot duration",
   "defaultSlotDurationDescription": "Defines the size of time slots for services with arrival time scheduling",
-  "serviceDurationDescription": "Enter the exact service duration in minutes"
+  "serviceDurationDescription": "Enter the exact service duration in minutes",
+  "listMode": "List Mode",
+  "filterByStatus": "Filter by Status",
+  "statusFilter": "Status Filter",
+  "selectedStatuses": "Selected Statuses",
+  "viewFilters": "View Filters",
+  "filterBySchedule": "Filter by Schedule",
+  "confirmAppointmentTitle": "Confirm Appointment",
+  "cancelAppointmentTitle": "Cancel Appointment",
+  "completeAppointmentTitle": "Complete Appointment",
+  "markAsNoShowTitle": "Mark as No-show",
+  "confirmAppointmentMessage": "Are you sure you want to confirm this appointment?",
+  "cancelAppointmentMessage": "Are you sure you want to cancel this appointment?",
+  "completeAppointmentMessage": "Are you sure you want to mark this appointment as completed?",
+  "markAsNoShowMessage": "Are you sure you want to mark this appointment as no-show?",
+  "pendingApproval": "Pending Approval",
+  "editCustomer": "Edit Customer",
+  "openChat": "Open Chat"
 } 

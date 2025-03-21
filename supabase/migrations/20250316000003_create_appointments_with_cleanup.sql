@@ -8,6 +8,7 @@
       - `provider_id` (uuid, foreign key to profiles)
       - `service_id` (uuid, foreign key to schedule_services)
       - `customer_id` (uuid, foreign key to customers)
+      - `chat_id` (uuid, foreign key to chats)
       - `status` (text) - Status of the appointment (scheduled, confirmed, completed, canceled, no_show)
       - `date` (date) - Date of the appointment
       - `start_time` (time) - Start time of the appointment
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   provider_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   service_id uuid REFERENCES schedule_services(id) ON DELETE SET NULL,
   customer_id uuid REFERENCES customers(id) ON DELETE SET NULL,
+  chat_id uuid REFERENCES chats(id) ON DELETE SET NULL,
   status text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'confirmed', 'completed', 'canceled', 'no_show')),
   date date NOT NULL,
   start_time time NOT NULL,
@@ -57,6 +59,7 @@ CREATE INDEX IF NOT EXISTS appointments_schedule_id_idx ON appointments(schedule
 CREATE INDEX IF NOT EXISTS appointments_provider_id_idx ON appointments(provider_id);
 CREATE INDEX IF NOT EXISTS appointments_service_id_idx ON appointments(service_id);
 CREATE INDEX IF NOT EXISTS appointments_customer_id_idx ON appointments(customer_id);
+CREATE INDEX IF NOT EXISTS appointments_chat_id_idx ON appointments(chat_id);
 CREATE INDEX IF NOT EXISTS appointments_date_idx ON appointments(date);
 CREATE INDEX IF NOT EXISTS appointments_status_idx ON appointments(status);
 

@@ -195,7 +195,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
           </div>
         )}
       </div>
-      <div className="flex flex-col space-y-1 mt-1 mb-4 hidden sm:flex">
+      <div className="flex-col space-y-1 mt-1 mb-4 hidden sm:flex">
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {t('prompts:form.contentHelp', 'Este é o prompt de sistema que define o comportamento da IA.')}
         </p>

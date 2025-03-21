@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calendar, momentLocalizer, Event as CalendarEvent, View, ViewsProps } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
@@ -18,25 +19,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
-import { Appointment, ScheduleProvider, ScheduleService } from '../../../types/schedules';
-
-// Estender o tipo Appointment para incluir propriedades adicionais que podem existir na API
-interface ExtendedAppointment extends Appointment {
-  customer?: {
-    id: string;
-    name: string;
-    email?: string;
-  };
-  service?: {
-    id: string;
-    title: string;
-    color: string;
-  };
-  provider?: {
-    full_name: string;
-    avatar_url?: string | null;
-  };
-}
+import { Appointment, ScheduleProvider, ScheduleService } from '../../../types/database';
 
 // Configurar o localizador para o calendário
 const localizer = momentLocalizer(moment);
@@ -50,26 +33,26 @@ interface CalendarEventType extends CalendarEvent {
   title: string;
   start: Date;
   end: Date;
-  resource: ExtendedAppointment;
+  resource: Appointment;
   className?: string;
   style?: React.CSSProperties;
 }
 
 interface ScheduleCalendarProps {
-  appointments: ExtendedAppointment[];
+  appointments: Appointment[];
   providers: ScheduleProvider[];
   services: ScheduleService[];
   height?: string;
   onSelectSlot?: (slotInfo: { start: Date; end: Date; slots: Date[] | string[]; action: 'select' | 'click' | 'doubleClick' }) => void;
-  onSelectEvent?: (appointment: ExtendedAppointment) => void;
+  onSelectEvent?: (appointment: Appointment) => void;
   allowedViews?: View[];
   defaultDate?: Date;
   defaultView?: View;
   providerColorMode?: boolean;
   isLoading?: boolean;
   isProfessionalMode?: boolean;
-  onEventDrop?: (appointmentData: ExtendedAppointment, start: Date, end: Date) => void;
-  onEventResize?: (appointmentData: ExtendedAppointment, start: Date, end: Date) => void;
+  onEventDrop?: (appointmentData: Appointment, start: Date, end: Date) => void;
+  onEventResize?: (appointmentData: Appointment, start: Date, end: Date) => void;
   currentProviderId?: string; // ID do provider logado
 }
 
@@ -162,8 +145,7 @@ const ScheduleCalendar = ({
   isLoading = false,
   isProfessionalMode = false,
   onEventDrop,
-  onEventResize,
-  currentProviderId,
+  onEventResize
 }: ScheduleCalendarProps) => {
   const { t, i18n } = useTranslation(['schedules', 'common']);
   const [calendarView, setCalendarView] = useState<"month" | "week" | "day" | "agenda">(defaultView as "month" | "week" | "day" | "agenda");
@@ -290,7 +272,7 @@ const ScheduleCalendar = ({
   );
 
   // Componente personalizado para a barra de ferramentas
-  const CustomToolbar = useCallback(({ date, onNavigate, onView, views }: ToolbarProps) => {
+  const CustomToolbar = useCallback(({ date, onNavigate, onView }: ToolbarProps) => {
     const goToBack = () => {
       onNavigate('PREV');
     };
@@ -430,21 +412,21 @@ const ScheduleCalendar = ({
         <DragAndDropCalendar
           localizer={localizer}
           events={events}
-          startAccessor={(event: any) => event.start}
-          endAccessor={(event: any) => event.end}
+          startAccessor={(event: object) => (event as CalendarEventType).start}
+          endAccessor={(event: object) => (event as CalendarEventType).end}
           style={{ height: '100%' }}
           onNavigate={handleNavigate}
           date={selectedDate}
           view={calendarView}
           onView={handleViewChange}
-          views={allowedViews.reduce((obj: any, view) => ({ ...obj, [view]: true }), {})}
+          views={allowedViews.reduce((obj: Record<string, boolean>, view) => ({ ...obj, [view]: true }), {})}
           selectable={true}
-          onSelectEvent={(event: any) => onSelectEvent && onSelectEvent(event.resource)}
-          onSelectSlot={onSelectSlot as any}
+          onSelectEvent={(event: object) => onSelectEvent && onSelectEvent((event as CalendarEventType).resource)}
+          onSelectSlot={onSelectSlot}
           tooltipAccessor={null}
           components={{
-            toolbar: CustomToolbar as any,
-            event: EventComponent as any,
+            toolbar: CustomToolbar as never,
+            event: EventComponent as never,
           }}
           className={calendarClassNames.container}
           messages={{
@@ -461,8 +443,16 @@ const ScheduleCalendar = ({
             noEventsInRange: t('schedules:noAppointmentsInRange'),
             showMore: (total) => `+ ${total} ${t('schedules:more')}`
           }}
-          onEventDrop={handleEventDrop as any}
-          onEventResize={handleEventResize as any}
+          onEventDrop={(args: any) => handleEventDrop({ 
+            event: args.event as CalendarEventType, 
+            start: args.start, 
+            end: args.end 
+          })}
+          onEventResize={(args: any) => handleEventResize({ 
+            event: args.event as CalendarEventType, 
+            start: args.start, 
+            end: args.end 
+          })}
           resizable={true}
           draggableAccessor={() => true}
         />

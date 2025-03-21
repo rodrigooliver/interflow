@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Schedule } from '../../types/schedules';
+import { Schedule } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { CalendarDays, Clock, Globe, Info, Palette, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -123,9 +123,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6">
       {error && (
-        <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start">
+        <div className="mb-4 sm:mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 flex items-start">
           <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-medium text-red-800 dark:text-red-300">{t('common:error')}</h3>
@@ -135,7 +135,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
       )}
       
       {success && (
-        <div className="mb-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-start">
+        <div className="mb-4 sm:mb-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3 sm:p-4 flex items-start">
           <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 mr-3 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-medium text-green-800 dark:text-green-300">{t('common:success')}</h3>
@@ -144,8 +144,8 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div className="md:col-span-2">
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
               <CalendarDays className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
@@ -158,7 +158,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
               value={formData.title}
               onChange={handleChange}
               required
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full h-9 sm:h-10 rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2.5 text-sm sm:text-base"
               placeholder={t('schedules:scheduleNamePlaceholder')}
             />
           </div>
@@ -174,7 +174,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
               value={formData.description || ''}
               onChange={handleChange}
               rows={3}
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+              className="w-full rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2.5 py-2.5 text-sm sm:text-base resize-none"
               placeholder={t('schedules:scheduleDescriptionPlaceholder')}
             />
           </div>
@@ -191,7 +191,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 value={formData.type}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10"
+                className="w-full h-9 sm:h-10 rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 appearance-none transition-colors pr-10 text-sm sm:text-base px-2.5"
               >
                 <option value="service">{t('schedules:serviceType')}</option>
                 <option value="meeting">{t('schedules:meetingType')}</option>
@@ -238,6 +238,8 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
               styles={{
                 control: (base, state) => ({
                   ...base,
+                  minHeight: '36px',
+                  height: '36px',
                   backgroundColor: 'var(--select-bg, #fff)',
                   borderColor: state.isFocused ? 'var(--select-focus-border, #3b82f6)' : 'var(--select-border, #d1d5db)',
                   '&:hover': {
@@ -254,6 +256,8 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 }),
                 option: (base, { isFocused, isSelected }) => ({
                   ...base,
+                  padding: '8px 12px',
+                  fontSize: '14px',
                   backgroundColor: isSelected 
                     ? 'var(--select-selected-bg, #2563eb)'
                     : isFocused 
@@ -265,6 +269,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                 }),
                 singleValue: (base) => ({
                   ...base,
+                  fontSize: '14px',
                   color: 'var(--select-text, #111827)'
                 })
               }}
@@ -276,19 +281,19 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
               <Palette className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
               {t('schedules:color')}
             </label>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <input 
                 id="color"
                 type="color" 
                 name="color"
                 value={formData.color}
                 onChange={handleChange}
-                className="h-10 w-16 border border-gray-300 dark:border-gray-700 rounded-md cursor-pointer"
+                className="h-8 w-12 sm:h-10 sm:w-16 border border-gray-300 dark:border-gray-700 rounded-md cursor-pointer"
               />
               <div className="flex-1">
-                <div className="w-full h-10 rounded-lg" style={{ backgroundColor: formData.color }}></div>
+                <div className="w-full h-8 sm:h-10 rounded-lg" style={{ backgroundColor: formData.color }}></div>
               </div>
-              <div className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-mono text-gray-800 dark:text-gray-200">
+              <div className="px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs sm:text-sm font-mono text-gray-800 dark:text-gray-200">
                 {formData.color}
               </div>
             </div>
@@ -311,9 +316,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
                   value={formData.default_slot_duration}
                   onChange={handleChange}
                   required
-                  className="w-24 p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mr-2"
+                  className="w-20 sm:w-24 h-9 sm:h-10 rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2.5 text-sm sm:text-base mr-2"
                 />
-                <span className="text-gray-700 dark:text-gray-300">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
                   {t('schedules:minutes')}
                 </span>
               </div>
@@ -324,12 +329,12 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
           )}
           
           <div className="md:col-span-2">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
                 {t('schedules:options')}
               </h3>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -385,19 +390,19 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ schedule, onSuccess, onCanc
           </div>
         </div>
         
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-5">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-4 sm:pt-5">
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
+            className="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors text-sm sm:text-base"
           >
             {t('common:cancel')}
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors shadow-sm flex items-center justify-center"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors shadow-sm flex items-center justify-center text-sm sm:text-base"
           >
             {isLoading ? (
               <>

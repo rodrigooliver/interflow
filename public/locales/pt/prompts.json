@@ -35,7 +35,7 @@
     "description": "Descrição",
     "descriptionPlaceholder": "Descreva o propósito deste prompt",
     "content": "Conteúdo",
-    "contentPlaceholder": "Digite as instruções para a IA",
+    "contentPlaceholder": "Nenhum contexto definido. Clique para adicionar.",
     "tags": "Tags",
     "tagsPlaceholder": "Digite as tags separadas por vírgulas",
     "integration": "Integração",
@@ -43,6 +43,7 @@
     "model": "Modelo",
     "selectModel": "Selecione um modelo",
     "temperature": "Temperatura",
+    "temperatureDescription": "Controla a criatividade das respostas. Valores mais baixos tornam as respostas mais determinísticas, valores mais altos tornam mais criativas.",
     "toolName": "Nome da Ferramenta",
     "toolNamePlaceholder": "Ex: get_weather",
     "toolDescription": "Descrição da Ferramenta",
@@ -61,23 +62,42 @@
     "viewAsList": "Ver como Lista",
     "viewAsJson": "Ver como JSON",
     "noParameters": "Nenhum parâmetro definido",
-    "toolsDescription": "Configure as ferramentas que o modelo pode utilizar. Ferramentas permitem que o modelo execute ações específicas durante a conversa.",
-    "toolsInfo": "Informação sobre ferramentas",
-    "toolsInfoDescription": "Ferramentas permitem que o modelo chame funções específicas. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ferramentas.",
-    "tools": "Ferramentas",
-    "addTool": "Adicionar Ferramenta",
-    "editTool": "Editar Ferramenta",
+    "toolsDescription": "Configure as ações que o modelo pode executar. Você pode personalizar suas próprias ações ou utilizar ações prontas do sistema. As ações permitem que o modelo realize tarefas específicas durante a conversa. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ações.",
+    "toolsInfo": "Informação sobre ações",
+    "toolsInfoDescription": "Ações permitem que o modelo chame funções específicas. Você pode criar ações personalizadas ou utilizar ações prontas do sistema.",
+    "tools": "Ações",
+    "addTool": "+ Adicionar Ação",
+    "editTool": "Editar Ação",
+    "systemActions": "Ações do Sistema",
+    "systemActionsDescription": "Ações prontas disponíveis para uso imediato",
+    "addSystemAction": "+ Adicionar Ação do Sistema",
+    "systemActionTypes": {
+      "endChat": "Encerrar Atendimento",
+      "changeCustomerName": "Alterar Nome do Cliente",
+      "changeFunnel": "Alterar Funil",
+      "updateChatStatus": "Atualizar Status do Chat",
+      "assignTeam": "Atribuir Equipe",
+      "startNewFlow": "Iniciar Novo Fluxo",
+      "scheduleMeeting": "Agendar Reunião",
+      "sendMessage": "Enviar Mensagem",
+      "updateCustomerData": "Atualizar Dados do Cliente",
+      "createTask": "Criar Tarefa"
+    },
+    "customActions": "Ações Personalizadas",
+    "customActionsDescription": "Ações criadas e personalizadas por você",
+    "noSystemActions": "Nenhuma ação do sistema disponível",
+    "noCustomActions": "Nenhuma ação personalizada configurada",
     "examples": {
       "title": "Exemplos"
     },
     "tabs": {
-      "general": "Configurações Gerais",
       "context": "Contexto",
-      "tools": "Ferramentas",
-      "test": "Testar"
+      "general": "Geral",
+      "tools": "Ações",
+      "test": "Teste"
     },
     "contextDescription": "Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.",
-    "noTools": "Nenhuma ferramenta configurada",
+    "noTools": "Nenhuma ação configurada",
     "actions": {
       "title": "Ações da Ferramenta",
       "description": "Configure as ações que serão executadas quando esta ferramenta for chamada",
@@ -228,7 +248,8 @@
       "directOperation": "Operação Direta",
       "mappedOperation": "Operação Mapeada",
       "operationMapping": "Mapeamento de Operações",
-      "appointmentId": "ID do Agendamento no formato YYYY-MM-DD-HH:MM"
+      "appointmentId": "ID do Agendamento no formato YYYY-MM-DD-HH:MM",
+      "aiSettings": "Configurações de IA"
     }
   },
   "test": {
@@ -239,7 +260,7 @@
     "clearChat": "Limpar conversa",
     "send": "Enviar",
     "testing": "Testando...",
-    "success": "Prompt testado com sucesso!",
+    "success": "",
     "error": "Erro ao testar o prompt",
     "errorBackend": "Erro ao processar o prompt no servidor",
     "noIntegration": "Nenhuma integração OpenAI disponível",

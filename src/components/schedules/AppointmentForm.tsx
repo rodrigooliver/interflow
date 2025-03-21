@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Appointment, AppointmentFormData } from '../../types/schedules';
+import { AppointmentFormData } from '../../types/schedules'; 
+import { Appointment } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Calendar, Clock, User, Calendar as CalendarIcon, MessageSquare, Video, Bell, AlertTriangle, CheckCircle2, Scissors, Users } from 'lucide-react';
@@ -324,15 +325,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md max-w-2xl mx-auto">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+    <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+      <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center">
         <CalendarIcon className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
         {appointment ? t('schedules:editAppointment') : t('schedules:newAppointment')}
       </h2>
       
       {/* Feedback de mensagens */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-md text-red-700 dark:text-red-400">
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-md text-red-700 dark:text-red-400">
           <div className="flex items-center mb-1">
             <AlertTriangle className="h-5 w-5 mr-2" />
             <span className="font-medium">{t('common:error')}</span>
@@ -342,7 +343,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       )}
       
       {success && (
-        <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-800 rounded-md text-green-700 dark:text-green-400">
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-800 rounded-md text-green-700 dark:text-green-400">
           <div className="flex items-center mb-1">
             <CheckCircle2 className="h-5 w-5 mr-2" />
             <span className="font-medium">{t('common:success')}</span>
@@ -351,8 +352,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Seleção de Profissional */}
           <div>
             <label htmlFor="provider_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
@@ -366,7 +367,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.provider_id}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10"
+                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
               >
                 <option value="" disabled>{t('schedules:selectProvider')}</option>
                 {providers?.map(provider => (
@@ -395,7 +396,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               value={formData.service_id}
               onChange={handleServiceChange}
               required
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm"
             >
               <option value="">{t('schedules:selectService')}</option>
               {services?.map(service => (
@@ -418,7 +419,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 name="customer_id"
                 value={formData.customer_id || ''}
                 onChange={handleChange}
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10"
+                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
               >
                 <option value="">{t('schedules:selectCustomer')}</option>
                 {customers?.map(customer => (
@@ -448,7 +449,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.status}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10"
+                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
               >
                 <option value="scheduled">{t('schedules:statusScheduled')}</option>
                 <option value="confirmed">{t('schedules:statusConfirmed')}</option>
@@ -477,7 +478,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               value={formData.date}
               onChange={handleChange}
               required
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm"
             />
           </div>
           
@@ -494,7 +495,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               value={formData.start_time.substring(0, 5)}
               onChange={handleChange}
               required
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm"
             />
           </div>
           
@@ -511,7 +512,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               value={formData.end_time.substring(0, 5)}
               onChange={handleChange}
               required
-              className={`w-full p-2.5 border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+              className={`w-full p-2.5 border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm ${
                 highlightEndTime 
                   ? 'animate-highlight border-blue-400 dark:border-blue-600' 
                   : 'border-gray-300 dark:border-gray-700'
@@ -520,7 +521,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </div>
           
           {/* Observações */}
-          <div className="md:col-span-2">
+          <div className="sm:col-span-2">
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
               <MessageSquare className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
               {t('schedules:notes')}
@@ -531,14 +532,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               value={formData.notes || ''}
               onChange={handleChange}
               rows={3}
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none text-base sm:text-sm"
               placeholder={t('schedules:notesPlaceholder')}
             />
           </div>
           
           {/* Alerta de atendimento por ordem de chegada */}
           {selectedServiceInfo?.by_arrival_time && (
-            <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 mb-4">
+            <div className="sm:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg border border-blue-100 dark:border-blue-800 mb-4">
               <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center">
                 <Users className="h-4 w-4 mr-1.5" />
                 {t('schedules:arrivalTimeServiceAlert')}
@@ -556,7 +557,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           )}
           
           {/* Videoconferência */}
-          <div className="flex items-start">
+          <div className="flex items-start sm:col-span-2">
             <div className="flex items-center h-5">
               <input 
                 type="checkbox" 
@@ -579,8 +580,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </div>
           
           {/* Lembretes */}
-          <div className="md:col-span-2">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="sm:col-span-2">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 flex items-center">
                 <Bell className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
                 {t('schedules:reminders')}
@@ -650,7 +651,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </div>
         </div>
         
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-5">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-4 sm:pt-5">
           <button
             type="button"
             onClick={onCancel}

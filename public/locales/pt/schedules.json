@@ -258,5 +258,7 @@
   "cancelAppointmentMessage": "Tem certeza que deseja cancelar este agendamento?",
   "completeAppointmentMessage": "Tem certeza que deseja marcar este agendamento como concluído?",
   "markAsNoShowMessage": "Tem certeza que deseja marcar este agendamento como não compareceu?",
-  "pendingApproval": "Pendentes de Aprovação"
+  "pendingApproval": "Pendentes de Aprovação",
+  "editCustomer": "Editar Cliente",
+  "openChat": "Abrir Chat"
 } 

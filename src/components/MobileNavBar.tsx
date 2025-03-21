@@ -90,14 +90,14 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({ onOpenSidebar }) => {
 
         {/* Link para agendamentos */}
         <Link
-          to="/app/schedules"
+          to="/app/appointments"
           className={`flex flex-col items-center justify-center w-full h-full py-2 transition-colors duration-200 ${
-            isActive('/app/schedules')
+            isActive('/app/appointments')
               ? 'text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
           }`}
         >
-          <div className={`p-1.5 rounded-full ${isActive('/app/schedules') ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+          <div className={`p-1.5 rounded-full ${isActive('/app/appointments') ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
             <Calendar className="h-5 w-5" strokeWidth={2.2} />
           </div>
           <span className="text-xs font-medium mt-1">{t('common:schedules')}</span>

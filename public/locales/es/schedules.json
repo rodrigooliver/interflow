@@ -234,5 +234,20 @@
   "holidayTitlePlaceholder": "Ej: Festivo Nacional, Día Libre, Vacaciones, etc.",
   "defaultSlotDuration": "Duración predeterminada de franja horaria",
   "defaultSlotDurationDescription": "Define el tamaño de las franjas horarias para servicios con atención por orden de llegada",
-  "serviceDurationDescription": "Ingresa la duración exacta del servicio en minutos"
+  "serviceDurationDescription": "Ingresa la duración exacta del servicio en minutos",
+  "listMode": "Modo Lista",
+  "filterByStatus": "Filtrar por Estado",
+  "statusFilter": "Filtro de Estado",
+  "selectedStatuses": "Estados Seleccionados",
+  "viewFilters": "Ver Filtros",
+  "filterBySchedule": "Filtrar por Agendamiento",
+  "confirmAppointmentTitle": "Confirmar Cita",
+  "cancelAppointmentTitle": "Cancelar Cita",
+  "completeAppointmentTitle": "Completar Cita",
+  "markAsNoShowTitle": "Marcar como No Asistió",
+  "confirmAppointmentMessage": "¿Estás seguro de que quieres confirmar esta cita?",
+  "cancelAppointmentMessage": "¿Estás seguro de que quieres cancelar esta cita?",
+  "completeAppointmentMessage": "¿Estás seguro de que quieres marcar esta cita como completada?",
+  "markAsNoShowMessage": "¿Estás seguro de que quieres marcar esta cita como no asistió?",
+  "pendingApproval": "Pendiente de Aprobación"
 } 

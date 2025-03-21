@@ -60,7 +60,7 @@ import { useAutoLogin } from './hooks/useAutoLogin';
 import { ConnectionStatus } from './components/common/ConnectionStatus';
 import OrganizationSelector from './components/auth/OrganizationSelector';
 import { NavbarVisibilityProvider } from './contexts/NavbarVisibilityContext';
-import SchedulesPage from './pages/schedules/SchedulesPage';
+import AppointmentsPage from './pages/schedules/AppointmentsPage';
 import ScheduleManagementPage from './pages/schedules/management/ScheduleManagementPage';
 import SchedulesListPage from './pages/schedules/SchedulesListPage';
 import ScheduleAvailabilityPage from './pages/schedules/management/ScheduleAvailabilityPage';
@@ -297,7 +297,7 @@ function AppContent() {
                         <Route path="chat/:id" element={<Chat />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="customers/:id/chats" element={<CustomerChats />} />
-                        <Route path="schedules" element={<SchedulesPage />} />
+                        <Route path="appointments" element={<AppointmentsPage />} />
                         <Route path="schedules/list" element={<SchedulesListPage />} />
                         <Route path="schedules/:scheduleId/management" element={<ScheduleManagementPage />} />
                         <Route path="schedules/:scheduleId/availability" element={<ScheduleAvailabilityPage />} />

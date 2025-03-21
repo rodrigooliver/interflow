@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScheduleService } from '../../../types/schedules';
+import { ScheduleService } from '../../../types/database';
 import { supabase } from '../../../lib/supabase';
 import { Briefcase, Clock, DollarSign, Palette, CheckCircle2, AlertTriangle, Users, ClipboardList } from 'lucide-react';
 

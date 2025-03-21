@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play } from 'lucide-react';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, Plus, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { timezones } from '../../utils/timezones';
 import Select from 'react-select';
 import TestPrompt from './TestPrompt';
+import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -156,6 +157,8 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
   }
 }
 
+type TabType = 'general' | 'context' | 'tools' | 'test';
+
 const PromptFormMain: React.FC = () => {
   const { t } = useTranslation(['prompts', 'common']);
   const navigate = useNavigate();
@@ -205,7 +208,7 @@ const PromptFormMain: React.FC = () => {
     selectedIntegration?.id
   );
   
-  const [activeTab, setActiveTab] = useState<'general' | 'context' | 'tools' | 'test'>('general');
+  const [activeTab, setActiveTab] = useState<TabType>('general');
   const [showToolModal, setShowToolModal] = useState(false);
   const [editingTool, setEditingTool] = useState<{ tool: Tool, index: number } | null>(null);
   const [linkedFlow, setLinkedFlow] = useState<{ id: string; name: string } | null>(null);
@@ -216,6 +219,9 @@ const PromptFormMain: React.FC = () => {
   const [tabsDropdownOpen, setTabsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [showIntegrationModal, setShowIntegrationModal] = useState(false);
+  const [showSystemActionModal, setShowSystemActionModal] = useState(false);
+  const [systemActions, setSystemActions] = useState<Tool[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -516,6 +522,28 @@ const PromptFormMain: React.FC = () => {
     });
   };
 
+  const handleIntegrationSuccess = async () => {
+    setShowIntegrationModal(false);
+    // Invalidar cache das integrações para recarregar a lista
+    await queryClient.invalidateQueries({ queryKey: ['integrations', currentOrganizationMember?.organization.id] });
+  };
+
+  const handleAddSystemAction = (actionType: string) => {
+    const newAction: Tool = {
+      name: t(`prompts:form.systemActionTypes.${actionType}`),
+      description: t(`prompts:form.systemActionTypes.${actionType}`),
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: []
+      },
+      actions: []
+    };
+
+    setSystemActions([...systemActions, newAction]);
+    setShowSystemActionModal(false);
+  };
+
   return (
     <div className="flex flex-col h-screen pb-16 md:pb-0">
       <div className="p-4 md:p-6 flex-grow overflow-hidden">
@@ -716,7 +744,7 @@ const PromptFormMain: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setTabsDropdownOpen(!tabsDropdownOpen)}
-                      className="w-full flex items-center justify-between bg-white dark:bg-gray-700 rounded-lg shadow-sm p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="w-full flex items-center justify-between bg-white dark:bg-gray-900 rounded-lg shadow-sm p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="flex items-center space-x-2">
                         {activeTab === 'general' && <Settings className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
@@ -860,7 +888,8 @@ const PromptFormMain: React.FC = () => {
               {/* Tab Content */}
               {activeTab === 'general' && (
                 <div className="mb-6">
-                  <div className="mb-4">
+                  {/* Título */}
+                  <div className="mb-6">
                     <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       <Type className="w-4 h-4 mr-2" />
                       {t('prompts:form.title')} *
@@ -875,149 +904,212 @@ const PromptFormMain: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        {t('prompts:form.integration')} *
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={selectedIntegration?.id || ''}
-                          onChange={(e) => handleIntegrationChange(e.target.value)}
-                          disabled={loadingIntegrations}
-                          className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
-                        >
-                          <option value="">{t('prompts:form.selectIntegration') || 'Selecione uma integração'}</option>
-                          {integrations.length === 0 && !loadingIntegrations ? (
-                            <option value="" disabled>{t('prompts:noIntegrationsAvailable') || 'Nenhuma integração disponível'}</option>
-                          ) : (
-                            integrations.map(integration => (
-                              <option key={integration.id} value={integration.id} className="text-gray-900 dark:text-white">
-                                OpenAI - {integration.name || integration.title || integration.id}
+                  {/* Configurações de IA */}
+                  <div className="">
+                    {/* <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                      <Cpu className="w-4 h-4 mr-2" />
+                      {t('prompts:form.actions.aiSettings')}
+                    </h3> */}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Integração */}
+                      <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          {t('prompts:form.integration')} *
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={selectedIntegration?.id || ''}
+                            onChange={(e) => {
+                              if (e.target.value === 'add_new') {
+                                setShowIntegrationModal(true);
+                                return;
+                              }
+                              handleIntegrationChange(e.target.value);
+                            }}
+                            disabled={loadingIntegrations}
+                            className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                          >
+                            <option value="">{t('prompts:form.selectIntegration')}</option>
+                            {integrations.length === 0 && !loadingIntegrations ? (
+                              <option value="add_new" className="text-blue-600 dark:text-blue-400">
+                                {t('settings:integrations.addNew')}
                               </option>
-                            ))
+                            ) : (
+                              integrations.map(integration => (
+                                <option key={integration.id} value={integration.id} className="text-gray-900 dark:text-white">
+                                  OpenAI - {integration.name || integration.title || integration.id}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                          {loadingIntegrations && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
+                            </div>
                           )}
-                        </select>
+                          {integrations.length === 0 && !loadingIntegrations && (
+                            <button
+                              type="button"
+                              onClick={() => setShowIntegrationModal(true)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              title={t('settings:integrations.addNew')}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                         {loadingIntegrations && (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
-                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {t('prompts:loadingIntegrations')}
+                          </p>
                         )}
                       </div>
-                      {loadingIntegrations && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {t('prompts:loadingIntegrations') || 'Carregando integrações...'}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        <Cpu className="w-4 h-4 mr-2" />
-                        {t('prompts:model')} *
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={selectedModel}
-                          onChange={(e) => setSelectedModel(e.target.value)}
-                          disabled={loadingModels}
-                          className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
-                        >
-                          {availableModels.length === 0 && !loadingModels ? (
-                            <option value="" disabled>{t('prompts:noModelsAvailable') || 'Nenhum modelo disponível'}</option>
-                          ) : (
-                            availableModels.map(model => (
-                              <option key={model.id} value={model.id}>
-                                {model.name}
-                              </option>
-                            ))
+
+                      {/* Modelo */}
+                      <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <Cpu className="w-4 h-4 mr-2" />
+                          {t('prompts:form.model')} *
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            disabled={loadingModels}
+                            className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                          >
+                            {availableModels.length === 0 && !loadingModels ? (
+                              <option value="" disabled>{t('prompts:noModelsAvailable')}</option>
+                            ) : (
+                              availableModels.map(model => (
+                                <option key={model.id} value={model.id}>
+                                  {model.name}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                          {loadingModels && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
+                            </div>
                           )}
-                        </select>
+                        </div>
                         {loadingModels && (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
-                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {t('prompts:loadingModels')}
+                          </p>
                         )}
                       </div>
-                      {loadingModels && (
+
+                      {/* Temperatura */}
+                      <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <Thermometer className="w-4 h-4 mr-2" />
+                          {t('prompts:form.temperature')}
+                        </label>
+                        <div className="flex items-center space-x-4">
+                          <input
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={temperature}
+                            onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                            className="flex-1 h-2 border border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[3rem] text-right">
+                            {temperature}
+                          </span>
+                        </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {t('prompts:loadingModels') || 'Carregando modelos disponíveis...'}
+                          {t('prompts:form.temperatureDescription')}
                         </p>
-                      )}
+                      </div>
+
+                      {/* Timezone */}
+                      <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <Clock className="w-4 h-4 mr-2" />
+                          {t('prompts:timezone')}
+                        </label>
+                        <Select
+                          value={{ value: timezone, label: `${timezones.find(tz => tz.value === timezone)?.label || timezone} (${timezones.find(tz => tz.value === timezone)?.offset || 'UTC'})` }}
+                          onChange={(selected) => setTimezone(selected?.value || 'UTC')}
+                          options={timezones.map(tz => ({ 
+                            value: tz.value, 
+                            label: `${tz.label} (${tz.offset})` 
+                          }))}
+                          className="react-select-container"
+                          classNamePrefix="react-select"
+                          placeholder={t('prompts:selectTimezone')}
+                          isSearchable={true}
+                          noOptionsMessage={() => t('prompts:noTimezoneFound')}
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              backgroundColor: 'var(--select-bg, #fff)',
+                              borderColor: state.isFocused ? 'var(--select-focus-border, #3b82f6)' : 'var(--select-border, #d1d5db)',
+                              '&:hover': {
+                                borderColor: 'var(--select-hover-border, #9ca3af)'
+                              },
+                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              borderRadius: '0.375rem'
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              backgroundColor: 'var(--select-bg, #fff)',
+                              border: '1px solid var(--select-border, #d1d5db)',
+                              zIndex: 50
+                            }),
+                            option: (base, { isFocused, isSelected }) => ({
+                              ...base,
+                              backgroundColor: isSelected 
+                                ? 'var(--select-selected-bg, #2563eb)'
+                                : isFocused 
+                                  ? 'var(--select-hover-bg, #dbeafe)'
+                                  : 'transparent',
+                              color: isSelected 
+                                ? 'var(--select-selected-text, white)'
+                                : 'var(--select-text, #111827)'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: 'var(--select-text, #111827)'
+                            })
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {t('prompts:timezoneDescription')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        <Thermometer className="w-4 h-4 mr-2" />
-                        {t('prompts:temperature') || 'Temperatura'}: {temperature}
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        value={temperature}
-                        onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                        className="w-full h-11 border border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Campo de timezone */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {t('prompts:timezone') || 'Fuso Horário'}
-                      </label>
-                      <Select
-                        value={{ value: timezone, label: `${timezones.find(tz => tz.value === timezone)?.label || timezone} (${timezones.find(tz => tz.value === timezone)?.offset || 'UTC'})` }}
-                        onChange={(selected) => setTimezone(selected?.value || 'UTC')}
-                        options={timezones.map(tz => ({ 
-                          value: tz.value, 
-                          label: `${tz.label} (${tz.offset})` 
-                        }))}
-                        className="react-select-container"
-                        classNamePrefix="react-select"
-                        placeholder={t('prompts:selectTimezone') || 'Selecione um fuso horário'}
-                        isSearchable={true}
-                        noOptionsMessage={() => t('prompts:noTimezoneFound') || 'Nenhum fuso horário encontrado'}
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            backgroundColor: 'var(--select-bg, #fff)',
-                            borderColor: state.isFocused ? 'var(--select-focus-border, #3b82f6)' : 'var(--select-border, #d1d5db)',
-                            '&:hover': {
-                              borderColor: 'var(--select-hover-border, #9ca3af)'
-                            },
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                            borderRadius: '0.375rem'
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            backgroundColor: 'var(--select-bg, #fff)',
-                            border: '1px solid var(--select-border, #d1d5db)',
-                            zIndex: 50
-                          }),
-                          option: (base, { isFocused, isSelected }) => ({
-                            ...base,
-                            backgroundColor: isSelected 
-                              ? 'var(--select-selected-bg, #2563eb)'
-                              : isFocused 
-                                ? 'var(--select-hover-bg, #dbeafe)'
-                                : 'transparent',
-                            color: isSelected 
-                              ? 'var(--select-selected-text, white)'
-                              : 'var(--select-text, #111827)'
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: 'var(--select-text, #111827)'
-                          })
-                        }}
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {t('prompts:timezoneDescription') || 'Define o fuso horário para operações de data e hora.'}
-                      </p>
+
+                    {/* Botão para editar contexto */}
+                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('context')}
+                        className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <div className="flex items-start space-x-4">
+                          <div className="flex-shrink-0">
+                            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                              {t('prompts:form.tabs.context')}
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                              {formData.content || t('prompts:form.contentPlaceholder')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 ml-4">
+                          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                        </div>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1045,27 +1137,67 @@ const PromptFormMain: React.FC = () => {
                     <div className="space-y-6">
                       {/* Descrição e Informações */}
                       <div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                          {t('prompts:form.toolsDescription') || 'Configure as ferramentas que o modelo pode utilizar. Ferramentas permitem que o modelo execute ações específicas durante a conversa.'}
-                        </p>
-                        
                         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6">
-                          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-                            {t('prompts:form.toolsInfo') || 'Informação sobre ferramentas'}
-                          </h3>
-                          <p className="text-xs text-blue-700 dark:text-blue-400">
-                            {t('prompts:form.toolsInfoDescription') || 'Ferramentas permitem que o modelo chame funções específicas. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ferramentas.'}
-                          </p> 
+                          <p className="text-sm text-blue-700 dark:text-blue-400">
+                            {t('prompts:form.toolsDescription')}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Seção de Ferramentas */}
+                      {/* Ações do Sistema */}
                       <div>
                         <div className="flex justify-between items-center mb-3">
-                          <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
-                            <Wrench className="w-4 h-4 mr-2" />
-                            {t('prompts:form.tools') || 'Ferramentas'}
-                          </h3>
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                              <Settings className="w-4 h-4 mr-2" />
+                              {t('prompts:form.systemActions')}
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {t('prompts:form.systemActionsDescription')}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowSystemActionModal(true)}
+                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            {t('prompts:form.addSystemAction')}
+                          </button>
+                        </div>
+                        
+                        {systemActions.length === 0 ? (
+                          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {t('prompts:form.noSystemActions')}
+                            </p>
+                          </div>
+                        ) : (
+                          <ToolsList 
+                            tools={systemActions} 
+                            onRemoveTool={(index) => {
+                              const newActions = [...systemActions];
+                              newActions.splice(index, 1);
+                              setSystemActions(newActions);
+                            }}
+                            onEditTool={() => {
+                              // Implementar edição de ação do sistema se necessário
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Ações Personalizadas */}
+                      <div>
+                        <div className="flex justify-between items-center mb-3">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                              <Wrench className="w-4 h-4 mr-2" />
+                              {t('prompts:form.customActions')}
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {t('prompts:form.customActionsDescription')}
+                            </p>
+                          </div>
                           <button
                             type="button"
                             onClick={() => {
@@ -1074,15 +1206,23 @@ const PromptFormMain: React.FC = () => {
                             }}
                             className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                           >
-                            {t('prompts:form.addTool') || '+ Adicionar Ferramenta'}
+                            {t('prompts:form.addTool')}
                           </button>
                         </div>
                         
-                        <ToolsList 
-                          tools={formData.tools} 
-                          onRemoveTool={handleRemoveTool} 
-                          onEditTool={handleEditTool}
-                        />
+                        {formData.tools.length === 0 ? (
+                          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {t('prompts:form.noCustomActions')}
+                            </p>
+                          </div>
+                        ) : (
+                          <ToolsList 
+                            tools={formData.tools} 
+                            onRemoveTool={handleRemoveTool} 
+                            onEditTool={handleEditTool}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1154,6 +1294,50 @@ const PromptFormMain: React.FC = () => {
           destinations={formData.destinations}
           onDestinationsChange={handleDestinationsChange}
         />
+      </Modal>
+
+      <Modal
+        isOpen={showIntegrationModal}
+        onClose={() => setShowIntegrationModal(false)}
+        title={t('settings:integrations.addNew') || 'Adicionar Nova Integração'}
+      >
+        <IntegrationFormOpenAI
+          onSuccess={handleIntegrationSuccess}
+          onCancel={() => setShowIntegrationModal(false)}
+        />
+      </Modal>
+
+      {/* Modal de Ações do Sistema */}
+      <Modal
+        isOpen={showSystemActionModal}
+        onClose={() => setShowSystemActionModal(false)}
+        title={t('prompts:form.systemActions')}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-2">
+            {Object.entries({
+              endChat: t('prompts:form.systemActionTypes.endChat'),
+              changeCustomerName: t('prompts:form.systemActionTypes.changeCustomerName'),
+              changeFunnel: t('prompts:form.systemActionTypes.changeFunnel'),
+              updateChatStatus: t('prompts:form.systemActionTypes.updateChatStatus'),
+              assignTeam: t('prompts:form.systemActionTypes.assignTeam'),
+              startNewFlow: t('prompts:form.systemActionTypes.startNewFlow'),
+              scheduleMeeting: t('prompts:form.systemActionTypes.scheduleMeeting'),
+              sendMessage: t('prompts:form.systemActionTypes.sendMessage'),
+              updateCustomerData: t('prompts:form.systemActionTypes.updateCustomerData'),
+              createTask: t('prompts:form.systemActionTypes.createTask')
+            }).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => handleAddSystemAction(key)}
+                className="flex items-center justify-between w-full p-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+              >
+                <span>{label}</span>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </button>
+            ))}
+          </div>
+        </div>
       </Modal>
     </div>
   );

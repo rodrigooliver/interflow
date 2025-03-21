@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScheduleProvider, ScheduleService } from '../../../types/schedules';
+import { ScheduleProvider, ScheduleService } from '../../../types/database';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { User, Clock, Calendar, CheckCircle2, AlertTriangle } from 'lucide-react';

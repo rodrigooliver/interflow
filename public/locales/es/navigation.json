@@ -3,18 +3,19 @@
   "chats": "Conversaciones",
   "customers": "Clientes",
   "crm": "CRM",
-  "shortcuts": "Atajos",
+  "shortcuts": "Atajos de Mensaje",
   "settings": "Configuración",
-  "team": "Atendentes",
-  
+  "users": "Usuarios",
   "serviceTeams": "Equipos de Servicio",
   "channels": "Canales",
   "flows": "Flujos",
   "organizations": "Organizaciones",
   "tags": "Etiquetas",
-  "prompts": "Agentes IA",
+  "prompts": "Agente IA",
   "closureTypes": "Tipos de Cierre",
-  "subscriptionPlans": "Planes de Suscripción",
-  "schedules": "Agendamientos",
-  "calendar": "Calendario"
+  "appointments": "Citas",
+  "calendar": "Calendario",
+  "manageSchedules": "Gestionar Agendas",
+  "profile": "Perfil",
+  "subscriptionPlans": "Planes de Suscripción"
 }

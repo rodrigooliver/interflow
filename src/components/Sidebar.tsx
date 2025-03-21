@@ -72,15 +72,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     { to: '/app/chats', icon: MessageSquare, label: t('navigation:chats') },
     { to: '/app/customers', icon: Users, label: t('navigation:customers') },
     { to: '/app/crm', icon: GitMerge, label: t('navigation:crm') },
-    { 
-      to: '/app/schedules', 
-      icon: Calendar, 
-      label: t('navigation:schedules'),
-      children: [
-        { to: '/app/schedules', label: t('navigation:calendar'), exact: true },
-        { to: '/app/schedules/list', label: t('navigation:manageSchedules') }
-      ]
-    },
+    { to: '/app/appointments', icon: Calendar, label: t('navigation:appointments') },
     { to: '/app/shortcuts', icon: Keyboard, label: t('navigation:shortcuts') },
     { to: '/app/tags', icon: Tag, label: t('navigation:tags') },
     { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
@@ -88,7 +80,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
 
   // Admin and owner only links
   const adminLinks = [
-    { to: '/app/member', icon: UserPlus, label: t('navigation:team') },
+    { to: '/app/member', icon: UserPlus, label: t('navigation:users') },
     { to: '/app/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },

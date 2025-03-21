@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { ToolAction, ActionFilter } from '../../types/prompts';
+import { Schedule } from '../../types/database';
 import { useFunnels, useTeams, useFlows, useSchedules } from '../../hooks/useQueryes';
 import { useAuthContext } from '../../contexts/AuthContext';
 
@@ -68,20 +69,6 @@ interface ScheduleActionConfig {
     variable?: string;
     mapping?: Record<string, 'checkAvailability' | 'createAppointment' | 'checkAppointment' | 'deleteAppointment'>;
   };
-}
-
-interface ScheduleService {
-  id: string;
-  title: string;
-  duration: string;
-  status: 'active' | 'inactive';
-}
-
-interface Schedule {
-  id: string;
-  title: string;
-  status: string;
-  services?: ScheduleService[];
 }
 
 // Tipo união para todas as configurações possíveis

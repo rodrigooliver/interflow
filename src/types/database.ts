@@ -683,4 +683,124 @@ export interface CustomFieldFormData {
   isNew?: boolean;
 }
 
+// Appointment (Agendamento)
+export interface Appointment {
+  id: string;
+  schedule_id: Schedule;
+  provider_id: string;
+  provider?: Profile; // Não está no banco, mas útil para UI
+  service_id?: string;
+  service?: ScheduleService; // Não está no banco, mas útil para UI
+  customer_id?: string;
+  customer?: Customer; // Não está no banco, mas útil para UI
+  customer_name?: string; // Não está no banco, mas útil para UI
+  status: 'scheduled' | 'confirmed' | 'completed' | 'canceled' | 'no_show';
+  date: string; // Formato YYYY-MM-DD
+  start_time: string; // Formato HH:MM:SS
+  end_time: string; // Formato HH:MM:SS
+  time_slot?: string; // Faixa de horário para agendamentos por ordem de chegada
+  notes?: string;
+  metadata?: Record<string, unknown>;
+  calendar_event_id?: string;
+  calendar_event_link?: string;
+  has_videoconference: boolean;
+  chat_id?: Chat;
+  videoconference_link?: string;
+  videoconference_provider?: 'google_meet' | 'zoom' | 'teams' | 'other';
+  created_at: string;
+  updated_at: string;
+}
+
+// Schedule Service (Serviço)
+export interface ScheduleService {
+  id: string;
+  schedule_id: Schedule;
+  title: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  duration: string; // formato interval do PostgreSQL
+  color: string | null;
+  status: 'active' | 'inactive';
+  capacity: number; // Novos campos para suportar múltiplos atendimentos
+  by_arrival_time: boolean; // Indica se o serviço opera por ordem de chegada
+  created_at: string;
+  updated_at: string;
+}
+
+// Schedule (Agenda)
+export interface Schedule {
+  id: string;
+  organization_id: string;
+  organization?: Organization; // Não está no banco, mas útil para UI
+  title: string;
+  description: string | null;
+  type: 'service' | 'meeting';
+  color: string;
+  timezone: string;
+  status: 'active' | 'inactive';
+  is_public: boolean;
+  requires_confirmation: boolean;
+  enable_ai_agent: boolean;
+  created_at: string;
+  updated_at: string;
+  services: ScheduleService[]; // Não está no banco, mas útil para UI
+  providers: ScheduleProvider[]; // Não está no banco, mas útil para UI
+  default_slot_duration: number;
+}
+
+// Schedule Provider (Profissional)
+export interface ScheduleProvider {
+  id: string;
+  schedule_id: string;
+  schedule?: Schedule; // Não está no banco, mas útil para UI
+  profile_id: string;
+  profile?: Profile; // Não está no banco, mas útil para UI
+  name?: string; // Não está no banco, mas útil para UI
+  avatar_url?: string; // Não está no banco, mas útil para UI
+  status: 'active' | 'inactive';
+  available_services: ScheduleService[];
+  color?: string; // Não está no banco, mas útil para UI
+  created_at: string;
+  updated_at: string;
+}
+
+// Schedule Availability (Disponibilidade)
+export interface ScheduleAvailability {
+  id: string;
+  provider_id: string;
+  day_of_week: number; // 0-6 para Domingo-Sábado
+  start_time: string; // Formato HH:MM:SS
+  end_time: string; // Formato HH:MM:SS
+  created_at: string;
+  updated_at: string;
+}
+
+// Schedule Holiday (Feriado/Folga)
+export interface ScheduleHoliday {
+  id: string;
+  schedule_id: string;
+  provider_id?: string;
+  title: string;
+  date: string; // Formato YYYY-MM-DD
+  all_day: boolean;
+  start_time?: string; // Formato HH:MM:SS, obrigatório se all_day = false
+  end_time?: string; // Formato HH:MM:SS, obrigatório se all_day = false
+  recurring: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Appointment Reminder (Lembrete de Agendamento)
+export interface AppointmentReminder {
+  id: string;
+  appointment_id: string;
+  type: 'email' | 'sms' | 'whatsapp';
+  status: 'pending' | 'sent' | 'failed';
+  scheduled_for: string; // ISO DateTime
+  sent_at?: string; // ISO DateTime
+  created_at: string;
+  updated_at: string;
+}
+
 

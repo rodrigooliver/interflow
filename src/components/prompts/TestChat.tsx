@@ -194,11 +194,11 @@ const TestChat: React.FC<TestChatProps> = ({
           {error}
         </div>
       )}
-      {success && (
+      {/* {success && (
         <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-sm">
           {success}
         </div>
-      )}
+      )} */}
 
       {/* Container de mensagens */}
       <div 
