@@ -172,9 +172,6 @@ const ScheduleCalendar = ({
   // Estado local para armazenar os eventos arrastados (para manter a posição visual)
   const [draggedAppointmentPositions, setDraggedAppointmentPositions] = useState<Record<string, { start: Date, end: Date }>>({});
   
-  // Estado para filtrar apenas os agendamentos do provider atual
-  const [showOnlyMyAppointments, setShowOnlyMyAppointments] = useState(false);
-  
   // Configurar o idioma do momento baseado no i18n
   useEffect(() => {
     moment.locale(i18n.language);
@@ -185,18 +182,8 @@ const ScheduleCalendar = ({
     setDraggedAppointmentPositions({});
   }, [appointments]);
 
-  // Filtrar os agendamentos com base no estado showOnlyMyAppointments
-  const filteredAppointments = useMemo(() => {
-    if (!showOnlyMyAppointments || !currentProviderId) {
-      return appointments;
-    }
-    return appointments.filter(appointment => 
-      appointment.provider_id === currentProviderId
-    );
-  }, [appointments, showOnlyMyAppointments, currentProviderId]);
-
   // Converter os agendamentos para o formato esperado pelo calendário
-  const events = useMemo(() => filteredAppointments
+  const events = useMemo(() => appointments
   .map(appointment => {
     // Encontrar o serviço e o provedor para dados adicionais
     const service = services.find(s => s.id === appointment.service_id);
@@ -255,7 +242,7 @@ const ScheduleCalendar = ({
         boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
       }
     } as CalendarEventType;
-  }), [filteredAppointments, services, providers, providerColorMode, t, draggedAppointmentPositions]);
+  }), [appointments, services, providers, providerColorMode, t, draggedAppointmentPositions]);
 
   // Manipulador para navegação de data
   const handleNavigate = (date: Date) => {
@@ -378,21 +365,6 @@ const ScheduleCalendar = ({
         </div>
         
         <div className="flex flex-col xs:flex-row gap-2">
-          {/* Botão para mostrar apenas agendamentos do colaborador atual */}
-          {currentProviderId && (
-            <button
-              type="button"
-              onClick={() => setShowOnlyMyAppointments(!showOnlyMyAppointments)}
-              className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border ${
-                showOnlyMyAppointments
-                  ? 'bg-teal-600 dark:bg-teal-700 text-white border-teal-600 dark:border-teal-700 shadow-inner'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 mr-2`}
-            >
-              {showOnlyMyAppointments ? t('schedules:showingMyAppointments') : t('schedules:showMyAppointments')}
-            </button>
-          )}
-          
           {/* Controles de visualização */}
           <div className="inline-flex shadow-sm rounded-md overflow-hidden self-start sm:self-auto">
             {allowedViews.map((viewName) => (
@@ -416,7 +388,7 @@ const ScheduleCalendar = ({
         </div>
       </div>
     );
-  }, [t, calendarView, events.length, appointments.length, allowedViews, showOnlyMyAppointments, currentProviderId]);
+  }, [t, calendarView, events.length, appointments.length, allowedViews]);
 
   // Gerar classes para o componente do calendário
   const calendarClassNames = {
