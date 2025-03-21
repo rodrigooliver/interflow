@@ -496,7 +496,7 @@ const SchedulesPage: React.FC = () => {
   }
   
   return (
-    <div className="h-full flex flex-col p-5 bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col p-4 md:p-5 bg-gray-50 dark:bg-gray-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="hidden md:block">
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white flex items-center">
@@ -708,7 +708,7 @@ const SchedulesPage: React.FC = () => {
           </div>
         ) : isListView ? (
           <div className="h-full overflow-y-auto">
-            <div className="p-4">
+            <div className="p-3 md:p-4">
               {filteredAppointments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Calendar className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
@@ -761,13 +761,13 @@ const SchedulesPage: React.FC = () => {
                               setSelectedAppointment(appointment);
                               setShowEditAppointmentModal(true);
                             }}
-                            className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${
+                            className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer ${
                               appointment.status === 'canceled' ? 'opacity-60' : ''
                             }`}
                           >
                             <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
                                     {getStatusIcon(appointment.status)}
                                     <span className="ml-1">
@@ -780,124 +780,126 @@ const SchedulesPage: React.FC = () => {
                                       {t('schedules:videoconference')}
                                     </span>
                                   )}
+                                  <div className="flex items-center gap-1 ml-auto">
+                                    {appointment.status === 'scheduled' && (
+                                      <>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChangeClick(appointment.id, 'confirmed');
+                                          }}
+                                          disabled={loadingAppointmentId === appointment.id}
+                                          className={`p-2 sm:p-2.5 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 ${
+                                            loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
+                                          }`}
+                                          title={t('schedules:confirmAppointment')}
+                                        >
+                                          {loadingAppointmentId === appointment.id ? (
+                                            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
+                                          ) : (
+                                            <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChangeClick(appointment.id, 'canceled');
+                                          }}
+                                          disabled={loadingAppointmentId === appointment.id}
+                                          className={`p-2 sm:p-2.5 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 ${
+                                            loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
+                                          }`}
+                                          title={t('schedules:cancelAppointment')}
+                                        >
+                                          {loadingAppointmentId === appointment.id ? (
+                                            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-red-600 dark:border-red-400 border-t-transparent"></div>
+                                          ) : (
+                                            <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                                          )}
+                                        </button>
+                                      </>
+                                    )}
+                                    {appointment.status === 'confirmed' && (
+                                      <>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChangeClick(appointment.id, 'completed');
+                                          }}
+                                          disabled={loadingAppointmentId === appointment.id}
+                                          className={`p-2 sm:p-2.5 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 ${
+                                            loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
+                                          }`}
+                                          title={t('schedules:completeAppointment')}
+                                        >
+                                          {loadingAppointmentId === appointment.id ? (
+                                            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
+                                          ) : (
+                                            <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChangeClick(appointment.id, 'no_show');
+                                          }}
+                                          disabled={loadingAppointmentId === appointment.id}
+                                          className={`p-2 sm:p-2.5 text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900/20 ${
+                                            loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
+                                          }`}
+                                          title={t('schedules:markAsNoShow')}
+                                        >
+                                          {loadingAppointmentId === appointment.id ? (
+                                            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-orange-600 dark:border-orange-400 border-t-transparent"></div>
+                                          ) : (
+                                            <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+                                          )}
+                                        </button>
+                                      </>
+                                    )}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedAppointment(appointment);
+                                        setShowEditAppointmentModal(true);
+                                      }}
+                                      className="p-2 sm:p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    >
+                                      <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
+                                    </button>
+                                  </div>
                                 </div>
-                                <h3 className={`text-lg font-medium text-gray-900 dark:text-white mb-1 ${
-                                  appointment.status === 'canceled' ? 'line-through' : ''
-                                }`}>
-                                  {appointment.customer?.name || appointment.customer_name || t('schedules:noCustomer')}
-                                </h3>
-                                <p className={`text-sm text-gray-500 dark:text-gray-400 mb-2 ${
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                                  <h3 className={`text-base sm:text-lg font-medium text-gray-900 dark:text-white truncate ${
+                                    appointment.status === 'canceled' ? 'line-through' : ''
+                                  }`}>
+                                    {appointment.customer?.name || appointment.customer_name || t('schedules:noCustomer')}
+                                  </h3>
+                                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                    <p className={`text-sm font-medium text-gray-900 dark:text-white ${
+                                      appointment.status === 'canceled' ? 'line-through' : ''
+                                    }`}>
+                                      {format(new Date(`${appointment.date}T${appointment.start_time}`), 'HH:mm')}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className={`text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 mb-2 truncate ${
                                   appointment.status === 'canceled' ? 'line-through' : ''
                                 }`}>
                                   {appointment.service?.title || t('schedules:untitledService')}
                                 </p>
-                                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                  <Clock className="h-4 w-4 mr-1" />
-                                  <p className={`text-sm font-medium text-gray-900 dark:text-white ${
-                                    appointment.status === 'canceled' ? 'line-through' : ''
-                                  }`}>
-                                    {format(new Date(`${appointment.date}T${appointment.start_time}`), 'HH:mm')}
-                                  </p>
-                                </div>
                                 {appointment.notes && (
-                                  <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <p className={`${
+                                  <div className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                    <p className={`line-clamp-2 ${
                                       appointment.status === 'canceled' ? 'line-through' : ''
                                     }`}>
                                       {appointment.notes}
                                     </p>
                                   </div>
                                 )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {appointment.status === 'scheduled' && (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChangeClick(appointment.id, 'confirmed');
-                                      }}
-                                      disabled={loadingAppointmentId === appointment.id}
-                                      className={`p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 ${
-                                        loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
-                                      }`}
-                                      title={t('schedules:confirmAppointment')}
-                                    >
-                                      {loadingAppointmentId === appointment.id ? (
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
-                                      ) : (
-                                        <CheckCircle2 className="h-5 w-5" />
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChangeClick(appointment.id, 'canceled');
-                                      }}
-                                      disabled={loadingAppointmentId === appointment.id}
-                                      className={`p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 ${
-                                        loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
-                                      }`}
-                                      title={t('schedules:cancelAppointment')}
-                                    >
-                                      {loadingAppointmentId === appointment.id ? (
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-red-600 dark:border-red-400 border-t-transparent"></div>
-                                      ) : (
-                                        <X className="h-5 w-5" />
-                                      )}
-                                    </button>
-                                  </>
-                                )}
-                                {appointment.status === 'confirmed' && (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChangeClick(appointment.id, 'completed');
-                                      }}
-                                      disabled={loadingAppointmentId === appointment.id}
-                                      className={`p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 ${
-                                        loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
-                                      }`}
-                                      title={t('schedules:completeAppointment')}
-                                    >
-                                      {loadingAppointmentId === appointment.id ? (
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
-                                      ) : (
-                                        <CheckCircle2 className="h-5 w-5" />
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChangeClick(appointment.id, 'no_show');
-                                      }}
-                                      disabled={loadingAppointmentId === appointment.id}
-                                      className={`p-2 text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900/20 ${
-                                        loadingAppointmentId === appointment.id ? 'opacity-50 cursor-not-allowed' : ''
-                                      }`}
-                                      title={t('schedules:markAsNoShow')}
-                                    >
-                                      {loadingAppointmentId === appointment.id ? (
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-orange-600 dark:border-orange-400 border-t-transparent"></div>
-                                      ) : (
-                                        <AlertCircle className="h-5 w-5" />
-                                      )}
-                                    </button>
-                                  </>
-                                )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedAppointment(appointment);
-                                    setShowEditAppointmentModal(true);
-                                  }}
-                                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                                >
-                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                  </svg>
-                                </button>
                               </div>
                             </div>
                           </div>
