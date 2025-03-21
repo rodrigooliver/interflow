@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 // Interface para erros de API
@@ -38,6 +39,7 @@ export function IntegrationFormOpenAI({
 }: IntegrationFormOpenAIProps) {
   const { t } = useTranslation(['settings', 'common']);
   const { currentOrganizationMember } = useAuthContext();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(!!integrationId);
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -200,6 +202,9 @@ export function IntegrationFormOpenAI({
           throw new Error(response.data.error || 'Failed to create integration');
         }
       }
+
+      // Invalida o cache da query useOpenAIIntegrations
+      await queryClient.invalidateQueries({ queryKey: ['useOpenAIIntegrations'] });
 
       onSuccess();
     } catch (error: unknown) {

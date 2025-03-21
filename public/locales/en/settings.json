@@ -14,6 +14,7 @@
   "integrations": {
     "title": "Integrations",
     "add": "Add Integration",
+    "addNew": "Add New Integration",
     "addOpenAI": "Add OpenAI",
     "addS3": "Add AWS S3",
     "edit": "Edit Integration",
