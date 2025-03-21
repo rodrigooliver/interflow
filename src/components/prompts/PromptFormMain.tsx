@@ -16,6 +16,8 @@ import { timezones } from '../../utils/timezones';
 import Select from 'react-select';
 import TestPrompt from './TestPrompt';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
+import { SYSTEM_ACTIONS, SYSTEM_ACTION_TYPES, SystemActionType } from '../../constants/systemActions';
+import SystemActionsList from './SystemActionsList';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -171,6 +173,7 @@ const PromptFormMain: React.FC = () => {
     content: '',
     tools: [],
     destinations: {},
+    actions: [],
     config: {}
   });
   
@@ -220,8 +223,7 @@ const PromptFormMain: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [showIntegrationModal, setShowIntegrationModal] = useState(false);
-  const [showSystemActionModal, setShowSystemActionModal] = useState(false);
-  const [systemActions, setSystemActions] = useState<Tool[]>([]);
+  const [isSystemActionModalOpen, setIsSystemActionModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -276,6 +278,7 @@ const PromptFormMain: React.FC = () => {
           content: data.content,
           tools: data.tools || [],
           destinations: data.destinations || {},
+          actions: data.actions || [],
           config: data.config || {}
         });
         
@@ -432,6 +435,7 @@ const PromptFormMain: React.FC = () => {
         temperature: temperature,
         tools: formData.tools,
         destinations: formData.destinations,
+        actions: formData.actions,
         config: updatedConfig
       };
 
@@ -528,20 +532,24 @@ const PromptFormMain: React.FC = () => {
     await queryClient.invalidateQueries({ queryKey: ['integrations', currentOrganizationMember?.organization.id] });
   };
 
-  const handleAddSystemAction = (actionType: string) => {
-    const newAction: Tool = {
-      name: t(`prompts:form.systemActionTypes.${actionType}`),
-      description: t(`prompts:form.systemActionTypes.${actionType}`),
-      parameters: {
-        type: 'object',
-        properties: {},
-        required: []
-      },
-      actions: []
-    };
-
-    setSystemActions([...systemActions, newAction]);
-    setShowSystemActionModal(false);
+  const handleAddSystemAction = (actionType: SystemActionType) => {
+    const action = SYSTEM_ACTIONS.find(a => a.type === actionType);
+    if (action) {
+      // Verifica se a ação já existe
+      const actionExists = formData.actions.some(a => a.type === actionType);
+      if (!actionExists) {
+        // Cria uma cópia da ação com a descrição traduzida
+        const translatedAction = {
+          ...action,
+          description: t(action.description)
+        };
+        setFormData(prev => ({
+          ...prev,
+          actions: [...prev.actions, translatedAction]
+        }));
+      }
+    }
+    setIsSystemActionModalOpen(false);
   };
 
   return (
@@ -1158,28 +1166,28 @@ const PromptFormMain: React.FC = () => {
                           </div>
                           <button
                             type="button"
-                            onClick={() => setShowSystemActionModal(true)}
+                            onClick={() => setIsSystemActionModalOpen(true)}
                             className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                           >
                             {t('prompts:form.addSystemAction')}
                           </button>
                         </div>
                         
-                        {systemActions.length === 0 ? (
+                        {formData.actions.length === 0 ? (
                           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               {t('prompts:form.noSystemActions')}
                             </p>
                           </div>
                         ) : (
-                          <ToolsList 
-                            tools={systemActions} 
-                            onRemoveTool={(index) => {
-                              const newActions = [...systemActions];
+                          <SystemActionsList 
+                            actions={formData.actions} 
+                            onRemoveAction={(index) => {
+                              const newActions = [...formData.actions];
                               newActions.splice(index, 1);
-                              setSystemActions(newActions);
+                              setFormData({ ...formData, actions: newActions });
                             }}
-                            onEditTool={() => {
+                            onEditAction={() => {
                               // Implementar edição de ação do sistema se necessário
                             }}
                           />
@@ -1309,34 +1317,21 @@ const PromptFormMain: React.FC = () => {
 
       {/* Modal de Ações do Sistema */}
       <Modal
-        isOpen={showSystemActionModal}
-        onClose={() => setShowSystemActionModal(false)}
+        isOpen={isSystemActionModalOpen}
+        onClose={() => setIsSystemActionModalOpen(false)}
         title={t('prompts:form.systemActions')}
       >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-2">
-            {Object.entries({
-              endChat: t('prompts:form.systemActionTypes.endChat'),
-              changeCustomerName: t('prompts:form.systemActionTypes.changeCustomerName'),
-              changeFunnel: t('prompts:form.systemActionTypes.changeFunnel'),
-              updateChatStatus: t('prompts:form.systemActionTypes.updateChatStatus'),
-              assignTeam: t('prompts:form.systemActionTypes.assignTeam'),
-              startNewFlow: t('prompts:form.systemActionTypes.startNewFlow'),
-              scheduleMeeting: t('prompts:form.systemActionTypes.scheduleMeeting'),
-              sendMessage: t('prompts:form.systemActionTypes.sendMessage'),
-              updateCustomerData: t('prompts:form.systemActionTypes.updateCustomerData'),
-              createTask: t('prompts:form.systemActionTypes.createTask')
-            }).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => handleAddSystemAction(key)}
-                className="flex items-center justify-between w-full p-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <span>{label}</span>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-              </button>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 gap-2">
+          {Object.entries(SYSTEM_ACTION_TYPES).map(([type, translationKey]) => (
+            <button
+              key={type}
+              onClick={() => handleAddSystemAction(type as SystemActionType)}
+              className="flex items-center justify-between p-3 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <span>{t(translationKey)}</span>
+              <Plus className="w-5 h-5 text-gray-500" />
+            </button>
+          ))}
         </div>
       </Modal>
     </div>

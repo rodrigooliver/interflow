@@ -256,3 +256,6 @@ CREATE TRIGGER update_stripe_subscriptions_updated_at
   BEFORE UPDATE ON stripe_subscriptions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE stripe_customers
+ADD CONSTRAINT unique_customer_per_organization UNIQUE (organization_id, stripe_customer_id);

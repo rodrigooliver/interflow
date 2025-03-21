@@ -8,6 +8,7 @@
     - `tools` (jsonb) - JSON array of tools/functions available to the model
     - `destinations` (jsonb) - JSON object of destinations for detected intents
     - `config` (jsonb) - Additional configuration options
+    - `actions` (jsonb) - JSON array of actions to be executed
 
   2. Changes
     - Add foreign key constraint to integrations table
@@ -21,7 +22,8 @@ ALTER TABLE prompts
   ADD COLUMN IF NOT EXISTS temperature float DEFAULT 0.7,
   ADD COLUMN IF NOT EXISTS tools jsonb DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS destinations jsonb DEFAULT '{}'::jsonb,
-  ADD COLUMN IF NOT EXISTS config jsonb DEFAULT '{}'::jsonb;
+  ADD COLUMN IF NOT EXISTS config jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS actions jsonb DEFAULT '[]'::jsonb;
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS prompts_integration_id_idx ON prompts(integration_id);
@@ -33,4 +35,7 @@ COMMENT ON COLUMN prompts.tools IS 'JSON array of tools/functions available to t
 COMMENT ON COLUMN prompts.destinations IS 'JSON object mapping detected intents to destinations. Example: {"create_ticket": {"type": "flow", "id": "uuid-of-flow"}, "search_knowledge": {"type": "function", "name": "search_kb"}}';
 
 -- Add comment to explain the structure of the config column
-COMMENT ON COLUMN prompts.config IS 'Additional configuration options for the prompt. Example: {"max_tokens": 1000, "stream": true}'; 
+COMMENT ON COLUMN prompts.config IS 'Additional configuration options for the prompt. Example: {"max_tokens": 1000, "stream": true}';
+
+-- Add comment to explain the structure of the actions column
+COMMENT ON COLUMN prompts.actions IS 'JSON array of actions to be executed. Example: [{"type": "send_message", "content": "Hello"}, {"type": "create_ticket", "data": {...}}]'; 

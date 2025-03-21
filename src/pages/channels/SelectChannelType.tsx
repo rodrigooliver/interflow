@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getChannelIcon } from '../../utils/channel';
@@ -7,6 +7,8 @@ import { getChannelIcon } from '../../utils/channel';
 export default function SelectChannelType() {
   const { t } = useTranslation(['channels', 'common']);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const showWapi = searchParams.get('n') === '1';
 
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -20,12 +22,12 @@ export default function SelectChannelType() {
       description: t('descriptions.whatsapp_official'),
       icon: getChannelIcon('whatsapp_official')
     },
-    { 
+    ...(showWapi ? [{
       id: 'whatsapp_wapi', 
       name: t('types.whatsapp_wapi'),
       description: t('descriptions.whatsapp_wapi'),
       icon: getChannelIcon('whatsapp_wapi')
-    },
+    }] : []),
     // { 
     //   id: 'whatsapp_zapi', 
     //   name: t('types.whatsapp_zapi'),

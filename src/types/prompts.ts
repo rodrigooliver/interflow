@@ -1,3 +1,5 @@
+import { SystemAction } from '../constants/systemActions';
+
 // Definindo o tipo para mensagens de chat
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -147,6 +149,7 @@ export interface PromptFormData {
   content: string;
   tools: Tool[];
   destinations: Record<string, ToolAction[]>;
+  actions: SystemAction[];
   config: Record<string, unknown>;
 }
 
