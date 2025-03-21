@@ -47,7 +47,10 @@
     },
     "instagram": {
       "connect": "Conectar Instagram",
-      "saveAndContinue": "Salvar e Continuar"
+      "saveAndContinue": "Salvar e Continuar",
+      "connectedAccount": "Conta Conectada",
+      "accountId": "ID da Conta",
+      "noAccount": "Sem conta"
     },
     "name": "Nome do Canal",
     "title": {

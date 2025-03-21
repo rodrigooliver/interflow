@@ -35,7 +35,8 @@ export default function InstagramForm() {
   const [formData, setFormData] = useState({
     name: '',
     is_connected: false,
-    status: 'inactive'
+    status: 'inactive',
+    credentials: {} as { username?: string; instagram_id?: string }
   });
 
   // Carrega os dados do canal se estiver editando
@@ -60,7 +61,8 @@ export default function InstagramForm() {
       setFormData({
         name: data.name,
         is_connected: data.is_connected,
-        status: data.status
+        status: data.status,
+        credentials: data.credentials || {}
       });
     } catch (error: unknown) {
       const err = error as Error;
@@ -252,7 +254,7 @@ export default function InstagramForm() {
 
           {/* Status de Conexão */}
           {id && (
-            <div className="ml-4 flex items-center">
+            <div className="ml-4 flex items-center space-x-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 formData.is_connected
                   ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-400'
@@ -260,6 +262,11 @@ export default function InstagramForm() {
               }`}>
                 {formData.is_connected ? t('status.connected') : t('status.disconnected')}
               </span>
+              {formData.is_connected && formData.credentials.username && (
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  @{formData.credentials.username}
+                </span>
+              )}
             </div>
           )}
 
@@ -313,6 +320,32 @@ export default function InstagramForm() {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
+
+            {/* Seção de informações da conta conectada */}
+            {id && formData.is_connected && formData.credentials.username && (
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center space-x-3">
+                  <img 
+                    src="/images/logos/instagram.svg" 
+                    alt="Instagram" 
+                    className="w-6 h-6"
+                  />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                      {t('form.instagram.connectedAccount')}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      @{formData.credentials.username}
+                      {formData.credentials.instagram_id && (
+                        <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                          (ID: {formData.credentials.instagram_id})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end space-x-4">
               {!id && (

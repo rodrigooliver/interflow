@@ -83,11 +83,26 @@ export function ChannelCard({
             {channel.name}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t(`types.${channel.type}`)}
+            {channel.type !== 'instagram' && t(`types.${channel.type}`)}
             {channel.type === 'email' && channel.credentials?.username && (' [' + channel.credentials.username + ']')}
             {channel.type === 'whatsapp_wapi' && channel.credentials?.numberPhone && (' [' + channel.credentials.numberPhone + ']')}
           </p>
-          
+          {channel.type === 'instagram' && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {channel.is_connected && channel.credentials?.username ? (
+                <>
+                  @{channel.credentials.username}
+                  {channel.credentials.instagram_id && (
+                    <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">
+                      (ID: {channel.credentials.instagram_id})
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">{t('form.instagram.noAccount')}</span>
+              )}
+            </p>
+          )}
         </div>
         
         <div className="mt-4">

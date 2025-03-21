@@ -211,7 +211,10 @@
     },
     "instagram": {
       "saveAndContinue": "Guardar y Continuar",
-      "connect": "Conectar Instagram"
+      "connect": "Conectar Instagram",
+      "connectedAccount": "Cuenta Conectada",
+      "accountId": "ID de la Cuenta",
+      "noAccount": "Sin cuenta"
     }
   },
   "types": {
