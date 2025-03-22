@@ -30,7 +30,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({ onOpenSidebar }) => {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gradient-to-b dark:from-gray-800 dark:to-gray-900 border-t border-gray-200 dark:border-gray-700 z-40 shadow-lg">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:to-gray-900 border-t border-gray-200 dark:border-gray-700 z-40 shadow-lg">
       <div className="flex justify-around items-center h-16 px-2">
         {/* Botão para abrir a sidebar */}
         <button

@@ -125,7 +125,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   }, [location.pathname, isMobile, setIsCollapsed]);
 
   return (
-    <div className={`h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
+    <div className={`h-screen bg-white dark:bg-gray-900 dark:md:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
       shouldCollapse ? 'w-16' : 'w-64'
     } transition-all duration-300 ease-in-out relative`}>
       {/* Header */}
