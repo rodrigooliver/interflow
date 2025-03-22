@@ -80,12 +80,19 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
 
   // Admin and owner only links
   const adminLinks = [
-    { to: '/app/member', icon: UserPlus, label: t('navigation:users') },
+    ...(typeof window.isNativeApp !== 'boolean' || !window.isNativeApp ? [
+      { to: '/app/member', icon: UserPlus, label: t('navigation:users') }
+    ] : []),
     { to: '/app/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
     { to: '/app/closure-types', icon: CheckCircle, label: t('navigation:closureTypes') },
-    { to: '/app/settings/billing', icon: SettingsIcon, label: t('navigation:settings') },
+    // Remover link de configurações se estiver no app nativo
+    ...(typeof window.isNativeApp !== 'boolean' || !window.isNativeApp ? [
+      { to: '/app/settings/billing', icon: SettingsIcon, label: t('navigation:settings') }
+    ] : [
+      { to: '/app/settings/integrations', icon: SettingsIcon, label: t('navigation:settings') }
+    ])
   ];
 
   // Super admin links
@@ -154,8 +161,8 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
         </button>
       )}
 
-      {/* Alertas de Subscription */}
-      {!shouldCollapse && (isTrial || isSubscriptionEndingSoon || isSubscriptionExpired) && (
+      {/* Alertas de Subscription - apenas se não estiver no app nativo */}
+      {!shouldCollapse && (typeof window.isNativeApp !== 'boolean' || !window.isNativeApp) && (isTrial || isSubscriptionEndingSoon || isSubscriptionExpired) && (
         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
           {isTrial && !isTrialExpired && (
             <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-500 text-sm mb-2">
@@ -261,15 +268,17 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
         )}
         <div className="flex flex-col space-y-2">
           <LanguageSwitcher isCollapsed={shouldCollapse} />
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className={`flex items-center ${shouldCollapse ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-              shouldCollapse ? 'p-2' : 'px-4 py-2'
-            }`}
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {!shouldCollapse && <span className="ml-2">{isDark ? t('common:lightMode') : t('common:darkMode')}</span>}
-          </button>
+          {!(typeof window.isNativeApp === 'boolean' && window.isNativeApp) && (
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className={`flex items-center ${shouldCollapse ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                shouldCollapse ? 'p-2' : 'px-4 py-2'
+              }`}
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {!shouldCollapse && <span className="ml-2">{isDark ? t('common:lightMode') : t('common:darkMode')}</span>}
+            </button>
+          )}
           <button
             onClick={() => {
               // Deslogar do OneSignal se estiver em ambiente nativo

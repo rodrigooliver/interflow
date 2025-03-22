@@ -22,23 +22,25 @@ export function SettingsTabs() {
     //   label: t('settings:sections.notifications'),
     //   href: '/app/settings/notifications'
     // },
+    ...(typeof window.isNativeApp !== 'boolean' || !window.isNativeApp ? [
     { 
       id: 'billing', 
       icon: CreditCard, 
       label: t('settings:sections.billing'),
       href: '/app/settings/billing'
     },
+      { 
+        id: 'usage', 
+        icon: HardDrive, 
+        label: t('settings:sections.usage'),
+        href: '/app/settings/usage'
+      }
+    ] : []),
     { 
       id: 'integrations', 
       icon: LinkIcon, 
       label: t('settings:sections.integrations'),
       href: '/app/settings/integrations'
-    },
-    { 
-      id: 'usage', 
-      icon: HardDrive, 
-      label: t('settings:sections.usage'),
-      href: '/app/settings/usage'
     },
     {
       id: 'api-keys', 

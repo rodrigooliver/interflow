@@ -70,6 +70,7 @@ import ScheduleHolidaysPage from './pages/schedules/management/ScheduleHolidaysP
 declare global {
   interface Window {
     removeInitialLoader?: () => void;
+    isNativeApp?: boolean;
   }
 }
 
@@ -191,7 +192,22 @@ function AppContent() {
 
   // Se não estiver autenticado, permite acesso apenas às rotas públicas
   if (!session) {
-    // console.log('[AppContent] Usuário não autenticado, mostrando rotas públicas');
+    // Se estiver no app nativo, redireciona para login
+    if (typeof window.isNativeApp === 'boolean' && window.isNativeApp) {
+      return (
+        <>
+          <ConnectionStatus />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/app" element={<Login />} />
+            {/* Redireciona qualquer outra rota para login */}
+            <Route path="*" element={<Navigate to="/login" replace state={{ from: location }} />} />
+          </Routes>
+        </>
+      );
+    }
+
+    // Se não estiver no app nativo, mostra todas as rotas públicas
     return (
       <>
         <ConnectionStatus />
@@ -232,9 +248,12 @@ function AppContent() {
             onSelect={handleOrganizationSelect}
             onClose={() => {
               // Se o usuário fechar o modal sem selecionar uma organização,
-              // redirecionar para a página inicial
-              // console.log('[AppContent] Modal fechado sem seleção, redirecionando para home');
-              window.location.href = '/';
+              // redirecionar para a página inicial ou login dependendo se está no app nativo
+              if (typeof window.isNativeApp === 'boolean' && window.isNativeApp) {
+                window.location.href = '/login';
+              } else {
+                window.location.href = '/';
+              }
             }}
           />
         </>,
@@ -242,14 +261,21 @@ function AppContent() {
       )}
       
       <Routes>
-        {/* Rota pública mesmo quando logado */}
-        <Route path="/" element={<Home />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
+        {/* Rota pública mesmo quando logado - apenas se não estiver no app nativo */}
+        {(!window.isNativeApp) ? (
+          <>
+            <Route path="/" element={<Home />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+          </>
+        ) : (
+          // Se estiver no app nativo, redireciona a rota raiz para /app
+          <Route path="/" element={<Navigate to="/app" replace />} />
+        )}
 
         {/* Redireciona /login e /signup para /app quando já estiver logado */}
         <Route path="/login" element={<Navigate to="/app" replace />} />
-        <Route path="/signup" element={<Navigate to="/app" replace />} />
+        {!window.isNativeApp && <Route path="/signup" element={<Navigate to="/app" replace />} />}
 
         {/* Rotas protegidas */}
         <Route
@@ -303,11 +329,15 @@ function AppContent() {
                         <Route path="schedules/:scheduleId/availability" element={<ScheduleAvailabilityPage />} />
                         <Route path="schedules/:scheduleId/holidays" element={<ScheduleHolidaysPage />} />
                         <Route path="settings" element={<SettingsPage />} />
-                        <Route path="settings/billing" element={<BillingPage />} />
+                        {!window.isNativeApp && (
+                          <>
+                            <Route path="settings/billing" element={<BillingPage />} />
+                            <Route path="settings/usage" element={<UsagePage />} />
+                          </>
+                        )}
                         <Route path="settings/integrations" element={<IntegrationsPage />} />
                         <Route path="settings/api-keys" element={<ApiKeysPage />} />
                         <Route path="settings/notifications" element={<NotificationsPage />} />
-                        <Route path="settings/usage" element={<UsagePage />} />
                         <Route path="member" element={<OrganizationMembers />} />
                         <Route path="member/referrals/:profileId" element={<Referrals />} />
                         <Route path="service-teams" element={<ServiceTeams />} />

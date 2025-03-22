@@ -140,7 +140,7 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
           )}
         </button>
 
-        {!isModal && (
+        {!isModal && !window.isNativeApp && (
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {t('login.noAccount')}{' '}
