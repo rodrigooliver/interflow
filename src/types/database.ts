@@ -88,7 +88,7 @@ export interface Message {
         'user_entered' | 'user_left' | 'user_transferred' | 'user_closed' | 'user_start' | 'user_join';
   sent_from_system: boolean;
   sender_type: 'customer' | 'agent' | 'system';
-  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted';
   attachments?: { url: string; type: string; name: string }[];
   error_message?: string;
   errorMessage?: string;

@@ -396,6 +396,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         } else if (payload.eventType === 'UPDATE') {
           const updatedMessage = payload.new as Message;
           
+          // Se a mensagem foi deletada, removê-la da lista
+          if (updatedMessage.status === 'deleted') {
+            setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
+            return;
+          }
+          
           // Se for mensagem do sistema, buscar informações adicionais do agente
           if (updatedMessage.sender_type === 'system' && updatedMessage.sender_agent_id) {
             try {
@@ -456,6 +462,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           )
         `)
         .eq('chat_id', chatId)
+        .neq('status', 'deleted')
         .order('created_at', { ascending: false })
         .range((pageNumber - 1) * MESSAGES_PER_PAGE, pageNumber * MESSAGES_PER_PAGE - 1);
 
