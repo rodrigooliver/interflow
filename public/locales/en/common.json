@@ -54,6 +54,7 @@
   "name": "Name",
   "value": "Value",
   "status": "Status",
+  "customer": "Customer",
   "trialDaysLeft": "{{days}} days left in trial period",
   "subscriptionEndingSoon": "Your subscription is about to expire",
   "subscriptionExpired": "Your subscription expired {{days}} days ago",

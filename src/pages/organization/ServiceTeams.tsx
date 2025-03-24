@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { ServiceTeam, ServiceTeamMember, Profile } from '../../types/database';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface TeamMemberWithProfile extends ServiceTeamMember {
   profile: Profile;
@@ -24,6 +25,7 @@ interface LoadingState {
 export default function ServiceTeams() {
   const { t } = useTranslation(['serviceTeams', 'common']);
   const { currentOrganizationMember } = useAuthContext();
+  const queryClient = useQueryClient();
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
   const [availableUsers, setAvailableUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,12 +33,14 @@ export default function ServiceTeams() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showRemoveTeamModal, setShowRemoveTeamModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<TeamWithMembers | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<TeamMemberWithProfile | null>(null);
   const [addingMember, setAddingMember] = useState<LoadingState | null>(null);
   const [removingMember, setRemovingMember] = useState(false);
   const [removingTeam, setRemovingTeam] = useState(false);
   const [creatingTeam, setCreatingTeam] = useState(false);
+  const [updatingTeam, setUpdatingTeam] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -140,6 +144,9 @@ export default function ServiceTeams() {
       await loadTeams();
       setShowCreateModal(false);
       setFormData({ name: '', description: '' });
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['teams', currentOrganizationMember.organization.id] });
     } catch (error) {
       console.error('Error creating team:', error);
       setError(t('common:error'));
@@ -212,6 +219,39 @@ export default function ServiceTeams() {
       setError(t('common:error'));
     } finally {
       setRemovingTeam(false);
+    }
+  }
+
+  async function handleUpdateTeam(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedTeam || !currentOrganizationMember) return;
+    
+    setUpdatingTeam(true);
+    setError('');
+
+    try {
+      const { error } = await supabase
+        .from('service_teams')
+        .update({
+          name: formData.name,
+          description: formData.description,
+        })
+        .eq('id', selectedTeam.id);
+
+      if (error) throw error;
+
+      await loadTeams();
+      setShowEditModal(false);
+      setFormData({ name: '', description: '' });
+      setSelectedTeam(null);
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['teams', currentOrganizationMember.organization.id] });
+    } catch (error) {
+      console.error('Error updating team:', error);
+      setError(t('common:error'));
+    } finally {
+      setUpdatingTeam(false);
     }
   }
 
@@ -291,6 +331,19 @@ export default function ServiceTeams() {
                           className="inline-flex items-center p-1 border border-transparent rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                         >
                           <UserPlus className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedTeam(team);
+                            setFormData({
+                              name: team.name,
+                              description: team.description || '',
+                            });
+                            setShowEditModal(true);
+                          }}
+                          className="inline-flex items-center p-1 border border-transparent rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                        >
+                          <UserCog className="w-5 h-5" />
                         </button>
                         {team._count?.members === 0 && (
                           <button
@@ -634,6 +687,93 @@ export default function ServiceTeams() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Team Modal */}
+      {showEditModal && selectedTeam && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {t('serviceTeams:editTeam')}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedTeam(null);
+                }}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTeam} className="p-6">
+              {error && (
+                <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('serviceTeams:form.name')}
+                  </label>
+                  <input
+                    type="text"
+                    id="edit-name"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('serviceTeams:form.description')}
+                  </label>
+                  <textarea
+                    id="edit-description"
+                    rows={3}
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedTeam(null);
+                  }}
+                  disabled={updatingTeam}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {t('common:back')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingTeam}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updatingTeam ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t('common:saving')}
+                    </>
+                  ) : (
+                    t('common:save')
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

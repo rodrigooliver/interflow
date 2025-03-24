@@ -24,6 +24,7 @@ export default function MessageShortcuts() {
   const [removingFile, setRemovingFile] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [deletingShortcut, setDeletingShortcut] = useState<string | null>(null);
   const itemsPerPage = 9;
 
   useEffect(() => {
@@ -237,26 +238,34 @@ export default function MessageShortcuts() {
   }
 
   async function handleDeleteShortcut(shortcut: MessageShortcut) {
+    setDeletingShortcut(shortcut.id);
     try {
-      // Delete attachments from storage
-      await Promise.all(
-        shortcut.attachments.map(async (attachment) => {
+      // Primeiro, excluir os anexos do storage
+      if (shortcut.attachments.length > 0) {
+        const deletePromises = shortcut.attachments.map(async (attachment) => {
           const filePath = attachment.url.split('/').pop();
           if (filePath) {
-            await supabase.storage
+            const { error: storageError } = await supabase.storage
               .from('attachments')
               .remove([`${currentOrganizationMember?.organization.id}/shortcuts/${filePath}`]);
+            
+            if (storageError) {
+              console.error('Error deleting attachment:', storageError);
+              throw storageError;
+            }
           }
-        })
-      );
+        });
 
-      // Delete shortcut
-      const { error } = await supabase
+        await Promise.all(deletePromises);
+      }
+
+      // Depois, excluir o atalho do banco de dados
+      const { error: deleteError } = await supabase
         .from('message_shortcuts')
         .delete()
         .eq('id', shortcut.id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
 
       await loadShortcuts();
       setShowDeleteModal(false);
@@ -264,6 +273,8 @@ export default function MessageShortcuts() {
     } catch (error) {
       console.error('Error deleting shortcut:', error);
       setError(t('common:error'));
+    } finally {
+      setDeletingShortcut(null);
     }
   }
 
@@ -682,9 +693,17 @@ export default function MessageShortcuts() {
                 <button
                   type="button"
                   onClick={() => handleDeleteShortcut(selectedShortcut)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  disabled={deletingShortcut === selectedShortcut.id}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t('common:confirmDelete')}
+                  {deletingShortcut === selectedShortcut.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
+                      {t('common:deleting')}
+                    </>
+                  ) : (
+                    t('common:confirmDelete')
+                  )}
                 </button>
               </div>
             </div>

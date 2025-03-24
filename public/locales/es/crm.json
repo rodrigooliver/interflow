@@ -7,6 +7,7 @@
     "createFirst": "Crea tu primer embudo de ventas para comenzar a organizar tus oportunidades",
     "name": "Nombre del Embudo",
     "description": "Descripción",
+    "editFunnel": "Editar Embudo",
     "delete": {
       "title": "Eliminar Embudo",
       "confirmation": "¿Estás seguro de que deseas eliminar el embudo {{name}}?",

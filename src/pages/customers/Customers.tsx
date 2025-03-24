@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Plus, Loader2, Pencil, Trash2, GitMerge, Search, MessageSquare, Tag, Filter, X, Settings, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
@@ -135,8 +135,13 @@ export default function Customers() {
   const [contactModalState, setContactModalState] = useState<ContactModalState | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalCustomers, setTotalCustomers] = useState(0);
+  
+  // Adicionar useSearchParams para gerenciar parâmetros da URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Obter página atual da URL ou usar 1 como padrão
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
   
   // Usando os hooks de consulta para funis, estágios e tags
   const { data: funnelsData, isLoading: loadingCRM } = useFunnels(currentOrganizationMember?.organization.id);
@@ -208,11 +213,6 @@ export default function Customers() {
   useEffect(() => {
     if (currentOrganizationMember) {
       loadCustomers();
-      
-      // Resetar para a primeira página quando o termo de pesquisa mudar
-      if (currentPage !== 1 && debouncedSearchTerm !== '') {
-        setCurrentPage(1);
-      }
     }
   }, [currentOrganizationMember, currentPage, debouncedSearchTerm, selectedFunnelId, selectedStageId, selectedTagIds, sortConfig]);
 
@@ -304,10 +304,10 @@ export default function Customers() {
     setSortConfig({ key: columnId, direction });
     
     // Resetar para a primeira página ao mudar a ordenação
-    setCurrentPage(1);
-    
-    // A função loadCustomers será chamada automaticamente via useEffect
-    // quando sortConfig mudar, então não precisamos chamar diretamente aqui
+    setSearchParams(prev => {
+      prev.delete('page');
+      return prev;
+    });
   };
   
   // Ordenar clientes com base na configuração de ordenação
@@ -551,16 +551,21 @@ export default function Customers() {
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
-      // console.log('Navegando para página anterior:', currentPage - 1);
-      setCurrentPage(prev => prev - 1);
+      const newPage = currentPage - 1;
+      setSearchParams(prev => {
+        prev.set('page', newPage.toString());
+        return prev;
+      });
     }
   };
 
   const handleNextPage = () => {
-    // console.log('Tentando navegar para próxima página:', currentPage + 1, 'de', totalPages);
     if (currentPage < totalPages) {
-      // console.log('Navegando para próxima página:', currentPage + 1);
-      setCurrentPage(prev => prev + 1);
+      const newPage = currentPage + 1;
+      setSearchParams(prev => {
+        prev.set('page', newPage.toString());
+        return prev;
+      });
     }
   };
 
@@ -569,8 +574,10 @@ export default function Customers() {
     setSelectedFunnelId(null);
     setSelectedStageId(null);
     setSelectedTagIds([]);
-    setCurrentPage(1);
-    // O useEffect cuidará de recarregar os clientes
+    setSearchParams(prev => {
+      prev.delete('page');
+      return prev;
+    });
   };
 
   // Função para alternar a seleção de uma tag
@@ -582,7 +589,10 @@ export default function Customers() {
         return [...prev, tagId];
       }
     });
-    setCurrentPage(1);
+    setSearchParams(prev => {
+      prev.delete('page');
+      return prev;
+    });
   };
 
   // Função para salvar configurações de colunas
@@ -741,6 +751,17 @@ export default function Customers() {
     };
   }, [customers]); // Adicionar customers como dependência para garantir que a função tenha acesso à lista atualizada
 
+  // Função para ajustar a página após exclusão
+  const adjustPageAfterDeletion = (totalItems: number) => {
+    const maxPage = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+    if (currentPage > maxPage) {
+      setSearchParams(prev => {
+        prev.set('page', maxPage.toString());
+        return prev;
+      });
+    }
+  };
+
   if (!currentOrganizationMember) {
     return (
       <div className="p-4 md:p-6">
@@ -841,7 +862,10 @@ export default function Customers() {
                     const value = e.target.value;
                     setSelectedFunnelId(value || null);
                     setSelectedStageId(null); // Resetar estágio ao mudar de funil
-                    setCurrentPage(1);
+                    setSearchParams(prev => {
+                      prev.delete('page');
+                      return prev;
+                    });
                   }}
                   className="w-full p-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-md focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                 >
@@ -861,7 +885,10 @@ export default function Customers() {
                     onChange={(e) => {
                       const value = e.target.value;
                       setSelectedStageId(value || null);
-                      setCurrentPage(1);
+                      setSearchParams(prev => {
+                        prev.delete('page');
+                        return prev;
+                      });
                     }}
                     className="w-full p-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-md focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                   >
@@ -1009,7 +1036,10 @@ export default function Customers() {
                     onClick={() => {
                       setSelectedFunnelId(null);
                       setSelectedStageId(null);
-                      setCurrentPage(1);
+                      setSearchParams(prev => {
+                        prev.delete('page');
+                        return prev;
+                      });
                     }}
                     className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
                   >
@@ -1024,7 +1054,10 @@ export default function Customers() {
                   <button 
                     onClick={() => {
                       setSelectedStageId(null);
-                      setCurrentPage(1);
+                      setSearchParams(prev => {
+                        prev.delete('page');
+                        return prev;
+                      });
                     }}
                     className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
                   >
@@ -1039,7 +1072,10 @@ export default function Customers() {
                   <button 
                     onClick={() => {
                       setSelectedTagIds([]);
-                      setCurrentPage(1);
+                      setSearchParams(prev => {
+                        prev.delete('page');
+                        return prev;
+                      });
                     }}
                     className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
                   >
@@ -1359,7 +1395,11 @@ export default function Customers() {
             setShowDeleteModal(false);
             setSelectedCustomer(null);
           }}
-          onSuccess={() => loadCustomers()}
+          onSuccess={() => {
+            loadCustomers(true);
+            // Ajustar a página após a exclusão
+            adjustPageAfterDeletion(totalCustomers - 1);
+          }}
         />
       )}
 

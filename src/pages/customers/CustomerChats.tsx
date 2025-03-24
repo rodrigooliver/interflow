@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle, Share2, X } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle, Share2, X, GitMerge } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -10,6 +10,8 @@ import { Chat } from '../../types/database';
 import { Customer } from '../../types/database';
 import { getChannelIcon } from '../../utils/channel';
 import { ChatMessages } from '../../components/chat/ChatMessages';
+import { TransferChatModal } from '../../components/chat/TransferChatModal';
+import { toast } from 'react-hot-toast';
 
 const locales = {
   pt: ptBR,
@@ -19,6 +21,7 @@ const locales = {
 
 export default function CustomerChats() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation(['customers', 'chats', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -27,6 +30,8 @@ export default function CustomerChats() {
   const [error, setError] = useState('');
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showChatModal, setShowChatModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
   useEffect(() => {
     if (currentOrganizationMember && id) {
@@ -120,6 +125,27 @@ export default function CustomerChats() {
     setSelectedChatId(null);
   };
 
+  const handleTransferClick = (e: React.MouseEvent, chat: Chat) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedChat(chat);
+    setShowTransferModal(true);
+  };
+
+  const handleTransfer = async () => {
+    if (!customer) return;
+
+    try {
+      // Atualizar a lista de chats
+      await loadCustomerAndChats();
+      setShowTransferModal(false);
+      setSelectedChat(null);
+    } catch (error) {
+      console.error('Error after transfer:', error);
+      toast.error(t('chats:transfer.error'));
+    }
+  };
+
   // Adicionamos um estilo para o modal
   useEffect(() => {
     // Adicionar estilo para esconder o botão de voltar no modal
@@ -180,12 +206,12 @@ export default function CustomerChats() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Link
-              to="/app/customers"
+            <button
+              onClick={() => navigate(-1)}
               className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <ArrowLeft className="w-5 h-5" />
-            </Link>
+            </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {customer.name}
@@ -317,6 +343,17 @@ export default function CustomerChats() {
                       )}
                     </div>
                   </div>
+
+                  {/* Adicionar botão de transferência */}
+                  <div className="absolute top-4 right-4">
+                    <button
+                      onClick={(e) => handleTransferClick(e, chat)}
+                      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                      title={t('chats:transfer.title')}
+                    >
+                      <GitMerge className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -356,6 +393,18 @@ export default function CustomerChats() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de transferência */}
+      {showTransferModal && selectedChat && (
+        <TransferChatModal
+          chat={selectedChat}
+          onClose={() => {
+            setShowTransferModal(false);
+            setSelectedChat(null);
+          }}
+          onTransfer={handleTransfer}
+        />
       )}
     </div>
   );

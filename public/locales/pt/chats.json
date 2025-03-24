@@ -4,7 +4,6 @@
   "resolve": "Resolver",
   "attend": "Atender",
   "backToList": "Voltar para a lista",
-  "chatClosed": "Atendimento finalizado",
   "customer": "Cliente",
   "you": "Você",
   "connected": "Conectado",
@@ -231,5 +230,13 @@
   "chatReassigned": "Este atendimento foi transferido para outro atendente",
   "chatAssignedToYou": "Este atendimento foi transferido para você",
   "chatClosed": "Este atendimento foi encerrado",
-  "chatReopened": "Este atendimento foi reaberto"
+  "chatReopened": "Este atendimento foi reaberto",
+  "transfer": {
+    "title": "Transferir Todos os Atendimentos",
+    "searchPlaceholder": "Buscar cliente...",
+    "noResults": "Nenhum cliente encontrado",
+    "success": "Atendimentos transferidos com sucesso",
+    "error": "Erro ao transferir atendimentos",
+    "confirm": "Tem certeza que deseja transferir todos os atendimentos deste cliente?"
+  }
 }

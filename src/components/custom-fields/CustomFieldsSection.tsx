@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CustomFieldFormData, CustomFieldDefinition } from '../../types/database';
 import { CustomFieldModal } from './CustomFieldModal';
@@ -478,12 +478,24 @@ export function CustomFieldsSection({
   };
 
   return (
-    <div className="border-t dark:border-gray-700 pt-6">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-base font-medium text-gray-900 dark:text-white flex items-center">
-          <Settings className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
-          Campos Personalizados
-        </h4>
+    <div className="border-t dark:border-gray-700 pt-4">
+      {/* Lista de campos personalizados */}
+      {loadingCustomFields || loadingDefinitions ? (
+        <div className="flex justify-center py-4">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        </div>
+      ) : customFields.length === 0 ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
+          Nenhum campo personalizado cadastrado
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {customFields.map((field, index) => renderCustomField(field, index))}
+        </div>
+      )}
+
+      {/* Botão de adicionar campo */}
+      <div className="flex items-center justify-end mt-4">
         {!readOnly && (
           <button
             type="button"
@@ -575,21 +587,6 @@ export function CustomFieldsSection({
         </div>
       )}
       
-      {/* Lista de campos personalizados */}
-      {loadingCustomFields || loadingDefinitions ? (
-        <div className="flex justify-center py-4">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-        </div>
-      ) : customFields.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
-          Nenhum campo personalizado cadastrado
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {customFields.map((field, index) => renderCustomField(field, index))}
-        </div>
-      )}
-
       {/* Modal para criar/editar campo personalizado - remover opção de remoção */}
       {isModalOpen && (
         <CustomFieldModal

@@ -258,6 +258,21 @@ export function ContactsFormSection({
                       <Instagram className="w-6 h-6 mb-1 text-pink-500" />
                       <span className="text-xs text-gray-700 dark:text-gray-300">Instagram</span>
                     </button>
+
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.INSTAGRAM_ID;
+                        newContacts[index].showTypeDropdown = false;
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <Instagram className="w-6 h-6 mb-1 text-pink-500" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Instagram ID</span>
+                    </button>
                     
                     <button
                       type="button"
@@ -272,6 +287,21 @@ export function ContactsFormSection({
                     >
                       <Facebook className="w-6 h-6 mb-1 text-blue-600" />
                       <span className="text-xs text-gray-700 dark:text-gray-300">Facebook</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      onClick={() => {
+                        const newContacts = [...contacts];
+                        newContacts[index].type = ContactType.FACEBOOK_ID;
+                        newContacts[index].showTypeDropdown = false;
+                        setContacts(newContacts);
+                        setActiveTypeDropdownIndex(null);
+                      }}
+                    >
+                      <Facebook className="w-6 h-6 mb-1 text-blue-600" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Facebook ID</span>
                     </button>
                     
                     <button
@@ -300,10 +330,10 @@ export function ContactsFormSection({
           <div className="flex-1">
             <div className="flex items-center">
               {needsCountryCode(contact.type) && (
-                <div className="relative" ref={showCountryDropdown === index ? countryDropdownRef : null}>
+                <div className="relative flex-shrink-0" ref={showCountryDropdown === index ? countryDropdownRef : null}>
                   <button
                     type="button"
-                    className="h-10 rounded-l-md border-r-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 flex items-center"
+                    className="h-10 rounded-l-md border-r-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 flex items-center"
                     onClick={() => {
                       // Fechar dropdown de tipo de contato se estiver aberto
                       if (contacts[index].showTypeDropdown) {
@@ -367,7 +397,7 @@ export function ContactsFormSection({
               
               <input
                 type={contact.type === ContactType.EMAIL ? 'email' : 'text'}
-                className={`flex-1 h-10 ${needsCountryCode(contact.type) ? 'rounded-r-md rounded-l-none' : 'rounded-md'} border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-1`}
+                className={`w-full h-10 ${needsCountryCode(contact.type) ? 'rounded-r-md rounded-l-none' : 'rounded-md'} border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 truncate`}
                 value={contact.value}
                 onChange={(e) => {
                   const newContacts = [...contacts];
@@ -379,14 +409,16 @@ export function ContactsFormSection({
                   contact.type === ContactType.WHATSAPP ? '99999-9999' :
                   contact.type === ContactType.PHONE ? '99999-9999' :
                   contact.type === ContactType.INSTAGRAM ? '@usuario' :
+                  contact.type === ContactType.INSTAGRAM_ID ? 'ID do Instagram' :
                   contact.type === ContactType.FACEBOOK ? '@usuario' :
+                  contact.type === ContactType.FACEBOOK_ID ? 'ID do Facebook' :
                   contact.type === ContactType.TELEGRAM ? '@usuario' : ''
                 }
               />
             </div>
           </div>
           
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0 gap-0.5 sm:gap-1">
             {/* Botão de chat - apenas mostrar se o contato tiver valor e o cliente estiver definido */}
             {contact.value && customer && (
               <button
@@ -396,20 +428,20 @@ export function ContactsFormSection({
                   type: contact.type,
                   value: formatContactValue(contact)
                 })}
-                className="inline-flex items-center justify-center h-10 w-10 rounded-md text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                className="inline-flex items-center justify-center h-10 w-8 sm:w-10 rounded-md text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 flex-shrink-0"
                 title={t('common:startChat')}
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             )}
             
             <button
               type="button"
               onClick={() => handleRemoveContact(index)}
-              className="inline-flex items-center justify-center h-10 w-10 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+              className="inline-flex items-center justify-center h-10 w-8 sm:w-10 rounded-md text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0"
               disabled={contacts.length === 1}
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>

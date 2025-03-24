@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { GitMerge, Plus, Loader2, X, AlertTriangle } from 'lucide-react';
+import { GitMerge, Plus, Loader2, X, AlertTriangle, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -13,6 +13,7 @@ export default function CRMFunnels() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedFunnel, setSelectedFunnel] = useState<CRMFunnel | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -21,6 +22,7 @@ export default function CRMFunnels() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (currentOrganizationMember) {
@@ -147,6 +149,37 @@ export default function CRMFunnels() {
     }
   }
 
+  async function handleEditFunnel(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedFunnel || !currentOrganizationMember) return;
+    
+    setEditing(true);
+    setError('');
+
+    try {
+      const { error } = await supabase
+        .from('crm_funnels')
+        .update({
+          name: formData.name,
+          description: formData.description
+        })
+        .eq('id', selectedFunnel.id)
+        .eq('organization_id', currentOrganizationMember.organization.id);
+
+      if (error) throw error;
+
+      await loadFunnels();
+      setShowEditModal(false);
+      setSelectedFunnel(null);
+      setFormData({ name: '', description: '' });
+    } catch (err) {
+      console.error('Error editing funnel:', err);
+      setError(t('common:error'));
+    } finally {
+      setEditing(false);
+    }
+  }
+
   if (!currentOrganizationMember) {
     return (
       <div className="p-6">
@@ -226,16 +259,32 @@ export default function CRMFunnels() {
                   </p>
                 )}
               </div>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setSelectedFunnel(funnel);
-                  setShowDeleteModal(true);
-                }}
-                className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedFunnel(funnel);
+                    setFormData({
+                      name: funnel.name,
+                      description: funnel.description || ''
+                    });
+                    setShowEditModal(true);
+                  }}
+                  className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedFunnel(funnel);
+                    setShowDeleteModal(true);
+                  }}
+                  className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </Link>
         ))}
@@ -314,6 +363,95 @@ export default function CRMFunnels() {
                     </>
                   ) : (
                     t('crm:funnels.newFunnel')
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Funnel Modal */}
+      {showEditModal && selectedFunnel && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {t('crm:funnels.editFunnel')}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedFunnel(null);
+                  setFormData({ name: '', description: '' });
+                }}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditFunnel} className="p-6">
+              {error && (
+                <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('crm:funnels.name')}
+                  </label>
+                  <input
+                    type="text"
+                    id="edit-name"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('crm:funnels.description')}
+                  </label>
+                  <textarea
+                    id="edit-description"
+                    rows={3}
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedFunnel(null);
+                    setFormData({ name: '', description: '' });
+                  }}
+                  disabled={editing}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {t('common:back')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={editing}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t('common:saving')}
+                    </>
+                  ) : (
+                    t('common:save')
                   )}
                 </button>
               </div>

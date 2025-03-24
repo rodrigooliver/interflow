@@ -54,6 +54,7 @@
   "name": "Nome",
   "value": "Valor",
   "status": "Status",
+  "customer": "Cliente",
   "trialDaysLeft": "{{days}} dias restantes do período de teste",
   "subscriptionEndingSoon": "Sua assinatura está próxima de vencer",
   "subscriptionExpired": "Sua assinatura venceu há {{days}} dias",

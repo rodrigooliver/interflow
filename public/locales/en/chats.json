@@ -225,5 +225,13 @@
   "chatReassigned": "This conversation has been transferred to another agent",
   "chatAssignedToYou": "This conversation has been transferred to you",
   "chatClosed": "This conversation has been closed",
-  "chatReopened": "This conversation has been reopened"
+  "chatReopened": "This conversation has been reopened",
+  "transfer": {
+    "title": "Transfer All Chats",
+    "searchPlaceholder": "Search customer...",
+    "noResults": "No customers found",
+    "success": "Chats transferred successfully",
+    "error": "Error transferring chats",
+    "confirm": "Are you sure you want to transfer all chats from this customer?"
+  }
 }

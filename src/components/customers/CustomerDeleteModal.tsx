@@ -8,7 +8,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 interface CustomerDeleteModalProps {
   customer: Customer;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (silentRefresh?: boolean) => void;
 }
 
 export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDeleteModalProps) {
@@ -37,7 +37,15 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
         return;
       }
 
-      // Delete the customer
+      // Primeiro, excluir os contatos do cliente
+      const { error: contactsError } = await supabase
+        .from('customer_contacts')
+        .delete()
+        .eq('customer_id', customer.id);
+
+      if (contactsError) throw contactsError;
+
+      // Depois, excluir o cliente
       const { error: deleteError } = await supabase
         .from('customers')
         .delete()
@@ -46,7 +54,8 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
 
       if (deleteError) throw deleteError;
 
-      onSuccess();
+      // Chamar onSuccess com parâmetro silentRefresh=true para atualização silenciosa
+      onSuccess(true);
       onClose();
     } catch (error) {
       console.error('Error deleting customer:', error);
