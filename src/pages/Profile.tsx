@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, Loader2, Lock } from 'lucide-react';
+import { User, Loader2, Lock, Search, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthContext } from '../contexts/AuthContext';
+import { countryCodes } from '../utils/countryCodes';
 
 export default function Profile() {
   const { t } = useTranslation(['profile', 'common']);
@@ -10,7 +11,8 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    whatsapp: ''
+    whatsapp: '',
+    countryCode: 'BR'
   });
   const [passwordData, setPasswordData] = useState({
     new_password: '',
@@ -21,13 +23,65 @@ export default function Profile() {
   const [error, setError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Estados para o dropdown de países
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownContentRef = useRef<HTMLDivElement>(null);
+
+  // Efeito para fechar dropdown quando clicar fora dele
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        countryDropdownRef.current && 
+        !countryDropdownRef.current.contains(event.target as Node) &&
+        dropdownContentRef.current && 
+        !dropdownContentRef.current.contains(event.target as Node)
+      ) {
+        setShowCountryDropdown(false);
+        setCountrySearch('');
+      }
+    }
+
+    if (showCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCountryDropdown]);
+
+  // Função para fechar o dropdown de forma segura
+  const closeCountryDropdown = () => {
+    setShowCountryDropdown(false);
+    setCountrySearch('');
+  };
+
+  // Filtrar países com base na pesquisa
+  const filteredCountries = countrySearch 
+    ? countryCodes.filter(country => 
+        country.name.toLowerCase().includes(countrySearch.toLowerCase()) || 
+        (country.local_name && country.local_name.toLowerCase().includes(countrySearch.toLowerCase())) ||
+        country.dial_code.includes(countrySearch) ||
+        country.code.toLowerCase().includes(countrySearch.toLowerCase())
+      )
+    : countryCodes;
 
   useEffect(() => {
     if (currentProfile) {
+      // Extrair o código do país do WhatsApp se existir
+      const whatsapp = currentProfile.whatsapp || '';
+      const countryCode = countryCodes.find(country => 
+        whatsapp.startsWith(country.dial_code)
+      )?.code || 'BR';
+
       setFormData({
         full_name: currentProfile.full_name || '',
         email: currentProfile.email || '',
-        whatsapp: currentProfile.whatsapp || ''
+        whatsapp: whatsapp.replace(/^\+\d+/, '') || '',
+        countryCode
       });
     }
   }, [currentProfile]);
@@ -44,7 +98,7 @@ export default function Profile() {
         .from('profiles')
         .update({
           full_name: formData.full_name,
-          whatsapp: formData.whatsapp,
+          whatsapp: formData.whatsapp ? `${countryCodes.find(c => c.code === formData.countryCode)?.dial_code}${formData.whatsapp.replace(/\D/g, '')}` : null,
           // updated_at: new Date().toISOString()
         })
         .eq('id', currentProfile.id);
@@ -153,14 +207,78 @@ export default function Profile() {
               <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('profile:form.whatsapp')}
               </label>
-              <input
-                type="text"
-                id="whatsapp"
-                value={formData.whatsapp}
-                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                placeholder="+55 (11) 98765-4321"
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-              />
+              <div className="flex w-full">
+                <div className="relative" ref={countryDropdownRef}>
+                  <button
+                    type="button"
+                    className="h-full rounded-l-lg border-r-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCountryDropdown(!showCountryDropdown);
+                      setCountrySearch('');
+                    }}
+                  >
+                    <span>{countryCodes.find(country => country.code === formData.countryCode)?.dial_code || '+55'}</span>
+                    <ChevronDown className="w-4 h-4 ml-1 text-gray-500 dark:text-gray-400" />
+                  </button>
+                  
+                  {showCountryDropdown && (
+                    <div 
+                      ref={dropdownContentRef}
+                      className="absolute z-10 mt-1 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            className="w-full h-8 pl-8 pr-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            placeholder={t('common:searchCountry')}
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                          <Search className="absolute left-2 top-1.5 h-5 w-5 text-gray-400" />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredCountries.map(country => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            className="w-full px-3 py-2 text-left flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData(prev => ({ ...prev, countryCode: country.code }));
+                              closeCountryDropdown();
+                            }}
+                          >
+                            <span>{country.name}</span>
+                            <span className="text-gray-500 dark:text-gray-400">{country.dial_code}</span>
+                          </button>
+                        ))}
+                        {filteredCountries.length === 0 && (
+                          <div className="px-3 py-2 text-gray-500 dark:text-gray-400 text-center">
+                            {t('common:noCountriesFound')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    id="whatsapp"
+                    value={formData.whatsapp}
+                    onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                    placeholder="(11) 98765-4321"
+                    className="block w-full rounded-r-lg border-l-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end">
