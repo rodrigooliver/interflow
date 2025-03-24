@@ -1558,7 +1558,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-16 md:pb-4 smooth-scroll custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-2 smooth-scroll custom-scrollbar"
         onScroll={handleScroll}
       >
         {loading ? (

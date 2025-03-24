@@ -313,7 +313,7 @@ function AppContent() {
 
               {/* Main Content */}
               <div className="flex-1 relative flex flex-col w-0 overflow-hidden">
-                <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none pb-16 md:pb-0">
+                <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
                   <div className="min-h-full h-full">
                     <Suspense fallback={<LoadingScreen />}>
                       <Routes>

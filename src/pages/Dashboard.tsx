@@ -1008,13 +1008,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6  pb-20 md:pb-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {t('title')}
         </h1>
         
-        <div className="flex flex-col space-y-2 mt-4 md:mt-0">
+        <div className="flex flex-col space-y-2 mt-4 md:mt-0 self-end">
           {/* Botão para alternar entre período relativo e específico */}
           <div className="flex justify-end">
             <button 
