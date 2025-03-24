@@ -9,9 +9,11 @@
   "noTeamsYet": "Aún no hay equipos creados",
   "noTeamsDescription": "Los equipos le permiten organizar a sus agentes en grupos para una mejor gestión. Cree su primer equipo para comenzar.",
   "createFirstTeam": "Crear primer equipo",
+  "default": "Predeterminado",
   "form": {
     "name": "Nombre del Equipo",
-    "description": "Descripción"
+    "description": "Descripción",
+    "isDefault": "Equipo predeterminado para nuevas conversaciones"
   },
   "removeMember": {
     "title": "Eliminar Miembro",

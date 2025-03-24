@@ -15,6 +15,7 @@ interface TeamWithMembers extends Omit<ServiceTeam, 'organization_id'> {
   _count?: {
     members: number;
   };
+  is_default?: boolean;
 }
 
 interface LoadingState {
@@ -44,6 +45,7 @@ export default function ServiceTeams() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    is_default: false,
   });
   const [error, setError] = useState('');
 
@@ -127,13 +129,15 @@ export default function ServiceTeams() {
     setError('');
 
     try {
-      const { error } = await supabase
+      // Criar o novo time
+      const { data: newTeam, error } = await supabase
         .from('service_teams')
         .insert([
           {
             organization_id: currentOrganizationMember.organization.id,
             name: formData.name,
             description: formData.description,
+            is_default: formData.is_default,
           },
         ])
         .select()
@@ -141,9 +145,22 @@ export default function ServiceTeams() {
 
       if (error) throw error;
 
+      // Se o time foi criado como padrão, atualizar os chats sem team_id
+      if (formData.is_default) {
+        const { error: updateChatsError } = await supabase
+          .from('chats')
+          .update({
+            team_id: newTeam.id
+          })
+          .eq('organization_id', currentOrganizationMember.organization.id)
+          .is('team_id', null);
+
+        if (updateChatsError) throw updateChatsError;
+      }
+
       await loadTeams();
       setShowCreateModal(false);
-      setFormData({ name: '', description: '' });
+      setFormData({ name: '', description: '', is_default: false });
       
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['teams', currentOrganizationMember.organization.id] });
@@ -230,19 +247,34 @@ export default function ServiceTeams() {
     setError('');
 
     try {
+      // Primeiro, atualizar o time
       const { error } = await supabase
         .from('service_teams')
         .update({
           name: formData.name,
           description: formData.description,
+          is_default: formData.is_default,
         })
         .eq('id', selectedTeam.id);
 
       if (error) throw error;
 
+      // Se o time foi marcado como padrão, atualizar os chats sem team_id
+      if (formData.is_default) {
+        const { error: updateChatsError } = await supabase
+          .from('chats')
+          .update({
+            team_id: selectedTeam.id
+          })
+          .eq('organization_id', currentOrganizationMember.organization.id)
+          .is('team_id', null);
+
+        if (updateChatsError) throw updateChatsError;
+      }
+
       await loadTeams();
       setShowEditModal(false);
-      setFormData({ name: '', description: '' });
+      setFormData({ name: '', description: '', is_default: false });
       setSelectedTeam(null);
       
       // Invalidate queries
@@ -311,9 +343,16 @@ export default function ServiceTeams() {
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {team.name}
-                    </h3>
+                    <div className="flex items-center">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                        {team.name}
+                      </h3>
+                      {team.is_default && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          {t('serviceTeams:default')}
+                        </span>
+                      )}
+                    </div>
                     {team.description && (
                       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {team.description}
@@ -338,6 +377,7 @@ export default function ServiceTeams() {
                             setFormData({
                               name: team.name,
                               description: team.description || '',
+                              is_default: team.is_default || false,
                             });
                             setShowEditModal(true);
                           }}
@@ -482,6 +522,19 @@ export default function ServiceTeams() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_default"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={formData.is_default}
+                    onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                  />
+                  <label htmlFor="is_default" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                    {t('serviceTeams:form.isDefault')}
+                  </label>
                 </div>
               </div>
 
@@ -743,6 +796,19 @@ export default function ServiceTeams() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="edit-is_default"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={formData.is_default}
+                    onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                  />
+                  <label htmlFor="edit-is_default" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                    {t('serviceTeams:form.isDefault')}
+                  </label>
                 </div>
               </div>
 

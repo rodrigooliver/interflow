@@ -9,9 +9,11 @@
   "noTeamsYet": "No teams created yet",
   "noTeamsDescription": "Teams allow you to organize your agents into groups for better management. Create your first team to get started.",
   "createFirstTeam": "Create first team",
+  "default": "Default",
   "form": {
     "name": "Team Name",
-    "description": "Description"
+    "description": "Description",
+    "isDefault": "Default team for new conversations"
   },
   "removeMember": {
     "title": "Remove Member",

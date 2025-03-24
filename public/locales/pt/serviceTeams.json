@@ -9,9 +9,11 @@
   "noTeamsYet": "Nenhuma equipe criada ainda",
   "noTeamsDescription": "Equipes permitem organizar seus atendentes em grupos para melhor gerenciamento. Crie sua primeira equipe para começar.",
   "createFirstTeam": "Criar primeira equipe",
+  "default": "Padrão",
   "form": {
     "name": "Nome da Equipe",
-    "description": "Descrição"
+    "description": "Descrição",
+    "isDefault": "Equipe padrão para novos atendimentos"
   },
   "removeMember": {
     "title": "Remover Membro",
