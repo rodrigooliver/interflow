@@ -1,5 +1,6 @@
 import React, { useState, Suspense, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import * as Sentry from "@sentry/react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MobileNavBar from './components/MobileNavBar';
@@ -125,54 +126,59 @@ function AppContent() {
   
   // Efeito para controlar o estado de inicialização da aplicação
   useEffect(() => {
-    // Tempo mínimo reduzido para o loading inicial
-    const minLoadingTime = 500; // 500ms
-    const startTime = Date.now();
-    
-    // Função para finalizar o loading após o tempo mínimo
-    const finishLoading = () => {
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+    try {
+      const minLoadingTime = 500;
+      const startTime = Date.now();
       
-      // Se já passou o tempo mínimo, finaliza imediatamente
-      if (remainingTime <= 0) {
-        setAppInitialized(true);
-      } else {
-        // Caso contrário, espera apenas o tempo restante
-        setTimeout(() => {
+      const finishLoading = () => {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        
+        if (remainingTime <= 0) {
           setAppInitialized(true);
-        }, remainingTime);
+        } else {
+          setTimeout(() => {
+            setAppInitialized(true);
+          }, remainingTime);
+        }
+      };
+      
+      const essentialDataLoaded = !loading && profile !== undefined;
+      
+      if (essentialDataLoaded) {
+        finishLoading();
       }
-    };
-    
-    // Verificar se os dados essenciais já estão disponíveis
-    const essentialDataLoaded = !loading && profile !== undefined;
-    
-    // Se os dados essenciais já estiverem carregados, finalizar o loading
-    if (essentialDataLoaded) {
-      finishLoading();
+      
+      const maxLoadingTimeout = setTimeout(() => {
+        setAppInitialized(true);
+      }, 2000);
+      
+      return () => {
+        clearTimeout(maxLoadingTimeout);
+      };
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: {
+          location: 'appInitializationEffect'
+        }
+      });
     }
-    
-    // Definir um timeout máximo para evitar que o usuário fique preso na tela de loading
-    const maxLoadingTimeout = setTimeout(() => {
-      setAppInitialized(true);
-    }, 2000); // 2 segundos no máximo
-    
-    return () => {
-      clearTimeout(maxLoadingTimeout);
-    };
   }, [loading, profile]);
 
   // Função para lidar com a seleção de organização
   const handleOrganizationSelect = async (orgId: string) => {
     try {
       setIsLoading(true);
-      // console.log('[AppContent] Organização selecionada:', orgId);
       setCurrentOrganizationId(orgId);
-      
-      setModalOrganization(false)
+      setModalOrganization(false);
     } catch (error) {
       console.error('[AppContent] Erro ao selecionar organização:', error);
+      Sentry.captureException(error, {
+        tags: {
+          location: 'handleOrganizationSelect',
+          organizationId: orgId
+        }
+      });
     } finally {
       setIsLoading(false);
     }
