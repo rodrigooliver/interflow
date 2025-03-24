@@ -23,6 +23,7 @@ export default function Profile() {
   const [error, setError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [success, setSuccess] = useState('');
   
   // Estados para o dropdown de países
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -77,14 +78,26 @@ export default function Profile() {
         whatsapp.startsWith(country.dial_code)
       )?.code || 'BR';
 
+      // Extrair apenas os números do WhatsApp, removendo o código do país
+      const whatsappNumber = whatsapp ? whatsapp.substring(countryCodes.find(c => c.code === countryCode)?.dial_code.length || 0) : '';
+
       setFormData({
         full_name: currentProfile.full_name || '',
         email: currentProfile.email || '',
-        whatsapp: whatsapp.replace(/^\+\d+/, '') || '',
+        whatsapp: whatsappNumber,
         countryCode
       });
     }
   }, [currentProfile]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +117,7 @@ export default function Profile() {
         .eq('id', currentProfile.id);
 
       if (error) throw error;
+      setSuccess(t('common:success'));
     } catch (error) {
       console.error('Error updating profile:', error);
       setError(t('common:error'));
@@ -170,6 +184,12 @@ export default function Profile() {
             {error && (
               <div className="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 p-4 rounded-md">
+                {success}
               </div>
             )}
 
