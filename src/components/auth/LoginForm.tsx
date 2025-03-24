@@ -11,6 +11,10 @@ declare global {
     isNativeApp?: boolean;
     loginToOneSignal?: (userId: string) => void;
     logoutFromOneSignal?: () => void;
+    nativeApp?: {
+      registerForNotifications: (userId: string) => boolean;
+      unregisterFromNotifications: () => boolean;
+    };
   }
 }
 
@@ -51,9 +55,9 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
         const { data: { user } } = await supabase.auth.getUser();
         
         // Registrar no OneSignal se estiver em ambiente mobile
-        if (user && window.isNativeApp && window.loginToOneSignal) {
+        if (user && window.isNativeApp && window.nativeApp?.registerForNotifications) {
           console.log('Registrando usuário no OneSignal:', user.id);
-          window.loginToOneSignal(user.id);
+          window.nativeApp.registerForNotifications(user.id);
         }
 
         if (onSuccess) {

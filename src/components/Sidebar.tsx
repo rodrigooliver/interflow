@@ -282,9 +282,9 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
           <button
             onClick={() => {
               // Deslogar do OneSignal se estiver em ambiente nativo
-              if (typeof window.isNativeApp === 'boolean' && window.isNativeApp && window.logoutFromOneSignal) {
+              if (typeof window.isNativeApp === 'boolean' && window.isNativeApp && window.nativeApp?.unregisterFromNotifications) {
                 console.log('Deslogando do OneSignal');
-                window.logoutFromOneSignal();
+                window.nativeApp.unregisterFromNotifications();
               }
               signOut();
             }}
