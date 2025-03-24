@@ -45,7 +45,7 @@ export default function Profile() {
         .update({
           full_name: formData.full_name,
           whatsapp: formData.whatsapp,
-          updated_at: new Date().toISOString()
+          // updated_at: new Date().toISOString()
         })
         .eq('id', currentProfile.id);
 
@@ -103,8 +103,8 @@ export default function Profile() {
   };
 
   return (
-    <div className="p-6">
-      <div className="max-w-2xl mx-auto">
+    <div className="p-6 ">
+      <div className="max-w-2xl mx-auto pb-16 md:pb-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
           <User className="w-6 h-6 mr-2" />
           {t('profile:title')}
