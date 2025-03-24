@@ -407,8 +407,13 @@ export default function SignupForm() {
             localStorage.removeItem(`sb-${projectId}-auth-token`);
           }
           
+          // Registrar no OneSignal se estiver em ambiente mobile
+          if (window.isNativeApp && window.nativeApp?.registerForNotifications && sessionData.session?.user?.id) {
+            console.log('Registrando usuário no OneSignal após signup:', sessionData.session.user.id);
+            window.nativeApp.registerForNotifications(sessionData.session.user.id);
+          }
+          
           // Armazenar credenciais temporariamente para login automático na página de destino
-          // Isso será removido após o login bem-sucedido
           localStorage.setItem('temp_auth_email', formData.email);
           localStorage.setItem('temp_auth_password', formData.password);
           localStorage.setItem('temp_auth_redirect', 'true');

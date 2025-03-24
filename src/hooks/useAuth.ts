@@ -62,8 +62,11 @@ export function useAuth() {
     // console.log('[useAuth] Tentando fazer logout');
     try {
       localStorage.removeItem('selectedOrganizationId');
-
       
+      // Extrai o ID do projeto da URL do Supabase
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const projectId = supabaseUrl.split('.')[0].split('//')[1];
+      localStorage.removeItem(`sb-${projectId}-auth-token`);
       
       const { error } = await supabase.auth.signOut();
       if (error) {
