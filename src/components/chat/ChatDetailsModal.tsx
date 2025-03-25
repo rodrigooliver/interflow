@@ -104,23 +104,22 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-white dark:bg-gray-800 [&>button]:text-gray-900 dark:[&>button]:text-gray-200">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl bg-white dark:bg-gray-800 [&>button]:text-gray-900 dark:[&>button]:text-gray-200 max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-none">
           <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-200">{t('chatDetails.title')}</DialogTitle>
           <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
             {t('chatDetails.description')}
           </DialogDescription>
         </DialogHeader>
         
-        {loading ? (
-          <div className="flex flex-col items-center justify-center p-8 space-y-4">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-500 dark:text-gray-400" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('loading')}</p>
-          </div>
-        ) : chat ? (
-          <div className="grid grid-cols-2 gap-6 mt-4">
-            {/* Coluna da Esquerda */}
-            <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto mt-4 pr-2 -mr-2">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center p-8 space-y-4">
+              <Loader2 className="w-8 h-8 animate-spin text-gray-500 dark:text-gray-400" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('loading')}</p>
+            </div>
+          ) : chat ? (
+            <div className="grid grid-cols-1 gap-4 md:gap-6 max-w-2xl mx-auto">
               {/* Informações do Canal e Atendente */}
               <Card className="border-border">
                 <Card.Content className="pt-6">
@@ -155,8 +154,8 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                     <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg mt-1">
                       <MessageSquare className="w-5 h-5 text-gray-900 dark:text-gray-200" />
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('chatDetails.title')}</h3>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('chatDetails.chatTitle')}</h3>
                       <p className="text-sm text-gray-900 dark:text-gray-200 line-clamp-2">{chat.title || '-'}</p>
                     </div>
                   </div>
@@ -194,10 +193,7 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                   </dl>
                 </Card.Content>
               </Card>
-            </div>
 
-            {/* Coluna da Direita */}
-            <div className="space-y-6">
               {/* Datas e Horários */}
               <Card className="border-border">
                 <Card.Content className="pt-6">
@@ -208,25 +204,25 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                     <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('chatDetails.timestamps')}</h3>
                   </div>
                   <dl className="space-y-3">
-                    <div className="flex items-center">
-                      <dt className="text-sm text-gray-500 dark:text-gray-400 w-[140px] shrink-0">{t('chatDetails.createdAt')}</dt>
-                      <dd className="text-sm text-gray-900 dark:text-gray-200 ml-4">{formatDate(chat.created_at)}</dd>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                      <dt className="text-sm text-gray-500 dark:text-gray-400 sm:w-[140px] sm:shrink-0">{t('chatDetails.createdAt')}</dt>
+                      <dd className="text-sm text-gray-900 dark:text-gray-200 sm:flex-1 text-right">{formatDate(chat.created_at)}</dd>
                     </div>
-                    <div className="flex items-center">
-                      <dt className="text-sm text-gray-500 dark:text-gray-400 w-[140px] shrink-0">{t('chatDetails.arrivalTime')}</dt>
-                      <dd className="text-sm text-gray-900 dark:text-gray-200 ml-4">{formatDate(chat.arrival_time)}</dd>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                      <dt className="text-sm text-gray-500 dark:text-gray-400 sm:w-[140px] sm:shrink-0">{t('chatDetails.arrivalTime')}</dt>
+                      <dd className="text-sm text-gray-900 dark:text-gray-200 sm:flex-1 text-right">{formatDate(chat.arrival_time)}</dd>
                     </div>
-                    <div className="flex items-center">
-                      <dt className="text-sm text-gray-500 dark:text-gray-400 w-[140px] shrink-0">{t('chatDetails.startTime')}</dt>
-                      <dd className="text-sm text-gray-900 dark:text-gray-200 ml-4">{formatDate(chat.start_time)}</dd>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                      <dt className="text-sm text-gray-500 dark:text-gray-400 sm:w-[140px] sm:shrink-0">{t('chatDetails.startTime')}</dt>
+                      <dd className="text-sm text-gray-900 dark:text-gray-200 sm:flex-1 text-right">{formatDate(chat.start_time)}</dd>
                     </div>
-                    <div className="flex items-center">
-                      <dt className="text-sm text-gray-500 dark:text-gray-400 w-[140px] shrink-0">{t('chatDetails.endTime')}</dt>
-                      <dd className="text-sm text-gray-900 dark:text-gray-200 ml-4">{formatDate(chat.end_time)}</dd>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                      <dt className="text-sm text-gray-500 dark:text-gray-400 sm:w-[140px] sm:shrink-0">{t('chatDetails.endTime')}</dt>
+                      <dd className="text-sm text-gray-900 dark:text-gray-200 sm:flex-1 text-right">{formatDate(chat.end_time)}</dd>
                     </div>
-                    <div className="flex items-center">
-                      <dt className="text-sm text-gray-500 dark:text-gray-400 w-[140px] shrink-0">{t('chatDetails.lastMessageAt')}</dt>
-                      <dd className="text-sm text-gray-900 dark:text-gray-200 ml-4">{formatDate(chat.last_message_at)}</dd>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                      <dt className="text-sm text-gray-500 dark:text-gray-400 sm:w-[140px] sm:shrink-0">{t('chatDetails.lastMessageAt')}</dt>
+                      <dd className="text-sm text-gray-900 dark:text-gray-200 sm:flex-1 text-right">{formatDate(chat.last_message_at)}</dd>
                     </div>
                   </dl>
                 </Card.Content>
@@ -265,8 +261,8 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                 </Card.Content>
               </Card>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </DialogContent>
     </Dialog>
   );
