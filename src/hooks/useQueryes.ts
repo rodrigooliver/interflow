@@ -937,7 +937,9 @@ export function useAppointments(filters: AppointmentFilters) {
     queryFn: async () => {
       // Verificar se há filtros mínimos necessários
       const hasMinimumFilters = filters.schedule_id || 
-        (filters.provider_id && (filters.start_date || filters.end_date));
+        filters.provider_id || 
+        filters.customer_id || 
+        (filters.start_date && filters.end_date);
       
       if (!hasMinimumFilters) return [];
 
@@ -1004,7 +1006,9 @@ export function useAppointments(filters: AppointmentFilters) {
       })) as Appointment[];
     },
     enabled: !!(filters.schedule_id || 
-      (filters.provider_id && (filters.start_date || filters.end_date))),
+      filters.provider_id || 
+      filters.customer_id || 
+      (filters.start_date && filters.end_date)),
     staleTime: 1 * 60 * 1000, // 1 minuto (menos tempo pois agendamentos mudam com frequência)
     gcTime: 5 * 60 * 1000, // 5 minutos
   });

@@ -222,5 +222,12 @@
     "today": "Hoy",
     "cancel": "Cancelar",
     "confirm": "Confirmar"
-  }
+  },
+  "upcomingAppointments": "Próximas Citas",
+  "noUpcomingAppointments": "No hay citas próximas",
+  "scheduleNewAppointment": "Programar Nueva Cita",
+  "noCustomer": "Cliente no especificado",
+  "untitledService": "Servicio sin título",
+  "scheduled": "Programado",
+  "confirmed": "Confirmado"
 }

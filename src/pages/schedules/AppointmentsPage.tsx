@@ -8,7 +8,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import ScheduleForm from '../../components/schedules/ScheduleForm';
 import AppointmentForm from '../../components/schedules/AppointmentForm';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Customer, Appointment, Schedule, ScheduleProvider, Chat } from '../../types/database';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
@@ -25,6 +25,7 @@ interface SelectedSlot {
 const AppointmentsPage: React.FC = () => {
   const { t } = useTranslation(['schedules', 'common']);
   const { currentOrganizationMember } = useAuthContext();
+  const [searchParams] = useSearchParams();
   const organizationId = currentOrganizationMember?.organization?.id;
   const currentProviderId = currentOrganizationMember?.profile_id;
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
@@ -383,6 +384,14 @@ const AppointmentsPage: React.FC = () => {
       return;
     navigate(`/app/chat/${chatId}`);
   };
+  
+  // Efeito para verificar o parâmetro create na URL
+  useEffect(() => {
+    const shouldCreate = searchParams.get('create') === 'true';
+    if (shouldCreate) {
+      setShowCreateAppointmentModal(true);
+    }
+  }, [searchParams]);
   
   // Exibir mensagem de carregamento ou de nenhuma agenda
   if (isLoadingSchedules) {

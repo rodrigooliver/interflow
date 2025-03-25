@@ -222,5 +222,12 @@
     "today": "Today",
     "cancel": "Cancel",
     "confirm": "Confirm"
-  }
+  },
+  "upcomingAppointments": "Upcoming Appointments",
+  "noUpcomingAppointments": "No upcoming appointments",
+  "scheduleNewAppointment": "Schedule New Appointment",
+  "noCustomer": "Unspecified customer",
+  "untitledService": "Untitled service",
+  "scheduled": "Scheduled",
+  "confirmed": "Confirmed"
 }

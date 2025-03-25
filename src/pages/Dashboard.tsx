@@ -8,7 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
 import { ChatFlowModal } from '../components/chat/ChatFlowModal';
 import { formatLastMessageTime } from '../utils/date';
-import { useTeams, useTasks } from '../hooks/useQueryes';
+import { useTeams, useTasks, useAppointments } from '../hooks/useQueryes';
 import { TaskModal } from '../components/tasks/TaskModal';
 
 interface StatCard {
@@ -392,6 +392,7 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [selectedTimeRange, setSelectedTimeRange] = useState('week');
   const [showChatFlowModal, setShowChatFlowModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
   
   // Novos estados para períodos específicos
   const [useSpecificPeriod, setUseSpecificPeriod] = useState(false);
@@ -408,7 +409,15 @@ export default function Dashboard() {
   const [chartLoading, setChartLoading] = useState(true);
 
   const { data: tasks = [] } = useTasks(organizationId, 'pending', session?.user?.id);
-  const [showTaskModal, setShowTaskModal] = useState(false);
+
+  // Buscar próximos compromissos usando o hook useAppointments
+  const { data: upcomingAppointments = [], isLoading: loadingAppointments } = useAppointments({
+    schedule_id: undefined,
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: undefined,
+    provider_id: currentOrganizationMember?.profile_id,
+    status: ['scheduled', 'confirmed']
+  });
 
   // Efeito para depurar o carregamento das equipes
   useEffect(() => {
@@ -428,17 +437,17 @@ export default function Dashboard() {
     if (currentOrganizationMember) {
       loadStats();
       loadRecentChats();
-      loadChartData(selectedTimeRange, specificDate, specificMonth, specificYear);
+      loadChartData(selectedTimeRange);
       subscribeToUpdates();
     }
-  }, [currentOrganizationMember, selectedTimeRange, specificDate, specificMonth, specificYear, useSpecificPeriod]);
+  }, [currentOrganizationMember, selectedTimeRange]);
 
   // Atualizar o gráfico quando as equipes selecionadas mudarem
   useEffect(() => {
     if (currentOrganizationMember) {
-      loadChartData(selectedTimeRange, specificDate, specificMonth, specificYear);
+      loadChartData(selectedTimeRange);
     }
-  }, [teams, currentOrganizationMember, selectedTimeRange, specificDate, specificMonth, specificYear]);
+  }, [teams, currentOrganizationMember, selectedTimeRange]);
 
   const subscribeToUpdates = () => {
     // Subscribe to chats changes
@@ -465,7 +474,7 @@ export default function Dashboard() {
         filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, () => {
         loadPeriodMessagesCount();
-        loadChartData(selectedTimeRange, specificDate, specificMonth, specificYear);
+        loadChartData(selectedTimeRange);
         loadResponseTime();
       })
       .subscribe();
@@ -1524,6 +1533,95 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nova seção de compromissos */}
+      <div className="mt-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {t('upcomingAppointments')}
+            </h2>
+            <Link 
+              to="/app/appointments?create=true" 
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {t('viewAll')}
+            </Link>
+          </div>
+          
+          <div className="space-y-4">
+            {loadingAppointments ? (
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="animate-pulse flex items-center p-3">
+                  <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-10 w-10"></div>
+                  <div className="ml-4 flex-1">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))
+            ) : upcomingAppointments.length > 0 ? (
+              upcomingAppointments.map((appointment) => (
+                <div 
+                  key={appointment.id}
+                  className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {appointment.customer?.name || t('noCustomer')}
+                      </p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        appointment.status === 'confirmed' 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>
+                        {t(appointment.status)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {appointment.service?.title || t('untitledService')}
+                    </p>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>
+                      {new Date(`${appointment.date}T${appointment.start_time}`).toLocaleDateString('pt-BR', { 
+                        day: '2-digit', 
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Calendar className="h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  {t('noUpcomingAppointments')}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-6">
+            <Link 
+              to="/app/appointments?create=true"
+              className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              {t('scheduleNewAppointment')}
+            </Link>
           </div>
         </div>
       </div>
