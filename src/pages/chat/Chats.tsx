@@ -269,6 +269,7 @@ export default function Chats() {
           email,
           whatsapp,
           stage_id,
+          is_spam,
           tags:customer_tags(
             tag_id,
             tags:tags(
@@ -382,7 +383,13 @@ export default function Chats() {
           } : undefined
         };
 
-        return [processedChat, ...newChats].sort((a, b) => {
+        // Ordenar a lista mantendo a consistência com a ordenação do banco
+        return [...newChats, processedChat].sort((a, b) => {
+          // Primeiro ordena por is_fixed
+          if (a.is_fixed !== b.is_fixed) {
+            return a.is_fixed ? -1 : 1;
+          }
+          // Se ambos são fixados ou não fixados, ordena por data da última mensagem
           const dateA = a.last_message?.created_at || '';
           const dateB = b.last_message?.created_at || '';
           return dateB.localeCompare(dateA);
@@ -411,6 +418,7 @@ export default function Chats() {
             email,
             whatsapp,
             stage_id,
+            is_spam,
             tags:customer_tags(
               tag_id,
               tags:tags(
@@ -438,6 +446,7 @@ export default function Chats() {
           )
         `)
         .eq('organization_id', currentOrganizationMember.organization.id)
+        .order('is_fixed', { ascending: false })
         .order('last_message_at', { ascending: false });
 
       // Mover declarações para fora do switch
@@ -465,15 +474,21 @@ export default function Chats() {
           
           // Filter chats by team and exclude those assigned to the current user
           query = query
+            .eq('status', 'in_progress')
             .in('team_id', teamIds)
             .neq('assigned_to', session.user.id);
           break;
         case 'completed':
           query = query.eq('status', 'closed');
           break;
-        case 'spam':
-          query = query.eq('status', 'spam');
-          break;
+      }
+
+      if(selectedFilter === 'spam') {
+        query = query.not('customer', 'is', null)
+          .eq('customer.is_spam', true);
+      } else {
+        query = query.not('customer', 'is', null)
+          .eq('customer.is_spam', false);
       }
 
       if (selectedAgent) {
@@ -547,7 +562,6 @@ export default function Chats() {
 
       const processedChats = (filteredData).map(chat => ({
         ...chat,
-        // channel_type: chat.channel?.type,
         channel_id: chat.channel,
         last_message: chat.last_message ? {
           content: chat.last_message.content,
@@ -897,7 +911,7 @@ export default function Chats() {
           >
             {t('chats:filters.completed')}
           </button>
-          {/* <button
+          <button
             onClick={() => handleFilterChange('status', 'spam')}
             className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
               selectedFilter === 'spam' 
@@ -906,7 +920,7 @@ export default function Chats() {
             }`}
           >
             {t('chats:filters.spam')}
-          </button> */}
+          </button>
         </div>
 
         {/* Chat List */}
@@ -924,6 +938,7 @@ export default function Chats() {
               onSelectChat={handleSelectChat}
               isLoading={loading}
               onEditCustomer={handleEditCustomer}
+              onUpdateChat={updateChatInList}
             />
           )}
         </div>

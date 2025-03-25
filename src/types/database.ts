@@ -41,6 +41,9 @@ export interface Chat {
   wait_time?: string;
   service_time?: string;
   profile_picture?: string;
+  is_fixed?: boolean;
+  unread_count?: number;
+  is_archived?: boolean;
 }
 
 /**
@@ -152,6 +155,7 @@ export interface Customer {
     updated_at: string;
     field_definition: CustomFieldDefinition;
   }[];
+  is_spam?: boolean;
 }
 
 /**

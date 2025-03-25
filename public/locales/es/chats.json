@@ -12,6 +12,8 @@
   "disconnected": "Desconectado",
   "scrollToHighlightedMessage": "Desplazarse hasta el mensaje destacado",
   "noFunnelStage": "Sin etapa definida",
+  "archivedChats": "Conversaciones Archivadas",
+  "backToActiveChats": "Volver a Conversaciones Activas",
   "collaborator": {
     "collaborators": "Colaboradores",
     "attendedBy": "Atendido por {{name}}",
@@ -62,7 +64,18 @@
   },
   "actions": {
     "reply": "Responder",
-    "details": "Detalles"
+    "details": "Detalles",
+    "pin": "Fijar",
+    "unpin": "Desfijar",
+    "archive": "Archivar",
+    "unarchive": "Desarchivar",
+    "markUnread": "Marcar como no leído",
+    "markRead": "Marcar como leído",
+    "markResolved": "Marcar como resuelto",
+    "customerDetails": "Detalles del cliente",
+    "markSpam": "Marcar como spam",
+    "unmarkSpam": "Desmarcar como spam",
+    "chatDetails": "Detalles del Chat"
   },
   "dateHeaders": {
     "today": "Hoy",
@@ -227,7 +240,6 @@
   },
   "chatReassigned": "Esta conversación ha sido transferida a otro agente",
   "chatAssignedToYou": "Esta conversación ha sido transferida a ti",
-  "chatClosed": "Esta conversación ha sido cerrada",
   "chatReopened": "Esta conversación ha sido reabierta",
   "transfer": {
     "title": "Transferir Todos los Chats",
@@ -236,5 +248,33 @@
     "success": "Chats transferidos con éxito",
     "error": "Error al transferir los chats",
     "confirm": "¿Estás seguro que deseas transferir todos los chats de este cliente?"
+  },
+  "chatDetails": {
+    "title": "Detalles del Chat",
+    "description": "Visualice información detallada sobre el chat, incluyendo canal, agente, estado y métricas.",
+    "basicInfo": "Información Básica",
+    "ticketNumber": "Número de Ticket",
+    "status": "Estado",
+    "isArchived": "Archivado",
+    "isFixed": "Fijado",
+    "channel": "Canal",
+    "agent": "Agente",
+    "externalId": "ID Externo",
+    "chatTitle": "Título del Chat",
+    "timestamps": "Fechas y Horarios",
+    "createdAt": "Creado en",
+    "arrivalTime": "Tiempo de Llegada",
+    "startTime": "Hora de Inicio",
+    "endTime": "Hora de Fin",
+    "lastMessageAt": "Último Mensaje",
+    "feedback": "Comentarios",
+    "rating": "Calificación",
+    "feedbackText": "Comentario",
+    "metrics": "Métricas",
+    "unreadCount": "Mensajes No Leídos"
+  },
+  "common": {
+    "yes": "Sí",
+    "no": "No"
   }
 }

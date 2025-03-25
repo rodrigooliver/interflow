@@ -12,6 +12,8 @@
   "disconnected": "Disconnected",
   "scrollToHighlightedMessage": "Scroll to highlighted message",
   "noFunnelStage": "No stage defined",
+  "archivedChats": "Archived Conversations",
+  "backToActiveChats": "Back to Active Conversations",
   "collaborator": {
     "collaborators": "Collaborators",
     "attendedBy": "Attended by {{name}}",
@@ -62,7 +64,18 @@
   },
   "actions": {
     "reply": "Reply",
-    "details": "Details"
+    "details": "Details",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "markUnread": "Mark as unread",
+    "markRead": "Mark as read",
+    "markResolved": "Mark as resolved",
+    "customerDetails": "Customer details",
+    "markSpam": "Mark as spam",
+    "unmarkSpam": "Unmark as spam",
+    "chatDetails": "Chat Details"
   },
   "dateHeaders": {
     "today": "Today",
@@ -225,7 +238,6 @@
   },
   "chatReassigned": "This conversation has been transferred to another agent",
   "chatAssignedToYou": "This conversation has been transferred to you",
-  "chatClosed": "This conversation has been closed",
   "chatReopened": "This conversation has been reopened",
   "transfer": {
     "title": "Transfer All Chats",
@@ -234,5 +246,33 @@
     "success": "Chats transferred successfully",
     "error": "Error transferring chats",
     "confirm": "Are you sure you want to transfer all chats from this customer?"
+  },
+  "chatDetails": {
+    "title": "Chat Details",
+    "description": "View detailed information about the chat, including channel, agent, status, and metrics.",
+    "basicInfo": "Basic Information",
+    "ticketNumber": "Ticket Number",
+    "status": "Status",
+    "isArchived": "Archived",
+    "isFixed": "Fixed",
+    "channel": "Channel",
+    "agent": "Agent",
+    "externalId": "External ID",
+    "chatTitle": "Chat Title",
+    "timestamps": "Dates and Times",
+    "createdAt": "Created At",
+    "arrivalTime": "Arrival Time",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "lastMessageAt": "Last Message",
+    "feedback": "Feedback",
+    "rating": "Rating",
+    "feedbackText": "Comment",
+    "metrics": "Metrics",
+    "unreadCount": "Unread Messages"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No"
   }
 }

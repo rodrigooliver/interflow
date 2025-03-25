@@ -16,6 +16,8 @@
   "channel": "Canal",
   "scrollToHighlightedMessage": "Rolar até a mensagem destacada",
   "noFunnelStage": "Sem estágio definido",
+  "archivedChats": "Atendimentos Arquivados",
+  "backToActiveChats": "Voltar para Atendimentos Ativos",
   "collaborator": {
     "collaborators": "Colaboradores",
     "attendedBy": "Atendido por {{name}}",
@@ -66,7 +68,18 @@
   },
   "actions": {
     "reply": "Responder",
-    "details": "Detalhes"
+    "details": "Detalhes",
+    "pin": "Fixar",
+    "unpin": "Desfixar",
+    "archive": "Arquivar",
+    "unarchive": "Desarquivar",
+    "markUnread": "Marcar como não lido",
+    "markRead": "Marcar como lido",
+    "markResolved": "Marcar como resolvido",
+    "customerDetails": "Detalhes do cliente",
+    "markSpam": "Marcar como spam",
+    "unmarkSpam": "Desmarcar como spam",
+    "chatDetails": "Detalhes do Atendimento"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -239,5 +252,33 @@
     "success": "Atendimentos transferidos com sucesso",
     "error": "Erro ao transferir atendimentos",
     "confirm": "Tem certeza que deseja transferir todos os atendimentos deste cliente?"
+  },
+  "chatDetails": {
+    "title": "Detalhes do Chat",
+    "description": "Visualize informações detalhadas sobre o chat, incluindo canal, atendente, status e métricas.",
+    "basicInfo": "Informações Básicas",
+    "ticketNumber": "Número do Ticket",
+    "status": "Status",
+    "isArchived": "Arquivado",
+    "isFixed": "Fixado",
+    "channel": "Canal",
+    "agent": "Atendente",
+    "externalId": "ID Externo",
+    "chatTitle": "Título do Chat",
+    "timestamps": "Datas e Horários",
+    "createdAt": "Criado em",
+    "arrivalTime": "Tempo de Chegada",
+    "startTime": "Início",
+    "endTime": "Fim",
+    "lastMessageAt": "Última Mensagem",
+    "feedback": "Feedback",
+    "rating": "Avaliação",
+    "feedbackText": "Comentário",
+    "metrics": "Métricas",
+    "unreadCount": "Mensagens Não Lidas"
+  },
+  "common": {
+    "yes": "Sim",
+    "no": "Não"
   }
 }

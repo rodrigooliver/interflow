@@ -14,6 +14,7 @@ import api from '../../lib/api';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowDown, UserPlus, UserCheck, RefreshCw } from 'lucide-react';
 import './styles.css';
+import { useClosureTypes } from '../../hooks/useQueryes';
 
 interface ChatMessagesProps {
   chatId: string;
@@ -90,7 +91,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [showResolutionModal, setShowResolutionModal] = useState(false);
-  const [closureTypes, setClosureTypes] = useState<ClosureType[]>([]);
+  const { data: closureTypes = [] } = useClosureTypes(organizationId);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const MESSAGES_PER_PAGE = 20;
@@ -259,8 +260,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         
         // Sempre carregamos os detalhes do chat quando o chatId muda
         loadChat();
-        // Carregar colaboradores
-        loadCollaborators();
       }
       
       // Sempre nos inscrevemos para atualizações de mensagens
@@ -297,10 +296,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       scrollToBottom();
     }
   }, [messages, page]);
-
-  useEffect(() => {
-    loadClosureTypes();
-  }, []);
 
   useEffect(() => {
     if (!chat) return;
@@ -498,13 +493,31 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             id,
             full_name,
             avatar_url
+          ),
+          collaborators:chat_collaborators(
+            id,
+            user_id,
+            joined_at,
+            left_at,
+            user:user_id(
+              id,
+              full_name,
+              avatar_url
+            )
           )
         `)
         .eq('id', chatId)
         .single();
 
       if (error) throw error;
+      
+      // Atualizar o estado do chat
       setChat(data);
+      
+      // Atualizar o estado dos colaboradores
+      if (data?.collaborators) {
+        setCollaborators(data.collaborators.filter((collab: ChatCollaborator) => !collab.left_at));
+      }
     } catch (error) {
       console.error('Erro ao carregar chat:', error);
       setError(t('errors.loadingChat'));
@@ -545,20 +558,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     });
     
     return groups;
-  };
-
-  const loadClosureTypes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('closure_types')
-        .select('*')
-        .eq('organization_id', organizationId);
-
-      if (error) throw error;
-      setClosureTypes(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar tipos de fechamento:', error);
-    }
   };
 
   const handleResolveChat = async ({ closureTypeId, title }: { closureTypeId: string; title: string }) => {
@@ -918,33 +917,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     setCanInteract(isUserAssigned || isUserCollaborator);
   }, [chat, currentUserId, collaborators]);
 
-  // Carregar colaboradores do chat
-  const loadCollaborators = async () => {
-    if (!chatId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('chat_collaborators')
-        .select(`
-          *,
-          user:user_id(
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq('chat_id', chatId)
-        .is('left_at', null);
-        
-      if (error) throw error;
-      
-      setCollaborators(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar colaboradores:', error);
-    }
-  };
-
-  // Inscrever para atualizações de colaboradores
+  // Atualizar a função subscribeToCollaborators para usar o novo formato
   const subscribeToCollaborators = () => {
     const subscription = supabase
       .channel('collaborators')
@@ -954,8 +927,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         table: 'chat_collaborators',
         filter: `chat_id=eq.${chatId}`
       }, () => {
-        // Recarregar colaboradores quando houver mudanças
-        loadCollaborators();
+        // Recarregar o chat para obter os colaboradores atualizados
+        loadChat();
       })
       .subscribe();
     
@@ -1098,7 +1071,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         });
       
       // Recarregar colaboradores
-      await loadCollaborators();
+      await loadChat();
       
       toast.success(t('collaborator.joinedSuccess'));
     } catch (error) {
@@ -1205,7 +1178,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       setCanInteract(false);
       
       // Recarregar colaboradores
-      await loadCollaborators();
+      await loadChat();
       
       toast.success(t('collaborator.leaveSuccess'));
     } catch (error) {
