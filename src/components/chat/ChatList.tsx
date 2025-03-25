@@ -259,6 +259,11 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
           }
         }
         break;
+      case 'customer_details':
+        if (chat.customer && onEditCustomer) {
+          onEditCustomer(chat.customer);
+        }
+        break;
     }
   };
 
