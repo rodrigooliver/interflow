@@ -1,0 +1,55 @@
+{
+  "title": "Tasks",
+  "addTask": "Add Task",
+  "editTask": "Edit Task",
+  "deleteTask": "Delete Task",
+  "noTasks": "No tasks found",
+  "loading": "Loading tasks...",
+  "now": "Now",
+  "tomorrow": "Tomorrow",
+  "form": {
+    "title": "Title",
+    "description": "Description",
+    "dueDate": "Due Date",
+    "priority": "Priority",
+    "status": "Status",
+    "customer": "Customer",
+    "selectCustomer": "Select a customer",
+    "chat": "Chat",
+    "appointment": "Appointment",
+    "selectAppointment": "Select an appointment",
+    "submit": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this task?"
+  },
+  "priorities": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "statuses": {
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "filters": {
+    "all": "All",
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "success": {
+    "created": "Task created successfully",
+    "updated": "Task updated successfully",
+    "deleted": "Task deleted successfully"
+  },
+  "error": {
+    "create": "Error creating task",
+    "update": "Error updating task",
+    "delete": "Error deleting task",
+    "load": "Error loading tasks"
+  }
+} 

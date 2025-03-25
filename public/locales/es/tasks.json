@@ -1,0 +1,55 @@
+{
+  "title": "Tareas",
+  "addTask": "Agregar Tarea",
+  "editTask": "Editar Tarea",
+  "deleteTask": "Eliminar Tarea",
+  "noTasks": "No se encontraron tareas",
+  "loading": "Cargando tareas...",
+  "now": "Ahora",
+  "tomorrow": "Mañana",
+  "form": {
+    "title": "Título",
+    "description": "Descripción",
+    "dueDate": "Fecha de Vencimiento",
+    "priority": "Prioridad",
+    "status": "Estado",
+    "customer": "Cliente",
+    "selectCustomer": "Seleccione un cliente",
+    "chat": "Chat",
+    "appointment": "Cita",
+    "selectAppointment": "Seleccione una cita",
+    "submit": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Está seguro que desea eliminar esta tarea?"
+  },
+  "priorities": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "statuses": {
+    "pending": "Pendiente",
+    "in_progress": "En Progreso",
+    "completed": "Completada",
+    "cancelled": "Cancelada"
+  },
+  "filters": {
+    "all": "Todas",
+    "pending": "Pendientes",
+    "in_progress": "En Progreso",
+    "completed": "Completadas",
+    "cancelled": "Canceladas"
+  },
+  "success": {
+    "created": "Tarea creada exitosamente",
+    "updated": "Tarea actualizada exitosamente",
+    "deleted": "Tarea eliminada exitosamente"
+  },
+  "error": {
+    "create": "Error al crear la tarea",
+    "update": "Error al actualizar la tarea",
+    "delete": "Error al eliminar la tarea",
+    "load": "Error al cargar las tareas"
+  }
+} 

@@ -8,7 +8,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
 import { ChatFlowModal } from '../components/chat/ChatFlowModal';
 import { formatLastMessageTime } from '../utils/date';
-import { useTeams } from '../hooks/useQueryes';
+import { useTeams, useTasks } from '../hooks/useQueryes';
+import { TaskModal } from '../components/tasks/TaskModal';
 
 interface StatCard {
   id: string;
@@ -379,7 +380,7 @@ const SimpleDatePicker: React.FC<DatePickerProps> = ({
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard');
-  const { currentOrganizationMember } = useAuthContext();
+  const { currentOrganizationMember, session } = useAuthContext();
   const [customerCount, setCustomerCount] = useState(0);
   const [activeChatsCount, setActiveChatsCount] = useState(0);
   const [periodMessagesCount, setPeriodMessagesCount] = useState(0);
@@ -405,6 +406,9 @@ export default function Dashboard() {
   
   // Estado para controlar o carregamento do gráfico
   const [chartLoading, setChartLoading] = useState(true);
+
+  const { data: tasks = [] } = useTasks(organizationId, 'pending', session?.user?.id);
+  const [showTaskModal, setShowTaskModal] = useState(false);
 
   // Efeito para depurar o carregamento das equipes
   useEffect(() => {
@@ -1403,11 +1407,7 @@ export default function Dashboard() {
           </div>
           
           <div className="space-y-3">
-            {[
-              { id: 1, title: 'Responder cliente ABC', due: '14:30', priority: 'high' },
-              { id: 2, title: 'Enviar proposta comercial', due: '16:00', priority: 'medium' },
-              { id: 3, title: 'Agendar reunião de follow-up', due: 'Amanhã', priority: 'low' },
-            ].map((task) => (
+            {tasks.map((task) => (
               <div 
                 key={task.id}
                 className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg"
@@ -1423,11 +1423,16 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {task.title}
                   </p>
+                  {task.customer && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {task.customer.name}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 text-gray-400 mr-1" />
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {task.due}
+                    {new Date(task.due_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               </div>
@@ -1435,7 +1440,10 @@ export default function Dashboard() {
           </div>
           
           <div className="mt-6">
-            <button className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+            <button 
+              onClick={() => setShowTaskModal(true)}
+              className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+            >
               <span className="mr-2">+</span> {t('addNewTask')}
             </button>
           </div>
@@ -1523,6 +1531,15 @@ export default function Dashboard() {
       {/* Modal para iniciar nova conversa */}
       {showChatFlowModal && (
         <ChatFlowModal onClose={() => setShowChatFlowModal(false)} />
+      )}
+
+      {/* Modal para criar nova tarefa */}
+      {showTaskModal && (
+        <TaskModal 
+          onClose={() => setShowTaskModal(false)}
+          organizationId={organizationId}
+          mode="create"
+        />
       )}
     </div>
   );

@@ -803,4 +803,38 @@ export interface AppointmentReminder {
   updated_at: string;
 }
 
+// ==========================================
+// TASK INTERFACES
+// ==========================================
+
+/**
+ * Represents a task in the system
+ * Tasks can be associated with customers, chats, and appointments
+ */
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  due_date: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  user_id: string;
+  customer_id: string;
+  chat_id: string;
+  appointment_id: string;
+  organization_id: string;
+  created_at: string;
+  updated_at: string;
+  customer: {
+    name: string;
+  };
+  chat: {
+    id: string;
+  };
+  appointment: {
+    id: string;
+    date: string;
+  };
+}
+
 

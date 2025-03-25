@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember } from '../types/database';
-import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember, Task } from '../types/database';
+import api from '../lib/api';
 import { reloadTranslations } from '../i18n';
 import { PostgrestResponse } from '@supabase/supabase-js';
 import { AppointmentFilters, AvailableSlot, FindAvailableSlotsParams } from '../types/schedules';
@@ -1254,5 +1254,37 @@ export function useCustomer(customerId?: string) {
     enabled: !!customerId,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+  });
+}
+
+export function useTasks(organizationId?: string, status?: 'pending' | 'in_progress' | 'completed' | 'cancelled', userId?: string) {
+  return useQuery({
+    queryKey: ['tasks', organizationId, status, userId],
+    queryFn: async () => {
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          customer:customers (
+            id,
+            name
+          )
+        `)
+        .eq('organization_id', organizationId);
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query.order('due_date', { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId && !!userId
   });
 } 

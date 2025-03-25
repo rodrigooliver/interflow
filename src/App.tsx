@@ -66,6 +66,7 @@ import ScheduleManagementPage from './pages/schedules/management/ScheduleManagem
 import SchedulesListPage from './pages/schedules/SchedulesListPage';
 import ScheduleAvailabilityPage from './pages/schedules/management/ScheduleAvailabilityPage';
 import ScheduleHolidaysPage from './pages/schedules/management/ScheduleHolidaysPage';
+import Tasks from './pages/Tasks';
 
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
@@ -330,6 +331,7 @@ function AppContent() {
                         <Route path="customers" element={<Customers />} />
                         <Route path="customers/:id/chats" element={<CustomerChats />} />
                         <Route path="appointments" element={<AppointmentsPage />} />
+                        <Route path="tasks" element={<Tasks />} />
                         <Route path="schedules/list" element={<SchedulesListPage />} />
                         <Route path="schedules/:scheduleId/management" element={<ScheduleManagementPage />} />
                         <Route path="schedules/:scheduleId/availability" element={<ScheduleAvailabilityPage />} />

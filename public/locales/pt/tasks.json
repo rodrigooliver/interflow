@@ -1,0 +1,55 @@
+{
+  "title": "Tarefas",
+  "addTask": "Adicionar Tarefa",
+  "editTask": "Editar Tarefa",
+  "deleteTask": "Excluir Tarefa",
+  "noTasks": "Nenhuma tarefa encontrada",
+  "loading": "Carregando tarefas...",
+  "now": "Agora",
+  "tomorrow": "Amanhã",
+  "form": {
+    "title": "Título",
+    "description": "Descrição",
+    "dueDate": "Data de Vencimento",
+    "priority": "Prioridade",
+    "status": "Status",
+    "customer": "Cliente",
+    "selectCustomer": "Selecione um cliente",
+    "chat": "Chat",
+    "appointment": "Agendamento",
+    "selectAppointment": "Selecione um agendamento",
+    "submit": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "confirmDelete": "Tem certeza que deseja excluir esta tarefa?"
+  },
+  "priorities": {
+    "low": "Baixa",
+    "medium": "Média",
+    "high": "Alta"
+  },
+  "statuses": {
+    "pending": "Pendente",
+    "in_progress": "Em Andamento",
+    "completed": "Concluída",
+    "cancelled": "Cancelada"
+  },
+  "filters": {
+    "all": "Todas",
+    "pending": "Pendentes",
+    "in_progress": "Em Andamento",
+    "completed": "Concluídas",
+    "cancelled": "Canceladas"
+  },
+  "success": {
+    "created": "Tarefa criada com sucesso",
+    "updated": "Tarefa atualizada com sucesso",
+    "deleted": "Tarefa excluída com sucesso"
+  },
+  "error": {
+    "create": "Erro ao criar tarefa",
+    "update": "Erro ao atualizar tarefa",
+    "delete": "Erro ao excluir tarefa",
+    "load": "Erro ao carregar tarefas"
+  }
+} 
