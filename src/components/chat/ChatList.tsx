@@ -486,14 +486,16 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
                       errorMessage={chat.last_message.error_message}
                     />
                   )}
-                  <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                    {chat.last_message.content}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                      {chat.last_message.content}
+                    </div>
                   </div>
-                      {(chat.unread_count || 0) > 0 && (
-                        <span className="flex-shrink-0 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          {chat.unread_count}
-                        </span>
-                      )}
+                  {(chat.unread_count || 0) > 0 && (
+                    <span className="flex-shrink-0 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      {chat.unread_count}
+                    </span>
+                  )}
                 </div>
               )}
               
@@ -727,8 +729,10 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
                           errorMessage={chat.last_message.error_message}
                         />
                       )}
-                      <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                        {chat.last_message.content}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                          {chat.last_message.content}
+                        </div>
                       </div>
                       {(chat.unread_count || 0) > 0 && (
                         <span className="flex-shrink-0 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">

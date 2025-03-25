@@ -141,7 +141,8 @@
   "voice": {
     "title": "Voice message",
     "start": "Start recording",
-    "stop": "Stop recording"
+    "stop": "Stop recording",
+    "transcription": "Transcription"
   },
   "errors": {
     "loading": "Error loading messages",

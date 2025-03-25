@@ -147,7 +147,8 @@
   "voice": {
     "title": "Mensagem de voz",
     "start": "Iniciar gravação",
-    "stop": "Parar gravação"
+    "stop": "Parar gravação",
+    "transcription": "Transcrição"
   },
   "errors": {
     "loading": "Erro ao carregar mensagens",

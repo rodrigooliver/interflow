@@ -262,11 +262,23 @@ export function MessageBubble({
 
     if (attachment.type.startsWith('audio') || attachment.type.startsWith('audio/')) {
       return (
-        <div className="bg-gray-200 dark:bg-gray-800/50 rounded-full p-2 max-w-full">
-          <AudioPlayer
-            src={attachment.url}
-            fileName={attachment.name}
-          />
+        <div className="w-[300px]">
+          <div className="bg-gray-200 dark:bg-gray-800/50 rounded-full p-2">
+            <AudioPlayer
+              src={attachment.url}
+              fileName={attachment.name}
+            />
+          </div>
+          {content && (
+            <div className="mt-2">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {t('voice.transcription')}:
+              </span>
+              <div className="mt-1 text-sm">
+                {content}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -408,7 +420,9 @@ export function MessageBubble({
             ))}
 
             {/* Existing message content */}
-            {content && (
+            {content && !attachments?.some(attachment => 
+              attachment.type.startsWith('audio') || attachment.type.startsWith('audio/')
+            ) && (
               <div className="whitespace-pre-wrap break-words overflow-hidden overflow-wrap-anywhere">
                 {content.split('\n').map((line, lineIndex) => (
                   <React.Fragment key={`line-${lineIndex}`}>
