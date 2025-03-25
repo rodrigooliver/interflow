@@ -134,6 +134,7 @@
   },
   "errors": {
     "loading": "Error al cargar mensajes",
+    "loadingChat": "Error al cargar conversación",
     "sending": "Error al enviar mensaje",
     "microphoneAccess": "Error al acceder al micrófono. Por favor, verifica tus permisos.",
     "uploadFailed": "Error al subir el archivo de audio",
