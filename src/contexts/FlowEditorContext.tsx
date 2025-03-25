@@ -5,6 +5,7 @@ import { Node } from 'reactflow';
 import { useAuthContext } from './AuthContext';
 import { useParams } from 'react-router-dom';   
 import { FlowConnection, FlowNode } from '../types/flow';
+import { Prompt } from '../types/database';
 
 interface Viewport {
   x: number;
@@ -21,7 +22,7 @@ interface SaveFlowData {
 
 interface FlowEditorContextType {
   variables: Variable[];
-  nodes: Node[];
+  nodes: FlowNode[];
   edges: FlowConnection[];
   viewport: Viewport;
   setViewport: (viewport: Viewport) => void;
@@ -32,7 +33,7 @@ interface FlowEditorContextType {
   loading: boolean;
   error: string | null;
   lastSaved: Date | null;
-  setNodes: (nodes: Node[] | ((prev: Node[]) => Node[])) => void;
+  setNodes: (nodes: FlowNode[] | ((prev: FlowNode[]) => FlowNode[])) => void;
   setEdges: (edges: FlowConnection[] | ((prev: FlowConnection[]) => FlowConnection[])) => void;
   setVariables: (variables: Variable[]) => void;
   handleVariableNameChange: (index: number, name: string) => void;
@@ -40,12 +41,13 @@ interface FlowEditorContextType {
   addVariable: () => void;
   removeVariable: (index: number) => void;
   onSaveFlow: (data?: SaveFlowData) => Promise<void>;
-  updateNodeData: (nodeId: string, data: any) => Promise<void>;
+  updateNodeData: (nodeId: string, data: Record<string, unknown>) => Promise<void>;
   loadFlow: (id: string) => Promise<void>;
   publishFlow: () => Promise<void>;
   restoreFlow: () => Promise<void>;
   setFlowName: (name: string) => Promise<void>;
   id: string | undefined;
+  prompts: Prompt[];
 }
 
 const FlowEditorContext = createContext<FlowEditorContextType | undefined>(undefined);
@@ -53,7 +55,7 @@ const FlowEditorContext = createContext<FlowEditorContextType | undefined>(undef
 export function FlowEditorProvider({ children }: { children: React.ReactNode }) {
   const { currentOrganizationMember } = useAuthContext();
   const { id } = useParams();
-  const [nodes, setNodes] = useState<Node[]>([]);
+  const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowConnection[]>([]);
   const [variables, setVariables] = useState<Variable[]>([]);
   const [publishedNodes, setPublishedNodes] = useState<FlowNode[]>([]);
@@ -64,9 +66,11 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
 
   useEffect(() => {
     setLoading(false);
+    loadPrompts();
   }, []);
 
   const handleVariableNameChange = (index: number, name: string) => {
@@ -116,7 +120,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
     }
   }, [currentOrganizationMember, id, nodes, edges, variables, viewport]);
 
-  const updateNodeData = useCallback(async (nodeId: string, newData: any) => {
+  const updateNodeData = useCallback(async (nodeId: string, newData: Record<string, unknown>) => {
 
     const updatedNodes = nodes.map((node) => {
       if (node.id === nodeId) {
@@ -153,9 +157,9 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       if (error) throw error;
 
       if (flow) {
-        setNodes(flow.draft_nodes?.length ? flow.draft_nodes : flow.nodes || []);
+        setNodes(flow.draft_nodes?.length ? flow.draft_nodes as FlowNode[] : flow.nodes as FlowNode[] || []);
         setEdges(flow.draft_edges?.length ? flow.draft_edges : flow.edges || []);
-        setPublishedNodes(flow.nodes || []);
+        setPublishedNodes(flow.nodes as FlowNode[] || []);
         setPublishedEdges(flow.edges || []);
         setVariables(flow.variables || []);
         setViewport(flow.viewport || { x: 0, y: 0, zoom: 0.7 });
@@ -250,6 +254,23 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
     }
   }, [currentOrganizationMember]);
 
+  async function loadPrompts() {
+    if (!currentOrganizationMember) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('organization_id', currentOrganizationMember.organization.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPrompts(data || []);
+    } catch (error) {
+      console.error('Error loading prompts:', error);
+    }
+  }
+
   return (
     <FlowEditorContext.Provider value={{ 
       variables,
@@ -277,7 +298,8 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
       publishFlow,
       restoreFlow,
       setFlowName: updateFlowName,
-      id
+      id,
+      prompts
     }}>
       {children}
     </FlowEditorContext.Provider>
