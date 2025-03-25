@@ -862,16 +862,6 @@ export default function Chats() {
         {/* Status Filter Buttons */}
         <div className="mt-3 overflow-x-auto pb-1 flex space-x-2 scrollbar-hide">
           <button
-            onClick={() => handleFilterChange('status', '')}
-            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-              selectedFilter === '' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {t('common:all')}
-          </button>
-          <button
             onClick={() => handleFilterChange('status', 'unassigned')}
             className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
               selectedFilter === 'unassigned' 
@@ -920,6 +910,16 @@ export default function Chats() {
             }`}
           >
             {t('chats:filters.spam')}
+          </button>
+          <button
+            onClick={() => handleFilterChange('status', '')}
+            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
+              selectedFilter === '' 
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            {t('common:all')}
           </button>
         </div>
 
