@@ -37,15 +37,25 @@ Interflow's frontend provides:
 Create a `.env` file with:
 
 ```env
-# Supabase
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+NODE_ENV=development
 
-# Stripe
-VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+# Supabase
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=your_supabase_url
 
 # API
-VITE_API_URL=your_backend_api_url
+VITE_API_URL=your_api_url
+
+# Instagram
+VITE_INSTAGRAM_CLIENT_ID=your_instagram_client_id
+
+# Facebook/WhatsApp
+VITE_FB_APP_ID=your_facebook_app_id
+VITE_FB_CONFIG_ID=your_facebook_config_id
+
+# Sentry
+VITE_SENTRY_DSN=your_sentry_dsn
+VITE_SENTRY_ENVIRONMENT=development
 ```
 
 ## Installation
