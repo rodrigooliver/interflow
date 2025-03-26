@@ -6,8 +6,10 @@ export const getChannelIcon = (type: string) => {
     case 'whatsapp_evo':
       return '/images/logos/whatsapp.svg';
     case 'instagram':
+    case 'instagramId':
       return '/images/logos/instagram.svg';
     case 'facebook':
+    case 'facebookId':
       return '/images/logos/facebook.svg';
     case 'email':
       return '/images/logos/email.svg';

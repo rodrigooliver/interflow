@@ -663,9 +663,13 @@ export interface CustomFieldDefinition {
   id: string;
   name: string;
   organization_id: string;
-  type: string;
+  type: 'text' | 'number' | 'date' | 'datetime' | 'select';
   options?: string[];
-  created_at?: string;
+  mask_type?: 'cpf' | 'cnpj' | 'phone' | 'cep' | 'rg' | 'custom';
+  custom_mask?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Interface para valor de campo personalizado
@@ -680,11 +684,14 @@ export interface CustomFieldValue {
 // Interface para uso em formulários e criação/edição
 export interface CustomFieldFormData {
   id?: string;
-  field_id?: string;
+  field_id: string;
   field_name: string;
-  value: string;
-  type?: string;
+  type: 'text' | 'number' | 'date' | 'datetime' | 'select';
+  value?: string;
   options?: string[];
+  mask_type?: 'cpf' | 'cnpj' | 'phone' | 'cep' | 'rg' | 'custom';
+  custom_mask?: string;
+  description?: string;
   isNew?: boolean;
 }
 

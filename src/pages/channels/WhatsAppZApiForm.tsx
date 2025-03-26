@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
+import TransferChatsModal from '../../components/channels/TransferChatsModal';
+
+// Interface para erros com resposta
+interface ApiError extends Error {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
 
 export default function WhatsAppZApiForm() {
   const { t } = useTranslation(['channels', 'common']);
@@ -13,6 +24,9 @@ export default function WhatsAppZApiForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     credentials: {
@@ -105,6 +119,30 @@ export default function WhatsAppZApiForm() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!id) return;
+    
+    setDeleting(true);
+    setError('');
+
+    try {
+      const response = await api.delete(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp_zapi/${id}`);
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || t('common:error'));
+      }
+
+      navigate('/app/channels');
+    } catch (error: unknown) {
+      const err = error as ApiError;
+      console.error('Error deleting channel:', error);
+      setError(err.response?.data?.error || err.message || t('common:error'));
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -128,6 +166,27 @@ export default function WhatsAppZApiForm() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {id ? t('form.title.edit') : t('form.title.create')}
           </h1>
+
+          {/* Botões de ação */}
+          {id && (
+            <div className="ml-auto flex items-center space-x-2">
+              <button
+                onClick={() => setShowTransferModal(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {t('channels:form.transferChats')}
+              </button>
+
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-900/70"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {t('common:delete')}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
@@ -223,6 +282,58 @@ export default function WhatsAppZApiForm() {
             </div>
           </form>
         </div>
+
+        {/* Modal de confirmação de exclusão */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/50 rounded-full mb-4">
+                  <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
+                  {t('delete.title')}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+                  {t('delete.confirmation', { name: formData.name })}
+                </p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(false)}
+                    disabled={deleting}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    {t('common:back')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {t('common:deleting')}
+                      </>
+                    ) : (
+                      t('common:confirmDelete')
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de transferência de chats */}
+        <TransferChatsModal
+          isOpen={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          currentChannelId={id || ''}
+          channelType="whatsapp_zapi"
+        />
       </div>
     </div>
   );

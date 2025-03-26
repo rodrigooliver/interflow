@@ -52,6 +52,8 @@
       "accountId": "ID da Conta",
       "noAccount": "Sem conta"
     },
+    "noChannelsAvailable": "Nenhum canal disponível para transferência",
+    "transferChats": "Transferir Chats",
     "name": "Nome do Canal",
     "title": {
       "create": "Novo Canal de Atendimento",

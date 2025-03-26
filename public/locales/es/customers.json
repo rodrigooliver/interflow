@@ -76,5 +76,44 @@
   "startChat": "Iniciar chat",
   "startChatWithCustomer": "Iniciar chat con {{name}}",
   "whatsapp": "WhatsApp",
-  "whatsappFormatHint": "Ingrese solo números, sin espacios ni caracteres especiales."
+  "whatsappFormatHint": "Ingrese solo números, sin espacios ni caracteres especiales.",
+  "customFields": {
+    "title": "Campos Personalizados",
+    "addField": "Agregar campo",
+    "noFields": "No hay campos personalizados registrados",
+    "edit": "Editar",
+    "fieldName": "Nombre del Campo",
+    "fieldType": "Tipo de Campo",
+    "fieldValue": "Valor",
+    "selectOption": "Seleccione una opción",
+    "enterValue": "Ingrese el valor para {{fieldName}}",
+    "fieldSaved": "Campo \"{{fieldName}}\" guardado",
+    "fieldAdded": "Campo \"{{fieldName}}\" agregado",
+    "errorSaving": "Error al guardar el campo \"{{fieldName}}\"",
+    "errorAdding": "Error al agregar el campo \"{{fieldName}}\"",
+    "fieldTypes": {
+      "text": "Texto",
+      "number": "Número",
+      "date": "Fecha",
+      "datetime": "Fecha y Hora",
+      "select": "Lista de Opciones"
+    },
+    "masks": {
+      "title": "Máscara",
+      "none": "Ninguna",
+      "cpf": "CPF",
+      "cnpj": "CNPJ",
+      "phone": "Teléfono",
+      "cep": "CEP",
+      "rg": "RG",
+      "custom": "Personalizada"
+    },
+    "customMaskHint": "Use grupos de captura con paréntesis para definir dónde se insertarán los números",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Ingrese una descripción para este campo",
+    "deleteTitle": "Eliminar Campo Personalizado",
+    "deleteMessage": "¿Estás seguro de que deseas eliminar el campo \"{{fieldName}}\"? Esta acción no se puede deshacer.",
+    "deleteSuccess": "Campo personalizado eliminado con éxito",
+    "deleteError": "Error al eliminar el campo personalizado"
+  }
 }

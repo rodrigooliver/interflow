@@ -33,6 +33,8 @@
       "success": "Connection established successfully!",
       "error": "Failed to connect to email server"
     },
+    "noChannelsAvailable": "No channels available for transfer",
+    "transferChats": "Transfer Chats",
     "whatsapp": {
       "hostFormat": "Format: host10.serverapi.dev (without https://)",
       "invalidHost": "Invalid host format. Use format: host10.serverapi.dev",

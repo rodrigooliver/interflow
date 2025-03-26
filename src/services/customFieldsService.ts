@@ -19,7 +19,9 @@ export async function createCustomFieldDefinition(
     
     const { data, error } = await supabase
       .from('custom_fields_definition')
-      .insert(field)
+      .insert({
+        ...field
+      })
       .select()
       .single();
       
@@ -46,7 +48,9 @@ export async function updateCustomFieldDefinition(
   try {
     const { error } = await supabase
       .from('custom_fields_definition')
-      .update(updates)
+      .update({
+        ...updates
+      })
       .eq('id', fieldId);
       
     if (error) throw error;

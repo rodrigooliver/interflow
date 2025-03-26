@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertTriangle, RefreshCw, ArrowRight, Check, X, MessageSquare, Trash } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, RefreshCw, ArrowRight, Check, X, MessageSquare, Trash, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import { toast } from 'react-hot-toast';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import TransferChatsModal from '../../components/channels/TransferChatsModal';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -51,17 +52,24 @@ export default function WhatsAppOfficialForm() {
     window.history.back();
   };
   
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     is_connected: false,
-    status: 'inactive'
+    status: 'inactive',
+    credentials: {
+      appId: '',
+      appSecret: '',
+      accessToken: '',
+      pageId: '',
+      webhookUrl: ''
+    }
   });
   // Referência para armazenar as informações da sessão de forma síncrona
   const sessionInfoRef = useRef<Record<string, unknown>>({});
@@ -175,7 +183,14 @@ export default function WhatsAppOfficialForm() {
       setFormData({
         name: data.name,
         is_connected: data.is_connected,
-        status: data.status
+        status: data.status,
+        credentials: data.credentials || {
+          appId: '',
+          appSecret: '',
+          accessToken: '',
+          pageId: '',
+          webhookUrl: ''
+        }
       });
 
       // Extrair informações de configuração das credenciais
@@ -358,34 +373,6 @@ export default function WhatsAppOfficialForm() {
     }
   };
 
-  const handleToggleStatus = async () => {
-    if (!id) return;
-    
-    setUpdatingStatus(true);
-    try {
-      const { error } = await supabase
-        .from('chat_channels')
-        .update({
-          status: formData.status === 'active' ? 'inactive' : 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setFormData(prev => ({
-        ...prev,
-        status: prev.status === 'active' ? 'inactive' : 'active'
-      }));
-
-    } catch (error) {
-      console.error('Error toggling status:', error);
-      setError(t('common:error'));
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!id) return;
     
@@ -393,20 +380,17 @@ export default function WhatsAppOfficialForm() {
     setError('');
 
     try {
-      const response = await api.delete(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp/${id}`);
+      const response = await api.delete(`/api/${currentOrganizationMember?.organization.id}/channel/whatsapp_official/${id}`);
 
       if (!response.data.success) {
         throw new Error(response.data.error || t('common:error'));
       }
 
-      // Usar a função handleGoBack em vez de navegar diretamente
-      handleGoBack();
-      toast.success(t('channels:deleteSuccess'));
+      navigate('/app/channels');
     } catch (error: unknown) {
       const err = error as ApiError;
       console.error('Error deleting channel:', error);
       setError(err.response?.data?.error || err.message || t('common:error'));
-      toast.error(err.response?.data?.error || err.message || t('common:error'));
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);
@@ -673,7 +657,14 @@ export default function WhatsAppOfficialForm() {
           setFormData({
             name: updatedChannel.name,
             is_connected: updatedChannel.is_connected,
-            status: updatedChannel.status
+            status: updatedChannel.status,
+            credentials: updatedChannel.credentials || {
+              appId: '',
+              appSecret: '',
+              accessToken: '',
+              pageId: '',
+              webhookUrl: ''
+            }
           });
           
           // Atualizar informações de configuração
@@ -752,7 +743,7 @@ export default function WhatsAppOfficialForm() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center mb-6">
             <button
-              onClick={handleGoBack}
+              onClick={() => navigate('/app/channels')}
               className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -794,8 +785,9 @@ export default function WhatsAppOfficialForm() {
           </div>
 
           <div className="flex items-center mb-6">
+            {/* Status de Conexão */}
             {id && (
-              <div className="ml-4 flex items-center">
+              <div className="ml-4 flex items-center space-x-2">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   formData.is_connected
                     ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-400'
@@ -806,22 +798,15 @@ export default function WhatsAppOfficialForm() {
               </div>
             )}
 
+            {/* Botões de ação */}
             {id && formData.is_connected && (
               <div className="ml-auto flex items-center space-x-2">
                 <button
-                  onClick={handleToggleStatus}
-                  disabled={updatingStatus}
-                  className={`inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md ${
-                    formData.status === 'active'
-                      ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/70'
-                      : 'bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-900/70'
-                  }`}
+                  onClick={() => setShowTransferModal(true)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70"
                 >
-                  {updatingStatus ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    formData.status === 'active' ? t('status.active') : t('status.inactive')
-                  )}
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {t('channels:form.transferChats')}
                 </button>
               </div>
             )}
@@ -865,12 +850,7 @@ export default function WhatsAppOfficialForm() {
                 
                 {id && (
                   <>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      {t('common:save')}
-                    </button>
+                   
                     
                     {!formData.is_connected && (
                       <button
@@ -901,6 +881,13 @@ export default function WhatsAppOfficialForm() {
                         ? t('channels:form.whatsapp.updateToken')
                         : t('channels:form.whatsapp.insertToken')
                       }
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      {t('common:save')}
                     </button>
                   </>
                 )}
@@ -1006,6 +993,14 @@ export default function WhatsAppOfficialForm() {
           </div>
         </div>
       )}
+
+      {/* Modal de transferência de chats */}
+      <TransferChatsModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        currentChannelId={id || ''}
+        channelType="whatsapp_official"
+      />
     </div>
   );
 }

@@ -4,6 +4,10 @@ import { supabase } from '../../lib/supabase';
 import { CustomFieldFormData, CustomFieldDefinition } from '../../types/database';
 import { CustomFieldModal } from './CustomFieldModal';
 import { useCustomFieldDefinitions } from '../../hooks/useQueryes';
+import { useTranslation } from 'react-i18next';
+import { createCustomFieldDefinition } from '../../services/customFieldsService';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 
 interface CustomFieldsSectionProps {
   customerId: string;
@@ -26,20 +30,14 @@ export function CustomFieldsSection({
   readOnly = false,
   preloadedFieldValues
 }: CustomFieldsSectionProps) {
+  const { t } = useTranslation(['customers']);
+  const queryClient = useQueryClient();
   const [customFields, setCustomFields] = useState<CustomFieldFormData[]>([]);
   const [organizationFields, setOrganizationFields] = useState<CustomFieldDefinition[]>([]);
   const [loadingCustomFields, setLoadingCustomFields] = useState(true);
   const [selectedField, setSelectedField] = useState<CustomFieldFormData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingField, setIsCreatingField] = useState(false);
-  const [showNewFieldForm, setShowNewFieldForm] = useState(false);
-  const [newField, setNewField] = useState({
-    field_name: '',
-    field_id: '',
-    value: ''
-  });
-  const [fieldSuggestions, setFieldSuggestions] = useState<CustomFieldDefinition[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [originalValues, setOriginalValues] = useState<Record<string, string>>({});
 
   const { data: fieldDefinitions, isLoading: loadingDefinitions } = useCustomFieldDefinitions(organizationId);
@@ -62,7 +60,6 @@ export function CustomFieldsSection({
   useEffect(() => {
     if (fieldDefinitions) {
       setOrganizationFields(fieldDefinitions);
-      setFieldSuggestions(fieldDefinitions);
     }
   }, [fieldDefinitions]);
 
@@ -80,6 +77,8 @@ export function CustomFieldsSection({
           value: '', // Valor vazio
           type: definition.type || 'text',
           options: definition.options || [],
+          mask_type: definition.mask_type,
+          custom_mask: definition.custom_mask,
           isNew: true
         } as CustomFieldFormData;
       });
@@ -137,6 +136,8 @@ export function CustomFieldsSection({
             value: existingValue.value || '',
             type: definition.type || 'text',
             options: definition.options || [],
+            mask_type: definition.mask_type,
+            custom_mask: definition.custom_mask,
             isNew: false
           } as CustomFieldFormData;
         } else {
@@ -148,6 +149,8 @@ export function CustomFieldsSection({
             value: '',
             type: definition.type || 'text',
             options: definition.options || [],
+            mask_type: definition.mask_type,
+            custom_mask: definition.custom_mask,
             isNew: true
           } as CustomFieldFormData;
         }
@@ -175,24 +178,48 @@ export function CustomFieldsSection({
     }
   };
 
+  // Função para invalidar os caches
+  const invalidateCaches = async () => {
+    if (!organizationId) return;
+    
+    // Invalidar cache das definições de campos
+    await queryClient.invalidateQueries({
+      queryKey: ['custom_field_definitions', organizationId]
+    });
+  };
+
   // Função para salvar um campo personalizado
   const handleSaveField = async (field: CustomFieldFormData) => {
-    console.log('Verificando se houve alteração no campo:', field.field_name);
-    
     if (!customerId || !organizationId || !field.field_id) return;
     
-    // Verificar se o valor foi alterado
-    const originalValue = originalValues[field.field_id as string] || '';
-    const currentValue = field.value || '';
-    
-    if (originalValue === currentValue) {
-      console.log('Nenhuma alteração detectada para o campo:', field.field_name);
-      return;
-    }
-    
-    console.log('Alteração detectada, salvando campo:', field.field_name);
-    
     try {
+      // Verificar se houve alteração no nome do campo
+      const originalField = fieldDefinitions?.find(d => d.id === field.field_id);
+      if (originalField && originalField.name !== field.field_name) {
+        // Atualizar o nome do campo na definição
+        const { error: defError } = await supabase
+          .from('custom_fields_definition')
+          .update({
+            name: field.field_name,
+            type: field.type,
+            options: field.options,
+            mask_type: field.mask_type,
+            custom_mask: field.custom_mask,
+            description: field.description
+          })
+          .eq('id', field.field_id);
+
+        if (defError) throw defError;
+      }
+      
+      // Verificar se o valor foi alterado
+      const originalValue = originalValues[field.field_id as string] || '';
+      const currentValue = field.value || '';
+      
+      if (originalValue === currentValue) {
+        return;
+      }
+      
       // Atualizar ou inserir o valor do campo na tabela customer_field_values
       const { data, error } = await supabase
         .from('customer_field_values')
@@ -228,18 +255,17 @@ export function CustomFieldsSection({
         }
       }
       
-      console.log('Campo personalizado salvo com sucesso:', field.field_name);
-      
       // Atualizar o valor original após salvar
       setOriginalValues(prev => ({
         ...prev,
         [field.field_id as string]: currentValue
       }));
+
       
       // Mostrar feedback visual temporário
       const feedbackElement = document.createElement('div');
       feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      feedbackElement.textContent = `Campo "${field.field_name}" salvo`;
+      feedbackElement.textContent = t('customFields.fieldSaved', { fieldName: field.field_name });
       document.body.appendChild(feedbackElement);
       
       setTimeout(() => {
@@ -252,7 +278,7 @@ export function CustomFieldsSection({
       // Mostrar mensagem de erro
       const feedbackElement = document.createElement('div');
       feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      feedbackElement.textContent = `Erro ao salvar campo "${field.field_name}"`;
+      feedbackElement.textContent = t('customFields.errorSaving', { fieldName: field.field_name });
       document.body.appendChild(feedbackElement);
       
       setTimeout(() => {
@@ -261,10 +287,86 @@ export function CustomFieldsSection({
     }
   };
 
+  // Função para aplicar máscara ao valor
+  const applyMask = (value: string, maskType: string, customMask?: string): string => {
+    // Remover todos os caracteres não numéricos
+    const digits = value.replace(/\D/g, '');
+    
+    switch (maskType) {
+      case 'cpf':
+        return digits
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      
+      case 'cnpj':
+        return digits
+          .replace(/^(\d{2})(\d)/, '$1.$2')
+          .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+          .replace(/\.(\d{3})(\d)/, '.$1/$2')
+          .replace(/(\d{4})(\d)/, '$1-$2');
+      
+      case 'phone':
+        return digits
+          .replace(/(\d{2})(\d)/, '($1) $2')
+          .replace(/(\d{4,5})(\d{4})$/, '$1-$2');
+      
+      case 'cep':
+        return digits.replace(/(\d{5})(\d{3})/, '$1-$2');
+      
+      case 'rg':
+        return digits
+          .replace(/(\d{2})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      
+      case 'custom':
+        if (!customMask) return value;
+        try {
+          // Extrair os grupos da máscara regex
+          const groups = customMask.match(/\([^)]+\)/g) || [];
+          let result = '';
+          let digitIndex = 0;
+          
+          // Substituir cada grupo por dígitos
+          let maskIndex = 0;
+          for (let i = 0; i < customMask.length; i++) {
+            if (customMask[i] === '(') {
+              const group = groups[maskIndex];
+              const groupLength = group.length - 2; // Remover parênteses
+              const groupDigits = digits.slice(digitIndex, digitIndex + groupLength);
+              result += groupDigits;
+              digitIndex += groupLength;
+              maskIndex++;
+              i += group.length - 1; // Pular o grupo
+            } else {
+              result += customMask[i];
+            }
+          }
+          
+          return result;
+        } catch (error) {
+          console.error('Erro ao aplicar máscara customizada:', error);
+          return value;
+        }
+      
+      default:
+        return value;
+    }
+  };
+
   // Função para atualizar o valor de um campo no estado local
   const handleFieldValueChange = (index: number, value: string) => {
+    const field = customFields[index];
+    let newValue = value;
+
+    // Aplicar máscara se o campo tiver uma definida
+    if (field.mask_type) {
+      newValue = applyMask(value, field.mask_type, field.custom_mask);
+    }
+
     const updatedFields = [...customFields];
-    updatedFields[index] = { ...updatedFields[index], value };
+    updatedFields[index] = { ...updatedFields[index], value: newValue };
     setCustomFields(updatedFields);
     
     // Notificar o componente pai
@@ -287,7 +389,7 @@ export function CustomFieldsSection({
               onClick={() => handleOpenEditModal(field)}
               className="text-xs text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
             >
-              Editar
+              {t('customFields.edit')}
             </button>
           )}
         </div>
@@ -299,7 +401,7 @@ export function CustomFieldsSection({
             onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
           >
-            <option value="">Selecione uma opção</option>
+            <option value="">{field.description || t('customFields.selectOption')}</option>
             {field.options.map((option, optIndex) => (
               <option key={optIndex} value={option}>{option}</option>
             ))}
@@ -313,6 +415,15 @@ export function CustomFieldsSection({
             onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
           />
+        ) : field.type === 'datetime' ? (
+          <input
+            id={`custom-field-${index}`}
+            type="datetime-local"
+            value={field.value || ''}
+            onChange={(e) => handleFieldValueChange(index, e.target.value)}
+            onBlur={() => handleSaveField(field)}
+            className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+          />
         ) : field.type === 'number' ? (
           <input
             id={`custom-field-${index}`}
@@ -321,6 +432,7 @@ export function CustomFieldsSection({
             onChange={(e) => handleFieldValueChange(index, e.target.value)}
             onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+            placeholder={field.description || t('customFields.enterValue', { fieldName: field.field_name })}
           />
         ) : (
           <input
@@ -330,7 +442,12 @@ export function CustomFieldsSection({
             onChange={(e) => handleFieldValueChange(index, e.target.value)}
             onBlur={() => handleSaveField(field)}
             className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-            placeholder="Deixe em branco para remover"
+            placeholder={field.description || t('customFields.enterValue', { fieldName: field.field_name })}
+            maxLength={field.mask_type === 'cpf' ? 14 : 
+                      field.mask_type === 'cnpj' ? 18 : 
+                      field.mask_type === 'phone' ? 15 : 
+                      field.mask_type === 'cep' ? 9 : 
+                      field.mask_type === 'rg' ? 12 : undefined}
           />
         )}
       </div>
@@ -338,136 +455,106 @@ export function CustomFieldsSection({
   };
 
   // Função para adicionar um novo campo
-  const handleAddField = async () => {
-    if (!newField.field_name.trim() || !organizationId || !customerId) return;
-    
+  const handleAddField = async (field: CustomFieldFormData, index?: number) => {
+    if (!customerId || !organizationId) {
+      return;
+    }
+
     try {
-      // Verificar se o campo já existe na definição
-      let fieldId = newField.field_id;
-      const existingDefinition = organizationFields.find(
-        def => def.name.toLowerCase() === newField.field_name.toLowerCase()
-      );
+      // Verificar se é uma atualização de campo existente
+      const existingField = customFields.find(f => f.field_id === field.field_id);
       
-      if (existingDefinition) {
-        fieldId = existingDefinition.id;
-      } else {
-        // Criar nova definição de campo
-        const { data: newDefinition, error: defError } = await supabase
+      if (existingField) {
+        // Atualizar a definição do campo no banco de dados
+        const { error: defError } = await supabase
           .from('custom_fields_definition')
-          .insert({
-            name: newField.field_name.trim(),
-            organization_id: organizationId,
-            type: 'text' // Tipo padrão
+          .update({
+            name: field.field_name,
+            type: field.type,
+            options: field.options,
+            mask_type: field.mask_type,
+            custom_mask: field.custom_mask,
+            description: field.description
           })
-          .select()
-          .single();
-          
+          .eq('id', field.field_id);
+
         if (defError) throw defError;
+
+        // Atualizar o estado local
+        const updatedFields = [...customFields];
+        if (typeof index === 'number') {
+          updatedFields[index] = field;
+        } else {
+          const fieldIndex = updatedFields.findIndex(f => f.field_id === field.field_id);
+          if (fieldIndex !== -1) {
+            updatedFields[fieldIndex] = field;
+          }
+        }
+        setCustomFields(updatedFields);
         
-        fieldId = newDefinition.id;
-        
-        // Adicionar à lista de definições
-        setOrganizationFields(prev => [...prev, newDefinition]);
+        // Notificar o componente pai
+        if (onFieldsChange) {
+          onFieldsChange(updatedFields);
+        }
+
+        // Invalidar os caches após atualizar
+        await invalidateCaches();
+        return;
       }
-      
-      const valueToSave = newField.value.trim();
-      
-      // Criar o valor do campo na tabela customer_field_values
-      const { data: newFieldValue, error: fieldError } = await supabase
-        .from('customer_field_values')
-        .upsert({
-          customer_id: customerId,
-          field_definition_id: fieldId,
-          value: valueToSave,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'customer_id,field_definition_id'
-        })
-        .select();
+
+      // Se for um novo campo e já tiver field_id, significa que a definição já foi criada
+      if (field.field_id) {
+        // Adicionar o campo à lista
+        const updatedFields = [...customFields];
+        if (typeof index === 'number') {
+          updatedFields[index] = field;
+        } else {
+          updatedFields.push(field);
+        }
+        setCustomFields(updatedFields);
         
-      if (fieldError) throw fieldError;
-      
-      // Adicionar o campo ao estado local
-      const newFieldData: CustomFieldFormData = {
-        id: newFieldValue?.[0]?.id,
-        field_id: fieldId,
-        field_name: newField.field_name.trim(),
-        value: valueToSave,
-        type: 'text',
-        isNew: false
-      };
-      
-      // Atualizar valores originais
-      setOriginalValues(prev => ({
-        ...prev,
-        [fieldId]: valueToSave
-      }));
-      
-      setCustomFields(prev => [...prev, newFieldData]);
-      
-      // Notificar o componente pai
-      if (onFieldsChange) {
-        onFieldsChange([...customFields, newFieldData]);
+        // Notificar o componente pai
+        if (onFieldsChange) {
+          onFieldsChange(updatedFields);
+        }
+
+        // Invalidar os caches após adicionar
+        await invalidateCaches();
+        return;
       }
-      
-      // Limpar o formulário
-      setNewField({
-        field_name: '',
-        field_id: '',
-        value: ''
+
+      // Se for um novo campo sem field_id, criar a definição
+      const newFieldDef = await createCustomFieldDefinition({
+        name: field.field_name,
+        organization_id: organizationId,
+        type: field.type,
+        options: field.options,
+        mask_type: field.mask_type,
+        custom_mask: field.custom_mask,
+        description: field.description
       });
-      setShowNewFieldForm(false);
-      
-      // Mostrar feedback visual
-      const feedbackElement = document.createElement('div');
-      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      feedbackElement.textContent = `Campo "${newField.field_name}" adicionado`;
-      document.body.appendChild(feedbackElement);
-      
-      setTimeout(() => {
-        feedbackElement.remove();
-      }, 1500);
-      
+
+      if (newFieldDef) {
+        // Adicionar o campo à lista
+        const updatedFields = [...customFields];
+        if (typeof index === 'number') {
+          updatedFields[index] = { ...field, field_id: newFieldDef.id };
+        } else {
+          updatedFields.push({ ...field, field_id: newFieldDef.id });
+        }
+        setCustomFields(updatedFields);
+        
+        // Notificar o componente pai
+        if (onFieldsChange) {
+          onFieldsChange(updatedFields);
+        }
+
+        // Invalidar os caches após criar
+        await invalidateCaches();
+      }
     } catch (error) {
-      console.error('Erro ao adicionar campo personalizado:', error);
-      
-      // Mostrar mensagem de erro
-      const feedbackElement = document.createElement('div');
-      feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      feedbackElement.textContent = `Erro ao adicionar campo`;
-      document.body.appendChild(feedbackElement);
-      
-      setTimeout(() => {
-        feedbackElement.remove();
-      }, 3000);
+      console.error('Erro ao adicionar campo:', error);
     }
-  };
-
-  // Função para filtrar sugestões de campos
-  const handleFieldNameChange = (value: string) => {
-    setNewField(prev => ({ ...prev, field_name: value }));
-    
-    if (value.trim().length > 0 && fieldDefinitions) {
-      // Filtrar definições de campos que correspondem à pesquisa
-      const filtered = fieldDefinitions.filter(
-        def => def.name.toLowerCase().includes(value.toLowerCase())
-      );
-      setFieldSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-    } else {
-      setFieldSuggestions(fieldDefinitions || []);
-      setShowSuggestions(false);
-    }
-  };
-
-  // Função para selecionar uma sugestão de campo
-  const handleSelectFieldSuggestion = (field: CustomFieldDefinition) => {
-    setNewField(prev => ({
-      ...prev,
-      field_name: field.name,
-      field_id: field.id
-    }));
-    setShowSuggestions(false);
   };
 
   // Função para editar um campo existente (usada nos botões de edição)
@@ -475,6 +562,30 @@ export function CustomFieldsSection({
     setSelectedField(field);
     setIsCreatingField(false);
     setIsModalOpen(true);
+  };
+
+  // Função para abrir o modal de criação
+  const handleOpenCreateModal = () => {
+    setSelectedField(null);
+    setIsCreatingField(true);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteField = async (field: CustomFieldFormData) => {
+    try {
+      const { error } = await supabase
+        .from('custom_fields_definition')
+        .delete()
+        .eq('id', field.field_id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['custom_field_definitions'] });
+      toast.success(t('customFields.deleteSuccess'));
+    } catch (error) {
+      console.error('Erro ao excluir campo:', error);
+      toast.error(t('customFields.deleteError'));
+    }
   };
 
   return (
@@ -486,7 +597,7 @@ export function CustomFieldsSection({
         </div>
       ) : customFields.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
-          Nenhum campo personalizado cadastrado
+          {t('customFields.noFields')}
         </p>
       ) : (
         <div className="space-y-2">
@@ -499,102 +610,24 @@ export function CustomFieldsSection({
         {!readOnly && (
           <button
             type="button"
-            onClick={() => setShowNewFieldForm(!showNewFieldForm)}
+            onClick={handleOpenCreateModal}
             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
           >
             <Plus className="w-4 h-4 mr-1" />
-            Adicionar campo
+            {t('customFields.addField')}
           </button>
         )}
       </div>
       
-      {/* Formulário para adicionar novo campo */}
-      {showNewFieldForm && (
-        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Novo campo personalizado
-          </h5>
-          <div className="space-y-3">
-            <div className="relative">
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Nome do campo
-              </label>
-              <input
-                type="text"
-                value={newField.field_name}
-                onChange={(e) => handleFieldNameChange(e.target.value)}
-                onFocus={() => {
-                  if (newField.field_name.trim().length > 0 && fieldSuggestions.length > 0) {
-                    setShowSuggestions(true);
-                  }
-                }}
-                onBlur={() => {
-                  // Pequeno atraso para permitir que o clique na sugestão seja processado
-                  setTimeout(() => setShowSuggestions(false), 200);
-                }}
-                className="w-full h-9 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 text-sm"
-                placeholder="Ex: Telefone, Endereço, etc."
-              />
-              
-              {/* Sugestões de campos */}
-              {showSuggestions && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-40 overflow-y-auto">
-                  {fieldSuggestions.map(field => (
-                    <div
-                      key={field.id}
-                      className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      onMouseDown={() => handleSelectFieldSuggestion(field)}
-                    >
-                      {field.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Valor
-              </label>
-              <input
-                type="text"
-                value={newField.value}
-                onChange={(e) => setNewField(prev => ({ ...prev, value: e.target.value }))}
-                className="w-full h-9 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 text-sm"
-                placeholder="Valor do campo"
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-2">
-              <button
-                type="button"
-                onClick={() => setShowNewFieldForm(false)}
-                className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleAddField}
-                disabled={!newField.field_name.trim() || !newField.value.trim() || loadingCustomFields}
-                className="px-3 py-1.5 text-xs border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {loadingCustomFields && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                Adicionar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Modal para criar/editar campo personalizado - remover opção de remoção */}
+      {/* Modal para criar/editar campo personalizado */}
       {isModalOpen && (
         <CustomFieldModal
           field={selectedField}
           isCreating={isCreatingField}
           organizationFields={organizationFields}
           organizationId={organizationId || ''}
-          onSave={handleSaveField}
+          onSave={handleAddField}
+          onDelete={handleDeleteField}
           onClose={() => setIsModalOpen(false)}
         />
       )}

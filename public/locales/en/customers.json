@@ -76,5 +76,44 @@
   "startChat": "Start chat",
   "startChatWithCustomer": "Start chat with {{name}}",
   "whatsapp": "WhatsApp",
-  "whatsappFormatHint": "Enter numbers only, without spaces or special characters."
+  "whatsappFormatHint": "Enter numbers only, without spaces or special characters.",
+  "customFields": {
+    "title": "Custom Fields",
+    "addField": "Add field",
+    "noFields": "No custom fields registered",
+    "edit": "Edit",
+    "fieldName": "Field Name",
+    "fieldType": "Field Type",
+    "fieldValue": "Value",
+    "selectOption": "Select an option",
+    "enterValue": "Enter value for {{fieldName}}",
+    "fieldSaved": "Field \"{{fieldName}}\" saved",
+    "fieldAdded": "Field \"{{fieldName}}\" added",
+    "errorSaving": "Error saving field \"{{fieldName}}\"",
+    "errorAdding": "Error adding field \"{{fieldName}}\"",
+    "fieldTypes": {
+      "text": "Text",
+      "number": "Number",
+      "date": "Date",
+      "datetime": "Date and Time",
+      "select": "Options List"
+    },
+    "masks": {
+      "title": "Mask",
+      "none": "None",
+      "cpf": "CPF",
+      "cnpj": "CNPJ",
+      "phone": "Phone",
+      "cep": "CEP",
+      "rg": "RG",
+      "custom": "Custom"
+    },
+    "customMaskHint": "Use capture groups with parentheses to define where numbers will be inserted",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter a description for this field",
+    "deleteTitle": "Delete Custom Field",
+    "deleteMessage": "Are you sure you want to delete the field \"{{fieldName}}\"? This action cannot be undone.",
+    "deleteSuccess": "Custom field deleted successfully",
+    "deleteError": "Error deleting custom field"
+  }
 }

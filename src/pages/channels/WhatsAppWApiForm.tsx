@@ -6,9 +6,18 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
-import { toast } from 'react-hot-toast';
+import TransferChatsModal from '../../components/channels/TransferChatsModal';
 
 type ConnectionType = 'custom' | 'interflow' | null;
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+  message?: string;
+}
 
 export default function WhatsAppWApiForm() {
   const { t } = useTranslation(['channels', 'common', 'status']);
@@ -68,9 +77,6 @@ export default function WhatsAppWApiForm() {
 
   // Adicionar novos estados
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [transferring, setTransferring] = useState(false);
-  const [availableChannels, setAvailableChannels] = useState<Array<{id: string, name: string}>>([]);
-  const [selectedChannelId, setSelectedChannelId] = useState('');
 
   const validateApiHost = (host: string) => {
     // Remove any protocol and trailing slashes
@@ -238,12 +244,10 @@ export default function WhatsAppWApiForm() {
     setError('');
 
     try {
-      // Determinar qual endpoint usar com base na existência de um ID
       const endpoint = id 
         ? `/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/test` 
         : `/api/${currentOrganizationMember?.organization.id}/channel/wapi/test`;
       
-      // Enviar os dados de conexão em ambos os casos
       const response = await api.post(endpoint, {
         apiHost: formData.credentials.apiHost,
         apiConnectionKey: formData.credentials.apiConnectionKey,
@@ -263,10 +267,11 @@ export default function WhatsAppWApiForm() {
         is_connected: data.data?.connected || false
       }));
       setShowConnectionSettings(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Error testing WApi connection:', error);
       setConnectionStatus('error');
-      setError(error.response?.data?.error || error.message || t('form.whatsapp.error'));
+      setError(apiError.response?.data?.error || apiError.message || t('form.whatsapp.error') || '');
     } finally {
       setTesting(false);
     }
@@ -286,9 +291,10 @@ export default function WhatsAppWApiForm() {
       if (!data.success) {
         throw new Error(data.error || 'Failed to generate QR code');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Error generating QR code:', error);
-      setError(error.response?.data?.error || error.message);
+      setError(apiError.response?.data?.error || apiError.message || '');
       setWaitingQrCode(false);
     } finally {
       setGeneratingQr(false);
@@ -331,9 +337,10 @@ export default function WhatsAppWApiForm() {
       setTimeout(() => {
         setResetSuccess(false);
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Erro ao reiniciar conexão:', error);
-      setError(error.response?.data?.error || error.message);
+      setError(apiError.response?.data?.error || apiError.message || '');
     } finally {
       setResetting(false);
     }
@@ -369,9 +376,10 @@ export default function WhatsAppWApiForm() {
       setTimeout(() => {
         setDisconnectSuccess(false);
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Erro ao desconectar:', error);
-      setError(error.response?.data?.error || error.message);
+      setError(apiError.response?.data?.error || apiError.message || '');
     } finally {
       setDisconnecting(false);
     }
@@ -428,12 +436,12 @@ export default function WhatsAppWApiForm() {
         throw new Error(response.data.error || 'Failed to create Interflow channel');
       }
 
-      // Redireciona para a página de edição com parâmetro source=interflow
       navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi?source=interflow`);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Error creating Interflow channel:', error);
-      setError(error.response?.data?.error || error.message || t('common:error'));
-      setConnectionType(null); // Reset da seleção em caso de erro
+      setError(apiError.response?.data?.error || apiError.message || t('common:error') || '');
+      setConnectionType(null);
     } finally {
       setCreating(false);
     }
@@ -453,11 +461,11 @@ export default function WhatsAppWApiForm() {
         throw new Error(response.data.error || 'Failed to delete channel');
       }
 
-      // Redirecionar para a lista de canais usando a history
       handleGoBack();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Error deleting channel:', error);
-      setError(error.response?.data?.error || error.message || t('common:error'));
+      setError(apiError.response?.data?.error || apiError.message || t('common:error') || '');
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);
@@ -473,7 +481,6 @@ export default function WhatsAppWApiForm() {
     setSaveSuccess(false);
 
     try {
-      // Para novos canais ou ao editar credenciais, exigir teste antes de salvar
       if ((!id || showConnectionSettings) && !formData.is_tested) {
         setError(t('channels:errors.testRequired'));
         setSaving(false);
@@ -485,35 +492,29 @@ export default function WhatsAppWApiForm() {
         credentials: showConnectionSettings && formData.is_tested 
           ? formData.credentials 
           : undefined,
-        // Se estiver salvando novas credenciais testadas, marca como testado mas desconectado
         is_tested: showConnectionSettings ? true : formData.is_tested,
         is_connected: showConnectionSettings ? false : formData.is_connected,
         status: formData.status
       };
 
       if (id) {
-        // Update existing channel
         const response = await api.put(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}`, channelData);
         
         if (!response.data.success) {
           throw new Error(response.data.error || 'Failed to update channel');
         }
 
-        // Reload channel data
         await loadChannel();
         setSaveSuccess(true);
         
-        // Se salvou novas credenciais, reseta o estado de exibição das configurações
         if (showConnectionSettings) {
           setShowConnectionSettings(false);
         }
         
-        // Limpar mensagem de sucesso após 3 segundos
         setTimeout(() => {
           setSaveSuccess(false);
         }, 3000);
       } else {
-        // Create new channel
         const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi`, {
           ...channelData,
           type: 'whatsapp_wapi',
@@ -531,99 +532,16 @@ export default function WhatsAppWApiForm() {
         }
 
         setSaveSuccess(true);
-        // Redirect to edit page for QR code generation
         navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Error saving channel:', error);
-      setError(error.response?.data?.error || error.message || t('common:error'));
+      setError(apiError.response?.data?.error || apiError.message || t('common:error') || '');
     } finally {
       setSaving(false);
     }
   }
-
-  // Atualizar a renderização do QR code para mostrar loading quando estiver esperando
-  const renderQrCode = () => {
-    if (waitingQrCode) {
-      return (
-        <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-          <Loader2 className="w-8 h-8 text-primary-500 animate-spin mb-4" />
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {t('channels:form.whatsapp.waitingQrCode')}
-          </p>
-        </div>
-      );
-    }
-
-    if (formData.credentials.qrCode) {
-      return (
-        <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-          <QRCodeSVG
-            value={formData.credentials.qrCode}
-            size={256}
-            level="H"
-            includeMargin={true}
-          />
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-            {t('channels:form.whatsapp.scanQrCode')}
-          </p>
-          {isQrCodeExpired() && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-              {t('channels:form.whatsapp.qrCodeExpired')}
-            </p>
-          )}
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  // Adicionar após as outras funções de carregamento
-  const loadAvailableChannels = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('chat_channels')
-        .select('id, name')
-        .eq('type', 'whatsapp_wapi')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .neq('id', id) // Exclui o canal atual
-        .eq('status', 'active'); // Apenas canais ativos
-
-      if (error) throw error;
-      setAvailableChannels(data || []);
-    } catch (error) {
-      console.error('Error loading channels:', error);
-      setError(t('common:error'));
-    }
-  };
-
-  // Adicionar função de transferência
-  const handleTransferChats = async () => {
-    if (!selectedChannelId || !id) return;
-    
-    setTransferring(true);
-    setError('');
-
-    try {
-      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/transfer`, {
-        targetChannelId: selectedChannelId
-      });
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to transfer chats');
-      }
-
-      setShowTransferModal(false);
-      // Mostrar mensagem de sucesso temporária
-      toast.success(t('channels:form.whatsapp.transferSuccess'));
-    } catch (error: any) {
-      console.error('Error transferring chats:', error);
-      setError(error.response?.data?.error || error.message || t('common:error'));
-    } finally {
-      setTransferring(false);
-    }
-  };
 
   if (!id && connectionType === null) {
     return (
@@ -1133,7 +1051,6 @@ export default function WhatsAppWApiForm() {
               <button
                 type="button"
                 onClick={() => {
-                  loadAvailableChannels();
                   setShowTransferModal(true);
                 }}
                 className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1157,8 +1074,14 @@ export default function WhatsAppWApiForm() {
                 disabled={saving || (!id && !formData.is_tested)}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {t('common:saving')}
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {t('common:saving')}
+                  </>
+                ) : (
+                  t('common:save')
+                )}
               </button>
             </div>
           </form>
@@ -1240,64 +1163,12 @@ export default function WhatsAppWApiForm() {
       )}
 
       {/* Modal de Transferência de Chats */}
-      {showTransferModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              {t('channels:form.whatsapp.transferTitle')}
-            </h3>
-            
-            {error && (
-              <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
-                {error}
-              </div>
-            )}
-
-            <div className="mb-6">
-              <label htmlFor="targetChannel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('channels:form.whatsapp.selectTargetChannel')}
-              </label>
-              <select
-                id="targetChannel"
-                value={selectedChannelId}
-                onChange={(e) => setSelectedChannelId(e.target.value)}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">{t('channels:form.whatsapp.selectChannel')}</option>
-                {availableChannels.map(channel => (
-                  <option key={channel.id} value={channel.id}>
-                    {channel.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowTransferModal(false)}
-                disabled={transferring}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md"
-              >
-                {t('common:cancel')}
-              </button>
-              <button
-                onClick={handleTransferChats}
-                disabled={transferring || !selectedChannelId}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 inline-flex items-center"
-              >
-                {transferring ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {t('channels:form.whatsapp.transferring')}
-                  </>
-                ) : (
-                  t('channels:form.whatsapp.transfer')
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TransferChatsModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        currentChannelId={id || ''}
+        channelType="whatsapp_wapi"
+      />
     </div>
   );
 }

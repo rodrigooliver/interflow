@@ -15,6 +15,79 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowDown, UserPlus, UserCheck, RefreshCw } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
+import { getChannelIcon } from '../../utils/channel';
+
+// Interface para tags do cliente
+interface CustomerTag {
+  tag_id: string;
+  tags?: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
+
+// Componente de Tooltip personalizado
+interface CustomTooltipProps {
+  content: string;
+  children: React.ReactNode;
+  color?: string;
+}
+
+function CustomTooltip({ content, children, color }: CustomTooltipProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const childRef = useRef<HTMLDivElement>(null);
+
+  const showTooltip = () => {
+    if (childRef.current) {
+      const rect = childRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + window.scrollY + 5,
+        left: rect.left + window.scrollX + rect.width / 2
+      });
+      setIsVisible(true);
+    }
+  };
+
+  const hideTooltip = () => {
+    setIsVisible(false);
+  };
+
+  return (
+    <>
+      <div 
+        ref={childRef}
+        onMouseEnter={showTooltip}
+        onMouseLeave={hideTooltip}
+        onFocus={showTooltip}
+        onBlur={hideTooltip}
+      >
+        {children}
+      </div>
+      {isVisible && (
+        <div
+          ref={tooltipRef}
+          className="fixed z-50 px-2 py-1 text-xs font-medium text-white bg-gray-800 dark:bg-gray-700 rounded shadow-lg pointer-events-none transform -translate-x-1/2"
+          style={{ 
+            top: `${position.top}px`, 
+            left: `${position.left}px`,
+            backgroundColor: color ? `${color}` : undefined,
+            maxWidth: '200px',
+            wordBreak: 'break-word'
+          }}
+        >
+          {content}
+          <div 
+            className="absolute w-2 h-2 transform rotate-45 -top-1 left-1/2 -ml-1"
+            style={{ backgroundColor: color ? `${color}` : '#1F2937' }}
+          />
+        </div>
+      )}
+    </>
+  );
+}
 
 interface ChatMessagesProps {
   chatId: string;
@@ -487,7 +560,16 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         .from('chats')
         .select(`
           *,
-          customer:customer_id(*),
+          customer:customer_id(*,
+            tags:customer_tags(
+              tag_id,
+              tags:tags(
+                id,
+                name,
+                color
+              )
+            )
+          ),
           channel_details:channel_id(*),
           assigned_agent:assigned_to(
             id,
@@ -1295,7 +1377,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               <ChatAvatar 
                 id={chatId}
                 name={chat?.customer?.name || 'Anônimo'}
-                profilePicture={chat?.profile_picture}
+                profilePicture={chat?.profile_picture || chat?.customer?.profile_picture}
                 channel={chat?.channel_details}
               />
             )}
@@ -1312,11 +1394,57 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   <div className="font-medium text-gray-900 dark:text-gray-100 truncate ">
                     {chat?.customer?.name || t('unnamed')}
                   </div>
-                  {chat?.ticket_number && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      #{chat.ticket_number}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    {chat?.ticket_number && (
+                      <span className="truncate">
+                        #{chat.ticket_number}
+                      </span>
+                    )}
+                    {chat?.external_id && (
+                      <span className="truncate flex items-center">
+                        <img 
+                          src={getChannelIcon(chat.channel_details?.type || 'whatsapp_official')} 
+                          alt="Canal" 
+                          className="w-3.5 h-3.5 mr-1"
+                        />
+                        {chat.external_id}
+                      </span>
+                    )}
+                    {/* Tags do cliente */}
+                    {chat?.customer?.tags && chat.customer.tags.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {chat.customer.tags.slice(0, 2).map((tagItem: CustomerTag) => (
+                          <CustomTooltip 
+                            key={tagItem.tag_id}
+                            content={tagItem.tags?.name || ''}
+                            color={tagItem.tags?.color ? tagItem.tags.color : '#3B82F6'}
+                          >
+                            <span 
+                              className="inline-flex items-center px-1.5 py-0.5 text-xs rounded-full whitespace-nowrap overflow-hidden max-w-[50px]"
+                              style={{ 
+                                backgroundColor: tagItem.tags?.color ? `${tagItem.tags.color}20` : '#3B82F620',
+                                color: tagItem.tags?.color || '#3B82F6'
+                              }}
+                            >
+                              <span className="truncate">{tagItem.tags?.name || ''}</span>
+                            </span>
+                          </CustomTooltip>
+                        ))}
+                        {chat.customer.tags.length > 2 && (
+                          <CustomTooltip 
+                            content={chat.customer.tags.slice(2).map((tag: CustomerTag) => 
+                              tag.tags?.name || ''
+                            ).join(', ')}
+                            color="#4B5563"
+                          >
+                            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">
+                              +{chat.customer.tags.length - 2}
+                            </span>
+                          </CustomTooltip>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Mostrar quem está atendendo */}
                   {chat?.status === 'in_progress' && chat?.assigned_agent && !isAssignedAgent && !isCollaborator && (
@@ -1714,7 +1842,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           customer={chat.customer}
           onClose={() => setShowEditCustomer(false)}
           onSuccess={() => {
-            setShowEditCustomer(false);
             loadChat(); // Recarrega os dados do chat para atualizar as informações do cliente
           }}
         />,

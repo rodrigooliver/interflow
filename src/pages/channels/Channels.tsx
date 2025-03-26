@@ -43,7 +43,8 @@ export default function Channels() {
         .from('chat_channels')
         .select('*')
         .eq('organization_id', currentOrganizationMember.organization.id)
-        .order('created_at', { ascending: false });
+        .order('status', { ascending: true })
+        .order('name', { ascending: true });
 
       if (error) throw error;
       setChannels(data || []);

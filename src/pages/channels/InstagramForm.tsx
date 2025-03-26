@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import { toast } from 'react-hot-toast';
+import TransferChatsModal from '../../components/channels/TransferChatsModal';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -32,6 +33,7 @@ export default function InstagramForm() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     is_connected: false,
@@ -274,6 +276,14 @@ export default function InstagramForm() {
           {id && formData.is_connected && (
             <div className="ml-auto flex items-center space-x-2">
               <button
+                onClick={() => setShowTransferModal(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {t('channels:form.transferChats')}
+              </button>
+
+              <button
                 onClick={handleToggleStatus}
                 disabled={updatingStatus}
                 className={`inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md ${
@@ -430,6 +440,14 @@ export default function InstagramForm() {
             </div>
           </div>
         )}
+
+        {/* Modal de transferência de chats */}
+        <TransferChatsModal
+          isOpen={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          currentChannelId={id || ''}
+          channelType="instagram"
+        />
       </div>
     </div>
   );

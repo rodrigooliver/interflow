@@ -53,14 +53,18 @@ export function CustomFieldsManager({ organizationId }: CustomFieldsManagerProps
           name: formData.field_name,
           organization_id: organizationId,
           type: formData.type || 'text',
-          options: formData.options
+          options: formData.options,
+          mask_type: formData.mask_type,
+          custom_mask: formData.custom_mask
         });
       } else if (selectedField) {
         // Atualizar campo existente
         await updateCustomFieldDefinition(selectedField.id, {
           name: formData.field_name,
           type: formData.type || 'text',
-          options: formData.options
+          options: formData.options,
+          mask_type: formData.mask_type,
+          custom_mask: formData.custom_mask
         });
       }
       

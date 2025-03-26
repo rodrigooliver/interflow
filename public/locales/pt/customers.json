@@ -76,5 +76,44 @@
   "title": "Clientes",
   "viewCRM": "Ver CRM",
   "whatsapp": "WhatsApp",
-  "whatsappFormatHint": "Digite apenas números, sem espaços ou caracteres especiais."
+  "whatsappFormatHint": "Digite apenas números, sem espaços ou caracteres especiais.",
+  "customFields": {
+    "title": "Campos Personalizados",
+    "addField": "Adicionar campo",
+    "noFields": "Nenhum campo personalizado cadastrado",
+    "edit": "Editar",
+    "fieldName": "Nome do Campo",
+    "fieldType": "Tipo do Campo",
+    "fieldValue": "Valor",
+    "selectOption": "Selecione uma opção",
+    "enterValue": "Insira o valor para {{fieldName}}",
+    "fieldSaved": "Campo \"{{fieldName}}\" salvo",
+    "fieldAdded": "Campo \"{{fieldName}}\" adicionado",
+    "errorSaving": "Erro ao salvar campo \"{{fieldName}}\"",
+    "errorAdding": "Erro ao adicionar campo \"{{fieldName}}\"",
+    "fieldTypes": {
+      "text": "Texto",
+      "number": "Número",
+      "date": "Data",
+      "datetime": "Data e Hora",
+      "select": "Lista de Opções"
+    },
+    "masks": {
+      "title": "Máscara",
+      "none": "Nenhuma",
+      "cpf": "CPF",
+      "cnpj": "CNPJ",
+      "phone": "Telefone",
+      "cep": "CEP",
+      "rg": "RG",
+      "custom": "Customizada"
+    },
+    "customMaskHint": "Use grupos de captura com parênteses para definir onde os números serão inseridos",
+    "description": "Descrição",
+    "descriptionPlaceholder": "Digite uma descrição para este campo",
+    "deleteTitle": "Excluir Campo Personalizado",
+    "deleteMessage": "Tem certeza que deseja excluir o campo \"{{fieldName}}\"? Esta ação não pode ser desfeita.",
+    "deleteSuccess": "Campo personalizado excluído com sucesso",
+    "deleteError": "Erro ao excluir campo personalizado"
+  }
 }
