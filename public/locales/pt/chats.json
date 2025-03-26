@@ -230,7 +230,11 @@
   "noChatsFound": "Nenhum atendimento encontrado",
   "resolution": {
     "title": "Resolver Atendimento",
-    "summaryPlaceholder": "Digite um breve resumo da conversa..."
+    "summaryPlaceholder": "Digite um breve resumo da conversa...",
+    "generateNew": "Gerar novo resumo",
+    "summary": "Resumo",
+    "generating": "Gerando...",
+    "generatingSummary": "Gerando resumo..."
   },
   "confirm": "Confirmar",
   "cancel": "Cancelar",

@@ -1853,6 +1853,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         onClose={() => setShowResolutionModal(false)}
         onConfirm={handleResolveChat}
         closureTypes={closureTypes}
+        chatId={chatId}
       />
 
       {showTemplateModal && (

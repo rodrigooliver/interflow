@@ -1,30 +1,86 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClosureType } from '../../types/database';
+import { useAuthContext } from '../../contexts/AuthContext';
+import api from '../../lib/api';
+import { Loader2 } from 'lucide-react';
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+  message?: string;
+}
 
 interface ChatResolutionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (data: { closureTypeId: string; title: string }) => void;
   closureTypes: ClosureType[];
+  chatId: string;
 }
 
-export function ChatResolutionModal({ isOpen, onClose, onConfirm, closureTypes }: ChatResolutionModalProps) {
+export function ChatResolutionModal({ isOpen, onClose, onConfirm, closureTypes, chatId }: ChatResolutionModalProps) {
   const { t } = useTranslation('chats');
+  const { currentOrganizationMember } = useAuthContext();
   const [selectedType, setSelectedType] = useState<string>('');
   const [title, setTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [error, setError] = useState('');
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen && currentOrganizationMember) {
+      generateSummary();
+    }
+  }, [isOpen, currentOrganizationMember]);
+
+  const generateSummary = async () => {
+    if (!currentOrganizationMember) return;
+    
+    setIsGeneratingSummary(true);
+    setError('');
+    
+    try {
+      const response = await api.post(
+        `/api/${currentOrganizationMember.organization.id}/chat/${chatId}/generate-summary`
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || t('resolution.error'));
+      }
+
+      setTitle(response.data.data.summary);
+    } catch (err: unknown) {
+      console.error('Erro ao gerar resumo:', err);
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || apiError.message || t('resolution.error'));
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
 
   const handleConfirm = async () => {
+
+    if (!currentOrganizationMember) return;
+    
     setIsLoading(true);
+    setError('');
+    
     try {
       await onConfirm({ closureTypeId: selectedType, title });
+    } catch (err: unknown) {
+      console.error('Erro ao resolver chat:', err);
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || apiError.message || t('resolution.error'));
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -53,7 +109,26 @@ export function ChatResolutionModal({ isOpen, onClose, onConfirm, closureTypes }
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('resolution.summary')}
+              </label>
+              <button
+                onClick={generateSummary}
+                disabled={isGeneratingSummary}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 disabled:opacity-50"
+              >
+                {isGeneratingSummary ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {t('resolution.generating')}
+                  </>
+                ) : (
+                  t('resolution.generateNew')
+                )}
+              </button>
+            </div>
             <textarea
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -66,9 +141,16 @@ export function ChatResolutionModal({ isOpen, onClose, onConfirm, closureTypes }
                 focus:border-transparent
                 transition-colors"
               rows={3}
-              placeholder={t('resolution.summaryPlaceholder')}
+              placeholder={isGeneratingSummary ? t('resolution.generatingSummary') : t('resolution.summaryPlaceholder')}
+              disabled={isGeneratingSummary}
             />
           </div>
+
+          {error && (
+            <div className="text-red-500 text-sm">
+              {error}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end space-x-2 mt-6">
@@ -78,12 +160,13 @@ export function ChatResolutionModal({ isOpen, onClose, onConfirm, closureTypes }
               text-gray-700 dark:text-gray-300 
               hover:bg-gray-100 dark:hover:bg-gray-700 
               transition-colors"
+            disabled={isGeneratingSummary}
           >
             {t('cancel')}
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!selectedType || !title.trim() || isLoading}
+            disabled={!selectedType || !title.trim() || isLoading || isGeneratingSummary}
             className="px-4 py-2 rounded-md
               bg-blue-600 hover:bg-blue-700 
               text-white

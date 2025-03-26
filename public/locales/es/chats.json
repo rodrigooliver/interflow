@@ -208,7 +208,11 @@
   "noChatsFound": "No se encontraron chats",
   "resolution": {
     "title": "Resolver Conversación",
-    "summaryPlaceholder": "Escribe un breve resumen de la conversación..."
+    "summaryPlaceholder": "Escribe un breve resumen de la conversación...",
+    "generateNew": "Generar nuevo resumen",
+    "summary": "Resumen",
+    "generating": "Generando...",
+    "generatingSummary": "Generando resumen..."
   },
   "confirm": "Confirmar",
   "cancel": "Cancelar",
