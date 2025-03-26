@@ -18,6 +18,7 @@
   "noFunnelStage": "Sem estágio definido",
   "archivedChats": "Atendimentos Arquivados",
   "backToActiveChats": "Voltar para Atendimentos Ativos",
+  "resolutionTitle": "Resumo",
   "collaborator": {
     "collaborators": "Colaboradores",
     "attendedBy": "Atendido por {{name}}",

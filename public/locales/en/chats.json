@@ -14,6 +14,7 @@
   "noFunnelStage": "No stage defined",
   "archivedChats": "Archived Conversations",
   "backToActiveChats": "Back to Active Conversations",
+  "resolutionTitle": "Summary",
   "collaborator": {
     "collaborators": "Collaborators",
     "attendedBy": "Attended by {{name}}",

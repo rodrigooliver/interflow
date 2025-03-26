@@ -1708,6 +1708,18 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 </div>
               </div>
             ))}
+            
+            {/* Adicionar título do chat quando fechado */}
+            {chat?.status === 'closed' && chat?.title && (
+              <div className="w-full mt-4">
+                <div className="flex justify-center">
+                  <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">{t('resolutionTitle')}:</span> {chat.title}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </>
         )}
