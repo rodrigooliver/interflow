@@ -289,7 +289,8 @@ export default function Chats() {
           status,
           error_message,
           created_at,
-          sender_type
+          sender_type,
+          type
         )
       `)
       .eq('id', chatId)
@@ -379,7 +380,8 @@ export default function Chats() {
             status: chatData.last_message.status,
             error_message: chatData.last_message.error_message,
             created_at: chatData.last_message.created_at,
-            sender_type: chatData.last_message.sender_type
+            sender_type: chatData.last_message.sender_type,
+            type: chatData.last_message.type
           } : undefined
         };
 
@@ -419,6 +421,7 @@ export default function Chats() {
             whatsapp,
             stage_id,
             is_spam,
+            profile_picture,
             tags:customer_tags(
               tag_id,
               tags:tags(
@@ -442,7 +445,8 @@ export default function Chats() {
             status,
             error_message,
             created_at,
-            sender_type
+            sender_type,
+            type
           )
         `)
         .eq('organization_id', currentOrganizationMember.organization.id)
@@ -568,7 +572,8 @@ export default function Chats() {
           status: chat.last_message.status,
           error_message: chat.last_message.error_message,
           created_at: chat.last_message.created_at,
-          sender_type: chat.last_message.sender_type
+          sender_type: chat.last_message.sender_type,
+          type: chat.last_message.type
         } : undefined
       }));
 

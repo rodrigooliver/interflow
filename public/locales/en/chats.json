@@ -275,5 +275,21 @@
   "common": {
     "yes": "Yes",
     "no": "No"
+  },
+  "messageTypes": {
+    "text": "Text message",
+    "image": "Image",
+    "video": "Video",
+    "audio": "Audio",
+    "document": "Document",
+    "sticker": "Sticker",
+    "email": "Email",
+    "user_start": "Chat started",
+    "user_entered": "User entered",
+    "user_left": "User left",
+    "user_transferred": "Chat transferred",
+    "user_closed": "Chat closed",
+    "user_join": "User joined as collaborator",
+    "template": "Template message"
   }
 }

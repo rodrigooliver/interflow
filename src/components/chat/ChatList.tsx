@@ -5,7 +5,9 @@ import { ChatAvatar } from './ChatAvatar';
 import { MessageStatus } from './MessageStatus';
 import { formatLastMessageTime } from '../../utils/date';
 import { supabase } from '../../lib/supabase';
-import { MoreVertical, Pin, Archive, Eye, CheckCircle, User, ArrowLeft, AlertTriangle, Info } from 'lucide-react';
+import { MoreVertical, Pin, Archive, Eye, CheckCircle, User, ArrowLeft, AlertTriangle, Info, 
+  Image, Video, Mic, FileText, Sticker, Mail, UserPlus, LogIn, LogOut, 
+  UserCog, XCircle, Users, FileCode } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -330,7 +332,7 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
               <ChatAvatar 
                 id={chat.id}
                 name={chat.customer?.name || 'Anônimo'}
-                profilePicture={chat.profile_picture}
+                profilePicture={chat.profile_picture || chat.customer?.profile_picture}
                 channel={chat.channel_id}
               />
               
@@ -491,9 +493,45 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
                       errorMessage={chat.last_message.error_message}
                     />
                   )}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 flex items-center gap-2">
+                    {chat.last_message.type !== 'text' && (
+                      <div className="flex-shrink-0 text-gray-400 dark:text-gray-500">
+                        {(() => {
+                          switch (chat.last_message.type) {
+                            case 'image':
+                              return <Image className="w-4 h-4" />;
+                            case 'video':
+                              return <Video className="w-4 h-4" />;
+                            case 'audio':
+                              return <Mic className="w-4 h-4" />;
+                            case 'document':
+                              return <FileText className="w-4 h-4" />;
+                            case 'sticker':
+                              return <Sticker className="w-4 h-4" />;
+                            case 'email':
+                              return <Mail className="w-4 h-4" />;
+                            case 'user_start':
+                              return <UserPlus className="w-4 h-4" />;
+                            case 'user_entered':
+                              return <LogIn className="w-4 h-4" />;
+                            case 'user_left':
+                              return <LogOut className="w-4 h-4" />;
+                            case 'user_transferred':
+                              return <UserCog className="w-4 h-4" />;
+                            case 'user_closed':
+                              return <XCircle className="w-4 h-4" />;
+                            case 'user_join':
+                              return <Users className="w-4 h-4" />;
+                            case 'template':
+                              return <FileCode className="w-4 h-4" />;
+                            default:
+                              return null;
+                          }
+                        })()}
+                      </div>
+                    )}
                     <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                      {chat.last_message.content}
+                      {chat.last_message.content || t(`messageTypes.${chat.last_message.type}`)}
                     </div>
                   </div>
                   {(chat.unread_count || 0) > 0 && (
@@ -573,7 +611,7 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
                   <ChatAvatar 
                     id={chat.id}
                     name={chat.customer?.name || 'Anônimo'}
-                    profilePicture={chat.profile_picture}
+                    profilePicture={chat.profile_picture || chat.customer?.profile_picture}
                     channel={chat.channel_id}
                   />
                   
@@ -734,9 +772,45 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
                           errorMessage={chat.last_message.error_message}
                         />
                       )}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        {chat.last_message.type !== 'text' && (
+                          <div className="flex-shrink-0 text-gray-400 dark:text-gray-500">
+                            {(() => {
+                              switch (chat.last_message.type) {
+                                case 'image':
+                                  return <Image className="w-4 h-4" />;
+                                case 'video':
+                                  return <Video className="w-4 h-4" />;
+                                case 'audio':
+                                  return <Mic className="w-4 h-4" />;
+                                case 'document':
+                                  return <FileText className="w-4 h-4" />;
+                                case 'sticker':
+                                  return <Sticker className="w-4 h-4" />;
+                                case 'email':
+                                  return <Mail className="w-4 h-4" />;
+                                case 'user_start':
+                                  return <UserPlus className="w-4 h-4" />;
+                                case 'user_entered':
+                                  return <LogIn className="w-4 h-4" />;
+                                case 'user_left':
+                                  return <LogOut className="w-4 h-4" />;
+                                case 'user_transferred':
+                                  return <UserCog className="w-4 h-4" />;
+                                case 'user_closed':
+                                  return <XCircle className="w-4 h-4" />;
+                                case 'user_join':
+                                  return <Users className="w-4 h-4" />;
+                                case 'template':
+                                  return <FileCode className="w-4 h-4" />;
+                                default:
+                                  return null;
+                              }
+                            })()}
+                          </div>
+                        )}
                         <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                          {chat.last_message.content}
+                          {chat.last_message.content || t(`messageTypes.${chat.last_message.type}`)}
                         </div>
                       </div>
                       {(chat.unread_count || 0) > 0 && (

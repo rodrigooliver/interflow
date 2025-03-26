@@ -88,7 +88,7 @@ export interface Message {
   organization_id: Organization;
   content: string;
   type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'email' | 
-        'user_entered' | 'user_left' | 'user_transferred' | 'user_closed' | 'user_start' | 'user_join';
+        'user_entered' | 'user_left' | 'user_transferred' | 'user_closed' | 'user_start' | 'user_join' | 'template';
   sent_from_system: boolean;
   sender_type: 'customer' | 'agent' | 'system';
   status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted';
@@ -139,6 +139,7 @@ export interface Customer {
   stage_id: string | null;
   created_at: string;
   updated_at: string;
+  profile_picture?: string;
   tags?: { 
     tag_id: string;
     tags: {
