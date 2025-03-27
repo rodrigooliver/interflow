@@ -254,6 +254,10 @@ export function ChatItem({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (chat.customer) {
+                      setSelectedCustomer(chat.customer);
+                      setShowEditCustomerModal(true);
+                    }
                   }}
                 >
                   <span className="inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0" style={{ backgroundColor: stages[chat.customer.stage_id].color || '#9CA3AF' }}></span>
@@ -269,6 +273,10 @@ export function ChatItem({
                   className="mt-3 inline-flex items-center px-1.5 py-0.5 text-xs rounded-full whitespace-nowrap overflow-hidden max-w-[60px] border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (chat.customer) {
+                      setSelectedCustomer(chat.customer);
+                      setShowEditCustomerModal(true);
+                    }
                   }}
                 >
                   <span className="truncate">{t('chats:noFunnelStage')}</span>

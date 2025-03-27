@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquare, Users, MessageCircle, BarChart2, Calendar, TrendingUp, Clock, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
 import { ChatFlowModal } from '../components/chat/ChatFlowModal';
-import { formatLastMessageTime } from '../utils/date';
 import { useTeams, useTasks, useAppointments, useFunnels } from '../hooks/useQueryes';
 import { TaskModal } from '../components/tasks/TaskModal';
 import { useDashboard } from '../hooks/useDashboard';
 import { supabase } from '../lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatItem } from '../components/chat/ChatItem';
-import { Chat } from '../types/database';
 
 interface StatCard {
   id: string;
@@ -30,6 +28,12 @@ interface StatCard {
     type: 'increase' | 'decrease';
   };
 }
+
+interface Change {
+  value: number;
+  type: 'increase' | 'decrease';
+}
+
 // Componente DatePicker simples
 interface DatePickerProps {
   selectedDate: Date | null;
@@ -354,12 +358,12 @@ const SimpleDatePicker: React.FC<DatePickerProps> = ({
 };
 
 export default function Dashboard() {
-  const { t, i18n } = useTranslation('dashboard');
+  const { t } = useTranslation('dashboard');
   const { currentOrganizationMember, session } = useAuthContext();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   // Estados removidos e substituídos pelo hook useDashboard
-  const [loading, setLoading] = useState(false);
   const [showChatFlowModal, setShowChatFlowModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -377,7 +381,7 @@ export default function Dashboard() {
   const { data: teams = [], isLoading: teamsLoading, refetch: refetchTeams } = useTeams(organizationId);
   
   // Buscar funis e estágios para o ChatItem
-  const { data: funnels = [] } = useFunnels(organizationId);
+  const { data: funnels = [], isLoading: funnelsLoading } = useFunnels(organizationId);
   const [stages, setStages] = useState<Record<string, { id: string, name: string, funnel_id: string, color?: string }>>({});
   
   useEffect(() => {
@@ -399,12 +403,12 @@ export default function Dashboard() {
   
   // Usar o hook useDashboard para todas as consultas do dashboard
   const {
-    customerCount: { data: customerCount = 0 },
-    activeChatsCount: { data: activeChatsCount = 0 },
-    periodMessagesCount: { data: periodMessagesData },
-    responseTime: { data: responseTimeData },
-    recentChats: { data: recentChatsData = [] },
-    chartData: { data: chartDataResponse },
+    customerCount: { data: customerCount = 0, isLoading: customerCountLoading },
+    activeChatsCount: { data: activeChatsCount = 0, isLoading: activeChatsLoading },
+    periodMessagesCount: { data: periodMessagesData, isLoading: periodMessagesLoading },
+    responseTime: { data: responseTimeData, isLoading: responseTimeLoading },
+    recentChats: { data: recentChatsData = [], isLoading: recentChatsLoading },
+    chartData: { data: chartDataResponse, isLoading: chartDataLoading },
     isLoading: isDashboardLoading
   } = useDashboard({
     organizationId,
@@ -415,25 +419,26 @@ export default function Dashboard() {
     specificYear
   });
 
+  // Verificar se todos os dados principais foram carregados
+  const isLoading = 
+    teamsLoading || 
+    funnelsLoading || 
+    customerCountLoading || 
+    activeChatsLoading || 
+    periodMessagesLoading || 
+    responseTimeLoading || 
+    recentChatsLoading || 
+    chartDataLoading || 
+    isDashboardLoading;
+
   // Extrair dados do hook
   const periodMessagesCount = periodMessagesData?.value || 0;
-  const messagesChange = periodMessagesData?.change || { value: 0, type: 'increase' };
+  const messagesChange = (periodMessagesData?.change || { value: 0, type: 'increase' as const }) as Change;
   const responseTime = responseTimeData?.value || 0;
-  const responseTimeChange = responseTimeData?.change || { value: 0, type: 'increase' };
-
-  // Formatar os recentChats
-  recentChatsData.map(chat => ({
-    id: chat.id,
-    customer_name: chat.customers?.name || t('customer.anonymous'),
-    last_message: chat.last_message?.content || t('noMessages'),
-    time: chat.last_message_at 
-      ? formatLastMessageTime(chat.last_message_at, i18n.language, t)
-      : '--:--',
-    status: chat.status
-  }));
+  const responseTimeChange = (responseTimeData?.change || { value: 0, type: 'increase' as const }) as Change;
 
   // Processar dados do gráfico
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Array<{ name: string; [key: string]: string | number }>>([]);
   const [chartLoading, setChartLoading] = useState(true);
 
   useEffect(() => {
@@ -453,13 +458,6 @@ export default function Dashboard() {
     provider_id: currentOrganizationMember?.profile_id,
     status: ['scheduled', 'confirmed']
   });
-
-  // Efeito para depurar o carregamento das equipes
-  useEffect(() => {
-    console.log('Teams loaded:', teams);
-    console.log('Organization ID:', organizationId);
-    console.log('Teams loading:', teamsLoading);
-  }, [teams, organizationId, teamsLoading]);
   
   // Efeito para recarregar as equipes quando o organizationId mudar
   useEffect(() => {
@@ -746,637 +744,631 @@ export default function Dashboard() {
     }
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'bg-blue-500';
-      case 'in_progress':
-        return 'bg-amber-500';
-      case 'resolved':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
   // Função para lidar com a seleção de chat
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
-    // Navegar para a página de chat
-    window.location.href = `/app/chats/${chatId}`;
+    navigate(`/app/chats/${chatId}`);
   };
   
   // Função para atualizar um chat
-  const handleUpdateChat = (chatId: string, updates: any) => {
+  const handleUpdateChat = () => {
     // Atualizar o chat na lista local se necessário
     queryClient.invalidateQueries({ queryKey: ['recentChats'] });
   };
 
   return (
-    <div className="p-6  pb-20 md:pb-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t('title')}
-        </h1>
-        
-        <div className="flex flex-col space-y-2 mt-4 md:mt-0 self-end">
-          {/* Botão para alternar entre período relativo e específico */}
-          <div className="flex justify-end">
-            <button 
-              onClick={togglePeriodType}
-              className="px-3 py-1 rounded-md text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              {useSpecificPeriod ? t('useRelativePeriod') : t('useSpecificPeriod')}
-            </button>
+    <div className="p-6 pb-20 md:pb-6">
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('title')}
+            </h1>
+            
+            <div className="flex flex-col space-y-2 mt-4 md:mt-0 self-end">
+              {/* Botão para alternar entre período relativo e específico */}
+              <div className="flex justify-end">
+                <button 
+                  onClick={togglePeriodType}
+                  className="px-3 py-1 rounded-md text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  {useSpecificPeriod ? t('useRelativePeriod') : t('useSpecificPeriod')}
+                </button>
+              </div>
+              
+              {/* Seletores de período */}
+              <div className="flex space-x-2">
+                {useSpecificPeriod ? (
+                  <>
+                    {/* Seletores de tipo de período específico */}
+                    <button 
+                      onClick={() => selectSpecificPeriodType('day')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        specificDate ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t('specificDay')}
+                    </button>
+                    <button 
+                      onClick={() => selectSpecificPeriodType('month')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        specificMonth ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t('specificMonth')}
+                    </button>
+                    <button 
+                      onClick={() => selectSpecificPeriodType('year')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        specificYear ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t('specificYear')}
+                    </button>
+                    
+                    {/* Botão para abrir seletor de data */}
+                    <button 
+                      onClick={() => setShowDatePicker(!showDatePicker)}
+                      className="px-3 py-1 rounded-md text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                    >
+                      {getPeriodTitle()} <span className="ml-1">▼</span>
+                    </button>
+                    
+                    {/* DatePicker real */}
+                    {showDatePicker && (
+                      <div className="absolute mt-10 right-6 z-10">
+                        <SimpleDatePicker
+                          selectedDate={specificDate}
+                          selectedMonth={specificMonth}
+                          selectedYear={specificYear}
+                          onSelectDate={(date) => {
+                            setSpecificDate(date);
+                            setSpecificMonth(null);
+                            setSpecificYear(null);
+                            setShowDatePicker(false);
+                          }}
+                          onSelectMonth={(date) => {
+                            setSpecificDate(null);
+                            setSpecificMonth(date);
+                            setSpecificYear(null);
+                            setShowDatePicker(false);
+                          }}
+                          onSelectYear={(date) => {
+                            setSpecificDate(null);
+                            setSpecificMonth(null);
+                            setSpecificYear(date);
+                            setShowDatePicker(false);
+                          }}
+                          mode={specificDate ? 'day' : specificMonth ? 'month' : 'year'}
+                          onClose={() => setShowDatePicker(false)}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Botões de período relativo */}
+                    <button 
+                      onClick={() => setSelectedTimeRange('day')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        selectedTimeRange === 'day' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t('today')}
+                    </button>
+                    <button 
+                      onClick={() => setSelectedTimeRange('week')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        selectedTimeRange === 'week' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t('week')}
+                    </button>
+                    <button 
+                      onClick={() => setSelectedTimeRange('month')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        selectedTimeRange === 'month' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t('month')}
+                    </button>
+                    <button 
+                      onClick={() => setSelectedTimeRange('year')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        selectedTimeRange === 'year' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t('year')}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-          
-          {/* Seletores de período */}
-          <div className="flex space-x-2">
-            {useSpecificPeriod ? (
-              <>
-                {/* Seletores de tipo de período específico */}
-                <button 
-                  onClick={() => selectSpecificPeriodType('day')}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    specificDate ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {t('specificDay')}
-                </button>
-                <button 
-                  onClick={() => selectSpecificPeriodType('month')}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    specificMonth ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {t('specificMonth')}
-                </button>
-                <button 
-                  onClick={() => selectSpecificPeriodType('year')}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    specificYear ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {t('specificYear')}
-                </button>
-                
-                {/* Botão para abrir seletor de data */}
-                <button 
-                  onClick={() => setShowDatePicker(!showDatePicker)}
-                  className="px-3 py-1 rounded-md text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                >
-                  {getPeriodTitle()} <span className="ml-1">▼</span>
-                </button>
-                
-                {/* DatePicker real */}
-                {showDatePicker && (
-                  <div className="absolute mt-10 right-6 z-10">
-                    <SimpleDatePicker
-                      selectedDate={specificDate}
-                      selectedMonth={specificMonth}
-                      selectedYear={specificYear}
-                      onSelectDate={(date) => {
-                        setSpecificDate(date);
-                        setSpecificMonth(null);
-                        setSpecificYear(null);
-                        setShowDatePicker(false);
-                      }}
-                      onSelectMonth={(date) => {
-                        setSpecificDate(null);
-                        setSpecificMonth(date);
-                        setSpecificYear(null);
-                        setShowDatePicker(false);
-                      }}
-                      onSelectYear={(date) => {
-                        setSpecificDate(null);
-                        setSpecificMonth(null);
-                        setSpecificYear(date);
-                        setShowDatePicker(false);
-                      }}
-                      mode={specificDate ? 'day' : specificMonth ? 'month' : 'year'}
-                      onClose={() => setShowDatePicker(false)}
+
+          <QuickSetupGuide />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map(({ id, title, description, value, icon: Icon, bgColor, iconColor, textColor, link, change }) => {
+              const CardContent = (
+                <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 transition-transform duration-200 hover:shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                      {title}
+                    </h2>
+                    <div className={`p-3 rounded-full ${bgColor}`}>
+                      <Icon className={`w-5 h-5 ${iconColor}`} />
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <p className={`text-3xl font-bold ${textColor} ${isDashboardLoading ? 'animate-pulse' : ''}`}>
+                      {isDashboardLoading ? '-' : id === 'response-time' ? formatTime(value) : value.toLocaleString()}
+                    </p>
+                    <div className="flex items-center mt-2">
+                      {change && (
+                        <span className={`text-xs font-medium mr-2 ${
+                          id === 'response-time'
+                            ? change.type === 'increase' 
+                              ? 'text-red-500 dark:text-red-400' 
+                              : 'text-green-500 dark:text-green-400'
+                            : change.type === 'increase' 
+                              ? 'text-green-500 dark:text-green-400' 
+                              : 'text-red-500 dark:text-red-400'
+                        }`}>
+                          {change.type === 'increase' ? '↑' : '↓'} {change.value}%
+                        </span>
+                      )}
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 h-1 w-full bg-gray-200 dark:bg-gray-700 rounded">
+                    <div 
+                      className={`h-1 rounded ${iconColor.replace('text', 'bg')}`}
+                      style={{ width: isDashboardLoading ? '0%' : '100%', transition: 'width 1s ease-in-out' }}
                     />
                   </div>
-                )}
-              </>
-            ) : (
-              <>
-                {/* Botões de período relativo */}
-                <button 
-                  onClick={() => setSelectedTimeRange('day')}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    selectedTimeRange === 'day' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {t('today')}
-                </button>
-                <button 
-                  onClick={() => setSelectedTimeRange('week')}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    selectedTimeRange === 'week' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {t('week')}
-                </button>
-                <button 
-                  onClick={() => setSelectedTimeRange('month')}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    selectedTimeRange === 'month' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {t('month')}
-                </button>
-                <button 
-                  onClick={() => setSelectedTimeRange('year')}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    selectedTimeRange === 'year' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  {t('year')}
-                </button>
-              </>
-            )}
+                </div>
+              );
+
+              return (
+                <div key={id}>
+                  {link ? (
+                    <Link to={link} className="block">
+                      {CardContent}
+                    </Link>
+                  ) : (
+                    CardContent
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </div>
 
-      <QuickSetupGuide />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map(({ id, title, description, value, icon: Icon, bgColor, iconColor, textColor, link, change }) => {
-          const CardContent = (
-            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 transition-transform duration-200 hover:shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                  {title}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm px-6 pt-6 pb-3">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {teams.length > 0 ? t('messagesByTeam') : t('activityOverview')}
                 </h2>
-                <div className={`p-3 rounded-full ${bgColor}`}>
-                  <Icon className={`w-5 h-5 ${iconColor}`} />
+                <div className="flex items-center">
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <BarChart2 className="w-4 h-4 mr-1" />
+                    {t('statisticsFor')} {
+                      useSpecificPeriod
+                        ? getPeriodTitle()
+                        : selectedTimeRange === 'day' 
+                          ? t('today') 
+                          : selectedTimeRange === 'week' 
+                            ? t('lastWeek') 
+                            : selectedTimeRange === 'month' 
+                              ? t('lastMonth') 
+                              : t('lastYear')
+                    }
+                  </div>
                 </div>
               </div>
               
-              <div className="flex flex-col">
-                <p className={`text-3xl font-bold ${textColor} ${isDashboardLoading ? 'animate-pulse' : ''}`}>
-                  {isDashboardLoading ? '-' : id === 'response-time' ? formatTime(value) : value.toLocaleString()}
-                </p>
-                <div className="flex items-center mt-2">
-                  {change && (
-                    <span className={`text-xs font-medium mr-2 ${
-                      id === 'response-time'
-                        ? change.type === 'increase' 
-                          ? 'text-red-500 dark:text-red-400' 
-                          : 'text-green-500 dark:text-green-400'
-                        : change.type === 'increase' 
-                          ? 'text-green-500 dark:text-green-400' 
-                          : 'text-red-500 dark:text-red-400'
-                    }`}>
-                      {change.type === 'increase' ? '↑' : '↓'} {change.value}%
-                    </span>
-                  )}
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {description}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 h-1 w-full bg-gray-200 dark:bg-gray-700 rounded">
-                <div 
-                  className={`h-1 rounded ${iconColor.replace('text', 'bg')}`}
-                  style={{ width: isDashboardLoading ? '0%' : '100%', transition: 'width 1s ease-in-out' }}
-                />
-              </div>
-            </div>
-          );
-
-          return (
-            <div key={id}>
-              {link ? (
-                <Link to={link} className="block">
-                  {CardContent}
-                </Link>
-              ) : (
-                CardContent
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm px-6 pt-6 pb-3">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {teams.length > 0 ? t('messagesByTeam') : t('activityOverview')}
-            </h2>
-            <div className="flex items-center">
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <BarChart2 className="w-4 h-4 mr-1" />
-                {t('statisticsFor')} {
-                  useSpecificPeriod
-                    ? getPeriodTitle()
-                    : selectedTimeRange === 'day' 
-                      ? t('today') 
-                      : selectedTimeRange === 'week' 
-                        ? t('lastWeek') 
-                        : selectedTimeRange === 'month' 
-                          ? t('lastMonth') 
-                          : t('lastYear')
-                }
-              </div>
-            </div>
-          </div>
-          
-          <div className="h-[28rem] md:h-[32rem] lg:h-[28rem]">
-            {chartLoading ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-                <p className="text-gray-500 dark:text-gray-400 mb-2">
-                  {t('loading')}...
-                </p>
-              </div>
-            ) : teams.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 0,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#6B7280" 
-                    fontSize={12}
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    stroke="#6B7280" 
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    padding={{ top: 10, bottom: 0 }}
-                    allowDecimals={false}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      borderRadius: '0.5rem',
-                      border: 'none',
-                      boxShadow: '0 4px 10px -1px rgba(0, 0, 0, 0.2)',
-                      padding: '10px'
-                    }}
-                    labelStyle={{
-                      fontWeight: 'bold',
-                      marginBottom: '5px'
-                    }}
-                    itemStyle={{
-                      padding: '2px 0'
-                    }}
-                  />
-                  {/* Renderizar uma linha para cada equipe com cores diferentes */}
-                  {teams && teams.length > 0 && teams
-                    .filter(team => {
-                      // Verificar se há dados para esta equipe em pelo menos um ponto
-                      return chartData.some(point => point[team.name] !== undefined && point[team.name] !== 0);
-                    })
-                    .map((team, index) => {
-                    // Array de cores para as linhas
-                    const colors = ['#8B5CF6', '#3B82F6', '#EC4899', '#10B981', '#F59E0B', '#EF4444', '#6366F1'];
-                    const color = colors[index % colors.length];
-                    
-                    return (
-                      <Line 
-                        key={team.id}
-                        type="monotone" 
-                        dataKey={team.name} 
-                        stroke={color} 
-                        strokeWidth={2}
-                        dot={{ r: 4, strokeWidth: 2 }}
-                        activeDot={{ r: 6, strokeWidth: 2 }}
-                        name={team.name}
-                      />
-                    );
-                  })}
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                <BarChart2 className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 mb-2">
-                  {t('noTeamData')}
-                </p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md">
-                  {t('teamActivity')}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          <div className="flex justify-between items-center m-6 mb-1">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('recentChats')}
-            </h2>
-            <Link 
-              to="/app/chats" 
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {t('viewAll')}
-            </Link>
-          </div>
-          
-          <div className="">
-            {loading ? (
-              Array(5).fill(0).map((_, index) => (
-                <div key={index} className="animate-pulse flex items-center p-3">
-                  <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-10 w-10"></div>
-                  <div className="ml-4 flex-1">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-                  </div>
-                </div>
-              ))
-            ) : recentChatsData.length > 0 ? (
-              recentChatsData.map((chat) => (
-                <ChatItem
-                  key={chat.id}
-                  chat={chat}
-                  isSelected={selectedChatId === chat.id}
-                  onSelectChat={handleSelectChat}
-                  onUpdateChat={handleUpdateChat}
-                  stages={stages}
-                />
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <MessageCircle className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  {t('noRecentChats')}
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <div className="p-6">
-            <button
-              onClick={() => setShowChatFlowModal(true)}
-              className="block w-full py-2 px-4 text-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-            >
-              {t('startNewChat')}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('upcomingTasks')}
-            </h2>
-            <Link 
-              to="/app/tasks" 
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {t('viewAll')}
-            </Link>
-          </div>
-          
-          <div className="space-y-3">
-            {tasks.map((task) => (
-              <div 
-                key={task.id}
-                className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg"
-              >
-                <div className={`h-4 w-4 rounded-full mr-3 ${
-                  task.priority === 'high' 
-                    ? 'bg-red-500' 
-                    : task.priority === 'medium' 
-                      ? 'bg-amber-500' 
-                      : 'bg-green-500'
-                }`}></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {task.title}
-                  </p>
-                  {task.customer && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {task.customer.name}
+              <div className="h-[28rem] md:h-[32rem] lg:h-[28rem]">
+                {chartLoading ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">
+                      {t('loading')}...
                     </p>
-                  )}
-                </div>
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 text-gray-400 mr-1" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(task.due_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-6">
-            <button 
-              onClick={() => setShowTaskModal(true)}
-              className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-            >
-              <span className="mr-2">+</span> {t('addNewTask')}
-            </button>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('performanceMetrics')}
-            </h2>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              <TrendingUp className="w-4 h-4 inline mr-1" />
-              {t('thisMonth')}
-            </div>
-          </div>
-          
-          <div className="space-y-6">
-            {[
-              { 
-                label: t('satisfactionRate'), 
-                value: 92, 
-                change: 3, 
-                changeType: 'increase',
-                color: 'bg-green-500' 
-              },
-              { 
-                label: t('firstResponseTime'), 
-                value: 65, 
-                change: 12, 
-                changeType: 'decrease',
-                color: 'bg-blue-500' 
-              },
-              { 
-                label: t('resolutionRate'), 
-                value: 78, 
-                change: 5, 
-                changeType: 'increase',
-                color: 'bg-purple-500' 
-              }
-            ].map((metric, index) => (
-              <div key={index}>
-                <div className="flex justify-between items-center mb-2">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {metric.label}
                   </div>
-                  <div className="flex items-center">
-                    <span className="text-lg font-bold text-gray-900 dark:text-white mr-2">
-                      {metric.value}%
-                    </span>
-                    <span className={`text-xs font-medium ${
-                      metric.changeType === 'increase' 
-                        ? 'text-green-500' 
-                        : 'text-red-500'
-                    }`}>
-                      {metric.changeType === 'increase' ? '↑' : '↓'} {metric.change}%
-                    </span>
+                ) : teams.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={chartData}
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 20,
+                        bottom: 0,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#6B7280" 
+                        fontSize={12}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        stroke="#6B7280" 
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        padding={{ top: 10, bottom: 0 }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                          borderRadius: '0.5rem',
+                          border: 'none',
+                          boxShadow: '0 4px 10px -1px rgba(0, 0, 0, 0.2)',
+                          padding: '10px'
+                        }}
+                        labelStyle={{
+                          fontWeight: 'bold',
+                          marginBottom: '5px'
+                        }}
+                        itemStyle={{
+                          padding: '2px 0'
+                        }}
+                      />
+                      {/* Renderizar uma linha para cada equipe com cores diferentes */}
+                      {teams && teams.length > 0 && teams
+                        .filter(team => {
+                          // Verificar se há dados para esta equipe em pelo menos um ponto
+                          return chartData.some(point => point[team.name] !== undefined && point[team.name] !== 0);
+                        })
+                        .map((team, index) => {
+                        // Array de cores para as linhas
+                        const colors = ['#8B5CF6', '#3B82F6', '#EC4899', '#10B981', '#F59E0B', '#EF4444', '#6366F1'];
+                        const color = colors[index % colors.length];
+                        
+                        return (
+                          <Line 
+                            key={team.id}
+                            type="monotone" 
+                            dataKey={team.name} 
+                            stroke={color} 
+                            strokeWidth={2}
+                            dot={{ r: 4, strokeWidth: 2 }}
+                            activeDot={{ r: 6, strokeWidth: 2 }}
+                            name={team.name}
+                          />
+                        );
+                      })}
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                    <BarChart2 className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">
+                      {t('noTeamData')}
+                    </p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md">
+                      {t('teamActivity')}
+                    </p>
                   </div>
-                </div>
-                <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
-                  <div 
-                    className={`h-2 rounded-full ${metric.color}`}
-                    style={{ width: `${metric.value}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800/30">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                  {t('attentionNeeded')}
-                </p>
-                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                  {t('attentionNeededDescription')}
-                </p>
+                )}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Nova seção de compromissos */}
-      <div className="mt-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('upcomingAppointments')}
-            </h2>
-            <Link 
-              to="/app/appointments?create=true" 
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {t('viewAll')}
-            </Link>
-          </div>
-          
-          <div className="space-y-4">
-            {loadingAppointments ? (
-              Array(3).fill(0).map((_, index) => (
-                <div key={index} className="animate-pulse flex items-center p-3">
-                  <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-10 w-10"></div>
-                  <div className="ml-4 flex-1">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-                  </div>
-                </div>
-              ))
-            ) : upcomingAppointments.length > 0 ? (
-              upcomingAppointments.map((appointment) => (
-                <div 
-                  key={appointment.id}
-                  className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center m-6 mb-1">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {t('recentChats')}
+                </h2>
+                <Link 
+                  to="/app/chats" 
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  {t('viewAll')}
+                </Link>
+              </div>
+              
+              <div className="">
+                {isLoading ? (
+                  Array(5).fill(0).map((_, index) => (
+                    <div key={index} className="animate-pulse flex items-center p-3">
+                      <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-10 w-10"></div>
+                      <div className="ml-4 flex-1">
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                      </div>
                     </div>
+                  ))
+                ) : recentChatsData.length > 0 ? (
+                  recentChatsData.map((chat) => (
+                    <ChatItem
+                      key={chat.id}
+                      chat={chat}
+                      isSelected={selectedChatId === chat.id}
+                      onSelectChat={handleSelectChat}
+                      onUpdateChat={handleUpdateChat}
+                      stages={stages}
+                    />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <MessageCircle className="h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {t('noRecentChats')}
+                    </p>
                   </div>
-                  <div className="ml-4 flex-1">
-                    <div className="flex items-center justify-between">
+                )}
+              </div>
+              
+              <div className="p-6">
+                <button
+                  onClick={() => setShowChatFlowModal(true)}
+                  className="block w-full py-2 px-4 text-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                >
+                  {t('startNewChat')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {t('upcomingTasks')}
+                </h2>
+                <Link 
+                  to="/app/tasks" 
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  {t('viewAll')}
+                </Link>
+              </div>
+              
+              <div className="space-y-3">
+                {tasks.map((task) => (
+                  <div 
+                    key={task.id}
+                    className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg"
+                  >
+                    <div className={`h-4 w-4 rounded-full mr-3 ${
+                      task.priority === 'high' 
+                        ? 'bg-red-500' 
+                        : task.priority === 'medium' 
+                          ? 'bg-amber-500' 
+                          : 'bg-green-500'
+                    }`}></div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {appointment.customer?.name || t('noCustomer')}
+                        {task.title}
                       </p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        appointment.status === 'confirmed' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
-                        {t(appointment.status)}
+                      {task.customer && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {task.customer.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 text-gray-400 mr-1" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(task.due_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {appointment.service?.title || t('untitledService')}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-6">
+                <button 
+                  onClick={() => setShowTaskModal(true)}
+                  className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <span className="mr-2">+</span> {t('addNewTask')}
+                </button>
+              </div>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {t('performanceMetrics')}
+                </h2>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <TrendingUp className="w-4 h-4 inline mr-1" />
+                  {t('thisMonth')}
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                {[
+                  { 
+                    label: t('satisfactionRate'), 
+                    value: 92, 
+                    change: 3, 
+                    changeType: 'increase',
+                    color: 'bg-green-500' 
+                  },
+                  { 
+                    label: t('firstResponseTime'), 
+                    value: 65, 
+                    change: 12, 
+                    changeType: 'decrease',
+                    color: 'bg-blue-500' 
+                  },
+                  { 
+                    label: t('resolutionRate'), 
+                    value: 78, 
+                    change: 5, 
+                    changeType: 'increase',
+                    color: 'bg-purple-500' 
+                  }
+                ].map((metric, index) => (
+                  <div key={index}>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {metric.label}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-lg font-bold text-gray-900 dark:text-white mr-2">
+                          {metric.value}%
+                        </span>
+                        <span className={`text-xs font-medium ${
+                          metric.changeType === 'increase' 
+                            ? 'text-green-500' 
+                            : 'text-red-500'
+                        }`}>
+                          {metric.changeType === 'increase' ? '↑' : '↓'} {metric.change}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
+                      <div 
+                        className={`h-2 rounded-full ${metric.color}`}
+                        style={{ width: `${metric.value}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800/30">
+                <div className="flex">
+                  <AlertCircle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                      {t('attentionNeeded')}
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                      {t('attentionNeededDescription')}
                     </p>
                   </div>
-                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>
-                      {new Date(`${appointment.date}T${appointment.start_time}`).toLocaleDateString('pt-BR', { 
-                        day: '2-digit', 
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
                 </div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  {t('noUpcomingAppointments')}
-                </p>
               </div>
-            )}
+            </div>
           </div>
-          
-          <div className="mt-6">
-            <Link 
-              to="/app/appointments?create=true"
-              className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              {t('scheduleNewAppointment')}
-            </Link>
+
+          {/* Nova seção de compromissos */}
+          <div className="mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {t('upcomingAppointments')}
+                </h2>
+                <Link 
+                  to="/app/appointments?create=true" 
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  {t('viewAll')}
+                </Link>
+              </div>
+              
+              <div className="space-y-4">
+                {loadingAppointments ? (
+                  Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="animate-pulse flex items-center p-3">
+                      <div className="rounded-full bg-gray-300 dark:bg-gray-600 h-10 w-10"></div>
+                      <div className="ml-4 flex-1">
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))
+                ) : upcomingAppointments.length > 0 ? (
+                  upcomingAppointments.map((appointment) => (
+                    <div 
+                      key={appointment.id}
+                      className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                          <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {appointment.customer?.name || t('noCustomer')}
+                          </p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            appointment.status === 'confirmed' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                          }`}>
+                            {t(appointment.status)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {appointment.service?.title || t('untitledService')}
+                        </p>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>
+                          {new Date(`${appointment.date}T${appointment.start_time}`).toLocaleDateString('pt-BR', { 
+                            day: '2-digit', 
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Calendar className="h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {t('noUpcomingAppointments')}
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-6">
+                <Link 
+                  to="/app/appointments?create=true"
+                  className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t('scheduleNewAppointment')}
+                </Link>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Modal para iniciar nova conversa */}
-      {showChatFlowModal && (
-        <ChatFlowModal onClose={() => setShowChatFlowModal(false)} />
-      )}
+          {/* Modal para iniciar nova conversa */}
+          {showChatFlowModal && (
+            <ChatFlowModal onClose={() => setShowChatFlowModal(false)} />
+          )}
 
-      {/* Modal para criar nova tarefa */}
-      {showTaskModal && (
-        <TaskModal 
-          onClose={() => setShowTaskModal(false)}
-          organizationId={organizationId}
-          mode="create"
-        />
+          {/* Modal para criar nova tarefa */}
+          {showTaskModal && (
+            <TaskModal 
+              onClose={() => setShowTaskModal(false)}
+              organizationId={organizationId}
+              mode="create"
+            />
+          )}
+        </>
       )}
     </div>
   );
