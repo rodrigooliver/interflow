@@ -11,13 +11,14 @@ import { debounce } from 'lodash';
 
 interface FlowTriggersProps {
   flowId: string;
-  triggers: Trigger[];
+  triggersInitial: Trigger[];
   onChange: (triggers: Trigger[]) => void;
 }
 
-export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) {
+export function FlowTriggers({ flowId, triggersInitial, onChange }: FlowTriggersProps) {
   const { t } = useTranslation('flows');
   const [showAddTrigger, setShowAddTrigger] = useState(false);
+  const [triggers, setTriggers] = useState<Trigger[]>(triggersInitial);
   const [removingTriggerId, setRemovingTriggerId] = useState<string | null>(null);
   const [togglingTriggerId, setTogglingTriggerId] = useState<string | null>(null);
   const { currentOrganizationMember } = useAuthContext();
@@ -37,20 +38,37 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
     }
   ];
 
-  const addTrigger = (type: string) => {
-    const newTrigger: Trigger = {
-      id: crypto.randomUUID(),
-      flow_id: flowId,
-      type: type as Trigger['type'],
-      conditions: {
-        operator: 'AND',
-        rules: []
-      },
-      organization_id: currentOrganizationMember?.organization.id || '',
-      is_active: true
-    };
-    onChange([...triggers, newTrigger]);
-    setShowAddTrigger(false);
+
+  const addTrigger = async (type: string) => {
+    if (!flowId || !currentOrganizationMember) return;
+
+    try {
+      const newTrigger: Trigger = {
+        id: crypto.randomUUID(),
+        flow_id: flowId,
+        type: type as Trigger['type'],
+        conditions: {
+          operator: 'AND',
+          rules: []
+        },
+        organization_id: currentOrganizationMember?.organization.id || '',
+        is_active: true,
+        updated_at: new Date().toISOString()
+      };
+      const { error: insertError } = await supabase
+        .from('flow_triggers')
+        .insert(newTrigger);
+
+      if (insertError) throw insertError;
+
+      const newTriggers = [...triggers, newTrigger];
+      setTriggers(newTriggers);
+      onChange(newTriggers);
+      setShowAddTrigger(false);
+    } catch (error) {
+      console.error('Error updating triggers:', error);
+    }
+   
   };
 
   const removeTrigger = async (triggerId: string) => {
@@ -63,7 +81,9 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
 
       if (error) throw error;
       
-      onChange(triggers.filter(t => t.id !== triggerId));
+      const newTriggers = triggers.filter(t => t.id !== triggerId);
+      setTriggers(newTriggers);
+      onChange(newTriggers);
     } catch (error) {
       console.error('Error removing trigger:', error);
     } finally {
@@ -84,10 +104,11 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
 
       if (error) throw error;
 
-      const updatedTriggers = triggers.map(t =>
+      const newTriggers = triggers.map(t =>
         t.id === triggerId ? { ...t, is_active: !t.is_active } : t
       );
-      onChange(updatedTriggers);
+      setTriggers(newTriggers);
+      onChange(newTriggers);
     } catch (error) {
       console.error('Error toggling trigger:', error);
     } finally {
@@ -108,6 +129,7 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
             } 
           })
           .eq('id', triggerId);
+          onChange(triggers);
       } catch (error) {
         console.error('Error updating trigger:', error);
       }
@@ -117,13 +139,12 @@ export function FlowTriggers({ flowId, triggers, onChange }: FlowTriggersProps) 
 
   const updateTriggerRules = useCallback((triggerId: string, rules: TriggerRule[]) => {
     // Atualiza UI imediatamente
-    onChange(
-      triggers.map(t =>
-        t.id === triggerId
-          ? { ...t, conditions: { ...t.conditions, rules } }
-          : t
-      )
-    );
+    const newTriggers =  triggers.map(t =>
+      t.id === triggerId
+        ? { ...t, conditions: { ...t.conditions, rules } }
+        : t
+    )
+    setTriggers (newTriggers);
 
     // Agenda atualização do banco
     debouncedUpdate(triggerId, rules);

@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquareText, Plus, Loader2, AlertTriangle, Pencil, Trash2, Bot, GitBranch, MessageSquare, Clock } from 'lucide-react';
+import { MessageSquareText, Plus, Loader2, AlertTriangle, Pencil, Trash2, Bot, GitBranch } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '../../types/database';
 import { usePrompts } from '../../hooks/useQueryes';
 import { useQueryClient } from '@tanstack/react-query';
+import { Modal } from '../../components/ui/Modal';
+import { FlowTriggers } from '../../components/flow/FlowTriggers';
 import { Trigger } from '../../types/flow';
+import { TriggersList } from '../../components/flow/TriggersList';
 
 export default function Prompts() {
   const { t } = useTranslation(['prompts', 'common', 'flows']);
@@ -15,7 +18,9 @@ export default function Prompts() {
   const queryClient = useQueryClient();
   const { data: prompts = [], isLoading } = usePrompts(currentOrganizationMember?.organization.id);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTriggersModal, setShowTriggersModal] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [selectedFlow, setSelectedFlow] = useState<{ id: string; triggers: Trigger[] } | null>(null);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
@@ -35,12 +40,21 @@ export default function Prompts() {
 
     setDeleting(true);
     try {
-      const { error } = await supabase
+      // Primeiro, excluir os flows vinculados
+      const { error: flowsError } = await supabase
+        .from('flows')
+        .delete()
+        .eq('created_by_prompt', prompt.id);
+
+      if (flowsError) throw flowsError;
+
+      // Depois, excluir o prompt
+      const { error: promptError } = await supabase
         .from('prompts')
         .delete()
         .eq('id', prompt.id);
 
-      if (error) throw error;
+      if (promptError) throw promptError;
 
       // Invalida o cache para forçar uma nova busca
       await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
@@ -55,25 +69,42 @@ export default function Prompts() {
     }
   };
 
-  const getTriggerIcon = (type: string) => {
-    switch (type) {
-      case 'first_contact':
-        return MessageSquare;
-      case 'inactivity':
-        return Clock;
-      default:
-        return null;
-    }
-  };
+  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
+    if (!selectedFlow?.id || !currentOrganizationMember) return;
 
-  const getTriggerLabel = (type: string) => {
-    switch (type) {
-      case 'first_contact':
-        return t('flows:triggers.firstContact');
-      case 'inactivity':
-        return t('flows:triggers.inactivity');
-      default:
-        return type;
+    try {
+      // Excluir triggers existentes
+      const { error: deleteError } = await supabase
+        .from('flow_triggers')
+        .delete()
+        .eq('flow_id', selectedFlow.id);
+
+      if (deleteError) throw deleteError;
+
+      // Inserir novos triggers
+      if (newTriggers.length > 0) {
+        const { error: insertError } = await supabase
+          .from('flow_triggers')
+          .insert(
+            newTriggers.map(trigger => ({
+              ...trigger,
+              flow_id: selectedFlow.id,
+              organization_id: currentOrganizationMember.organization.id,
+              updated_at: new Date().toISOString()
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+
+      // Invalida o cache para forçar uma nova busca
+      await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
+      
+      setShowTriggersModal(false);
+      setSelectedFlow(null);
+    } catch (error) {
+      console.error('Erro ao salvar triggers:', error);
+      setError(t('common:error'));
     }
   };
 
@@ -164,39 +195,21 @@ export default function Prompts() {
                 <div className="mt-4 flex items-center space-x-2">
                   <GitBranch className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                   {linkedFlow ? (
-                    linkedFlow.triggers.length > 0 ? (
-                      <>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {t('flows:triggers.startWhen')}:
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {linkedFlow.triggers.map((trigger) => {
-                            const IconComponent = getTriggerIcon(trigger.type);
-                            return (
-                              <span
-                                key={trigger.id}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400"
-                              >
-                                {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
-                                {getTriggerLabel(trigger.type)}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
-                        <AlertTriangle className="w-4 h-4" />
-                        <div>
-                          <div className="text-sm font-medium">
-                            {t('flows:triggers.noTriggers')}
-                          </div>
-                          <div className="text-xs">
-                            {t('flows:triggers.noTriggersDescription')}
-                          </div>
-                        </div>
-                      </div>
-                    )
+                    <>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {t('flows:triggers.startWhen')}:
+                      </span>
+                      <TriggersList 
+                        triggers={linkedFlow.triggers}
+                        flowId={linkedFlow.id}
+                        onChange={async () => {
+                          if (!currentOrganizationMember) return;
+                          // Invalida o cache para forçar uma nova busca
+                          await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
+                        }}
+                        showWarning={true}
+                      />
+                    </>
                   ) : (
                     <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
                       <AlertTriangle className="w-4 h-4" />
@@ -299,6 +312,26 @@ export default function Prompts() {
           </div>
         </div>
       )}
+
+      {/* Triggers Modal */}
+      <Modal
+        isOpen={showTriggersModal}
+        onClose={() => {
+          setShowTriggersModal(false);
+          setSelectedFlow(null);
+        }}
+        title={t('flows:triggers.title')}
+      >
+        <div className="py-4">
+          {selectedFlow && (
+            <FlowTriggers
+              flowId={selectedFlow.id}
+              triggers={selectedFlow.triggers}
+              onChange={handleSaveTriggers}
+            />
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

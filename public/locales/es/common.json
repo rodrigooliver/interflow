@@ -116,5 +116,6 @@
   "createScheduleMessage": "Crea un nuevo agendamiento para comenzar",
   "today": "Hoy",
   "filters": "Filtros",
-  "clearAll": "Limpiar todos"
+  "clearAll": "Limpiar todos",
+  "disabled": "Desactivado"
 }

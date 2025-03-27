@@ -1,3 +1,4 @@
+import { Trigger } from './flow';
 /**
  * DATABASE SCHEMA TYPES
  * This file contains TypeScript interfaces that represent the database schema
@@ -449,6 +450,7 @@ export interface Flow {
     id: string;
     title: string;
   } | null;
+  triggers?: Trigger[];
 }
 
 /**

@@ -274,7 +274,9 @@
     "add": "Adicionar Condição",
     "channel": "Canal específico",
     "schedule": "Horário específico",
-    "title": "Regras e Condições"
+    "title": "Regras e Condições",
+    "allChannels": "Por todos os canais",
+    "anyTime": "Em qualquer hora"
   },
   "settings": "Configurações",
   "title": "Fluxos",

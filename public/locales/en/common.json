@@ -116,5 +116,6 @@
   "createScheduleMessage": "Create a new schedule to get started",
   "today": "Today",
   "filters": "Filters",
-  "clearAll": "Clear all"
+  "clearAll": "Clear all",
+  "disabled": "Disabled"
 }

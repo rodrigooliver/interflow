@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Flow } from '../../types/database';
-import { Trigger } from '../../types/flow';
 import FlowEditForm from '../../components/flow/FlowEditForm';
 import FlowCreateModal from '../../components/flow/FlowCreateModal';
+import { TriggersList } from '../../components/flow/TriggersList';
 
 export default function FlowList() {
   const navigate = useNavigate();
@@ -106,45 +106,6 @@ export default function FlowList() {
     }
   }
 
-  // Função para salvar os triggers
-  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
-    if (!selectedFlow || !currentOrganizationMember) return;
-
-    try {
-      // Excluir triggers existentes
-      const { error: deleteError } = await supabase
-        .from('flow_triggers')
-        .delete()
-        .eq('flow_id', selectedFlow.id);
-
-      if (deleteError) throw deleteError;
-
-      // Inserir novos triggers
-      if (newTriggers.length > 0) {
-        const { error: insertError } = await supabase
-          .from('flow_triggers')
-          .insert(
-            newTriggers.map(trigger => ({
-              ...trigger,
-              flow_id: selectedFlow.id,
-              organization_id: currentOrganizationMember.organization.id,
-              updated_at: new Date().toISOString()
-            }))
-          );
-
-        if (insertError) throw insertError;
-      }
-
-      // Atualizar a lista de flows
-      await loadFlows();
-      
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Error updating triggers:', error);
-      return Promise.reject(error);
-    }
-  };
-
   if (!currentOrganizationMember) {
     return (
       <div className="p-6">
@@ -216,26 +177,48 @@ export default function FlowList() {
               </div>
               <Link
                 to={`/app/flows/${flow.id}`}
-                className="flex items-center"
+                className="flex flex-col"
               >
-                <GitFork className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-3" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
-                    {flow.name}
-                  </h3>
-                  {flow.description && (
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {flow.description}
-                    </p>
-                  )}
-                  {flow.prompt && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400">
-                        {t('flows:linkedToAgent')}: {flow.prompt.title}
-                      </span>
-                    </div>
-                  )}
+                <div className="flex items-center mb-3">
+                  <GitFork className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-3" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+                      {flow.name}
+                    </h3>
+                    {flow.description && (
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
+                        {flow.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
+
+                {/* Adicionar TriggersList */}
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('flows:triggers.startWhen')}:
+                  </span>
+                  <TriggersList 
+                    triggers={flow.triggers || []}
+                    flowId={flow.id}
+                    showWarning={true}
+                    onChange={loadFlows}
+                  />
+                </div>
+
+                {flow.prompt && (
+                  <div className="mt-3 border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {t('flows:linkedToAgent')}:
+                    </div>
+                    <Link
+                      to={`/app/prompts/edit/${flow.prompt.id}`}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
+                    >
+                      {flow.prompt.title}
+                    </Link>
+                  </div>
+                )}
               </Link>
             </div>
           ))}
@@ -349,7 +332,7 @@ export default function FlowList() {
                     setShowEditFlowModal(false);
                     setSelectedFlow(null);
                   }}
-                  onSaveTriggers={handleSaveTriggers}
+                  onSaveTriggers={async () => Promise.resolve()}
                   onClose={() => {
                     setShowEditFlowModal(false);
                     setSelectedFlow(null);

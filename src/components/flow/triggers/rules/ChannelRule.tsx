@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Select from 'react-select';
-import { supabase } from '../../../../lib/supabase';
 import { useAuthContext } from '../../../../contexts/AuthContext';
+import { useChannels } from '../../../../hooks/useQueryes';
 
 interface ChannelRuleProps {
   params: {
@@ -14,45 +14,19 @@ interface ChannelRuleProps {
 export function ChannelRule({ params, onChange }: ChannelRuleProps) {
   const { t } = useTranslation('flows');
   const { currentOrganizationMember } = useAuthContext();
-  const [channels, setChannels] = useState<Array<{ value: string; label: string }>>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: channels = [], isLoading } = useChannels(currentOrganizationMember?.organization.id);
 
-  const loadChannels = useCallback(async () => {
-    if (!currentOrganizationMember?.organization.id) return;
-    
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('chat_channels')
-        .select('*')
-        .eq('organization_id', currentOrganizationMember.organization.id);
-      
-      if (error) throw error;
-      
-      if (data) {
-        const channelOptions = data.map(channel => ({
-          value: channel.id,
-          label: channel.name
-        }));
-        setChannels(channelOptions);
-      }
-    } catch (error) {
-      console.error('Error loading channels:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentOrganizationMember?.organization.id]);
-
-  useEffect(() => {
-    loadChannels();
-  }, [loadChannels]);
+  const channelOptions = channels.map(channel => ({
+    value: channel.id,
+    label: channel.name
+  }));
 
   return (
     <Select
       isMulti
       isLoading={isLoading}
-      options={channels}
-      value={channels.filter(channel => params.channels.includes(channel.value))}
+      options={channelOptions}
+      value={channelOptions.filter(channel => params.channels.includes(channel.value))}
       onChange={(selected) => {
         onChange({ channels: selected.map(option => option.value) });
       }}

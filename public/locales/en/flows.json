@@ -315,7 +315,9 @@
     "title": "Rules and Conditions",
     "add": "Add Condition",
     "channel": "Specific Channel",
-    "schedule": "Specific Schedule"
+    "schedule": "Specific Schedule",
+    "allChannels": "All channels",
+    "anyTime": "Any time"
   },
   "days": {
     "sunday": "Sunday",

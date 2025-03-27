@@ -4,7 +4,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, Plus, ChevronRight, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { useOpenAIModels, useOpenAIIntegrations, useChannelNames } from '../../hooks/useQueryes';
+import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
 import { PromptFormData, Tool, ToolAction } from '../../types/prompts';
 import { Integration } from '../../types/database';
 import ContentEditor from './ContentEditor';
@@ -18,8 +18,8 @@ import TestPrompt from './TestPrompt';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
 import { SYSTEM_ACTIONS, SYSTEM_ACTION_TYPES, SystemActionType } from '../../constants/systemActions';
 import SystemActionsList from './SystemActionsList';
-import { FlowTriggers } from '../flow/FlowTriggers';
 import { Trigger } from '../../types/flow';
+import { TriggersList } from '../flow/TriggersList';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -239,8 +239,7 @@ const PromptFormMain: React.FC = () => {
   });
   const [showToolModal, setShowToolModal] = useState(false);
   const [editingTool, setEditingTool] = useState<{ tool: Tool, index: number } | null>(null);
-  const [linkedFlow, setLinkedFlow] = useState<{ id: string; name: string } | null>(null);
-  const [checkingFlow, setCheckingFlow] = useState(false);
+  const [linkedFlow, setLinkedFlow] = useState<{ id: string; name: string; triggers: Trigger[] } | null>(null);
   const [creatingFlow, setCreatingFlow] = useState(false);
   const [resettingFlow, setResettingFlow] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -249,37 +248,11 @@ const PromptFormMain: React.FC = () => {
   const queryClient = useQueryClient();
   const [showIntegrationModal, setShowIntegrationModal] = useState(false);
   const [isSystemActionModalOpen, setIsSystemActionModalOpen] = useState(false);
-  const [showTriggersModal, setShowTriggersModal] = useState(false);
-  const [flowTriggers, setFlowTriggers] = useState<Trigger[]>([]);
-  const [isLoadingTriggers, setIsLoadingTriggers] = useState(false);
-  const [channelNames, setChannelNames] = useState<Record<string, string>>({});
-
-  const getTriggerIcon = (type: string) => {
-    switch (type) {
-      case 'first_contact':
-        return MessageSquare;
-      case 'inactivity':
-        return Clock;
-      default:
-        return null;
-    }
-  };
-
-  const getTriggerLabel = (type: string) => {
-    switch (type) {
-      case 'first_contact':
-        return t('flows:triggers.firstContact');
-      case 'inactivity':
-        return t('flows:triggers.inactivity');
-      default:
-        return type;
-    }
-  };
+  const [triggers, setTriggers] = useState<Trigger[]>([]);
 
   useEffect(() => {
     if (id) {
       loadPrompt();
-      checkLinkedFlow();
     }
   }, [id, currentOrganizationMember]);
 
@@ -314,26 +287,20 @@ const PromptFormMain: React.FC = () => {
     };
   }, []);
 
-  // Adicionar useEffect para carregar os triggers quando houver um fluxo vinculado
-  useEffect(() => {
-    if (linkedFlow?.id) {
-      loadFlowTriggers(linkedFlow.id);
-    }
-  }, [linkedFlow]);
-
-  // Atualizar a URL quando a aba mudar
-  useEffect(() => {
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set('tab', activeTab);
-    navigate(`?${newSearchParams.toString()}`, { replace: true });
-  }, [activeTab, navigate, searchParams]);
-
   async function loadPrompt() {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('prompts')
-        .select('*, integration:integration_id(*)')
+        .select(`
+          *,
+          integration:integration_id(*),
+          flows:flows!created_by_prompt(
+            id,
+            name,
+            triggers:flow_triggers(*)
+          )
+        `)
         .eq('id', id)
         .single();
 
@@ -365,6 +332,19 @@ const PromptFormMain: React.FC = () => {
         if (data.config && data.config.timezone) {
           setTimezone(data.config.timezone);
         }
+
+        // Configurar o fluxo vinculado e seus triggers
+        if (data.flows && data.flows.length > 0) {
+          const flow = data.flows[0];
+          setLinkedFlow({
+            id: flow.id,
+            name: flow.name,
+            triggers: flow.triggers || []
+          });
+          setTriggers(flow.triggers || []);
+        } else {
+          setLinkedFlow(null);
+        }
       }
     } catch (error) {
       console.error('Error loading prompt:', error);
@@ -374,32 +354,44 @@ const PromptFormMain: React.FC = () => {
     }
   }
 
-  async function checkLinkedFlow() {
-    if (!id || !currentOrganizationMember) return;
-    
-    setCheckingFlow(true);
+  // Função para salvar os triggers
+  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
+    if (!linkedFlow?.id || !currentOrganizationMember) return;
+
     try {
-      const { data, error } = await supabase
-        .from('flows')
-        .select('id, name')
-        .eq('created_by_prompt', id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error checking linked flow:', error);
+      // Excluir triggers existentes
+      const { error: deleteError } = await supabase
+        .from('flow_triggers')
+        .delete()
+        .eq('flow_id', linkedFlow.id);
+
+      if (deleteError) throw deleteError;
+
+      // Inserir novos triggers
+      if (newTriggers.length > 0) {
+        const { error: insertError } = await supabase
+          .from('flow_triggers')
+          .insert(
+            newTriggers.map(trigger => ({
+              ...trigger,
+              flow_id: linkedFlow.id,
+              organization_id: currentOrganizationMember.organization.id,
+              updated_at: new Date().toISOString()
+            }))
+          );
+
+        if (insertError) throw insertError;
       }
+
+      // Atualizar o estado local com os novos triggers
+      setLinkedFlow(prev => prev ? { ...prev, triggers: newTriggers } : null);
       
-      if (data) {
-        setLinkedFlow(data);
-      } else {
-        setLinkedFlow(null);
-      }
+      // Recarregar os dados do prompt para garantir que tudo está sincronizado
+      await loadPrompt();
     } catch (error) {
-      console.error('Error checking linked flow:', error);
-    } finally {
-      setCheckingFlow(false);
+      console.error('Erro ao salvar triggers:', error);
     }
-  }
+  };
 
   async function createOrSyncFlow() {
     if (!id || !currentOrganizationMember) return;
@@ -426,6 +418,9 @@ const PromptFormMain: React.FC = () => {
           setTimeout(() => {
             successMessage.remove();
           }, 3000);
+
+          // Recarregar os dados do prompt para garantir que tudo está sincronizado
+          await loadPrompt();
         }
       }
     } catch (error) {
@@ -507,6 +502,8 @@ const PromptFormMain: React.FC = () => {
         config: updatedConfig
       };
 
+      let promptId = id;
+      
       if (id) {
         // Update
         const { error } = await supabase
@@ -538,7 +535,28 @@ const PromptFormMain: React.FC = () => {
         await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
         
         if (data && data.length > 0) {
-          // Redirect to the edit page with the newly created ID
+          promptId = data[0].id;
+          
+          // Criar o flow logo após criar o prompt
+          if (promptId) {
+            const flowData = await createFlowFromPrompt(promptId, currentOrganizationMember.organization.id, formData.title);
+            
+            if (flowData) {
+              // Invalidar cache dos flows
+              await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember.organization.id] });
+              
+              // Mostrar mensagem de sucesso
+              const successMessage = document.createElement('div');
+              successMessage.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50';
+              successMessage.innerHTML = `<span class="font-bold">${t('prompts:flowCreatedSuccess')}</span>`;
+              document.body.appendChild(successMessage);
+              setTimeout(() => {
+                successMessage.remove();
+              }, 3000);
+            }
+          }
+
+          // Redirecionar para a página de edição
           navigate(`/app/prompts/edit/${data[0].id}`);
         }
       }
@@ -620,104 +638,13 @@ const PromptFormMain: React.FC = () => {
     setIsSystemActionModalOpen(false);
   };
 
-  // Função para carregar os triggers do fluxo
-  const loadFlowTriggers = async (flowId: string) => {
-    setIsLoadingTriggers(true);
-    try {
-      const { data: triggersData, error: triggersError } = await supabase
-        .from('flow_triggers')
-        .select('*')
-        .eq('flow_id', flowId);
-
-      if (triggersError) throw triggersError;
-      setFlowTriggers(triggersData || []);
-    } catch (error) {
-      console.error('Erro ao carregar triggers:', error);
-    } finally {
-      setIsLoadingTriggers(false);
+  // Função para lidar com o botão voltar
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate('/app/prompts');
     }
-  };
-
-  // Função para salvar os triggers
-  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
-    if (!linkedFlow?.id || !currentOrganizationMember) return;
-
-    try {
-      // Excluir triggers existentes
-      const { error: deleteError } = await supabase
-        .from('flow_triggers')
-        .delete()
-        .eq('flow_id', linkedFlow.id);
-
-      if (deleteError) throw deleteError;
-
-      // Inserir novos triggers
-      if (newTriggers.length > 0) {
-        const { error: insertError } = await supabase
-          .from('flow_triggers')
-          .insert(
-            newTriggers.map(trigger => ({
-              ...trigger,
-              flow_id: linkedFlow.id,
-              organization_id: currentOrganizationMember.organization.id,
-              updated_at: new Date().toISOString()
-            }))
-          );
-
-        if (insertError) throw insertError;
-      }
-
-      setFlowTriggers(newTriggers);
-    } catch (error) {
-      console.error('Erro ao salvar triggers:', error);
-    }
-  };
-
-  // Extrair todos os IDs de canais dos triggers
-  const allChannelIds = flowTriggers
-    .flatMap(trigger => 
-      trigger.conditions?.rules
-        ?.filter(rule => rule.type === 'channel')
-        .map(rule => (rule.params as { channels: string[] }).channels)
-        .flat() || []
-    );
-
-  // Usar o hook no nível do componente
-  const { data: channelData } = useChannelNames(
-    currentOrganizationMember?.organization.id,
-    allChannelIds
-  );
-
-  // Atualizar o estado quando os dados dos canais mudarem
-  useEffect(() => {
-    if (channelData) {
-      setChannelNames(channelData);
-    }
-  }, [channelData]);
-
-  // Modificar a função getTriggerConditions
-  const getTriggerConditions = (trigger: Trigger) => {
-    if (!trigger.conditions?.rules?.length) return null;
-
-    const conditions = trigger.conditions.rules.map(rule => {
-      let conditionText = '';
-      
-      if (rule.type === 'channel') {
-        const channelParams = rule.params as { channels: string[] };
-        // Usar os nomes dos canais se disponíveis, senão usar os IDs
-        const channelLabels = channelParams.channels.map(id => channelNames[id] || id);
-        conditionText = `${t('flows:rules.channel')}: ${channelLabels.join(', ')}`;
-      } else if (rule.type === 'schedule') {
-        const scheduleParams = rule.params as { timeSlots: Array<{ id: string; day: number; startTime: string; endTime: string }> };
-        conditionText = `${t('flows:rules.schedule')}: ${scheduleParams.timeSlots.map(slot => 
-          `${slot.startTime} - ${slot.endTime}`
-        ).join(', ')}`;
-      }
-
-      return conditionText || null;
-    }).filter(Boolean);
-
-    return conditions.length > 0 ? ` (${conditions.join(' | ')})` : null;
   };
 
   return (
@@ -729,7 +656,7 @@ const PromptFormMain: React.FC = () => {
               <div className="flex items-center justify-between w-full sm:w-auto">
                 <div className="flex items-center">
                   <button
-                    onClick={() => navigate('/app/prompts')}
+                    onClick={handleBack}
                     className="mr-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                     aria-label={t('common:back')}
                   >
@@ -743,12 +670,7 @@ const PromptFormMain: React.FC = () => {
               
               {id && (
                 <div className="hidden sm:flex items-center space-x-2 ml-auto">
-                  {checkingFlow ? (
-                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('prompts:checkingFlow')}
-                    </div>
-                  ) : creatingFlow ? (
+                  {creatingFlow ? (
                     <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {t('prompts:creatingFlow')}
@@ -1127,169 +1049,116 @@ const PromptFormMain: React.FC = () => {
                         </div>
 
                         {/* Seção de Fluxo */}
-                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
-                                <GitBranch className="w-4 h-4 mr-2" />
-                                {t('prompts:form.flow.title')}
-                              </h3>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {t('prompts:form.flow.description') || 'Configure os gatilhos para que este agente IA possa ser acionado'}
-                              </p>
-                            </div>
-                            {checkingFlow ? (
-                              <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                {t('prompts:checkingFlow')}
+                        {id && (
+                          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                                  <GitBranch className="w-4 h-4 mr-2" />
+                                  {t('prompts:form.flow.title')}
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {t('prompts:form.flow.description') || 'Configure os gatilhos para que este agente IA possa ser acionado'}
+                                </p>
                               </div>
-                            ) : creatingFlow ? (
-                              <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                {t('prompts:creatingFlow')}
-                              </div>
-                            ) : resettingFlow ? (
-                              <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                {t('prompts:resettingFlow')}
-                              </div>
-                            ) : (
-                              <div className="flex items-center space-x-2">
-                                {linkedFlow ? (
-                                  <div className="flex items-center" ref={dropdownRef}>
-                                    <div className="relative">
-                                      <button
-                                        type="button"
-                                        onClick={() => setDropdownOpen(!dropdownOpen)}
-                                        className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                      >
-                                        <GitBranch className="w-4 h-4 mr-2" />
-                                        {t('prompts:flowOptions')}
-                                        {dropdownOpen ? (
-                                          <ChevronUp className="w-4 h-4 ml-2" />
-                                        ) : (
-                                          <ChevronDown className="w-4 h-4 ml-2" />
-                                        )}
-                                      </button>
-                                      
-                                      {dropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
-                                          <ul className="py-1">
-                                            <li>
-                                              <button
-                                                onClick={() => {
-                                                  setDropdownOpen(false);
-                                                  createOrSyncFlow();
-                                                }}
-                                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-                                              >
-                                                <ExternalLink className="w-4 h-4 mr-2" />
-                                                {t('prompts:viewLinkedFlow')}
-                                              </button>
-                                            </li>
-                                            <li>
-                                              <button
-                                                onClick={() => {
-                                                  setDropdownOpen(false);
-                                                  setShowTriggersModal(true);
-                                                }}
-                                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-                                              >
-                                                <Settings className="w-4 h-4 mr-2" />
-                                                {t('flows:triggers.title')}
-                                              </button>
-                                            </li>
-                                            <li>
-                                              <button
-                                                onClick={() => {
-                                                  setDropdownOpen(false);
-                                                  resetFlow();
-                                                }}
-                                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
-                                              >
-                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                {t('prompts:resetFlow')}
-                                              </button>
-                                            </li>
-                                          </ul>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={createOrSyncFlow}
-                                    className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                  >
-                                    <GitBranch className="w-4 h-4 mr-2" />
-                                    {t('prompts:createFlow')}
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Status do Fluxo */}
-                          <div className="mt-4">
-                            {linkedFlow ? (
-                              flowTriggers.length > 0 ? (
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                                    {t('flows:triggers.startWhen')}:
-                                  </span>
-                                  <div className="flex flex-wrap gap-2">
-                                    {flowTriggers.map((trigger) => {
-                                      const IconComponent = getTriggerIcon(trigger.type);
-                                      const conditions = getTriggerConditions(trigger);
-                                      return (
-                                        <button
-                                          key={trigger.id}
-                                          onClick={() => setShowTriggersModal(true)}
-                                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors cursor-pointer"
-                                        >
-                                          {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
-                                          {getTriggerLabel(trigger.type)}
-                                          {conditions}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
+                              {creatingFlow ? (
+                                <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  {t('prompts:creatingFlow')}
                                 </div>
+                              ) : resettingFlow ? (
+                                <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  {t('prompts:resettingFlow')}
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-2">
+                                  {linkedFlow ? (
+                                    <div className="flex items-center" ref={dropdownRef}>
+                                      <div className="relative">
+                                        <button
+                                          type="button"
+                                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                                          className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        >
+                                          <GitBranch className="w-4 h-4 mr-2" />
+                                          {t('prompts:flowOptions')}
+                                          {dropdownOpen ? (
+                                            <ChevronUp className="w-4 h-4 ml-2" />
+                                          ) : (
+                                            <ChevronDown className="w-4 h-4 ml-2" />
+                                          )}
+                                        </button>
+                                        
+                                        {dropdownOpen && (
+                                          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
+                                            <ul className="py-1">
+                                              <li>
+                                                <button
+                                                  onClick={() => {
+                                                    setDropdownOpen(false);
+                                                    createOrSyncFlow();
+                                                  }}
+                                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                                >
+                                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                                  {t('prompts:viewLinkedFlow')}
+                                                </button>
+                                              </li>
+                                              <li>
+                                                <button
+                                                  onClick={() => {
+                                                    setDropdownOpen(false);
+                                                    resetFlow();
+                                                  }}
+                                                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                                >
+                                                  <Trash2 className="w-4 h-4 mr-2" />
+                                                  {t('prompts:resetFlow')}
+                                                </button>
+                                              </li>
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={createOrSyncFlow}
+                                      className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                      <GitBranch className="w-4 h-4 mr-2" />
+                                      {t('prompts:createFlow')}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Status do Fluxo */}
+                            <div className="mt-4">
+                              {linkedFlow ? (
+                                <TriggersList 
+                                  triggers={triggers}
+                                  flowId={linkedFlow.id}
+                                  onChange={setTriggers}
+                                />
                               ) : (
                                 <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
                                   <AlertTriangle className="w-4 h-4" />
-                                  <div className="flex-1">
+                                  <div>
                                     <div className="text-sm font-medium">
-                                      {t('flows:triggers.noTriggers')}
+                                      {t('flows:triggers.noFlow')}
                                     </div>
                                     <div className="text-xs">
-                                      {t('flows:triggers.noTriggersDescription')}
+                                      {t('flows:triggers.noFlowDescription')}
                                     </div>
-                                    <button
-                                      onClick={() => setShowTriggersModal(true)}
-                                      className="mt-2 inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                    >
-                                      <Plus className="w-4 h-4 mr-2" />
-                                      {t('flows:triggers.add')}
-                                    </button>
                                   </div>
                                 </div>
-                              )
-                            ) : (
-                              <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
-                                <AlertTriangle className="w-4 h-4" />
-                                <div>
-                                  <div className="text-sm font-medium">
-                                    {t('flows:triggers.noFlow')}
-                                  </div>
-                                  <div className="text-xs">
-                                    {t('flows:triggers.noFlowDescription')}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Botão para editar contexto */}
                         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -1449,7 +1318,7 @@ const PromptFormMain: React.FC = () => {
                     <div className="flex justify-end space-x-3">
                       <button
                         type="button"
-                        onClick={() => navigate('/app/prompts')}
+                        onClick={handleBack}
                         disabled={saving}
                         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                       >
@@ -1531,30 +1400,6 @@ const PromptFormMain: React.FC = () => {
               <Plus className="w-5 h-5 text-gray-500" />
             </button>
           ))}
-        </div>
-      </Modal>
-
-      {/* Adicionar o Modal de Triggers */}
-      <Modal
-        isOpen={showTriggersModal}
-        onClose={() => setShowTriggersModal(false)}
-        title={t('flows:triggers.title')}
-      >
-        <div className="py-4">
-          {isLoadingTriggers ? (
-            <div className="flex justify-center items-center p-8">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-700 dark:text-gray-300">{t('common:loading')}</span>
-            </div>
-          ) : (
-            linkedFlow && (
-              <FlowTriggers
-                flowId={linkedFlow.id}
-                triggers={flowTriggers}
-                onChange={handleSaveTriggers}
-              />
-            )
-          )}
         </div>
       </Modal>
     </div>
