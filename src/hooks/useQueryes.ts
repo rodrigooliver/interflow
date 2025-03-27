@@ -7,6 +7,7 @@ import { reloadTranslations } from '../i18n';
 import { PostgrestResponse } from '@supabase/supabase-js';
 import { AppointmentFilters, AvailableSlot, FindAvailableSlotsParams } from '../types/schedules';
 import { Appointment, ScheduleHoliday, ScheduleAvailability, ScheduleProvider, ScheduleService, Schedule } from '../types/database';
+import { Trigger } from '../types/flow';
 
 interface Tag {
   id: string;
@@ -588,12 +589,19 @@ export function usePrompts(organizationId?: string) {
 
       const { data, error } = await supabase
         .from('prompts')
-        .select('*')
+        .select(`
+          *,
+          flows:flows!created_by_prompt(
+            id,
+            name,
+            triggers:flow_triggers(*)
+          )
+        `)
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Prompt[];
+      return data as (Prompt & { flows: { id: string; name: string; triggers: Trigger[] }[] })[];
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -1290,5 +1298,29 @@ export function useTasks(organizationId?: string, status?: 'pending' | 'in_progr
       return data;
     },
     enabled: !!organizationId && !!userId
+  });
+}
+
+export function useChannelNames(organizationId: string | undefined, channelIds: string[]) {
+  return useQuery({
+    queryKey: ['channelNames', organizationId, channelIds],
+    queryFn: async () => {
+      if (!organizationId || !channelIds.length) return {};
+      
+      const { data: channels, error } = await supabase
+        .from('chat_channels')
+        .select('id, name')
+        .in('id', channelIds)
+        .eq('organization_id', organizationId);
+
+      if (error) throw error;
+
+      return channels.reduce((acc, channel) => ({
+        ...acc,
+        [channel.id]: channel.name
+      }), {});
+    },
+    enabled: !!organizationId && channelIds.length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 } 

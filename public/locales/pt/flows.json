@@ -314,8 +314,13 @@
     "timezone": "Fuso horário",
     "selectTimezone": "Selecione um fuso horário",
     "noTimezoneFound": "Nenhum fuso horário encontrado",
-    "title": "Gatilhos de Automação",
-    "useSchedule": "Apenas em horários específicos"
+    "title": "Gatilhos para Iniciar",
+    "useSchedule": "Apenas em horários específicos",
+    "startWhen": "Iniciar quando",
+    "noTriggers": "Nenhum gatilho configurado",
+    "noTriggersDescription": "Este fluxo não está configurado para iniciar automaticamente em nenhum momento",
+    "noFlow": "Nenhum fluxo vinculado",
+    "noFlowDescription": "Este Agente IA não está vinculado a nenhum fluxo, então não pode ser iniciado automaticamente"
   },
   "variables": {
     "title": "Variáveis",

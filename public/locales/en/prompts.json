@@ -74,6 +74,10 @@
     "customActionsDescription": "Actions created and customized by you",
     "noSystemActions": "No system actions available",
     "noCustomActions": "No custom actions configured",
+    "flow": {
+      "title": "Flow",
+      "description": "Configure triggers so this AI agent can be activated"
+    },
     "examples": {
       "title": "Examples"
     },

@@ -269,6 +269,11 @@
   },
   "triggers": {
     "title": "Disparadores de Automatización",
+    "startWhen": "Iniciar cuando",
+    "noTriggers": "Sin disparadores configurados",
+    "noTriggersDescription": "Este flujo no está configurado para iniciar automáticamente en ningún momento",
+    "noFlow": "Sin flujo vinculado",
+    "noFlowDescription": "Este Agente IA no está vinculado a ningún flujo, por lo que no puede iniciarse automáticamente",
     "configure": "Configurar Disparadores",
     "add": "Agregar Disparador",
     "selectType": "Seleccionar Tipo de Disparador",

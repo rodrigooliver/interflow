@@ -71,6 +71,10 @@
     "systemActions": "Ações do Sistema",
     "systemActionsDescription": "Ações prontas disponíveis para uso imediato",
     "addSystemAction": "+ Adicionar Ação do Sistema",
+    "flow": {
+      "title": "Fluxo",
+      "description": "Configure os gatilhos para que este agente IA possa ser acionado"
+    },
     "systemActionTypes": {
       "endChat": "Encerrar Atendimento",
       "changeCustomerName": "Alterar Nome do Cliente",

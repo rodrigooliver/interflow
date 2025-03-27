@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, Plus, ChevronRight } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, Plus, ChevronRight, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
+import { useOpenAIModels, useOpenAIIntegrations, useChannelNames } from '../../hooks/useQueryes';
 import { PromptFormData, Tool, ToolAction } from '../../types/prompts';
 import { Integration } from '../../types/database';
 import ContentEditor from './ContentEditor';
@@ -18,6 +18,8 @@ import TestPrompt from './TestPrompt';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
 import { SYSTEM_ACTIONS, SYSTEM_ACTION_TYPES, SystemActionType } from '../../constants/systemActions';
 import SystemActionsList from './SystemActionsList';
+import { FlowTriggers } from '../flow/FlowTriggers';
+import { Trigger } from '../../types/flow';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -151,6 +153,24 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
       .single();
 
     if (flowError) throw flowError;
+
+    // Create flow trigger
+    const { error: triggerError } = await supabase
+      .from('flow_triggers')
+      .insert([{
+        flow_id: flowData.id,
+        type: 'first_contact',
+        is_active: true,
+        conditions: {
+          rules: [],
+          operator: 'AND'
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        organization_id: organizationId
+      }]);
+
+    if (triggerError) throw triggerError;
     
     return flowData;
   } catch (error) {
@@ -162,11 +182,13 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
 type TabType = 'general' | 'context' | 'tools' | 'test';
 
 const PromptFormMain: React.FC = () => {
-  const { t } = useTranslation(['prompts', 'common']);
+  const { t } = useTranslation(['prompts', 'common', 'flows']);
   const navigate = useNavigate();
   const { id } = useParams(); // for editing
+  const [searchParams] = useSearchParams();
   const { currentOrganizationMember } = useAuthContext();
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState<PromptFormData>({
     title: '',
@@ -211,7 +233,10 @@ const PromptFormMain: React.FC = () => {
     selectedIntegration?.id
   );
   
-  const [activeTab, setActiveTab] = useState<TabType>('general');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const tabParam = searchParams.get('tab');
+    return (tabParam as TabType) || 'general';
+  });
   const [showToolModal, setShowToolModal] = useState(false);
   const [editingTool, setEditingTool] = useState<{ tool: Tool, index: number } | null>(null);
   const [linkedFlow, setLinkedFlow] = useState<{ id: string; name: string } | null>(null);
@@ -224,6 +249,32 @@ const PromptFormMain: React.FC = () => {
   const queryClient = useQueryClient();
   const [showIntegrationModal, setShowIntegrationModal] = useState(false);
   const [isSystemActionModalOpen, setIsSystemActionModalOpen] = useState(false);
+  const [showTriggersModal, setShowTriggersModal] = useState(false);
+  const [flowTriggers, setFlowTriggers] = useState<Trigger[]>([]);
+  const [isLoadingTriggers, setIsLoadingTriggers] = useState(false);
+  const [channelNames, setChannelNames] = useState<Record<string, string>>({});
+
+  const getTriggerIcon = (type: string) => {
+    switch (type) {
+      case 'first_contact':
+        return MessageSquare;
+      case 'inactivity':
+        return Clock;
+      default:
+        return null;
+    }
+  };
+
+  const getTriggerLabel = (type: string) => {
+    switch (type) {
+      case 'first_contact':
+        return t('flows:triggers.firstContact');
+      case 'inactivity':
+        return t('flows:triggers.inactivity');
+      default:
+        return type;
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -263,7 +314,22 @@ const PromptFormMain: React.FC = () => {
     };
   }, []);
 
+  // Adicionar useEffect para carregar os triggers quando houver um fluxo vinculado
+  useEffect(() => {
+    if (linkedFlow?.id) {
+      loadFlowTriggers(linkedFlow.id);
+    }
+  }, [linkedFlow]);
+
+  // Atualizar a URL quando a aba mudar
+  useEffect(() => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('tab', activeTab);
+    navigate(`?${newSearchParams.toString()}`, { replace: true });
+  }, [activeTab, navigate, searchParams]);
+
   async function loadPrompt() {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('prompts')
@@ -303,6 +369,8 @@ const PromptFormMain: React.FC = () => {
     } catch (error) {
       console.error('Error loading prompt:', error);
       setError(t('common:error'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -552,6 +620,106 @@ const PromptFormMain: React.FC = () => {
     setIsSystemActionModalOpen(false);
   };
 
+  // Função para carregar os triggers do fluxo
+  const loadFlowTriggers = async (flowId: string) => {
+    setIsLoadingTriggers(true);
+    try {
+      const { data: triggersData, error: triggersError } = await supabase
+        .from('flow_triggers')
+        .select('*')
+        .eq('flow_id', flowId);
+
+      if (triggersError) throw triggersError;
+      setFlowTriggers(triggersData || []);
+    } catch (error) {
+      console.error('Erro ao carregar triggers:', error);
+    } finally {
+      setIsLoadingTriggers(false);
+    }
+  };
+
+  // Função para salvar os triggers
+  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
+    if (!linkedFlow?.id || !currentOrganizationMember) return;
+
+    try {
+      // Excluir triggers existentes
+      const { error: deleteError } = await supabase
+        .from('flow_triggers')
+        .delete()
+        .eq('flow_id', linkedFlow.id);
+
+      if (deleteError) throw deleteError;
+
+      // Inserir novos triggers
+      if (newTriggers.length > 0) {
+        const { error: insertError } = await supabase
+          .from('flow_triggers')
+          .insert(
+            newTriggers.map(trigger => ({
+              ...trigger,
+              flow_id: linkedFlow.id,
+              organization_id: currentOrganizationMember.organization.id,
+              updated_at: new Date().toISOString()
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+
+      setFlowTriggers(newTriggers);
+    } catch (error) {
+      console.error('Erro ao salvar triggers:', error);
+    }
+  };
+
+  // Extrair todos os IDs de canais dos triggers
+  const allChannelIds = flowTriggers
+    .flatMap(trigger => 
+      trigger.conditions?.rules
+        ?.filter(rule => rule.type === 'channel')
+        .map(rule => (rule.params as { channels: string[] }).channels)
+        .flat() || []
+    );
+
+  // Usar o hook no nível do componente
+  const { data: channelData } = useChannelNames(
+    currentOrganizationMember?.organization.id,
+    allChannelIds
+  );
+
+  // Atualizar o estado quando os dados dos canais mudarem
+  useEffect(() => {
+    if (channelData) {
+      setChannelNames(channelData);
+    }
+  }, [channelData]);
+
+  // Modificar a função getTriggerConditions
+  const getTriggerConditions = (trigger: Trigger) => {
+    if (!trigger.conditions?.rules?.length) return null;
+
+    const conditions = trigger.conditions.rules.map(rule => {
+      let conditionText = '';
+      
+      if (rule.type === 'channel') {
+        const channelParams = rule.params as { channels: string[] };
+        // Usar os nomes dos canais se disponíveis, senão usar os IDs
+        const channelLabels = channelParams.channels.map(id => channelNames[id] || id);
+        conditionText = `${t('flows:rules.channel')}: ${channelLabels.join(', ')}`;
+      } else if (rule.type === 'schedule') {
+        const scheduleParams = rule.params as { timeSlots: Array<{ id: string; day: number; startTime: string; endTime: string }> };
+        conditionText = `${t('flows:rules.schedule')}: ${scheduleParams.timeSlots.map(slot => 
+          `${slot.startTime} - ${slot.endTime}`
+        ).join(', ')}`;
+      }
+
+      return conditionText || null;
+    }).filter(Boolean);
+
+    return conditions.length > 0 ? ` (${conditions.join(' | ')})` : null;
+  };
+
   return (
     <div className="flex flex-col h-screen pb-16 md:pb-0">
       <div className="p-4 md:p-6 flex-grow overflow-hidden">
@@ -571,85 +739,6 @@ const PromptFormMain: React.FC = () => {
                     {id ? t('prompts:edit') : t('prompts:add')}
                   </h1>
                 </div>
-                
-                {id && (
-                  <div className="flex items-center space-x-2 sm:hidden">
-                    {checkingFlow ? (
-                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {t('prompts:checkingFlow')}
-                      </div>
-                    ) : creatingFlow ? (
-                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {t('prompts:creatingFlow')}
-                      </div>
-                    ) : resettingFlow ? (
-                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {t('prompts:resettingFlow')}
-                      </div>
-                    ) : (
-                      <>
-                        {linkedFlow ? (
-                          <div className="flex items-center" ref={dropdownRef}>
-                            <div className="relative">
-                              <button
-                                onClick={() => setDropdownOpen(!dropdownOpen)}
-                                className="flex items-center px-2 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                              >
-                                <GitBranch className="w-4 h-4" />
-                                {dropdownOpen ? (
-                                  <ChevronUp className="w-4 h-4 ml-1" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4 ml-1" />
-                                )}
-                              </button>
-                              
-                              {dropdownOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
-                                  <ul className="py-1">
-                                    <li>
-                                      <button
-                                        onClick={() => {
-                                          setDropdownOpen(false);
-                                          createOrSyncFlow();
-                                        }}
-                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                      >
-                                        <ExternalLink className="w-4 h-4 mr-2" />
-                                        {t('prompts:viewLinkedFlow')}
-                                      </button>
-                                    </li>
-                                    <li>
-                                      <button
-                                        onClick={() => {
-                                          setDropdownOpen(false);
-                                          resetFlow();
-                                        }}
-                                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                      >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        {t('prompts:resetFlow')}
-                                      </button>
-                                    </li>
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={createOrSyncFlow}
-                            className="flex items-center px-2 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            <GitBranch className="w-4 h-4" />
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
               
               {id && (
@@ -669,70 +758,7 @@ const PromptFormMain: React.FC = () => {
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {t('prompts:resettingFlow')}
                     </div>
-                  ) : (
-                    <>
-                      {linkedFlow ? (
-                        <div className="flex items-center" ref={dropdownRef}>
-                          <div className="mr-2 text-sm text-gray-600 dark:text-gray-300">
-                            {t('prompts:hasLinkedFlow')}
-                          </div>
-                          <div className="relative">
-                            <button
-                              onClick={() => setDropdownOpen(!dropdownOpen)}
-                              className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                              <GitBranch className="w-4 h-4 mr-2" />
-                              {t('prompts:flowOptions')}
-                              {dropdownOpen ? (
-                                <ChevronUp className="w-4 h-4 ml-2" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4 ml-2" />
-                              )}
-                            </button>
-                            
-                            {dropdownOpen && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
-                                <ul className="py-1">
-                                  <li>
-                                    <button
-                                      onClick={() => {
-                                        setDropdownOpen(false);
-                                        createOrSyncFlow();
-                                      }}
-                                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    >
-                                      <ExternalLink className="w-4 h-4 mr-2" />
-                                      {t('prompts:viewLinkedFlow')}
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button
-                                      onClick={() => {
-                                        setDropdownOpen(false);
-                                        resetFlow();
-                                      }}
-                                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    >
-                                      <Trash2 className="w-4 h-4 mr-2" />
-                                      {t('prompts:resetFlow')}
-                                    </button>
-                                  </li>
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={createOrSyncFlow}
-                          className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          <GitBranch className="w-4 h-4 mr-2" />
-                          {t('prompts:createFlow')}
-                        </button>
-                      )}
-                    </>
-                  )}
+                  ) : null}
                 </div>
               )}
             </div>
@@ -745,528 +771,701 @@ const PromptFormMain: React.FC = () => {
                 </div>
               )}
 
-              {/* Tabs */}
-              <div className="mb-4">
-                <div className="sm:hidden">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setTabsDropdownOpen(!tabsDropdownOpen)}
-                      className="w-full flex items-center justify-between bg-white dark:bg-gray-900 rounded-lg shadow-sm p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <div className="flex items-center space-x-2">
-                        {activeTab === 'general' && <Settings className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                        {activeTab === 'context' && <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                        {activeTab === 'tools' && <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                        {activeTab === 'test' && <Play className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {activeTab === 'general' && (t('prompts:form.tabs.general') || 'Configurações Gerais')}
-                          {activeTab === 'context' && (t('prompts:form.tabs.context') || 'Contexto')}
-                          {activeTab === 'tools' && (t('prompts:form.tabs.tools') || 'Ferramentas')}
-                          {activeTab === 'test' && (t('prompts:form.tabs.test') || 'Testar')}
-                        </span>
+              {loading ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {t('common:loading')}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Tabs */}
+                  <div className="mb-4">
+                    <div className="sm:hidden">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setTabsDropdownOpen(!tabsDropdownOpen)}
+                          className="w-full flex items-center justify-between bg-white dark:bg-gray-900 rounded-lg shadow-sm p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            {activeTab === 'general' && <Settings className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                            {activeTab === 'context' && <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                            {activeTab === 'tools' && <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                            {activeTab === 'test' && <Play className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {activeTab === 'general' && (t('prompts:form.tabs.general') || 'Configurações Gerais')}
+                              {activeTab === 'context' && (t('prompts:form.tabs.context') || 'Contexto')}
+                              {activeTab === 'tools' && (t('prompts:form.tabs.tools') || 'Ferramentas')}
+                              {activeTab === 'test' && (t('prompts:form.tabs.test') || 'Testar')}
+                            </span>
+                          </div>
+                          <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${tabsDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        {tabsDropdownOpen && (
+                          <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                            <div className="py-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('general');
+                                  setTabsDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-3 text-sm ${
+                                  activeTab === 'general'
+                                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                <Settings className="w-4 h-4 mr-2" />
+                                {t('prompts:form.tabs.general') || 'Configurações Gerais'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('context');
+                                  setTabsDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-3 text-sm ${
+                                  activeTab === 'context'
+                                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                <Info className="w-4 h-4 mr-2" />
+                                {t('prompts:form.tabs.context') || 'Contexto'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('tools');
+                                  setTabsDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-3 text-sm ${
+                                  activeTab === 'tools'
+                                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                <Wrench className="w-4 h-4 mr-2" />
+                                {t('prompts:form.tabs.tools') || 'Ferramentas'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('test');
+                                  setTabsDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-3 text-sm ${
+                                  activeTab === 'test'
+                                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                <Play className="w-4 h-4 mr-2" />
+                                {t('prompts:form.tabs.test') || 'Testar'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${tabsDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {tabsDropdownOpen && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                        <div className="py-1">
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="border-b border-gray-200 dark:border-gray-700">
+                        <nav className="-mb-px flex" aria-label="Tabs">
                           <button
                             type="button"
-                            onClick={() => {
-                              setActiveTab('general');
-                              setTabsDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                            onClick={() => setActiveTab('general')}
+                            className={`${
                               activeTab === 'general'
-                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Settings className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.general') || 'Configurações Gerais'}
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              setActiveTab('context');
-                              setTabsDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                            onClick={() => setActiveTab('context')}
+                            className={`${
                               activeTab === 'context'
-                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Info className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.context') || 'Contexto'}
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              setActiveTab('tools');
-                              setTabsDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                            onClick={() => setActiveTab('tools')}
+                            className={`${
                               activeTab === 'tools'
-                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Wrench className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.tools') || 'Ferramentas'}
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              setActiveTab('test');
-                              setTabsDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center px-4 py-3 text-sm ${
+                            onClick={() => setActiveTab('test')}
+                            className={`${
                               activeTab === 'test'
-                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Play className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.test') || 'Testar'}
                           </button>
-                        </div>
+                        </nav>
                       </div>
-                    )}
-                  </div>
-                </div>
-                <div className="hidden sm:block">
-                  <div className="border-b border-gray-200 dark:border-gray-700">
-                    <nav className="-mb-px flex" aria-label="Tabs">
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('general')}
-                        className={`${
-                          activeTab === 'general'
-                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        {t('prompts:form.tabs.general') || 'Configurações Gerais'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('context')}
-                        className={`${
-                          activeTab === 'context'
-                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
-                      >
-                        <Info className="w-4 h-4 mr-2" />
-                        {t('prompts:form.tabs.context') || 'Contexto'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('tools')}
-                        className={`${
-                          activeTab === 'tools'
-                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
-                      >
-                        <Wrench className="w-4 h-4 mr-2" />
-                        {t('prompts:form.tabs.tools') || 'Ferramentas'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('test')}
-                        className={`${
-                          activeTab === 'test'
-                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                        } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        {t('prompts:form.tabs.test') || 'Testar'}
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tab Content */}
-              {activeTab === 'general' && (
-                <div className="mb-6">
-                  {/* Título */}
-                  <div className="mb-6">
-                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      <Type className="w-4 h-4 mr-2" />
-                      {t('prompts:form.title')} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors"
-                      placeholder={t('prompts:form.titlePlaceholder') || 'Digite o título do prompt'}
-                    />
+                    </div>
                   </div>
 
-                  {/* Configurações de IA */}
-                  <div className="">
-                    {/* <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                      <Cpu className="w-4 h-4 mr-2" />
-                      {t('prompts:form.actions.aiSettings')}
-                    </h3> */}
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Integração */}
-                      <div>
+                  {/* Tab Content */}
+                  {activeTab === 'general' && (
+                    <div className="mb-6">
+                      {/* Título */}
+                      <div className="mb-6">
                         <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          {t('prompts:form.integration')} *
+                          <Type className="w-4 h-4 mr-2" />
+                          {t('prompts:form.title')} *
                         </label>
-                        <div className="relative">
-                          <select
-                            value={selectedIntegration?.id || ''}
-                            onChange={(e) => {
-                              if (e.target.value === 'add_new') {
-                                setShowIntegrationModal(true);
-                                return;
-                              }
-                              handleIntegrationChange(e.target.value);
-                            }}
-                            disabled={loadingIntegrations}
-                            className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
-                          >
-                            <option value="">{t('prompts:form.selectIntegration')}</option>
-                            {integrations.length === 0 && !loadingIntegrations ? (
-                              <option value="add_new" className="text-blue-600 dark:text-blue-400">
-                                {t('settings:integrations.addNew')}
-                              </option>
-                            ) : (
-                              integrations.map(integration => (
-                                <option key={integration.id} value={integration.id} className="text-gray-900 dark:text-white">
-                                  OpenAI - {integration.name || integration.title || integration.id}
-                                </option>
-                              ))
-                            )}
-                          </select>
-                          {loadingIntegrations && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
-                            </div>
-                          )}
-                          {integrations.length === 0 && !loadingIntegrations && (
-                            <button
-                              type="button"
-                              onClick={() => setShowIntegrationModal(true)}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                              title={t('settings:integrations.addNew')}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                        {loadingIntegrations && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {t('prompts:loadingIntegrations')}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Modelo */}
-                      <div>
-                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          <Cpu className="w-4 h-4 mr-2" />
-                          {t('prompts:form.model')} *
-                        </label>
-                        <div className="relative">
-                          <select
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            disabled={loadingModels}
-                            className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
-                          >
-                            {availableModels.length === 0 && !loadingModels ? (
-                              <option value="" disabled>{t('prompts:noModelsAvailable')}</option>
-                            ) : (
-                              availableModels.map(model => (
-                                <option key={model.id} value={model.id}>
-                                  {model.name}
-                                </option>
-                              ))
-                            )}
-                          </select>
-                          {loadingModels && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                        {loadingModels && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {t('prompts:loadingModels')}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Temperatura */}
-                      <div>
-                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          <Thermometer className="w-4 h-4 mr-2" />
-                          {t('prompts:form.temperature')}
-                        </label>
-                        <div className="flex items-center space-x-4">
-                          <input
-                            type="range"
-                            min="0"
-                            max="2"
-                            step="0.1"
-                            value={temperature}
-                            onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                            className="flex-1 h-2 border border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                          />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[3rem] text-right">
-                            {temperature}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {t('prompts:form.temperatureDescription')}
-                        </p>
-                      </div>
-
-                      {/* Timezone */}
-                      <div>
-                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          <Clock className="w-4 h-4 mr-2" />
-                          {t('prompts:timezone')}
-                        </label>
-                        <Select
-                          value={{ value: timezone, label: `${timezones.find(tz => tz.value === timezone)?.label || timezone} (${timezones.find(tz => tz.value === timezone)?.offset || 'UTC'})` }}
-                          onChange={(selected) => setTimezone(selected?.value || 'UTC')}
-                          options={timezones.map(tz => ({ 
-                            value: tz.value, 
-                            label: `${tz.label} (${tz.offset})` 
-                          }))}
-                          className="react-select-container"
-                          classNamePrefix="react-select"
-                          placeholder={t('prompts:selectTimezone')}
-                          isSearchable={true}
-                          noOptionsMessage={() => t('prompts:noTimezoneFound')}
-                          styles={{
-                            control: (base, state) => ({
-                              ...base,
-                              backgroundColor: 'var(--select-bg, #fff)',
-                              borderColor: state.isFocused ? 'var(--select-focus-border, #3b82f6)' : 'var(--select-border, #d1d5db)',
-                              '&:hover': {
-                                borderColor: 'var(--select-hover-border, #9ca3af)'
-                              },
-                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                              borderRadius: '0.375rem'
-                            }),
-                            menu: (base) => ({
-                              ...base,
-                              backgroundColor: 'var(--select-bg, #fff)',
-                              border: '1px solid var(--select-border, #d1d5db)',
-                              zIndex: 50
-                            }),
-                            option: (base, { isFocused, isSelected }) => ({
-                              ...base,
-                              backgroundColor: isSelected 
-                                ? 'var(--select-selected-bg, #2563eb)'
-                                : isFocused 
-                                  ? 'var(--select-hover-bg, #dbeafe)'
-                                  : 'transparent',
-                              color: isSelected 
-                                ? 'var(--select-selected-text, white)'
-                                : 'var(--select-text, #111827)'
-                            }),
-                            singleValue: (base) => ({
-                              ...base,
-                              color: 'var(--select-text, #111827)'
-                            })
-                          }}
+                        <input
+                          type="text"
+                          required
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors"
+                          placeholder={t('prompts:form.titlePlaceholder') || 'Digite o título do prompt'}
                         />
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {t('prompts:timezoneDescription')}
+                      </div>
+
+                      {/* Configurações de IA */}
+                      <div className="">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Integração */}
+                          <div>
+                            <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              <MessageSquare className="w-4 h-4 mr-2" />
+                              {t('prompts:form.integration')} *
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={selectedIntegration?.id || ''}
+                                onChange={(e) => {
+                                  if (e.target.value === 'add_new') {
+                                    setShowIntegrationModal(true);
+                                    return;
+                                  }
+                                  handleIntegrationChange(e.target.value);
+                                }}
+                                disabled={loadingIntegrations}
+                                className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                              >
+                                <option value="">{t('prompts:form.selectIntegration')}</option>
+                                {integrations.length === 0 && !loadingIntegrations ? (
+                                  <option value="add_new" className="text-blue-600 dark:text-blue-400">
+                                    {t('settings:integrations.addNew')}
+                                  </option>
+                                ) : (
+                                  integrations.map(integration => (
+                                    <option key={integration.id} value={integration.id} className="text-gray-900 dark:text-white">
+                                      OpenAI - {integration.name || integration.title || integration.id}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                              {loadingIntegrations && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                  <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
+                                </div>
+                              )}
+                              {integrations.length === 0 && !loadingIntegrations && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowIntegrationModal(true)}
+                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                  title={t('settings:integrations.addNew')}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                            {loadingIntegrations && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('prompts:loadingIntegrations')}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Modelo */}
+                          <div>
+                            <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              <Cpu className="w-4 h-4 mr-2" />
+                              {t('prompts:form.model')} *
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                disabled={loadingModels}
+                                className="w-full p-3 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                              >
+                                {availableModels.length === 0 && !loadingModels ? (
+                                  <option value="" disabled>{t('prompts:noModelsAvailable')}</option>
+                                ) : (
+                                  availableModels.map(model => (
+                                    <option key={model.id} value={model.id}>
+                                      {model.name}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                              {loadingModels && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                  <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            {loadingModels && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('prompts:loadingModels')}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Temperatura */}
+                          <div>
+                            <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              <Thermometer className="w-4 h-4 mr-2" />
+                              {t('prompts:form.temperature')}
+                            </label>
+                            <div className="flex items-center space-x-4">
+                              <input
+                                type="range"
+                                min="0"
+                                max="2"
+                                step="0.1"
+                                value={temperature}
+                                onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                                className="flex-1 h-2 border border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                              />
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[3rem] text-right">
+                                {temperature}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {t('prompts:form.temperatureDescription')}
+                            </p>
+                          </div>
+
+                          {/* Timezone */}
+                          <div>
+                            <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              <Clock className="w-4 h-4 mr-2" />
+                              {t('prompts:timezone')}
+                            </label>
+                            <Select
+                              value={{ value: timezone, label: `${timezones.find(tz => tz.value === timezone)?.label || timezone} (${timezones.find(tz => tz.value === timezone)?.offset || 'UTC'})` }}
+                              onChange={(selected) => setTimezone(selected?.value || 'UTC')}
+                              options={timezones.map(tz => ({ 
+                                value: tz.value, 
+                                label: `${tz.label} (${tz.offset})` 
+                              }))}
+                              className="react-select-container"
+                              classNamePrefix="react-select"
+                              placeholder={t('prompts:selectTimezone')}
+                              isSearchable={true}
+                              noOptionsMessage={() => t('prompts:noTimezoneFound')}
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: 'var(--select-bg, #fff)',
+                                  borderColor: state.isFocused ? 'var(--select-focus-border, #3b82f6)' : 'var(--select-border, #d1d5db)',
+                                  '&:hover': {
+                                    borderColor: 'var(--select-hover-border, #9ca3af)'
+                                  },
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  borderRadius: '0.375rem'
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  backgroundColor: 'var(--select-bg, #fff)',
+                                  border: '1px solid var(--select-border, #d1d5db)',
+                                  zIndex: 50
+                                }),
+                                option: (base, { isFocused, isSelected }) => ({
+                                  ...base,
+                                  backgroundColor: isSelected 
+                                    ? 'var(--select-selected-bg, #2563eb)'
+                                    : isFocused 
+                                      ? 'var(--select-hover-bg, #dbeafe)'
+                                      : 'transparent',
+                                  color: isSelected 
+                                    ? 'var(--select-selected-text, white)'
+                                    : 'var(--select-text, #111827)'
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  color: 'var(--select-text, #111827)'
+                                })
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {t('prompts:timezoneDescription')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Seção de Fluxo */}
+                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                                <GitBranch className="w-4 h-4 mr-2" />
+                                {t('prompts:form.flow.title')}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('prompts:form.flow.description') || 'Configure os gatilhos para que este agente IA possa ser acionado'}
+                              </p>
+                            </div>
+                            {checkingFlow ? (
+                              <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                {t('prompts:checkingFlow')}
+                              </div>
+                            ) : creatingFlow ? (
+                              <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                {t('prompts:creatingFlow')}
+                              </div>
+                            ) : resettingFlow ? (
+                              <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                {t('prompts:resettingFlow')}
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                {linkedFlow ? (
+                                  <div className="flex items-center" ref={dropdownRef}>
+                                    <div className="relative">
+                                      <button
+                                        type="button"
+                                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                                        className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                      >
+                                        <GitBranch className="w-4 h-4 mr-2" />
+                                        {t('prompts:flowOptions')}
+                                        {dropdownOpen ? (
+                                          <ChevronUp className="w-4 h-4 ml-2" />
+                                        ) : (
+                                          <ChevronDown className="w-4 h-4 ml-2" />
+                                        )}
+                                      </button>
+                                      
+                                      {dropdownOpen && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
+                                          <ul className="py-1">
+                                            <li>
+                                              <button
+                                                onClick={() => {
+                                                  setDropdownOpen(false);
+                                                  createOrSyncFlow();
+                                                }}
+                                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                              >
+                                                <ExternalLink className="w-4 h-4 mr-2" />
+                                                {t('prompts:viewLinkedFlow')}
+                                              </button>
+                                            </li>
+                                            <li>
+                                              <button
+                                                onClick={() => {
+                                                  setDropdownOpen(false);
+                                                  setShowTriggersModal(true);
+                                                }}
+                                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                              >
+                                                <Settings className="w-4 h-4 mr-2" />
+                                                {t('flows:triggers.title')}
+                                              </button>
+                                            </li>
+                                            <li>
+                                              <button
+                                                onClick={() => {
+                                                  setDropdownOpen(false);
+                                                  resetFlow();
+                                                }}
+                                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                              >
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                {t('prompts:resetFlow')}
+                                              </button>
+                                            </li>
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={createOrSyncFlow}
+                                    className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                  >
+                                    <GitBranch className="w-4 h-4 mr-2" />
+                                    {t('prompts:createFlow')}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status do Fluxo */}
+                          <div className="mt-4">
+                            {linkedFlow ? (
+                              flowTriggers.length > 0 ? (
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                                    {t('flows:triggers.startWhen')}:
+                                  </span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {flowTriggers.map((trigger) => {
+                                      const IconComponent = getTriggerIcon(trigger.type);
+                                      const conditions = getTriggerConditions(trigger);
+                                      return (
+                                        <button
+                                          key={trigger.id}
+                                          onClick={() => setShowTriggersModal(true)}
+                                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors cursor-pointer"
+                                        >
+                                          {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
+                                          {getTriggerLabel(trigger.type)}
+                                          {conditions}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
+                                  <AlertTriangle className="w-4 h-4" />
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium">
+                                      {t('flows:triggers.noTriggers')}
+                                    </div>
+                                    <div className="text-xs">
+                                      {t('flows:triggers.noTriggersDescription')}
+                                    </div>
+                                    <button
+                                      onClick={() => setShowTriggersModal(true)}
+                                      className="mt-2 inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                      <Plus className="w-4 h-4 mr-2" />
+                                      {t('flows:triggers.add')}
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            ) : (
+                              <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
+                                <AlertTriangle className="w-4 h-4" />
+                                <div>
+                                  <div className="text-sm font-medium">
+                                    {t('flows:triggers.noFlow')}
+                                  </div>
+                                  <div className="text-xs">
+                                    {t('flows:triggers.noFlowDescription')}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Botão para editar contexto */}
+                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('context')}
+                            className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <div className="flex items-start space-x-4">
+                              <div className="flex-shrink-0">
+                                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                  {t('prompts:form.tabs.context')}
+                                </h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                                  {formData.content || t('prompts:form.contentPlaceholder')}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 ml-4">
+                              <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'context' && (
+                    <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-6">
+                      <div className="mb-4 hidden sm:block">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
+                          {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
                         </p>
                       </div>
+                      
+                      <ContentEditor 
+                        content={formData.content} 
+                        onChange={(content) => setFormData({ ...formData, content })} 
+                      />
                     </div>
+                  )}
 
-                    {/* Botão para editar contexto */}
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  {activeTab === 'tools' && (
+                    <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-2">
+                      {/* Conteúdo com scroll principal */}
+                      <div className="flex-1 overflow-y-auto pr-2 min-h-0 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                        <div className="space-y-6">
+                          {/* Descrição e Informações */}
+                          <div>
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6">
+                              <p className="text-sm text-blue-700 dark:text-blue-400">
+                                {t('prompts:form.toolsDescription')}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Ações do Sistema */}
+                          <div>
+                            <div className="flex justify-between items-center mb-3">
+                              <div>
+                                <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                                  <Settings className="w-4 h-4 mr-2" />
+                                  {t('prompts:form.systemActions')}
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {t('prompts:form.systemActionsDescription')}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setIsSystemActionModalOpen(true)}
+                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              >
+                                {t('prompts:form.addSystemAction')}
+                              </button>
+                            </div>
+                            
+                            {formData.actions.length === 0 ? (
+                              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {t('prompts:form.noSystemActions')}
+                                </p>
+                              </div>
+                            ) : (
+                              <SystemActionsList 
+                                actions={formData.actions} 
+                                onRemoveAction={(index) => {
+                                  const newActions = [...formData.actions];
+                                  newActions.splice(index, 1);
+                                  setFormData({ ...formData, actions: newActions });
+                                }}
+                                onEditAction={() => {
+                                  // Implementar edição de ação do sistema se necessário
+                                }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Ações Personalizadas */}
+                          <div>
+                            <div className="flex justify-between items-center mb-3">
+                              <div>
+                                <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                                  <Wrench className="w-4 h-4 mr-2" />
+                                  {t('prompts:form.customActions')}
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {t('prompts:form.customActionsDescription')}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTool(null);
+                                  setShowToolModal(true);
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              >
+                                {t('prompts:form.addTool')}
+                              </button>
+                            </div>
+                            
+                            {formData.tools.length === 0 ? (
+                              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {t('prompts:form.noCustomActions')}
+                                </p>
+                              </div>
+                            ) : (
+                              <ToolsList 
+                                tools={formData.tools} 
+                                onRemoveTool={handleRemoveTool} 
+                                onEditTool={handleEditTool}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'test' && (
+                    <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-2">
+                      <TestPrompt
+                        selectedIntegration={selectedIntegration}
+                        selectedModel={selectedModel}
+                        temperature={temperature}
+                        systemPrompt={formData.content}
+                      />
+                    </div>
+                  )}
+
+                  {activeTab !== 'test' && (
+                    <div className="flex justify-end space-x-3">
                       <button
                         type="button"
-                        onClick={() => setActiveTab('context')}
-                        className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                        onClick={() => navigate('/app/prompts')}
+                        disabled={saving}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                       >
-                        <div className="flex items-start space-x-4">
-                          <div className="flex-shrink-0">
-                            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                              {t('prompts:form.tabs.context')}
-                            </h4>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                              {formData.content || t('prompts:form.contentPlaceholder')}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex-shrink-0 ml-4">
-                          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                        </div>
+                        {t('common:back')}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        {t('common:save')}
                       </button>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'context' && (
-                <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-6">
-                  <div className="mb-4 hidden sm:block">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
-                      {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
-                    </p>
-                  </div>
-                  
-                  <ContentEditor 
-                    content={formData.content} 
-                    onChange={(content) => setFormData({ ...formData, content })} 
-                  />
-                </div>
-              )}
-
-              {activeTab === 'tools' && (
-                <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-2">
-                  {/* Conteúdo com scroll principal */}
-                  <div className="flex-1 overflow-y-auto pr-2 min-h-0 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                    <div className="space-y-6">
-                      {/* Descrição e Informações */}
-                      <div>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6">
-                          <p className="text-sm text-blue-700 dark:text-blue-400">
-                            {t('prompts:form.toolsDescription')}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Ações do Sistema */}
-                      <div>
-                        <div className="flex justify-between items-center mb-3">
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
-                              <Settings className="w-4 h-4 mr-2" />
-                              {t('prompts:form.systemActions')}
-                            </h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {t('prompts:form.systemActionsDescription')}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setIsSystemActionModalOpen(true)}
-                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            {t('prompts:form.addSystemAction')}
-                          </button>
-                        </div>
-                        
-                        {formData.actions.length === 0 ? (
-                          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {t('prompts:form.noSystemActions')}
-                            </p>
-                          </div>
-                        ) : (
-                          <SystemActionsList 
-                            actions={formData.actions} 
-                            onRemoveAction={(index) => {
-                              const newActions = [...formData.actions];
-                              newActions.splice(index, 1);
-                              setFormData({ ...formData, actions: newActions });
-                            }}
-                            onEditAction={() => {
-                              // Implementar edição de ação do sistema se necessário
-                            }}
-                          />
-                        )}
-                      </div>
-
-                      {/* Ações Personalizadas */}
-                      <div>
-                        <div className="flex justify-between items-center mb-3">
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
-                              <Wrench className="w-4 h-4 mr-2" />
-                              {t('prompts:form.customActions')}
-                            </h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {t('prompts:form.customActionsDescription')}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingTool(null);
-                              setShowToolModal(true);
-                            }}
-                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            {t('prompts:form.addTool')}
-                          </button>
-                        </div>
-                        
-                        {formData.tools.length === 0 ? (
-                          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {t('prompts:form.noCustomActions')}
-                            </p>
-                          </div>
-                        ) : (
-                          <ToolsList 
-                            tools={formData.tools} 
-                            onRemoveTool={handleRemoveTool} 
-                            onEditTool={handleEditTool}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'test' && (
-                <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-2">
-                  <TestPrompt
-                    selectedIntegration={selectedIntegration}
-                    selectedModel={selectedModel}
-                    temperature={temperature}
-                    systemPrompt={formData.content}
-                  />
-                </div>
-              )}
-
-              {activeTab !== 'test' && (
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/app/prompts')}
-                    disabled={saving}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                  >
-                    {t('common:back')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {t('common:save')}
-                  </button>
-                </div>
+                  )}
+                </>
               )}
             </form>
           </div>
@@ -1332,6 +1531,30 @@ const PromptFormMain: React.FC = () => {
               <Plus className="w-5 h-5 text-gray-500" />
             </button>
           ))}
+        </div>
+      </Modal>
+
+      {/* Adicionar o Modal de Triggers */}
+      <Modal
+        isOpen={showTriggersModal}
+        onClose={() => setShowTriggersModal(false)}
+        title={t('flows:triggers.title')}
+      >
+        <div className="py-4">
+          {isLoadingTriggers ? (
+            <div className="flex justify-center items-center p-8">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-700 dark:text-gray-300">{t('common:loading')}</span>
+            </div>
+          ) : (
+            linkedFlow && (
+              <FlowTriggers
+                flowId={linkedFlow.id}
+                triggers={flowTriggers}
+                onChange={handleSaveTriggers}
+              />
+            )
+          )}
         </div>
       </Modal>
     </div>

@@ -74,6 +74,10 @@
     "customActionsDescription": "Acciones creadas y personalizadas por ti",
     "noSystemActions": "No hay acciones del sistema disponibles",
     "noCustomActions": "No hay acciones personalizadas configuradas",
+    "flow": {
+      "title": "Flujo",
+      "description": "Configura los disparadores para que este agente IA pueda ser activado"
+    },
     "examples": {
       "title": "Ejemplos"
     },

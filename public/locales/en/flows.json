@@ -269,6 +269,7 @@
   },
   "triggers": {
     "title": "Automation Triggers",
+    "startWhen": "Start when",
     "configure": "Configure Triggers",
     "add": "Add Trigger",
     "selectType": "Select Trigger Type",
@@ -304,7 +305,11 @@
     "filterByChannel": "Filter by Channel",
     "channelFilterDescription": "Select the channels where this trigger will be activated. If no channel is selected, the trigger will be activated on all channels.",
     "selectTimezone": "Select a timezone",
-    "noTimezoneFound": "No timezone found"
+    "noTimezoneFound": "No timezone found",
+    "noTriggers": "No triggers configured",
+    "noTriggersDescription": "This flow is not configured to start automatically at any time",
+    "noFlow": "No linked flow",
+    "noFlowDescription": "This AI Agent is not linked to any flow, so it cannot be started automatically"
   },
   "rules": {
     "title": "Rules and Conditions",

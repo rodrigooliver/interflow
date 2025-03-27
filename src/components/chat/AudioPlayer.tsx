@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Download } from 'lucide-react';
 
 interface AudioPlayerProps {
   src: string;
@@ -7,16 +7,34 @@ interface AudioPlayerProps {
   compact?: boolean;
 }
 
-export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
+export function AudioPlayer({ src, fileName, compact = false }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [isAudioSupported, setIsAudioSupported] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    // Testa se a reprodução de áudio é suportada
+    const testAudioSupport = async () => {
+      try {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
+        audio.pause();
+        setIsAudioSupported(true);
+      } catch (error) {
+        console.error('Reprodução de áudio não suportada:', error);
+        setIsAudioSupported(false);
+      }
+    };
+
+    testAudioSupport();
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleDurationChange = () => setDuration(audio.duration);
@@ -33,16 +51,51 @@ export function AudioPlayer({ src, compact = false }: AudioPlayerProps) {
     };
   }, []);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current) return;
     
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+    try {
+      if (isPlaying) {
+        await audioRef.current.pause();
+      } else {
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
+      }
+      setIsPlaying(!isPlaying);
+    } catch (error) {
+      console.error('Erro ao controlar reprodução de áudio:', error);
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
     }
-    setIsPlaying(!isPlaying);
   };
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = src;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Se a reprodução de áudio não for suportada, mostra apenas o botão de download
+  if (!isAudioSupported) {
+    return (
+      <div className={`flex items-center w-full max-w-[300px] sm:max-w-[400px]`}>
+        <button
+          onClick={handleDownload}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          <span className="text-sm">Baixar áudio</span>
+        </button>
+      </div>
+    );
+  }
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!audioRef.current) return;
