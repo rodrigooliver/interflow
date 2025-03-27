@@ -28,32 +28,8 @@ export function ChatAvatar({
   const { t } = useTranslation('chats');
   const [hasImageError, setHasImageError] = React.useState(false);
   
-  const handleImageError = async (chatId: string) => {
-    console.log('handleImageError chamado para chatId:', chatId);
-    console.log('URL da imagem que falhou:', profilePicture);
-    
-    if (!chatId) {
-      console.error('chatId não fornecido para handleImageError');
-      return;
-    }
-
+  const handleImageError = async () => {
     setHasImageError(true);
-
-    try {
-      console.log('Tentando atualizar profile_picture para null no chat:', chatId);
-      
-      // Atualiza na tabela chats
-      const { error: chatError } = await supabase
-        .from('chats')
-        .update({ profile_picture: null })
-        .eq('id', chatId);
-      
-      if (chatError) {
-        console.error('Erro ao atualizar profile picture no chat:', chatError);
-      }
-    } catch (error) {
-      console.error('Erro ao executar handleImageError:', error);
-    }
   };
   
   const getInitials = (name: string) => {
@@ -94,7 +70,7 @@ export function ChatAvatar({
             src={profilePicture}
             alt={name || 'Anônimo'}
             className="w-full h-full object-cover"
-            onError={() => handleImageError(id)}
+            onError={() => {setHasImageError(true);}}
           />
         ) : (
           <span className="text-white font-medium">

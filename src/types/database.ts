@@ -158,6 +158,7 @@ export interface Customer {
     field_definition: CustomFieldDefinition;
   }[];
   is_spam?: boolean;
+  stage?: CrmStage;
 }
 
 /**

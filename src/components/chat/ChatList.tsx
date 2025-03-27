@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Chat, Customer } from '../../types/database';
-import { supabase } from '../../lib/supabase';
+import { Chat } from '../../types/database';
 import { Archive, ArrowLeft } from 'lucide-react';
 import { ChatItem } from './ChatItem';
 import './styles.css';
@@ -30,32 +29,16 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
   const archivedChats = chats.filter(chat => chat.is_archived);
   const activeChats = chats.filter(chat => !chat.is_archived);
 
-  // Carregar os estágios para todos os chats que têm stage_id
+  // Atualizar o estado stages diretamente dos dados do relacionamento
   useEffect(() => {
-    const stageIds = chats
-      .filter(chat => chat.customer?.stage_id)
-      .map(chat => chat.customer?.stage_id)
-      .filter((value, index, self) => value && self.indexOf(value) === index) as string[];
+    const stagesMap = chats.reduce((acc, chat) => {
+      if (chat.customer?.stage) {
+        acc[chat.customer.stage.id] = chat.customer.stage;
+      }
+      return acc;
+    }, {} as Record<string, Stage>);
     
-    if (stageIds.length > 0) {
-      const fetchStages = async () => {
-        const { data } = await supabase
-          .from('crm_stages')
-          .select('id, name, funnel_id, color')
-          .in('id', stageIds);
-        
-        if (data) {
-          const stagesMap = data.reduce((acc, stage) => {
-            acc[stage.id] = stage;
-            return acc;
-          }, {} as Record<string, Stage>);
-          
-          setStages(stagesMap);
-        }
-      };
-      
-      fetchStages();
-    }
+    setStages(stagesMap);
   }, [chats]);
 
   if (isLoading) {

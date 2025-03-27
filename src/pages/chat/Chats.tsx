@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Filter, MessageSquare, Users, UserCheck, Bot, Share2, Tags, X, Plus, GitMerge } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -33,7 +33,6 @@ export default function Chats() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedFunnel, setSelectedFunnel] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('');
-  const [funnelStages, setFunnelStages] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedAutomation, setSelectedAutomation] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -53,6 +52,13 @@ export default function Chats() {
   const { data: channels } = useChannels(currentOrganizationMember?.organization.id);
   const { data: tags } = useTags(currentOrganizationMember?.organization.id);
   const { data: funnels } = useFunnels(currentOrganizationMember?.organization.id);
+
+  // Obter os estágios do funil selecionado
+  const selectedFunnelStages = useMemo(() => {
+    if (!selectedFunnel || !funnels) return [];
+    const funnel = funnels.find(f => f.id === selectedFunnel);
+    return funnel?.stages || [];
+  }, [selectedFunnel, funnels]);
 
   const filters: FilterOption[] = [
     { 
@@ -131,13 +137,13 @@ export default function Chats() {
   ];
 
   // Adicionar filtro de estágio dinamicamente se um funil estiver selecionado
-  if (selectedFunnel && funnelStages.length > 0) {
+  if (selectedFunnel && selectedFunnelStages.length > 0) {
     filters.push({
       id: 'stage',
       label: t('chats:filters.stage'),
       icon: GitMerge,
       type: 'select',
-      options: funnelStages.map(stage => ({
+      options: selectedFunnelStages.map(stage => ({
         id: stage.id,
         label: stage.name
       }))
@@ -161,36 +167,6 @@ export default function Chats() {
     selectedStage,
     selectedAutomation
   ]);
-
-  // Efeito para carregar os estágios do funil selecionado
-  useEffect(() => {
-    if (selectedFunnel && currentOrganizationMember) {
-      const loadFunnelStages = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('crm_stages')
-            .select('id, name')
-            .eq('funnel_id', selectedFunnel)
-            .order('position', { ascending: true });
-          
-          if (error) throw error;
-          setFunnelStages(data || []);
-        } catch (error) {
-          console.error('Erro ao carregar estágios do funil:', error);
-          setFunnelStages([]);
-        }
-      };
-      
-      loadFunnelStages();
-    } else {
-      // Limpar os estágios se nenhum funil estiver selecionado
-      setFunnelStages([]);
-      // Limpar o estágio selecionado
-      if (selectedStage) {
-        setSelectedStage('');
-      }
-    }
-  }, [selectedFunnel, currentOrganizationMember]);
 
   // Efeito para verificar o ID do chat na URL
   useEffect(() => {
@@ -256,6 +232,7 @@ export default function Chats() {
 
   // Função auxiliar para atualizar um chat específico na lista
   const updateChatInList = async (chatId: string) => {
+    console.log('updateChatInList', chatId);
     const { data: chatData } = await supabase
       .from('chats')
       .select(`
@@ -274,6 +251,12 @@ export default function Chats() {
               name,
               color
             )
+          ),
+          stage:crm_stages!customers_stage_id_fkey(
+            id,
+            name,
+            funnel_id,
+            color
           )
         ),
         channel:chat_channels(
@@ -337,14 +320,8 @@ export default function Chats() {
           } 
           // Se temos apenas o funil selecionado, verificar se o estágio do cliente pertence a este funil
           else if (customerStageId) {
-            // Obter o estágio para verificar se pertence ao funil selecionado
-            const { data: stageData } = await supabase
-              .from('crm_stages')
-              .select('funnel_id')
-              .eq('id', customerStageId)
-              .single();
-            
-            return stageData && stageData.funnel_id === selectedFunnel;
+            // Agora podemos acessar o funnel_id diretamente do stage do customer
+            return chatData.customer?.stage?.funnel_id === selectedFunnel;
           }
           
           return false;
@@ -399,6 +376,7 @@ export default function Chats() {
 
   // Função para carregar os chats
   const loadChats = async (silentRefresh: boolean = false) => {
+    console.log('loadChats');
     if (!silentRefresh) {
       setLoading(true);
     }
@@ -427,9 +405,11 @@ export default function Chats() {
                 color
               )
             ),
-            stage:crm_stages(
+            stage:crm_stages!customers_stage_id_fkey(
               id,
-              name
+              name,
+              funnel_id,
+              color
             )
           ),
           channel:chat_channels(
@@ -516,17 +496,9 @@ export default function Chats() {
         // Se temos um funil selecionado, mas não temos um estágio específico,
         // precisamos obter todos os estágios desse funil e filtrar por eles
         if (!selectedStage) {
-          // Obter todos os estágios do funil selecionado
-          const { data: stagesData } = await supabase
-            .from('crm_stages')
-            .select('id')
-            .eq('funnel_id', selectedFunnel);
-          
-          if (stagesData && stagesData.length > 0) {
-            // Filtrar clientes que estão em qualquer estágio deste funil
-            const stageIds = stagesData.map(stage => stage.id);
-            query = query.in('customer.stage_id', stageIds);
-          }
+          // Filtrar diretamente pelo funnel_id do stage do customer
+          query = query.eq('customer.stage.funnel_id', selectedFunnel)
+            .not('customer.stage', 'is', null);
         } else {
           // Se temos um estágio específico selecionado, filtrar diretamente por ele
           query = query.eq('customer.stage_id', selectedStage);
@@ -919,7 +891,7 @@ export default function Chats() {
               selectedChat={selectedChat}
               onSelectChat={handleSelectChat}
               isLoading={loading}
-              onUpdateChat={updateChatInList}
+              // onUpdateChat={updateChatInList}
             />
           )}
         </div>
@@ -973,35 +945,3 @@ export default function Chats() {
     </div>
   );
 }
-
-export const handleAtendimentoSequencial = async (chatId: string) => {
-  const user = await supabase.auth.getUser();
-  
-  if (!user.data.user?.id) {
-    throw new Error('Usuário não autenticado');
-  }
-
-  // Primeiro insere a mensagem
-  const { error: messageError } = await supabase
-    .from('messages')
-    .insert({
-      chat_id: chatId,
-      type: 'user_entered',
-      sender_type: 'system',
-      sender_agent_id: user.data.user.id
-    });
-
-  if (messageError) throw new Error(messageError.message);
-
-  // Depois atualiza o chat
-  const { error: chatError } = await supabase
-    .from('chats')
-    .update({
-      status: 'in_progress',
-      assigned_to: user.data.user.id,
-      start_time: new Date().toISOString()
-    })
-    .eq('id', chatId);
-
-  if (chatError) throw new Error(chatError.message);
-};
