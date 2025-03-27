@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquare, Users, MessageCircle, BarChart2, Calendar, TrendingUp, Clock, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
 import { ChatFlowModal } from '../components/chat/ChatFlowModal';
 import { formatLastMessageTime } from '../utils/date';
-import { useTeams, useTasks, useAppointments } from '../hooks/useQueryes';
+import { useTeams, useTasks, useAppointments, useFunnels } from '../hooks/useQueryes';
 import { TaskModal } from '../components/tasks/TaskModal';
 import { useDashboard } from '../hooks/useDashboard';
+import { supabase } from '../lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
+import { ChatItem } from '../components/chat/ChatItem';
+import { Chat } from '../types/database';
 
 interface StatCard {
   id: string;
@@ -27,35 +30,6 @@ interface StatCard {
     type: 'increase' | 'decrease';
   };
 }
-
-interface ChatData {
-  id: string;
-  customer_name: string;
-  last_message: string;
-  time: string;
-  status: 'new' | 'in_progress' | 'resolved';
-}
-
-interface ChartDataPoint {
-  name: string;
-  [key: string]: string | number; // Permite adicionar dinamicamente dados por equipe
-}
-
-interface Customer {
-  name: string;
-}
-
-interface ChatWithRelations {
-  id: string;
-  customers: Customer;
-  status: 'new' | 'in_progress' | 'resolved';
-  last_message_at: string;
-  last_message: {
-    content: string;
-    created_at: string;
-  };
-}
-
 // Componente DatePicker simples
 interface DatePickerProps {
   selectedDate: Date | null;
@@ -382,11 +356,13 @@ const SimpleDatePicker: React.FC<DatePickerProps> = ({
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard');
   const { currentOrganizationMember, session } = useAuthContext();
+  const queryClient = useQueryClient();
   
   // Estados removidos e substituídos pelo hook useDashboard
   const [loading, setLoading] = useState(false);
   const [showChatFlowModal, setShowChatFlowModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   
   // Estados para períodos específicos
   const [useSpecificPeriod, setUseSpecificPeriod] = useState(false);
@@ -399,6 +375,27 @@ export default function Dashboard() {
   // Usar o hook useTeams para buscar as equipes
   const organizationId = currentOrganizationMember?.organization.id;
   const { data: teams = [], isLoading: teamsLoading, refetch: refetchTeams } = useTeams(organizationId);
+  
+  // Buscar funis e estágios para o ChatItem
+  const { data: funnels = [] } = useFunnels(organizationId);
+  const [stages, setStages] = useState<Record<string, { id: string, name: string, funnel_id: string, color?: string }>>({});
+  
+  useEffect(() => {
+    if (funnels.length > 0) {
+      const stagesMap: Record<string, { id: string, name: string, funnel_id: string, color?: string }> = {};
+      funnels.forEach(funnel => {
+        funnel.stages?.forEach(stage => {
+          stagesMap[stage.id] = {
+            id: stage.id,
+            name: stage.name,
+            funnel_id: stage.funnel_id,
+            color: stage.color
+          };
+        });
+      });
+      setStages(stagesMap);
+    }
+  }, [funnels]);
   
   // Usar o hook useDashboard para todas as consultas do dashboard
   const {
@@ -425,7 +422,7 @@ export default function Dashboard() {
   const responseTimeChange = responseTimeData?.change || { value: 0, type: 'increase' };
 
   // Formatar os recentChats
-  const recentChats = recentChatsData.map(chat => ({
+  recentChatsData.map(chat => ({
     id: chat.id,
     customer_name: chat.customers?.name || t('customer.anonymous'),
     last_message: chat.last_message?.content || t('noMessages'),
@@ -471,51 +468,34 @@ export default function Dashboard() {
     }
   }, [organizationId, refetchTeams]);
 
-  // Subscribe to updates
+  // Subscribe apenas para atualizações de mensagens
   useEffect(() => {
     if (currentOrganizationMember) {
-      subscribeToUpdates();
+      const messagesSubscription = supabase
+        .channel('messages-changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
+        }, () => {
+          // Invalida o cache das mensagens da semana e conversas recentes
+          queryClient.invalidateQueries({ queryKey: ['periodMessagesCount'] });
+          queryClient.invalidateQueries({ queryKey: ['recentChats'] });
+        })
+        .subscribe();
+
+      return () => {
+        messagesSubscription.unsubscribe();
+      };
     }
-  }, [currentOrganizationMember]);
-
-  const subscribeToUpdates = () => {
-    // Subscribe to chats changes
-    const chatsSubscription = supabase
-      .channel('chats-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'chats',
-        filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
-      }, () => {
-        // As consultas agora são gerenciadas pelo react-query
-      })
-      .subscribe();
-
-    // Subscribe to messages changes
-    const messagesSubscription = supabase
-      .channel('messages-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'messages',
-        filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
-      }, () => {
-        // As consultas agora são gerenciadas pelo react-query
-      })
-      .subscribe();
-
-    return () => {
-      chatsSubscription.unsubscribe();
-      messagesSubscription.unsubscribe();
-    };
-  };
+  }, [currentOrganizationMember, queryClient]);
 
   // Função para processar os dados do gráfico
-  const processChartData = (data: any, period: { startDate: Date; endDate: Date; groupBy: 'hour' | 'day' | 'week' | 'month' }) => {
+  const processChartData = (data: Array<{ time_period: string; team_name: string; message_count: number }>, period: { startDate: Date; endDate: Date; groupBy: 'hour' | 'day' | 'week' | 'month' }) => {
     try {
-      const chartData: any[] = [];
-      const timePoints: Record<string, any> = {};
+      const chartData: Array<{ name: string; [key: string]: string | number }> = [];
+      const timePoints: Record<string, { name: string; [key: string]: string | number }> = {};
       
       // Se não houver dados ou equipes, retornar um array vazio
       if (!data || !teams || teams.length === 0) {
@@ -777,6 +757,19 @@ export default function Dashboard() {
       default:
         return 'bg-gray-500';
     }
+  };
+
+  // Função para lidar com a seleção de chat
+  const handleSelectChat = (chatId: string) => {
+    setSelectedChatId(chatId);
+    // Navegar para a página de chat
+    window.location.href = `/app/chats/${chatId}`;
+  };
+  
+  // Função para atualizar um chat
+  const handleUpdateChat = (chatId: string, updates: any) => {
+    // Atualizar o chat na lista local se necessário
+    queryClient.invalidateQueries({ queryKey: ['recentChats'] });
   };
 
   return (
@@ -1091,8 +1084,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <div className="flex justify-between items-center m-6 mb-1">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {t('recentChats')}
             </h2>
@@ -1104,7 +1097,7 @@ export default function Dashboard() {
             </Link>
           </div>
           
-          <div className="space-y-4">
+          <div className="">
             {loading ? (
               Array(5).fill(0).map((_, index) => (
                 <div key={index} className="animate-pulse flex items-center p-3">
@@ -1115,33 +1108,16 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))
-            ) : recentChats.length > 0 ? (
-              recentChats.map((chat) => (
-                <Link 
-                  key={chat.id} 
-                  to={`/app/chats/${chat.id}`}
-                  className="flex items-start p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="flex-shrink-0 relative">
-                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      {chat.customer_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full ${getStatusColor(chat.status)}`}></div>
-                  </div>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <div className="flex justify-between">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {chat.customer_name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {chat.time}
-                      </p>
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {chat.last_message}
-                    </p>
-                  </div>
-                </Link>
+            ) : recentChatsData.length > 0 ? (
+              recentChatsData.map((chat) => (
+                <ChatItem
+                  key={chat.id}
+                  chat={chat}
+                  isSelected={selectedChatId === chat.id}
+                  onSelectChat={handleSelectChat}
+                  onUpdateChat={handleUpdateChat}
+                  stages={stages}
+                />
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -1153,7 +1129,7 @@ export default function Dashboard() {
             )}
           </div>
           
-          <div className="mt-6">
+          <div className="p-6">
             <button
               onClick={() => setShowChatFlowModal(true)}
               className="block w-full py-2 px-4 text-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"

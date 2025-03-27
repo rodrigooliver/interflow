@@ -6,14 +6,13 @@ import { supabase } from '../../lib/supabase';
 import { ChatList } from '../../components/chat/ChatList';
 import { ChatMessages } from '../../components/chat/ChatMessages';
 import '../../components/chat/styles.css';
-import { Chat, Customer } from '../../types/database';
+import { Chat } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useAgents, useTeams, useChannels, useTags, useFunnels } from '../../hooks/useQueryes';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChatFlowModal } from '../../components/chat/ChatFlowModal';
 import { useNavbarVisibility } from '../../contexts/NavbarVisibilityContext';
 import { SearchModal } from '../../components/chat/SearchModal';
-import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 
 // Novos tipos para os filtros
 type FilterOption = {
@@ -46,8 +45,6 @@ export default function Chats() {
   const location = useLocation();
   const [showStartChatModal, setShowStartChatModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const { showNavbar } = useNavbarVisibility();
 
   // Hooks para buscar dados dos filtros
@@ -635,26 +632,6 @@ export default function Chats() {
     }
   };
 
-  // Função para abrir o modal de edição do cliente
-  const handleEditCustomer = (customer: Customer) => {
-    console.log('handleEditCustomer - customer:', customer);
-    setSelectedCustomer(customer);
-    setShowEditCustomerModal(true);
-  };
-
-  // Função para fechar o modal de edição do cliente
-  const handleCloseEditCustomerModal = () => {
-    setShowEditCustomerModal(false);
-    setSelectedCustomer(null);
-  };
-
-  // Função para atualizar a lista de chats após editar o cliente
-  const handleCustomerEditSuccess = (silentRefresh: boolean = false) => {
-    handleCloseEditCustomerModal();
-    // Recarregar a lista de chats
-    loadChats(silentRefresh);
-  };
-
   // Garantir que a barra de navegação seja exibida quando o componente for montado
   useEffect(() => {
     showNavbar();
@@ -942,7 +919,6 @@ export default function Chats() {
               selectedChat={selectedChat}
               onSelectChat={handleSelectChat}
               isLoading={loading}
-              onEditCustomer={handleEditCustomer}
               onUpdateChat={updateChatInList}
             />
           )}
@@ -994,15 +970,6 @@ export default function Chats() {
         isOpen={showSearchModal} 
         onClose={() => setShowSearchModal(false)} 
       />
-
-      {/* Modal de edição do cliente */}
-      {showEditCustomerModal && selectedCustomer && (
-        <CustomerEditModal
-          customer={selectedCustomer}
-          onClose={handleCloseEditCustomerModal}
-          onSuccess={handleCustomerEditSuccess}
-        />
-      )}
     </div>
   );
 }

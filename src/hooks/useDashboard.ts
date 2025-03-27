@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { Chat } from '../types/database';
 
 // Constantes para configuração de cache (em milissegundos)
 const CACHE_CONFIG = {
@@ -32,19 +33,6 @@ interface UseDashboardParams {
   specificDate: Date | null;
   specificMonth: Date | null;
   specificYear: Date | null;
-}
-
-interface ChatWithRelations {
-  id: string;
-  customers: {
-    name: string;
-  };
-  status: 'new' | 'in_progress' | 'resolved';
-  last_message_at: string;
-  last_message: {
-    content: string;
-    created_at: string;
-  };
 }
 
 // Função auxiliar para formatar datas para o formato esperado pelo banco de dados
@@ -188,19 +176,49 @@ export const useDashboard = ({
       const { data, error } = await supabase
         .from('chats')
         .select(`
-          id,
-          customers(name),
-          status,
-          last_message_at,
-          last_message:last_message_id(content, created_at)
+          *,
+          customer:customers!chats_customer_id_fkey(
+            id,
+            name,
+            email,
+            whatsapp,
+            stage_id,
+            is_spam,
+            profile_picture,
+            tags:customer_tags(
+              tag_id,
+              tags:tags(
+                id,
+                name,
+                color
+              )
+            ),
+            stage:crm_stages(
+              id,
+              name
+            )
+          ),
+          channel:chat_channels(
+            type,
+            is_connected,
+            name
+          ),
+          last_message:messages!chats_last_message_id_fkey(
+            content,
+            status,
+            error_message,
+            created_at,
+            sender_type,
+            type
+          )
         `)
         .eq('organization_id', organizationId)
         .order('last_message_at', { ascending: false })
-        .limit(5);
+        .limit(4);
 
       if (error) throw error;
 
-      return data as unknown as ChatWithRelations[];
+      return data as Chat[];
     },
     staleTime: CACHE_CONFIG.CHATS.staleTime,
     gcTime: CACHE_CONFIG.CHATS.cacheTime,
