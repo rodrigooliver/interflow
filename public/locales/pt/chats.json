@@ -301,6 +301,7 @@
     "user_transferred": "Chat transferido",
     "user_closed": "Chat fechado",
     "user_join": "Usuário entrou como colaborador",
-    "template": "Mensagem template"
+    "template": "Mensagem template",
+    "noMessages": "Sem mensagem"
   }
 }

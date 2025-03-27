@@ -9,7 +9,6 @@ interface MarkdownRendererProps {
 
 // Função para limpar tags HTML
 function cleanHtml(content: string): string {
-  console.log('Conteúdo original:', content);
   const cleaned = content
     // Remove tags HTML
     .replace(/<[^>]*>/g, '')
@@ -17,14 +16,10 @@ function cleanHtml(content: string): string {
     .replace(/\s+/g, ' ')
     // Remove espaços no início e fim
     .trim();
-  console.log('Conteúdo limpo:', cleaned);
   return cleaned;
 }
 
 export function MarkdownRenderer({ content, className = '', variant = 'default' }: MarkdownRendererProps) {
-  console.log('Variant:', variant);
-  console.log('Conteúdo recebido:', content);
-
   const baseClasses = variant === 'compact' 
     ? 'text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis' 
     : 'whitespace-pre-wrap break-words overflow-hidden overflow-wrap-anywhere prose dark:prose-invert max-w-none leading-tight';
@@ -40,29 +35,21 @@ export function MarkdownRenderer({ content, className = '', variant = 'default' 
         .map(line => line.trim())
         .join('\n');
 
-  console.log('Conteúdo processado:', processedContent);
-
   return (
     <div className={`${baseClasses} ${className}`}>
       <ReactMarkdown
         components={{
-          a: (props) => {
-            console.log('Link props:', props);
-            return (
-              <a
-                {...props}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${variant === 'compact' ? 'text-blue-500 dark:text-blue-400 inline' : 'text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all'}`}
-              />
-            );
-          },
-          p: (props) => {
-            console.log('Parágrafo props:', props);
-            return (
-              <p {...props} className={variant === 'compact' ? 'm-0 inline' : 'm-0 leading-tight'} />
-            );
-          },
+          a: (props) => (
+            <a
+              {...props}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${variant === 'compact' ? 'text-blue-500 dark:text-blue-400 inline' : 'text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all'}`}
+            />
+          ),
+          p: (props) => (
+            <p {...props} className={variant === 'compact' ? 'm-0 inline' : 'm-0 leading-tight'} />
+          ),
           ul: (props) => (
             <ul {...props} className={variant === 'compact' ? 'm-0 list-none inline' : 'list-disc list-inside m-0 leading-none space-y-0 min-h-0 p-0 h-auto'} />
           ),

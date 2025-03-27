@@ -388,9 +388,8 @@ export function ChatItem({
               </div>
             </div>
             
-            {chat.last_message && (
-              <div className="flex items-center gap-1 mb-1">
-                {chat.last_message.sender_type === 'agent' && (
+            <div className="flex items-center gap-1 mb-1">
+                {chat.last_message && chat.last_message.sender_type === 'agent' && (
                   <MessageStatus 
                     status={chat.last_message.status === 'deleted' ? 'failed' : 
                             chat.last_message.status === 'pending' ? 'pending' : 
@@ -401,7 +400,7 @@ export function ChatItem({
                   />
                 )}
                 <div className="flex-1 min-w-0 flex items-center gap-2">
-                  {chat.last_message.type !== 'text' && (
+                  {chat.last_message && chat.last_message.type !== 'text' && (
                     <div className="flex-shrink-0 text-gray-400 dark:text-gray-500">
                       {(() => {
                         switch (chat.last_message.type) {
@@ -438,13 +437,15 @@ export function ChatItem({
                     </div>
                   )}
                   <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                    {chat.last_message.type === 'text' ? (
+                    {chat.last_message && chat.last_message.type === 'text' ? (
                       <MarkdownRenderer 
-                        content={chat.last_message.content || t(`messageTypes.${chat.last_message.type}`)}
+                        content={chat.last_message.content || t(`chats:messageTypes.text`)}
                         variant="compact"
                       />
+                    ) : chat.last_message?.type ? (
+                      t(`messageTypes.${chat.last_message?.type}`)
                     ) : (
-                      t(`messageTypes.${chat.last_message.type}`)
+                      t('noMessages')
                     )}
                   </div>
                 </div>
@@ -454,7 +455,6 @@ export function ChatItem({
                   </span>
                 )}
               </div>
-            )}
             
             <div className="flex items-center gap-1.5 flex-wrap">
               <div className="flex items-center gap-1.5">

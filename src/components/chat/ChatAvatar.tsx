@@ -26,19 +26,33 @@ export function ChatAvatar({
   size = 'md' 
 }: ChatAvatarProps) {
   const { t } = useTranslation('chats');
+  const [hasImageError, setHasImageError] = React.useState(false);
   
   const handleImageError = async (chatId: string) => {
+    console.log('handleImageError chamado para chatId:', chatId);
+    console.log('URL da imagem que falhou:', profilePicture);
+    
+    if (!chatId) {
+      console.error('chatId não fornecido para handleImageError');
+      return;
+    }
+
+    setHasImageError(true);
+
     try {
-      const { error } = await supabase
+      console.log('Tentando atualizar profile_picture para null no chat:', chatId);
+      
+      // Atualiza na tabela chats
+      const { error: chatError } = await supabase
         .from('chats')
         .update({ profile_picture: null })
         .eq('id', chatId);
       
-      if (error) {
-        console.error('Error updating profile picture:', error);
+      if (chatError) {
+        console.error('Erro ao atualizar profile picture no chat:', chatError);
       }
     } catch (error) {
-      console.error('Error handling image error:', error);
+      console.error('Erro ao executar handleImageError:', error);
     }
   };
   
@@ -74,8 +88,8 @@ export function ChatAvatar({
 
   return (
     <div className="relative">
-      <div className={`flex-shrink-0 ${sizeClasses[size].avatar} rounded-full ${!profilePicture ? getRandomColor(name || 'Anônimo') : ''} flex items-center justify-center overflow-hidden`}>
-        {profilePicture ? (
+      <div className={`flex-shrink-0 ${sizeClasses[size].avatar} rounded-full ${(!profilePicture || hasImageError) ? getRandomColor(name || 'Anônimo') : ''} flex items-center justify-center overflow-hidden`}>
+        {profilePicture && !hasImageError ? (
           <img
             src={profilePicture}
             alt={name || 'Anônimo'}

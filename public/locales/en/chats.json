@@ -295,6 +295,7 @@
     "user_transferred": "Chat transferred",
     "user_closed": "Chat closed",
     "user_join": "User joined as collaborator",
-    "template": "Template message"
+    "template": "Template message",
+    "noMessages": "No messages"
   }
 }
