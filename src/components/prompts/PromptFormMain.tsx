@@ -140,6 +140,7 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
         draft_nodes: [defaultStartNode, agentNode, textNode, inputNode],
         draft_edges: edges,
         variables: variables,
+        debounce_time: 15000,
         is_published: true,
         published_at: new Date().toISOString(),
         viewport: {
