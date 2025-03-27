@@ -19,7 +19,8 @@
   "delete": {
     "confirmation": "Tem certeza que deseja excluir o fluxo {{name}}?",
     "title": "Excluir Fluxo",
-    "warning": "Esta ação não pode ser desfeita."
+    "warning": "Esta ação não pode ser desfeita.",
+    "error": "Ocorreu um erro ao excluir o fluxo. Por favor, tente novamente."
   },
   "description": "Descrição",
   "edit": "Editar",

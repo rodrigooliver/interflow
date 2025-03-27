@@ -260,7 +260,8 @@
   "delete": {
     "title": "Eliminar Flujo",
     "confirmation": "¿Estás seguro de que deseas eliminar el flujo {{name}}?",
-    "warning": "Esta acción no se puede deshacer."
+    "warning": "Esta acción no se puede deshacer.",
+    "error": "Ocurrió un error al eliminar el flujo. Por favor, inténtalo de nuevo."
   },
   "folder": {
     "title": "Eliminar Carpeta",

@@ -20,6 +20,7 @@ export default function FlowList() {
   const [deletingFlow, setDeletingFlow] = useState(false);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [showEditFlowModal, setShowEditFlowModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentOrganizationMember) {
@@ -63,21 +64,31 @@ export default function FlowList() {
   async function handleDeleteFlow() {
     if (!selectedFlow) return;
     setDeletingFlow(true);
+    setDeleteError(null);
 
     try {
-      // Os triggers serão deletados automaticamente pela foreign key cascade
-      const { error } = await supabase
+      // Primeiro excluir as sessões do fluxo
+      const { error: sessionsError } = await supabase
+        .from('flow_sessions')
+        .delete()
+        .eq('bot_id', selectedFlow.id);
+
+      if (sessionsError) throw sessionsError;
+
+      // Depois excluir o fluxo (os triggers serão deletados automaticamente pela foreign key cascade)
+      const { error: flowError } = await supabase
         .from('flows')
         .delete()
         .eq('id', selectedFlow.id);
 
-      if (error) throw error;
+      if (flowError) throw flowError;
 
       await loadFlows();
       setShowDeleteFlowModal(false);
       setSelectedFlow(null);
     } catch (error) {
       console.error('Error deleting flow:', error);
+      setDeleteError(t('flows:delete.error'));
     } finally {
       setDeletingFlow(false);
     }
@@ -205,21 +216,21 @@ export default function FlowList() {
                     onChange={loadFlows}
                   />
                 </div>
-
-                {flow.prompt && (
-                  <div className="mt-3 border-gray-200 dark:border-gray-700">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {t('flows:linkedToAgent')}:
-                    </div>
-                    <Link
-                      to={`/app/prompts/edit/${flow.prompt.id}`}
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
-                    >
-                      {flow.prompt.title}
-                    </Link>
-                  </div>
-                )}
               </Link>
+
+              {flow.prompt && (
+                <div className="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('flows:linkedToAgent')}:
+                  </div>
+                  <Link
+                    to={`/app/prompts/edit/${flow.prompt.id}`}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
+                  >
+                    {flow.prompt.title}
+                  </Link>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -285,6 +296,12 @@ export default function FlowList() {
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
                 {t('flows:delete.warning')}
               </p>
+              
+              {deleteError && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-md text-sm">
+                  {deleteError}
+                </div>
+              )}
               
               <div className="flex justify-end space-x-2">
                 <button

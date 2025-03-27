@@ -259,8 +259,9 @@
   },
   "delete": {
     "title": "Delete Flow",
-    "confirmation": "Are you sure you want to delete flow {{name}}?",
-    "warning": "This action cannot be undone."
+    "confirmation": "Are you sure you want to delete the flow {{name}}?",
+    "warning": "This action cannot be undone.",
+    "error": "An error occurred while deleting the flow. Please try again."
   },
   "folder": {
     "title": "Delete Folder",
