@@ -6,7 +6,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
 import FlowCreateModal from '../flow/FlowCreateModal';
-import { useClosureTypes } from '../../hooks/useQueryes';
+import { useClosureTypes, usePrompts, useFlows, useOpenAIIntegrations, useChannels } from '../../hooks/useQueryes';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface SetupStep {
@@ -34,8 +34,25 @@ const QuickSetupGuide: React.FC = () => {
   // Usar o hook useClosureTypes para buscar os tipos de encerramento
   const { data: closureTypesData, isLoading: isLoadingClosureTypes } = useClosureTypes(currentOrganizationMember?.organization.id);
   
+  // Usar o hook usePrompts para buscar os prompts
+  const { data: promptsData, isLoading: isLoadingPrompts } = usePrompts(currentOrganizationMember?.organization.id);
+  
+  // Usar o hook useFlows para buscar os fluxos
+  const { data: flowsData, isLoading: isLoadingFlows } = useFlows(currentOrganizationMember?.organization.id);
+  
+  // Usar o hook useOpenAIIntegrations para buscar as integrações OpenAI
+  const { data: openAIIntegrationsData, isLoading: isLoadingOpenAIIntegrations } = useOpenAIIntegrations(currentOrganizationMember?.organization.id);
+  
+  // Usar o hook useChannels para buscar os canais de chat
+  const { data: channelsData, isLoading: isLoadingChannels } = useChannels(currentOrganizationMember?.organization.id);
+  
   // Obter o queryClient para invalidar consultas
   const queryClient = useQueryClient();
+
+  // Verificar se todos os hooks terminaram de carregar
+  const allHooksLoaded = !isLoadingClosureTypes && !isLoadingPrompts && 
+                          !isLoadingFlows && !isLoadingOpenAIIntegrations && 
+                          !isLoadingChannels;
 
   useEffect(() => {
     // Resetar o setupChecked quando currentOrganizationMember mudar
@@ -59,7 +76,7 @@ const QuickSetupGuide: React.FC = () => {
   }, [currentOrganizationMember]);
 
   useEffect(() => {
-    if (currentOrganizationMember && !setupChecked) {
+    if (currentOrganizationMember && !setupChecked && allHooksLoaded) {
       // Verificar se já existe um bloqueio global
       const lockKey = `funnel_creation_lock_${currentOrganizationMember?.organization.id}`;
       const existingLock = localStorage.getItem(lockKey);
@@ -88,7 +105,14 @@ const QuickSetupGuide: React.FC = () => {
       setSetupChecked(true);
       checkSetupStatus();
     }
-  }, [currentOrganizationMember, setupChecked]);
+  }, [currentOrganizationMember, setupChecked, allHooksLoaded]);
+
+  useEffect(() => {
+    // Verificar o status quando os dados dos hooks são carregados ou quando o setupChecked muda
+    if (allHooksLoaded && currentOrganizationMember && setupChecked) {
+      checkSetupStatus();
+    }
+  }, [allHooksLoaded, currentOrganizationMember, setupChecked]);
 
   const checkSetupStatus = async () => {
     if (!currentOrganizationMember) {
@@ -132,46 +156,17 @@ const QuickSetupGuide: React.FC = () => {
         await createDefaultClosureTypes();
       }
 
-      // Verificar se já tem canais
-      const { data: channels, error: channelsError } = await supabase
-        .from('chat_channels')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .limit(1);
+      // Verificar se já tem canais usando o hook
+      const hasChannels = Boolean(channelsData && channelsData.length > 0);
 
-      if (channelsError) throw channelsError;
-      const hasChannels = channels && channels.length > 0;
+      // Verificar se já tem integração com OpenAI usando o hook
+      const hasOpenAI = Boolean(openAIIntegrationsData && openAIIntegrationsData.length > 0);
 
-      // Verificar se já tem integração com OpenAI
-      const { data: openaiIntegration, error: openaiError } = await supabase
-        .from('integrations')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .eq('type', 'openai')
-        .limit(1);
+      // Verificar se já tem prompts usando os dados do hook
+      const hasPrompts = Boolean(promptsData && promptsData.length > 0);
 
-      if (openaiError) throw openaiError;
-      const hasOpenAI = openaiIntegration && openaiIntegration.length > 0;
-
-      // Verificar se já tem prompts
-      const { data: prompts, error: promptsError } = await supabase
-        .from('prompts')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .limit(1);
-
-      if (promptsError) throw promptsError;
-      const hasPrompts = prompts && prompts.length > 0;
-
-      // Verificar se já tem flows
-      const { data: flows, error: flowsError } = await supabase
-        .from('flows')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .limit(1);
-
-      if (flowsError) throw flowsError;
-      const hasFlows = flows && flows.length > 0;
+      // Verificar se já tem flows usando os dados do hook
+      const hasFlows = Boolean(flowsData && flowsData.length > 0);
 
       // Atualizar os passos com base no status
       const updatedSteps: SetupStep[] = [
@@ -426,51 +421,22 @@ const QuickSetupGuide: React.FC = () => {
 
   // Função para carregar apenas o status dos passos sem criar recursos
   const loadStepsStatus = async () => {
-    if (!currentOrganizationMember) {
+    if (!currentOrganizationMember || !allHooksLoaded) {
       return;
     }
     
     try {
-      // Verificar se já tem canais
-      const { data: channels, error: channelsError } = await supabase
-        .from('chat_channels')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .limit(1);
+      // Verificar se já tem canais usando o hook
+      const hasChannels = Boolean(channelsData && channelsData.length > 0);
 
-      if (channelsError) throw channelsError;
-      const hasChannels = channels && channels.length > 0;
+      // Verificar se já tem integração com OpenAI usando o hook
+      const hasOpenAI = Boolean(openAIIntegrationsData && openAIIntegrationsData.length > 0);
 
-      // Verificar se já tem integração com OpenAI
-      const { data: openaiIntegration, error: openaiError } = await supabase
-        .from('integrations')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .eq('type', 'openai')
-        .limit(1);
+      // Verificar se já tem prompts usando os dados do hook
+      const hasPrompts = Boolean(promptsData && promptsData.length > 0);
 
-      if (openaiError) throw openaiError;
-      const hasOpenAI = openaiIntegration && openaiIntegration.length > 0;
-
-      // Verificar se já tem prompts
-      const { data: prompts, error: promptsError } = await supabase
-        .from('prompts')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .limit(1);
-
-      if (promptsError) throw promptsError;
-      const hasPrompts = prompts && prompts.length > 0;
-
-      // Verificar se já tem flows
-      const { data: flows, error: flowsError } = await supabase
-        .from('flows')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .limit(1);
-
-      if (flowsError) throw flowsError;
-      const hasFlows = flows && flows.length > 0;
+      // Verificar se já tem flows usando os dados do hook
+      const hasFlows = Boolean(flowsData && flowsData.length > 0);
 
       // Atualizar os passos com base no status
       const updatedSteps: SetupStep[] = [
@@ -569,23 +535,24 @@ const QuickSetupGuide: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8 animate-pulse">
-        <div className="h-7 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3 sm:w-1/3 mb-3 sm:mb-4"></div>
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full sm:w-2/3 mb-5 sm:mb-6"></div>
-        <div className="space-y-3 sm:space-y-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-start">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-200 dark:bg-gray-700 mr-3 sm:mr-4"></div>
-              <div className="flex-1">
-                <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return null;
+    // return (
+    //   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8 animate-pulse">
+    //     <div className="h-7 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3 sm:w-1/3 mb-3 sm:mb-4"></div>
+    //     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full sm:w-2/3 mb-5 sm:mb-6"></div>
+    //     <div className="space-y-3 sm:space-y-4">
+    //       {[1, 2, 3, 4].map((i) => (
+    //         <div key={i} className="flex items-start">
+    //           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-200 dark:bg-gray-700 mr-3 sm:mr-4"></div>
+    //           <div className="flex-1">
+    //             <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+    //             <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+    //           </div>
+    //         </div>
+    //       ))}
+    //     </div>
+    //   </div>
+    // );
   }
 
   if (!showGuide) {

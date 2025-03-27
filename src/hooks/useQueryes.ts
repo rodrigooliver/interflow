@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
-import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember, Task } from '../types/database';
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember } from '../types/database';
 import api from '../lib/api';
 import { reloadTranslations } from '../i18n';
 import { PostgrestResponse } from '@supabase/supabase-js';
@@ -1300,27 +1300,3 @@ export function useTasks(organizationId?: string, status?: 'pending' | 'in_progr
     enabled: !!organizationId && !!userId
   });
 }
-
-export function useChannelNames(organizationId: string | undefined, channelIds: string[]) {
-  return useQuery({
-    queryKey: ['channelNames', organizationId, channelIds],
-    queryFn: async () => {
-      if (!organizationId || !channelIds.length) return {};
-      
-      const { data: channels, error } = await supabase
-        .from('chat_channels')
-        .select('id, name')
-        .in('id', channelIds)
-        .eq('organization_id', organizationId);
-
-      if (error) throw error;
-
-      return channels.reduce((acc, channel) => ({
-        ...acc,
-        [channel.id]: channel.name
-      }), {});
-    },
-    enabled: !!organizationId && channelIds.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-  });
-} 

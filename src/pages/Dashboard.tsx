@@ -10,6 +10,7 @@ import { ChatFlowModal } from '../components/chat/ChatFlowModal';
 import { formatLastMessageTime } from '../utils/date';
 import { useTeams, useTasks, useAppointments } from '../hooks/useQueryes';
 import { TaskModal } from '../components/tasks/TaskModal';
+import { useDashboard } from '../hooks/useDashboard';
 
 interface StatCard {
   id: string;
@@ -381,32 +382,69 @@ const SimpleDatePicker: React.FC<DatePickerProps> = ({
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard');
   const { currentOrganizationMember, session } = useAuthContext();
-  const [customerCount, setCustomerCount] = useState(0);
-  const [activeChatsCount, setActiveChatsCount] = useState(0);
-  const [periodMessagesCount, setPeriodMessagesCount] = useState(0);
-  const [responseTime, setResponseTime] = useState(0);
-  const [messagesChange, setMessagesChange] = useState<{ value: number, type: 'increase' | 'decrease' }>({ value: 0, type: 'increase' });
-  const [responseTimeChange, setResponseTimeChange] = useState<{ value: number, type: 'increase' | 'decrease' }>({ value: 0, type: 'increase' });
-  const [loading, setLoading] = useState(true);
-  const [recentChats, setRecentChats] = useState<ChatData[]>([]);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [selectedTimeRange, setSelectedTimeRange] = useState('week');
+  
+  // Estados removidos e substituídos pelo hook useDashboard
+  const [loading, setLoading] = useState(false);
   const [showChatFlowModal, setShowChatFlowModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   
-  // Novos estados para períodos específicos
+  // Estados para períodos específicos
   const [useSpecificPeriod, setUseSpecificPeriod] = useState(false);
   const [specificDate, setSpecificDate] = useState<Date | null>(null);
   const [specificMonth, setSpecificMonth] = useState<Date | null>(null);
   const [specificYear, setSpecificYear] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedTimeRange, setSelectedTimeRange] = useState('week');
 
   // Usar o hook useTeams para buscar as equipes
   const organizationId = currentOrganizationMember?.organization.id;
   const { data: teams = [], isLoading: teamsLoading, refetch: refetchTeams } = useTeams(organizationId);
   
-  // Estado para controlar o carregamento do gráfico
+  // Usar o hook useDashboard para todas as consultas do dashboard
+  const {
+    customerCount: { data: customerCount = 0 },
+    activeChatsCount: { data: activeChatsCount = 0 },
+    periodMessagesCount: { data: periodMessagesData },
+    responseTime: { data: responseTimeData },
+    recentChats: { data: recentChatsData = [] },
+    chartData: { data: chartDataResponse },
+    isLoading: isDashboardLoading
+  } = useDashboard({
+    organizationId,
+    timeRange: selectedTimeRange as 'day' | 'week' | 'month' | 'year',
+    useSpecificPeriod,
+    specificDate,
+    specificMonth,
+    specificYear
+  });
+
+  // Extrair dados do hook
+  const periodMessagesCount = periodMessagesData?.value || 0;
+  const messagesChange = periodMessagesData?.change || { value: 0, type: 'increase' };
+  const responseTime = responseTimeData?.value || 0;
+  const responseTimeChange = responseTimeData?.change || { value: 0, type: 'increase' };
+
+  // Formatar os recentChats
+  const recentChats = recentChatsData.map(chat => ({
+    id: chat.id,
+    customer_name: chat.customers?.name || t('customer.anonymous'),
+    last_message: chat.last_message?.content || t('noMessages'),
+    time: chat.last_message_at 
+      ? formatLastMessageTime(chat.last_message_at, i18n.language, t)
+      : '--:--',
+    status: chat.status
+  }));
+
+  // Processar dados do gráfico
+  const [chartData, setChartData] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
+
+  useEffect(() => {
+    if (chartDataResponse && teams) {
+      processChartData(chartDataResponse.data, chartDataResponse.period);
+      setChartLoading(false);
+    }
+  }, [chartDataResponse, teams]);
 
   const { data: tasks = [] } = useTasks(organizationId, 'pending', session?.user?.id);
 
@@ -432,22 +470,13 @@ export default function Dashboard() {
       refetchTeams();
     }
   }, [organizationId, refetchTeams]);
-  
+
+  // Subscribe to updates
   useEffect(() => {
     if (currentOrganizationMember) {
-      loadStats();
-      loadRecentChats();
-      loadChartData(selectedTimeRange);
       subscribeToUpdates();
     }
-  }, [currentOrganizationMember, selectedTimeRange]);
-
-  // Atualizar o gráfico quando as equipes selecionadas mudarem
-  useEffect(() => {
-    if (currentOrganizationMember) {
-      loadChartData(selectedTimeRange);
-    }
-  }, [teams, currentOrganizationMember, selectedTimeRange]);
+  }, [currentOrganizationMember]);
 
   const subscribeToUpdates = () => {
     // Subscribe to chats changes
@@ -459,8 +488,7 @@ export default function Dashboard() {
         table: 'chats',
         filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, () => {
-        loadActiveChatsCount();
-        loadRecentChats();
+        // As consultas agora são gerenciadas pelo react-query
       })
       .subscribe();
 
@@ -473,9 +501,7 @@ export default function Dashboard() {
         table: 'messages',
         filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, () => {
-        loadPeriodMessagesCount();
-        loadChartData(selectedTimeRange);
-        loadResponseTime();
+        // As consultas agora são gerenciadas pelo react-query
       })
       .subscribe();
 
@@ -485,241 +511,11 @@ export default function Dashboard() {
     };
   };
 
-  async function loadStats() {
+  // Função para processar os dados do gráfico
+  const processChartData = (data: any, period: { startDate: Date; endDate: Date; groupBy: 'hour' | 'day' | 'week' | 'month' }) => {
     try {
-      await Promise.all([
-        loadCustomerCount(),
-        loadActiveChatsCount(),
-        loadPeriodMessagesCount(),
-        loadResponseTime()
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadCustomerCount() {
-    try {
-      const { count, error } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganizationMember?.organization.id);
-
-      if (error) throw error;
-      setCustomerCount(count || 0);
-    } catch (error) {
-      console.error('Error loading customer count:', error);
-    }
-  }
-
-  async function loadActiveChatsCount() {
-    try {
-      const { count, error } = await supabase
-        .from('chats')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .eq('status', 'in_progress');
-
-      if (error) throw error;
-      setActiveChatsCount(count || 0);
-    } catch (error) {
-      console.error('Error loading active chats count:', error);
-    }
-  }
-
-  async function loadPeriodMessagesCount() {
-    try {
-      const params: Record<string, unknown> = { 
-        org_id: currentOrganizationMember?.organization.id,
-        metric: 'messages_count'
-      };
-      
-      // Adiciona parâmetros com base no tipo de período (relativo ou específico)
-      if (useSpecificPeriod) {
-        if (specificDate) {
-          params.current_specific_date = formatDateForDB(specificDate);
-        } else if (specificMonth) {
-          params.current_specific_month = formatDateForDB(specificMonth);
-        } else if (specificYear) {
-          params.current_specific_year = formatDateForDB(specificYear);
-        }
-      } else {
-        params.current_period = selectedTimeRange;
-      }
-      
-      // Chama a função do banco de dados para calcular a contagem de mensagens e a variação percentual
-      const { data, error } = await supabase.rpc(
-        'calculate_percentage_change',
-        params
-      );
-
-      if (error) throw error;
-      
-      // Define a contagem de mensagens e a variação percentual
-      setPeriodMessagesCount(data?.current_value || 0);
-      setMessagesChange({
-        value: data?.value || 0,
-        type: data?.type === 'increase' ? 'increase' : 'decrease'
-      });
-    } catch (error) {
-      console.error('Error loading period messages count:', error);
-      setPeriodMessagesCount(0);
-      setMessagesChange({ value: 0, type: 'increase' });
-    }
-  }
-
-  async function loadResponseTime() {
-    try {
-      const params: Record<string, unknown> = { 
-        org_id: currentOrganizationMember?.organization.id,
-        metric: 'response_time'
-      };
-      
-      // Adiciona parâmetros com base no tipo de período (relativo ou específico)
-      if (useSpecificPeriod) {
-        if (specificDate) {
-          params.current_specific_date = formatDateForDB(specificDate);
-        } else if (specificMonth) {
-          params.current_specific_month = formatDateForDB(specificMonth);
-        } else if (specificYear) {
-          params.current_specific_year = formatDateForDB(specificYear);
-        }
-      } else {
-        params.current_period = selectedTimeRange;
-      }
-      
-      // Chama a função do banco de dados para calcular o tempo médio de resposta e a variação percentual
-      const { data, error } = await supabase.rpc(
-        'calculate_percentage_change',
-        params
-      );
-
-      if (error) throw error;
-      
-      // Define o tempo médio de resposta e a variação percentual
-      setResponseTime(data?.current_value || 0);
-      setResponseTimeChange({
-        value: data?.value || 0,
-        type: data?.type === 'increase' ? 'increase' : 'decrease'
-      });
-    } catch (error) {
-      console.error('Erro ao carregar tempo médio de resposta:', error);
-      setResponseTime(0);
-      setResponseTimeChange({ value: 0, type: 'increase' });
-    }
-  }
-
-  async function loadRecentChats() {
-    try {
-      const { data, error } = await supabase
-        .from('chats')
-        .select(`
-          id,
-          customers(name),
-          status,
-          last_message_at,
-          last_message:last_message_id(content, created_at)
-        `)
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .order('last_message_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-
-      const formattedChats = (data as unknown as ChatWithRelations[]).map(chat => {
-        
-        return {
-          id: chat.id,
-          customer_name: chat.customers?.name || t('customer.anonymous'),
-          last_message: chat.last_message?.content || t('noMessages'),
-          time: chat.last_message_at 
-            ? formatLastMessageTime(chat.last_message_at, i18n.language, t)
-            : '--:--',
-          status: chat.status
-        };
-      });
-
-      setRecentChats(formattedChats);
-    } catch (error) {
-      console.error('Error loading recent chats:', error);
-    }
-  }
-
-  async function loadChartData(
-    timeRange: string, 
-    specificDate: Date | null = null,
-    specificMonth: Date | null = null,
-    specificYear: Date | null = null
-  ) {
-    try {
-      // Indicar que o gráfico está carregando
-      setChartLoading(true);
-      
-      // Definir parâmetros de data com base no período selecionado
-      let startDate: Date;
-      let endDate: Date = new Date();
-      let groupBy: 'hour' | 'day' | 'week' | 'month';
-      
-      if (specificDate) {
-        // Para um dia específico, agrupar por hora
-        startDate = new Date(specificDate);
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(specificDate);
-        endDate.setHours(23, 59, 59, 999);
-        groupBy = 'hour';
-      } else if (specificMonth) {
-        // Para um mês específico, agrupar por dia
-        startDate = new Date(specificMonth.getFullYear(), specificMonth.getMonth(), 1);
-        endDate = new Date(specificMonth.getFullYear(), specificMonth.getMonth() + 1, 0, 23, 59, 59, 999);
-        groupBy = 'day';
-      } else if (specificYear) {
-        // Para um ano específico, agrupar por mês
-        startDate = new Date(specificYear.getFullYear(), 0, 1);
-        endDate = new Date(specificYear.getFullYear(), 11, 31, 23, 59, 59, 999);
-        groupBy = 'month';
-      } else if (timeRange === 'day') {
-        // Para hoje, agrupar por hora
-        startDate = new Date();
-        startDate.setHours(0, 0, 0, 0);
-        groupBy = 'hour';
-      } else if (timeRange === 'week') {
-        // Para a última semana, agrupar por dia
-        startDate = new Date();
-        startDate.setDate(startDate.getDate() - 6);
-        startDate.setHours(0, 0, 0, 0);
-        groupBy = 'day';
-      } else if (timeRange === 'month') {
-        // Para o último mês, agrupar por dia
-        startDate = new Date();
-        startDate.setDate(startDate.getDate() - 29);
-        startDate.setHours(0, 0, 0, 0);
-        groupBy = 'day';
-      } else {
-        // Para o último ano, agrupar por mês
-        startDate = new Date();
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        startDate.setDate(1);
-        startDate.setHours(0, 0, 0, 0);
-        groupBy = 'month';
-      }
-      
-      // Formatar datas para o formato ISO
-      const startDateISO = startDate.toISOString();
-      const endDateISO = endDate.toISOString();
-      
-      // Buscar mensagens agrupadas por período e equipe
-      const { data, error } = await supabase.rpc('get_messages_by_team', {
-        org_id: currentOrganizationMember?.organization.id,
-        start_date: startDateISO,
-        end_date: endDateISO,
-        group_by: groupBy
-      });
-      
-      if (error) throw error;
-      
-      // Processar os dados para o formato esperado pelo gráfico
-      const chartData: ChartDataPoint[] = [];
-      const timePoints: Record<string, ChartDataPoint> = {};
+      const chartData: any[] = [];
+      const timePoints: Record<string, any> = {};
       
       // Se não houver dados ou equipes, retornar um array vazio
       if (!data || !teams || teams.length === 0) {
@@ -728,10 +524,10 @@ export default function Dashboard() {
       }
       
       // Inicializar pontos de tempo com base no período
-      if (groupBy === 'hour') {
+      if (period.groupBy === 'hour') {
         // Para agrupamento por hora (dia específico ou hoje)
         for (let i = 0; i < 24; i++) {
-          const date = new Date(startDate);
+          const date = new Date(period.startDate);
           date.setHours(i, 0, 0, 0);
           const timeKey = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           timePoints[timeKey] = { name: timeKey };
@@ -741,11 +537,11 @@ export default function Dashboard() {
             timePoints[timeKey][team.name] = 0;
           });
         }
-      } else if (groupBy === 'day') {
+      } else if (period.groupBy === 'day') {
         // Para agrupamento por dia (mês específico ou última semana/mês)
-        const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
+        const days = (period.endDate.getTime() - period.startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
         for (let i = 0; i < days; i++) {
-          const date = new Date(startDate);
+          const date = new Date(period.startDate);
           date.setDate(date.getDate() + i);
           const timeKey = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
           timePoints[timeKey] = { name: timeKey };
@@ -755,10 +551,10 @@ export default function Dashboard() {
             timePoints[timeKey][team.name] = 0;
           });
         }
-      } else if (groupBy === 'month') {
+      } else if (period.groupBy === 'month') {
         // Para agrupamento por mês (ano específico ou último ano)
         for (let i = 0; i < 12; i++) {
-          const date = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+          const date = new Date(period.startDate.getFullYear(), period.startDate.getMonth() + i, 1);
           const timeKey = date.toLocaleDateString('pt-BR', { month: 'short' });
           timePoints[timeKey] = { name: timeKey };
           
@@ -774,15 +570,15 @@ export default function Dashboard() {
         const { time_period, team_name, message_count } = item;
         
         let timeKey = '';
-        if (groupBy === 'hour') {
+        if (period.groupBy === 'hour') {
           // Formatar hora
           const date = new Date(time_period);
           timeKey = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        } else if (groupBy === 'day') {
+        } else if (period.groupBy === 'day') {
           // Formatar dia
           const date = new Date(time_period);
           timeKey = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        } else if (groupBy === 'month') {
+        } else if (period.groupBy === 'month') {
           // Formatar mês
           const date = new Date(time_period);
           timeKey = date.toLocaleDateString('pt-BR', { month: 'short' });
@@ -801,46 +597,9 @@ export default function Dashboard() {
       
       setChartData(chartData);
     } catch (error) {
-      console.error('Erro ao carregar dados do gráfico:', error);
-      
-      // Em caso de erro, usar dados simulados como fallback
-      const fallbackData: ChartDataPoint[] = [];
-
-      // Criar dados de fallback simples
-      if (teams.length > 0) {
-        // Adicionar alguns pontos de dados fictícios para cada equipe
-        for (let i = 0; i < 7; i++) {
-          const point: ChartDataPoint = { 
-            name: `Dia ${i + 1}` 
-          };
-          
-          // Adicionar valores aleatórios para cada equipe
-          teams.forEach(team => {
-            point[team.name] = Math.floor(Math.random() * 100);
-          });
-          
-          fallbackData.push(point);
-        }
-      } else {
-        // Se não houver equipes, criar dados genéricos
-        for (let i = 0; i < 7; i++) {
-          fallbackData.push({
-            name: `Dia ${i + 1}`,
-            'Mensagens': Math.floor(Math.random() * 100)
-          });
-        }
-      }
-
-      setChartData(fallbackData);
-    } finally {
-      // Indicar que o gráfico carregou
-      setChartLoading(false);
+      console.error('Erro ao processar dados do gráfico:', error);
+      setChartData([]);
     }
-  }
-
-  // Função auxiliar para formatar datas para o formato esperado pelo banco de dados
-  const formatDateForDB = (date: Date): string => {
-    return date.toISOString().split('T')[0];
   };
 
   // Função para obter o título do período atual
@@ -1172,15 +931,19 @@ export default function Dashboard() {
               </div>
               
               <div className="flex flex-col">
-                <p className={`text-3xl font-bold ${textColor} ${loading ? 'animate-pulse' : ''}`}>
-                  {loading ? '-' : id === 'response-time' ? formatTime(value) : value.toLocaleString()}
+                <p className={`text-3xl font-bold ${textColor} ${isDashboardLoading ? 'animate-pulse' : ''}`}>
+                  {isDashboardLoading ? '-' : id === 'response-time' ? formatTime(value) : value.toLocaleString()}
                 </p>
                 <div className="flex items-center mt-2">
                   {change && (
                     <span className={`text-xs font-medium mr-2 ${
-                      change.type === 'increase' 
-                        ? 'text-green-500 dark:text-green-400' 
-                        : 'text-red-500 dark:text-red-400'
+                      id === 'response-time'
+                        ? change.type === 'increase' 
+                          ? 'text-red-500 dark:text-red-400' 
+                          : 'text-green-500 dark:text-green-400'
+                        : change.type === 'increase' 
+                          ? 'text-green-500 dark:text-green-400' 
+                          : 'text-red-500 dark:text-red-400'
                     }`}>
                       {change.type === 'increase' ? '↑' : '↓'} {change.value}%
                     </span>
@@ -1194,7 +957,7 @@ export default function Dashboard() {
               <div className="mt-4 h-1 w-full bg-gray-200 dark:bg-gray-700 rounded">
                 <div 
                   className={`h-1 rounded ${iconColor.replace('text', 'bg')}`}
-                  style={{ width: loading ? '0%' : '100%', transition: 'width 1s ease-in-out' }}
+                  style={{ width: isDashboardLoading ? '0%' : '100%', transition: 'width 1s ease-in-out' }}
                 />
               </div>
             </div>
