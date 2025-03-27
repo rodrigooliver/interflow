@@ -4,6 +4,7 @@ import { Loader2, MessageSquare, Thermometer, Send } from 'lucide-react';
 import { ChatMessage, TokenUsage } from '../../types/prompts';
 import { Integration } from '../../types/database';
 import api from '../../lib/api';
+import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 
 interface TestChatProps {
   selectedIntegration: Integration | null;
@@ -217,7 +218,7 @@ const TestChat: React.FC<TestChatProps> = ({
                 ? 'bg-blue-100 dark:bg-blue-900/30 text-gray-900 dark:text-white' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
             }`}>
-              {message.content}
+              <MarkdownRenderer content={message.content} />
             </div>
           </div>
         ))}

@@ -17,6 +17,7 @@ import {
 import { CustomTooltip } from './CustomTooltip';
 import { ChatDetailsModal } from './ChatDetailsModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
+import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 
 interface CustomerTag {
   tag_id: string;
@@ -437,7 +438,14 @@ export function ChatItem({
                     </div>
                   )}
                   <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                    {chat.last_message.content || t(`messageTypes.${chat.last_message.type}`)}
+                    {chat.last_message.type === 'text' ? (
+                      <MarkdownRenderer 
+                        content={chat.last_message.content || t(`messageTypes.${chat.last_message.type}`)}
+                        variant="compact"
+                      />
+                    ) : (
+                      t(`messageTypes.${chat.last_message.type}`)
+                    )}
                   </div>
                 </div>
                 {(chat.unread_count || 0) > 0 && (

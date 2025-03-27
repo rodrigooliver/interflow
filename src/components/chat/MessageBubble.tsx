@@ -4,6 +4,7 @@ import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, Mor
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
+import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import './styles.css';
 import {
   DropdownMenu,
@@ -423,69 +424,7 @@ export function MessageBubble({
             {content && !attachments?.some(attachment => 
               attachment.type.startsWith('audio') || attachment.type.startsWith('audio/')
             ) && (
-              <div className="whitespace-pre-wrap break-words overflow-hidden overflow-wrap-anywhere">
-                {content.split('\n').map((line, lineIndex) => (
-                  <React.Fragment key={`line-${lineIndex}`}>
-                    {line.split(/(\s+)/).map((part, partIndex) => {
-                      // Verificar se a parte é uma URL
-                      if (/^https?:\/\//.test(part)) {
-                        return (
-                          <React.Fragment key={`part-${partIndex}`}>
-                            <a 
-                              href={part} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all"
-                            >
-                              {part.length > 50 ? part.substring(0, 47) + '...' : part}
-                            </a>
-                          </React.Fragment>
-                        );
-                      }
-                      
-                      // Verificar se a parte é um link no formato [texto](url)
-                      const linkMatch = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
-                      if (linkMatch) {
-                        const [, text, url] = linkMatch;
-                        return (
-                          <React.Fragment key={`part-${partIndex}`}>
-                            <a 
-                              href={url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all"
-                            >
-                              {text}
-                            </a>
-                          </React.Fragment>
-                        );
-                      }
-                      
-                      // Verificar se a parte é uma URL entre colchetes
-                      const bracketUrlMatch = part.match(/\[(https?:\/\/[^\]]+)\]/);
-                      if (bracketUrlMatch) {
-                        const url = bracketUrlMatch[1];
-                        return (
-                          <React.Fragment key={`part-${partIndex}`}>
-                            <a 
-                              href={url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-500 dark:text-blue-400 underline hover:opacity-80 break-all"
-                            >
-                              {url.length > 50 ? url.substring(0, 47) + '...' : url}
-                            </a>
-                          </React.Fragment>
-                        );
-                      }
-                      
-                      // Parte normal (texto ou espaço)
-                      return <React.Fragment key={`part-${partIndex}`}>{part}</React.Fragment>;
-                    })}
-                    {lineIndex < content.split('\n').length - 1 && <br />}
-                  </React.Fragment>
-                ))}
-              </div>
+              <MarkdownRenderer content={content} />
             )}
           </div>
 
