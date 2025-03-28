@@ -223,9 +223,26 @@
       "title": "Enviar Texto",
       "edit": "Editar Texto",
       "splitParagraphs": "Separar parágrafos em mensagens diferentes",
-      "splitParagraphsDescription": "Cada parágrafo separado por linha em branco será enviado como uma mensagem individual.",
+      "splitParagraphsDescription": "Cada parágrafo separado por uma linha em branco será enviado como uma mensagem individual.",
       "messages": "mensagens",
-      "longText": "Texto longo"
+      "longText": "Texto longo",
+      "showListOptions": "Mostrar opções de listagem",
+      "listOptions": "Opções de Listagem",
+      "listTitle": "Título da Lista",
+      "listDescription": "Descrição da Lista",
+      "listButtonText": "Texto do Botão",
+      "listFooterText": "Texto do Rodapé",
+      "sectionTitle": "Título da Seção",
+      "rowTitle": "Título da Linha",
+      "rowDescription": "Descrição da Linha",
+      "rowId": "ID da Linha",
+      "addRow": "Adicionar Linha",
+      "addSection": "Adicionar Seção",
+      "listOptionsEnabled": "Listagem de opções ativada",
+      "listOptionsWarning": "Esta opção não está disponível em todos os tipos de canais",
+      "listOptionsOfficialWarning": "Esta opção só está disponível em canais oficiais dentro da janela de 24 horas",
+      "listOptionsOfficialWarning24h": "Esta opção só está disponível em canais oficiais dentro da janela de 24 horas",
+      "listOptionsWapiWarning": "Esta opção só está disponível em canais WAPI"
     },
     "sendVideo": {
       "title": "Enviar Vídeo"

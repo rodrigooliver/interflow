@@ -18,7 +18,7 @@ interface FlowTriggersProps {
 export function FlowTriggers({ flowId, triggersInitial, onChange }: FlowTriggersProps) {
   const { t } = useTranslation('flows');
   const [showAddTrigger, setShowAddTrigger] = useState(false);
-  const [triggers, setTriggers] = useState<Trigger[]>(triggersInitial);
+  const [triggers, setTriggers] = useState<Trigger[]>(triggersInitial || []);
   const [removingTriggerId, setRemovingTriggerId] = useState<string | null>(null);
   const [togglingTriggerId, setTogglingTriggerId] = useState<string | null>(null);
   const { currentOrganizationMember } = useAuthContext();

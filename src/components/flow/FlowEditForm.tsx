@@ -5,6 +5,8 @@ import { Flow } from '../../types/database';
 import { Trigger } from '../../types/flow';
 import { FlowTriggers } from './FlowTriggers';
 import { supabase } from '../../lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 interface FlowEditFormProps {
   flowId: string | null;
@@ -16,6 +18,8 @@ interface FlowEditFormProps {
 
 export default function FlowEditForm({ flowId, onSave, onCancel, onSaveTriggers, onClose }: FlowEditFormProps) {
   const { t } = useTranslation(['common', 'flows']);
+  const queryClient = useQueryClient();
+  const { currentOrganizationMember } = useAuthContext();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -82,6 +86,12 @@ export default function FlowEditForm({ flowId, onSave, onCancel, onSaveTriggers,
     setIsSaving(true);
     try {
       await onSave(formData);
+      // Invalidar o cache dos flows após salvar
+      if (currentOrganizationMember?.organization.id) {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['flows', currentOrganizationMember.organization.id] 
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -92,6 +102,12 @@ export default function FlowEditForm({ flowId, onSave, onCancel, onSaveTriggers,
     try {
       await onSaveTriggers(newTriggers);
       setTriggers(newTriggers);
+      // Invalidar o cache dos flows após salvar os triggers
+      if (currentOrganizationMember?.organization.id) {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['flows', currentOrganizationMember.organization.id] 
+        });
+      }
     } finally {
       setIsSavingTriggers(false);
     }

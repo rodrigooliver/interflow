@@ -47,7 +47,24 @@
       "splitParagraphs": "Separar párrafos en mensajes diferentes",
       "splitParagraphsDescription": "Cada párrafo separado por una línea en blanco será enviado como un mensaje individual.",
       "messages": "mensajes",
-      "longText": "Texto largo"
+      "longText": "Texto largo",
+      "showListOptions": "Mostrar opciones de lista",
+      "listOptions": "Opciones de Lista",
+      "listTitle": "Título de la Lista",
+      "listDescription": "Descripción de la Lista",
+      "listButtonText": "Texto del Botón",
+      "listFooterText": "Texto del Pie de Página",
+      "sectionTitle": "Título de la Sección",
+      "rowTitle": "Título de la Fila",
+      "rowDescription": "Descripción de la Fila",
+      "rowId": "ID de la Fila",
+      "addRow": "Agregar Fila",
+      "addSection": "Agregar Sección",
+      "listOptionsEnabled": "Opciones de lista activadas",
+      "listOptionsWarning": "Esta opción no está disponible en todos los tipos de canales",
+      "listOptionsOfficialWarning": "Esta opción solo está disponible en canales oficiales dentro de la ventana de 24 horas",
+      "listOptionsOfficialWarning24h": "Esta opción solo está disponible en canales oficiales dentro de la ventana de 24 horas",
+      "listOptionsWapiWarning": "Esta opción solo está disponible en canales WAPI"
     },
     "sendAudio": {
       "title": "Enviar Audio"

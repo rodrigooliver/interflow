@@ -417,6 +417,12 @@ const QuickSetupGuide: React.FC = () => {
     setShowFlowCreateModal(false);
     // Recarregar apenas os passos sem criar novos recursos
     loadStepsStatus();
+    // Invalidar o cache dos flows incluindo o organizationId
+    if (currentOrganizationMember?.organization.id) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['flows', currentOrganizationMember.organization.id] 
+      });
+    }
   };
 
   // Função para carregar apenas o status dos passos sem criar recursos

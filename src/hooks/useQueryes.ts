@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
-import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember } from '../types/database';
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember, Flow } from '../types/database';
 import api from '../lib/api';
 import { reloadTranslations } from '../i18n';
 import { PostgrestResponse } from '@supabase/supabase-js';
@@ -568,12 +568,26 @@ export const useFlows = (organizationId?: string) => {
 
       const { data, error } = await supabase
         .from('flows')
-        .select('id, name')
+        .select(`
+          *,
+          triggers:flow_triggers(
+            id,
+            type,
+            conditions,
+            is_active,
+            created_at,
+            updated_at
+          ),
+          prompt:created_by_prompt(
+            id,
+            title
+          )
+        `)
         .eq('organization_id', organizationId)
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      return data as Flow[];
     },
     enabled: !!organizationId,
     staleTime: 30 * 60 * 1000, // 30 minutos

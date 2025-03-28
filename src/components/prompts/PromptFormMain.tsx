@@ -405,11 +405,11 @@ const PromptFormMain: React.FC = () => {
       } else {
         // Criar novo fluxo
         const flowData = await createFlowFromPrompt(id, currentOrganizationMember.organization.id, formData.title);
+        await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember.organization.id] });
         
         if (flowData) {
           setLinkedFlow(flowData);
           // Invalidar cache dos flows
-          await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember.organization.id] });
           setError('');
           // Mostrar mensagem de sucesso
           const successMessage = document.createElement('div');

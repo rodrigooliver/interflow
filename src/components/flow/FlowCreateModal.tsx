@@ -9,10 +9,11 @@ import { createFlowFromPrompt } from '../../components/prompts/PromptFormMain';
 import { Trigger } from '../../types/flow';
 import Select from 'react-select';
 import { useChannels } from '../../hooks/useQueryes';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Default start node
 const defaultStartNode = {
-  id: 'start',
+  id: 'start-node',
   type: 'start',
   position: { x: 100, y: 100 },
   data: {}
@@ -42,6 +43,7 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
   const navigate = useNavigate();
   const { t } = useTranslation(['flows', 'common']);
   const { currentOrganizationMember } = useAuthContext();
+  const queryClient = useQueryClient();
   const [creatingFlow, setCreatingFlow] = useState(false);
   const [newFlowData, setNewFlowData] = useState({ name: '', description: '' });
   const [flowCreationType, setFlowCreationType] = useState<'free' | 'agent' | null>(null);
@@ -129,6 +131,13 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
             
             resetForm();
             
+            // Invalidar o cache dos flows após criar
+            if (currentOrganizationMember?.organization.id) {
+              await queryClient.invalidateQueries({ 
+                queryKey: ['flows', currentOrganizationMember.organization.id] 
+              });
+            }
+            
             // Callback de sucesso ou redirecionamento
             if (onSuccess) {
               onSuccess(flowData.id);
@@ -182,6 +191,13 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
         }
 
         resetForm();
+        
+        // Invalidar o cache dos flows após criar
+        if (currentOrganizationMember?.organization.id) {
+          await queryClient.invalidateQueries({ 
+            queryKey: ['flows', currentOrganizationMember.organization.id] 
+          });
+        }
         
         // Callback de sucesso ou redirecionamento
         if (flowData) {

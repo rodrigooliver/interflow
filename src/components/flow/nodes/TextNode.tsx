@@ -1,16 +1,30 @@
 import React, { useState, useCallback, useMemo, ReactNode } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, X } from 'lucide-react';
+import { MessageSquare, X, AlertCircle } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import { Variable } from '../../../types/flow';
 import { createPortal } from 'react-dom';
 
-// Componente Portal para renderizar o modal fora da hierarquia do DOM
-const Portal = ({ children }: { children: ReactNode }) => {
-  return createPortal(children, document.body);
-};
+interface ListSection {
+  title: string;
+  rows: ListRow[];
+}
+
+interface ListRow {
+  title: string;
+  description: string;
+  rowId: string;
+}
+
+interface ListOptions {
+  title: string;
+  description: string;
+  buttonText: string;
+  footerText: string;
+  sections: ListSection[];
+}
 
 interface TextNodeProps {
   id: string;
@@ -18,9 +32,15 @@ interface TextNodeProps {
     text?: string;
     label?: string;
     splitParagraphs?: boolean;
+    listOptions?: ListOptions;
   };
   isConnectable: boolean;
 }
+
+// Componente Portal para renderizar o modal fora da hierarquia do DOM
+const Portal = ({ children }: { children: ReactNode }) => {
+  return createPortal(children, document.body);
+};
 
 interface TextEditorModalProps {
   isOpen: boolean;
@@ -28,14 +48,23 @@ interface TextEditorModalProps {
   text: string;
   variables: Variable[];
   splitParagraphs: boolean;
-  onSave: (text: string, splitParagraphs: boolean) => void;
+  listOptions?: ListOptions;
+  onSave: (text: string, splitParagraphs: boolean, listOptions?: ListOptions) => void;
 }
 
 // Componente para o modal de edição de texto
-function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, onSave }: TextEditorModalProps) {
+function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, listOptions, onSave }: TextEditorModalProps) {
   const { t } = useTranslation(['flows', 'common']);
   const [editedText, setEditedText] = useState(text);
   const [shouldSplitParagraphs, setShouldSplitParagraphs] = useState(splitParagraphs);
+  const [showListOptions, setShowListOptions] = useState(!!listOptions);
+  const [editedListOptions, setEditedListOptions] = useState<ListOptions>(listOptions || {
+    title: '',
+    description: '',
+    buttonText: '',
+    footerText: '',
+    sections: []
+  });
   
   const handleInsertVariable = (variable: Variable) => {
     const variableTag = `{{${variable.name}}}`;
@@ -61,7 +90,7 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, on
   };
   
   const handleSave = () => {
-    onSave(editedText, shouldSplitParagraphs);
+    onSave(editedText, shouldSplitParagraphs, showListOptions ? editedListOptions : undefined);
     onClose();
   };
   
@@ -78,7 +107,7 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, on
         
         {/* Modal fixado no lado direito */}
         <div 
-          className="absolute top-0 right-0 h-full w-96 bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden"
+          className="absolute top-0 right-0 h-full w-[600px] bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden"
           style={{ maxWidth: '100vw' }}
         >
           <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
@@ -151,6 +180,173 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, on
                 {t('flows:nodes.sendText.splitParagraphsDescription')}
               </p>
             </div>
+
+            <div className="mb-6">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="show-list-options"
+                  checked={showListOptions}
+                  onChange={(e) => setShowListOptions(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="show-list-options" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  {t('flows:nodes.sendText.showListOptions')}
+                </label>
+              </div>
+              {showListOptions && (
+                <div className="mt-2 flex items-center text-sm text-yellow-600 dark:text-yellow-400">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  <span>
+                    {t('flows:nodes.sendText.listOptionsWarning')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {showListOptions && (
+              <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('flows:nodes.sendText.listOptions')}
+                </h4>
+                
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder={t('flows:nodes.sendText.listTitle')}
+                    value={editedListOptions.title}
+                    onChange={(e) => setEditedListOptions({ ...editedListOptions, title: e.target.value })}
+                    className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  
+                  <input
+                    type="text"
+                    placeholder={t('flows:nodes.sendText.listDescription')}
+                    value={editedListOptions.description}
+                    onChange={(e) => setEditedListOptions({ ...editedListOptions, description: e.target.value })}
+                    className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  
+                  <input
+                    type="text"
+                    placeholder={t('flows:nodes.sendText.listButtonText')}
+                    value={editedListOptions.buttonText}
+                    onChange={(e) => setEditedListOptions({ ...editedListOptions, buttonText: e.target.value })}
+                    className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  
+                  <input
+                    type="text"
+                    placeholder={t('flows:nodes.sendText.listFooterText')}
+                    value={editedListOptions.footerText}
+                    onChange={(e) => setEditedListOptions({ ...editedListOptions, footerText: e.target.value })}
+                    className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  {editedListOptions.sections.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="border border-gray-200 dark:border-gray-700 rounded-md p-4 relative">
+                      <button
+                        onClick={() => {
+                          const newSections = editedListOptions.sections.filter((_, index) => index !== sectionIndex);
+                          setEditedListOptions({ ...editedListOptions, sections: newSections });
+                        }}
+                        className="absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-full shadow-sm"
+                        title={t('common:delete')}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <div className="mb-2">
+                        <input
+                          type="text"
+                          placeholder={t('flows:nodes.sendText.sectionTitle')}
+                          value={section.title}
+                          onChange={(e) => {
+                            const newSections = [...editedListOptions.sections];
+                            newSections[sectionIndex] = { ...section, title: e.target.value };
+                            setEditedListOptions({ ...editedListOptions, sections: newSections });
+                          }}
+                          className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+                      
+                      {section.rows.map((row, rowIndex) => (
+                        <div key={rowIndex} className="space-y-2 mb-4 border border-gray-200 dark:border-gray-700 rounded-md p-4 relative">
+                          <button
+                            onClick={() => {
+                              const newSections = [...editedListOptions.sections];
+                              newSections[sectionIndex].rows = newSections[sectionIndex].rows.filter((_, index) => index !== rowIndex);
+                              setEditedListOptions({ ...editedListOptions, sections: newSections });
+                            }}
+                            className="absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-full shadow-sm"
+                            title={t('common:delete')}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                          <input
+                            type="text"
+                            placeholder={t('flows:nodes.sendText.rowTitle')}
+                            value={row.title}
+                            onChange={(e) => {
+                              const newSections = [...editedListOptions.sections];
+                              newSections[sectionIndex].rows[rowIndex] = { ...row, title: e.target.value };
+                              setEditedListOptions({ ...editedListOptions, sections: newSections });
+                            }}
+                            className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                          
+                          <input
+                            type="text"
+                            placeholder={t('flows:nodes.sendText.rowDescription')}
+                            value={row.description}
+                            onChange={(e) => {
+                              const newSections = [...editedListOptions.sections];
+                              newSections[sectionIndex].rows[rowIndex] = { ...row, description: e.target.value };
+                              setEditedListOptions({ ...editedListOptions, sections: newSections });
+                            }}
+                            className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                      ))}
+                      
+                      <button
+                        onClick={() => {
+                          const newSections = [...editedListOptions.sections];
+                          newSections[sectionIndex].rows.push({
+                            title: '',
+                            description: '',
+                            rowId: ''
+                          });
+                          setEditedListOptions({ ...editedListOptions, sections: newSections });
+                        }}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        {t('flows:nodes.sendText.addRow')}
+                      </button>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => {
+                      setEditedListOptions({
+                        ...editedListOptions,
+                        sections: [
+                          ...editedListOptions.sections,
+                          {
+                            title: '',
+                            rows: []
+                          }
+                        ]
+                      });
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    {t('flows:nodes.sendText.addSection')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="flex justify-end space-x-2 p-4 border-t border-gray-200 dark:border-gray-700">
@@ -276,12 +472,14 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
   
   const text = data.text || '';
   const splitParagraphs = data.splitParagraphs || false;
+  const listOptions = data.listOptions;
   
-  const handleSaveText = useCallback((newText: string, newSplitParagraphs: boolean) => {
+  const handleSaveText = useCallback((newText: string, newSplitParagraphs: boolean, newListOptions?: ListOptions) => {
     updateNodeData(id, { 
       ...data, 
       text: newText,
-      splitParagraphs: newSplitParagraphs
+      splitParagraphs: newSplitParagraphs,
+      listOptions: newListOptions
     });
   }, [id, data, updateNodeData]);
   
@@ -321,6 +519,14 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
           </div>
         )}
         
+        {listOptions && (
+          <div className="mb-2">
+            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded">
+              {t('flows:nodes.sendText.listOptionsEnabled')}
+            </span>
+          </div>
+        )}
+        
         <div className="max-h-[100px] overflow-hidden">
           {text ? (
             <RenderTextWithVariables text={text} />
@@ -350,6 +556,7 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
           text={text}
           variables={variables}
           splitParagraphs={splitParagraphs}
+          listOptions={listOptions}
           onSave={handleSaveText}
         />
       )}

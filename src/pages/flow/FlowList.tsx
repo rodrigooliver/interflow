@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GitFork, Plus, Loader2, X, AlertTriangle, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,58 +8,21 @@ import { Flow } from '../../types/database';
 import FlowEditForm from '../../components/flow/FlowEditForm';
 import FlowCreateModal from '../../components/flow/FlowCreateModal';
 import { TriggersList } from '../../components/flow/TriggersList';
+import { useQueryClient } from '@tanstack/react-query';
+import { useFlows } from '../../hooks/useQueryes';
 
 export default function FlowList() {
   const navigate = useNavigate();
   const { t } = useTranslation(['flows', 'common']);
   const { currentOrganizationMember } = useAuthContext();
-  const [flows, setFlows] = useState<Flow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: flows = [], isLoading } = useFlows(currentOrganizationMember?.organization.id);
   const [showCreateFlowModal, setShowCreateFlowModal] = useState(false);
   const [showDeleteFlowModal, setShowDeleteFlowModal] = useState(false);
   const [deletingFlow, setDeletingFlow] = useState(false);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [showEditFlowModal, setShowEditFlowModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (currentOrganizationMember) {
-      loadFlows();
-    }
-  }, [currentOrganizationMember]);
-
-  async function loadFlows() {
-    if (!currentOrganizationMember) return;
-
-    try {
-      const { data: flowsData, error: flowsError } = await supabase
-        .from('flows')
-        .select(`
-          *,
-          triggers:flow_triggers(
-            id,
-            type,
-            conditions,
-            is_active,
-            created_at,
-            updated_at
-          ),
-          prompt:created_by_prompt(
-            id,
-            title
-          )
-        `)
-        .eq('organization_id', currentOrganizationMember.organization.id)
-        .order('name');
-
-      if (flowsError) throw flowsError;
-      setFlows(flowsData || []);
-    } catch (error) {
-      console.error('Error loading flows:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleDeleteFlow() {
     if (!selectedFlow) return;
@@ -83,7 +46,9 @@ export default function FlowList() {
 
       if (flowError) throw flowError;
 
-      await loadFlows();
+      // Invalidar o cache dos flows
+      await queryClient.invalidateQueries({ queryKey: ['flows'] });
+      
       setShowDeleteFlowModal(false);
       setSelectedFlow(null);
     } catch (error) {
@@ -108,7 +73,9 @@ export default function FlowList() {
 
       if (updateError) throw updateError;
 
-      await loadFlows();
+      // Invalidar o cache dos flows
+      await queryClient.invalidateQueries({ queryKey: ['flows'] });
+      
       setShowEditFlowModal(false);
       setSelectedFlow(null);
     } catch (error) {
@@ -129,7 +96,7 @@ export default function FlowList() {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">
@@ -161,7 +128,7 @@ export default function FlowList() {
 
       {flows.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {flows.map((flow) => (
+          {flows.map((flow: Flow) => (
             <div
               key={flow.id}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors relative group"
@@ -213,7 +180,7 @@ export default function FlowList() {
                     triggers={flow.triggers || []}
                     flowId={flow.id}
                     showWarning={true}
-                    onChange={loadFlows}
+                    onChange={() => queryClient.invalidateQueries({ queryKey: ['flows'] })}
                   />
                 </div>
               </Link>
@@ -260,7 +227,6 @@ export default function FlowList() {
         isOpen={showCreateFlowModal}
         onClose={() => setShowCreateFlowModal(false)}
         onSuccess={(flowId) => {
-          loadFlows();
           navigate(`/app/flows/${flowId}`);
         }}
       />

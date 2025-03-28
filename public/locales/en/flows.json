@@ -47,7 +47,24 @@
       "splitParagraphs": "Split paragraphs into separate messages",
       "splitParagraphsDescription": "Each paragraph separated by a blank line will be sent as an individual message.",
       "messages": "messages",
-      "longText": "Long text"
+      "longText": "Long text",
+      "showListOptions": "Show list options",
+      "listOptions": "List Options",
+      "listTitle": "List Title",
+      "listDescription": "List Description",
+      "listButtonText": "Button Text",
+      "listFooterText": "Footer Text",
+      "sectionTitle": "Section Title",
+      "rowTitle": "Row Title",
+      "rowDescription": "Row Description",
+      "rowId": "Row ID",
+      "addRow": "Add Row",
+      "addSection": "Add Section",
+      "listOptionsEnabled": "List options enabled",
+      "listOptionsWarning": "This option is not available in all channel types",
+      "listOptionsOfficialWarning": "This option is only available in official channels within the 24-hour window",
+      "listOptionsOfficialWarning24h": "This option is only available in official channels within the 24-hour window",
+      "listOptionsWapiWarning": "This option is only available in WAPI channels"
     },
     "sendAudio": {
       "title": "Send Audio"
