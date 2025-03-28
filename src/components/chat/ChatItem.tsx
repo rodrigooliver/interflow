@@ -261,7 +261,6 @@ export function ChatItem({
                     }
                   }}
                 >
-                  <span className="inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0" style={{ backgroundColor: stages[chat.customer.stage_id].color || '#9CA3AF' }}></span>
                   <span className="truncate">{stages[chat.customer.stage_id].name}</span>
                 </span>
               </CustomTooltip>

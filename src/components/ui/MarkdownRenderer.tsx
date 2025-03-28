@@ -19,21 +19,77 @@ function cleanHtml(content: string): string {
   return cleaned;
 }
 
+// Função para processar URLs e convertê-las em links mais limpos
+function processUrls(content: string): string {
+  // Regex para identificar URLs em formato de link Markdown
+  const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  
+  // Regex para identificar URLs diretas
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+  // Função para limpar URLs (remover %5D e outros caracteres indesejados)
+  const cleanUrl = (url: string): string => {
+    // Remove %5D (que é o código URL para ']'), colchetes, parênteses e outros caracteres problemáticos
+    return url
+      .replace(/%5D/gi, '') // Remove %5D (código URL para ']')
+      .replace(/\]/g, '')   // Remove colchetes de fechamento literal
+      .replace(/\)/g, '')   // Remove parênteses de fechamento
+      .replace(/'$/g, '')   // Remove aspas simples no final
+      .replace(/"$/g, '');  // Remove aspas duplas no final
+  };
+  
+  // Primeiro limpa links Markdown
+  let processedContent = content.replace(markdownLinkRegex, (match, text, url) => {
+    // Limpa a URL
+    const cleanedUrl = cleanUrl(url);
+    
+    // Verifica se o texto e a URL são os mesmos ou se o texto é muito longo
+    if (text === url || text.length > 50) {
+      // Simplifica para mostrar apenas o domínio
+      try {
+        const domain = new URL(cleanedUrl).hostname;
+        return `[${domain}](${cleanedUrl})`;
+      } catch {
+        return `[${text}](${cleanedUrl})`;
+      }
+    }
+    return `[${text}](${cleanedUrl})`;
+  });
+  
+  // Depois processa URLs diretas
+  processedContent = processedContent.replace(urlRegex, (url) => {
+    // Ignora URLs que já estão dentro de links Markdown
+    if (url.match(/\]\(.*\)$/)) return url;
+    
+    // Limpa a URL
+    const cleanedUrl = cleanUrl(url);
+    
+    try {
+      const domain = new URL(cleanedUrl).hostname;
+      return `[${domain}](${cleanedUrl})`;
+    } catch {
+      return cleanedUrl;
+    }
+  });
+  
+  return processedContent;
+}
+
 export function MarkdownRenderer({ content, className = '', variant = 'default' }: MarkdownRendererProps) {
   const baseClasses = variant === 'compact' 
     ? 'text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis' 
     : 'whitespace-pre-wrap break-words overflow-hidden overflow-wrap-anywhere prose dark:prose-invert max-w-none leading-tight';
 
-  // Processa o conteúdo para preservar quebras de linha
+  // Processa o conteúdo para preservar quebras de linha e formatar URLs
   const processedContent = variant === 'compact' 
     ? cleanHtml(content).replace(/\n/g, ' ')
-    : content
+    : processUrls(content
         // Remove quebras de linha extras (mais de 2)
         .replace(/\n{2,}/g, '\n')
         // Remove espaços extras no início e fim de cada linha
         .split('\n')
         .map(line => line.trim())
-        .join('\n');
+        .join('\n'));
 
   return (
     <div className={`${baseClasses} ${className}`}>
@@ -48,7 +104,7 @@ export function MarkdownRenderer({ content, className = '', variant = 'default' 
             />
           ),
           p: (props) => (
-            <p {...props} className={variant === 'compact' ? 'm-0 inline' : 'm-0 leading-tight'} />
+            <p {...props} className={variant === 'compact' ? 'm-0 inline' : 'm-0 mb-3 leading-tight'} />
           ),
           ul: (props) => (
             <ul {...props} className={variant === 'compact' ? 'm-0 list-none inline' : 'list-disc list-inside m-0 leading-none space-y-0 min-h-0 p-0 h-auto'} />
