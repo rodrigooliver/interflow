@@ -303,5 +303,25 @@
     "user_join": "Usuário entrou como colaborador",
     "template": "Mensagem template",
     "noMessages": "Sem mensagem"
+  },
+  "flows": {
+    "startFlow": "Iniciar Fluxo",
+    "startShort": "Fluxo",
+    "comingSoon": "Funcionalidade de fluxos em breve!",
+    "title": "Fluxos",
+    "description": "Iniciar um fluxo de automação ou agente IA",
+    "automation": "Automação",
+    "aiAgent": "Agente IA",
+    "selectFlow": "Selecionar Fluxo",
+    "noFlows": "Nenhum fluxo disponível",
+    "loading": "Carregando fluxos...",
+    "error": "Erro ao carregar fluxos",
+    "started": "Fluxo iniciado com sucesso!",
+    "noDescription": "Sem descrição",
+    "activeFlow": "Há um fluxo ativo em andamento",
+    "pause": "Pausar Fluxo",
+    "pauseShort": "Pausar",
+    "pauseFlow": "Pausar Fluxo",
+    "paused": "Fluxo pausado com sucesso!"
   }
 }

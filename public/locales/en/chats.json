@@ -297,5 +297,25 @@
     "user_join": "User joined as collaborator",
     "template": "Template message",
     "noMessages": "No messages"
+  },
+  "flows": {
+    "startFlow": "Start Flow",
+    "startShort": "Flow",
+    "comingSoon": "Flows feature coming soon!",
+    "title": "Flows",
+    "description": "Start an automation or AI agent flow",
+    "automation": "Automation",
+    "aiAgent": "AI Agent",
+    "selectFlow": "Select Flow",
+    "noFlows": "No flows available",
+    "loading": "Loading flows...",
+    "error": "Error loading flows",
+    "started": "Flow started successfully!",
+    "noDescription": "No description",
+    "activeFlow": "There is an active flow running",
+    "pause": "Pause Flow",
+    "pauseShort": "Pause",
+    "pauseFlow": "Pause Flow",
+    "paused": "Flow paused successfully!"
   }
 }

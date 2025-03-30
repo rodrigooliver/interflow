@@ -12,10 +12,11 @@ import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowDown, UserPlus, UserCheck, RefreshCw } from 'lucide-react';
+import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { getChannelIcon } from '../../utils/channel';
+import { FlowModal } from './FlowModal';
 
 // Interface para tags do cliente
 interface CustomerTag {
@@ -200,6 +201,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     has24HourWindow: false,
     canSendAfter24Hours: false
   });
+  const [showFlowModal, setShowFlowModal] = useState(false);
 
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
@@ -1460,6 +1462,52 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
           {/* Botões de ação */}
           <div className="flex-shrink-0 justify-self-end flex items-center space-x-2">
+            {/* Botão de Play para Fluxos */}
+            {(chat?.status === 'pending' || chat?.status === 'in_progress') && (
+              <button
+                className={`p-2 ${
+                  chat?.flow_session_id 
+                    ? 'bg-yellow-500 hover:bg-yellow-600' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                } text-white rounded-md transition-colors flex items-center justify-center`}
+                onClick={() => setShowFlowModal(true)}
+                title={chat?.flow_session_id ? t('flows.pauseFlow') : t('flows.startFlow')}
+              >
+                {chat?.flow_session_id ? (
+                  <>
+                    <Pause className="w-5 h-5" />
+                    <span className="hidden xs:inline md:hidden ml-2">{t('flows.pauseShort')}</span>
+                    <span className="hidden md:inline ml-2">{t('flows.pauseFlow')}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg 
+                      className="w-5 h-5" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" 
+                      />
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    <span className="hidden xs:inline md:hidden ml-2">{t('flows.startShort')}</span>
+                    <span className="hidden md:inline ml-2">{t('flows.startFlow')}</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Botões para colaboradores */}
             {chat?.status === 'in_progress' && isCollaborator && !isAssignedAgent && (
               <>
@@ -1876,6 +1924,28 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           onSendTemplate={handleSendTemplate}
         />
       )}
+
+      {/* Modal de Fluxos */}
+      <FlowModal
+        isOpen={showFlowModal}
+        onClose={() => setShowFlowModal(false)}
+        chatId={chatId}
+        organizationId={organizationId}
+        onFlowStarted={(sessionId) => {
+          setChat(prev => prev ? {
+            ...prev,
+            flow_session_id: sessionId,
+            status: 'in_progress'
+          } : null);
+        }}
+        onFlowPaused={() => {
+          setChat(prev => prev ? {
+            ...prev,
+            flow_session_id: null
+          } : null);
+        }}
+        currentFlowSessionId={chat?.flow_session_id}
+      />
     </div>
   );
 }

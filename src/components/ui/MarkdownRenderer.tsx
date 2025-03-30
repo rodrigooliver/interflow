@@ -75,6 +75,23 @@ function processUrls(content: string): string {
   return processedContent;
 }
 
+// Função para limpar caracteres repetidos
+function cleanRepeatedChars(content: string): string {
+  return content.replace(/(.)\1{3,}/g, '$1$1$1');
+}
+
+// Função para processar quebras de linha de forma inteligente
+function processLineBreaks(content: string): string {
+  // Preserva quebras de linha em casos específicos
+  return content
+    // Remove quebras de linha extras (mais de 2)
+    .replace(/\n{3,}/g, '\n\n')
+    // Remove espaços extras no início e fim de cada linha
+    .split('\n')
+    .map(line => line.trim())
+    .join('\n');
+}
+
 export function MarkdownRenderer({ content, className = '', variant = 'default' }: MarkdownRendererProps) {
   const baseClasses = variant === 'compact' 
     ? 'text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis' 
@@ -82,14 +99,8 @@ export function MarkdownRenderer({ content, className = '', variant = 'default' 
 
   // Processa o conteúdo para preservar quebras de linha e formatar URLs
   const processedContent = variant === 'compact' 
-    ? cleanHtml(content).replace(/\n/g, ' ')
-    : processUrls(content
-        // Remove quebras de linha extras (mais de 2)
-        .replace(/\n{2,}/g, '\n')
-        // Remove espaços extras no início e fim de cada linha
-        .split('\n')
-        .map(line => line.trim())
-        .join('\n'));
+    ? cleanRepeatedChars(cleanHtml(content).replace(/\n/g, ' '))
+    : cleanRepeatedChars(processUrls(processLineBreaks(content)));
 
   return (
     <div className={`${baseClasses} ${className}`}>
@@ -125,22 +136,22 @@ export function MarkdownRenderer({ content, className = '', variant = 'default' 
             <blockquote {...props} className={variant === 'compact' ? 'm-0 border-l-2 pl-2 inline' : 'border-l-4 border-gray-300 dark:border-gray-600 pl-4 m-0 italic leading-tight'} />
           ),
           h1: (props) => (
-            <h1 {...props} className={variant === 'compact' ? 'text-base font-bold m-0 inline' : 'text-2xl font-bold m-0 leading-tight'} />
+            <h1 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-sm font-bold m-0 leading-tight'} />
           ),
           h2: (props) => (
-            <h2 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-xl font-bold m-0 leading-tight'} />
+            <h2 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-sm font-bold m-0 leading-tight'} />
           ),
           h3: (props) => (
-            <h3 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-lg font-bold m-0 leading-tight'} />
+            <h3 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-sm font-bold m-0 leading-tight'} />
           ),
           h4: (props) => (
-            <h4 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-base font-bold m-0 leading-tight'} />
+            <h4 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-sm font-bold m-0 leading-tight'} />
           ),
           h5: (props) => (
-            <h5 {...props} className={variant === 'compact' ? 'text-xs font-bold m-0 inline' : 'text-sm font-bold m-0 leading-tight'} />
+            <h5 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-sm font-bold m-0 leading-tight'} />
           ),
           h6: (props) => (
-            <h6 {...props} className={variant === 'compact' ? 'text-xs font-bold m-0 inline' : 'text-xs font-bold m-0 leading-tight'} />
+            <h6 {...props} className={variant === 'compact' ? 'text-sm font-bold m-0 inline' : 'text-sm font-bold m-0 leading-tight'} />
           ),
           table: (props) => (
             <table {...props} className={variant === 'compact' ? 'm-0 inline' : 'border-collapse border border-gray-300 dark:border-gray-600 m-0 w-full leading-tight'} />

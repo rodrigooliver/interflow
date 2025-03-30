@@ -299,5 +299,25 @@
     "user_join": "Usuario se unió como colaborador",
     "template": "Mensaje plantilla",
     "noMessages": "Sin mensajes"
+  },
+  "flows": {
+    "startFlow": "Iniciar Flujo",
+    "startShort": "Flujo",
+    "comingSoon": "¡Funcionalidad de flujos próximamente!",
+    "title": "Flujos",
+    "description": "Iniciar un flujo de automatización o agente IA",
+    "automation": "Automatización",
+    "aiAgent": "Agente IA",
+    "selectFlow": "Seleccionar Flujo",
+    "noFlows": "No hay flujos disponibles",
+    "loading": "Cargando flujos...",
+    "error": "Error al cargar flujos",
+    "started": "¡Flujo iniciado con éxito!",
+    "noDescription": "Sin descripción",
+    "activeFlow": "Hay un flujo activo en ejecución",
+    "pause": "Pausar Flujo",
+    "pauseShort": "Pausar",
+    "pauseFlow": "Pausar Flujo",
+    "paused": "¡Flujo pausado con éxito!"
   }
 }
