@@ -66,6 +66,8 @@
   "actions": {
     "reply": "Reply",
     "details": "Details",
+    "delete": "Delete message",
+    "deleting": "Deleting...",
     "pin": "Pin",
     "unpin": "Unpin",
     "archive": "Archive",
@@ -76,7 +78,8 @@
     "customerDetails": "Customer details",
     "markSpam": "Mark as spam",
     "unmarkSpam": "Unmark as spam",
-    "chatDetails": "Chat Details"
+    "chatDetails": "Chat Details",
+    "confirmDelete": "Confirm deletion"
   },
   "dateHeaders": {
     "today": "Today",
@@ -149,6 +152,7 @@
     "loading": "Error loading messages",
     "loadingChat": "Error loading conversation",
     "sending": "Error sending message",
+    "deleteMessage": "Error deleting message",
     "microphoneAccess": "Could not access microphone. Please check your permissions.",
     "uploadFailed": "Failed to upload audio file",
     "waitingConnection": "Waiting for server connection...",
@@ -317,5 +321,13 @@
     "pauseShort": "Pause",
     "pauseFlow": "Pause Flow",
     "paused": "Flow paused successfully!"
+  },
+  "messageDeleted": "Message deleted successfully",
+  "deleteConfirmation": {
+    "title": "Delete message",
+    "message": "Are you sure you want to delete this message? This action cannot be undone.",
+    "warning": "This action cannot be undone. The message will be permanently deleted.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
   }
 }

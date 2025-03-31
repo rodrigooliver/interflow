@@ -70,6 +70,8 @@
   "actions": {
     "reply": "Responder",
     "details": "Detalhes",
+    "delete": "Excluir mensagem",
+    "deleting": "Excluindo...",
     "pin": "Fixar",
     "unpin": "Desfixar",
     "archive": "Arquivar",
@@ -80,7 +82,8 @@
     "customerDetails": "Detalhes do cliente",
     "markSpam": "Marcar como spam",
     "unmarkSpam": "Desmarcar como spam",
-    "chatDetails": "Detalhes do Atendimento"
+    "chatDetails": "Detalhes do Atendimento",
+    "confirmDelete": "Confirmar exclusão"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -155,6 +158,7 @@
     "loading": "Erro ao carregar mensagens",
     "loadingChat": "Erro ao carregar atendimento",
     "sending": "Erro ao enviar mensagem",
+    "deleteMessage": "Erro ao excluir mensagem",
     "microphoneAccess": "Não foi possível acessar o microfone. Verifique suas permissões.",
     "uploadFailed": "Falha ao enviar arquivo de áudio",
     "waitingConnection": "Aguardando conexão com o servidor...",
@@ -323,5 +327,13 @@
     "pauseShort": "Pausar",
     "pauseFlow": "Pausar Fluxo",
     "paused": "Fluxo pausado com sucesso!"
+  },
+  "messageDeleted": "Mensagem excluída com sucesso",
+  "deleteConfirmation": {
+    "title": "Excluir mensagem",
+    "message": "Tem certeza que deseja excluir esta mensagem? Esta ação não pode ser desfeita.",
+    "warning": "Esta ação não pode ser desfeita. A mensagem será excluída permanentemente.",
+    "confirm": "Excluir",
+    "cancel": "Cancelar"
   }
 }

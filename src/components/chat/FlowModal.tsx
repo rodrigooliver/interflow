@@ -116,9 +116,11 @@ export function FlowModal({
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           {t('flows.title')}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {t('flows.description')}
-        </p>
+        {!currentFlowSessionId && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            {t('flows.description')}
+          </p>
+        )}
 
         {currentFlowSessionId ? (
           <div className="space-y-4">

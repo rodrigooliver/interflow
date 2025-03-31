@@ -17,6 +17,7 @@ import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { getChannelIcon } from '../../utils/channel';
 import { FlowModal } from './FlowModal';
+import { ApiError } from 'axios';
 
 // Interface para tags do cliente
 interface CustomerTag {
@@ -148,6 +149,7 @@ interface ChannelFeatures {
   canSendTemplates: boolean;
   has24HourWindow: boolean;
   canSendAfter24Hours: boolean;
+  canDeleteMessages: boolean;
 }
 
 export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesProps) {
@@ -199,7 +201,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     canSendAudio: false,
     canSendTemplates: false,
     has24HourWindow: false,
-    canSendAfter24Hours: false
+    canSendAfter24Hours: false,
+    canDeleteMessages: false
   });
   const [showFlowModal, setShowFlowModal] = useState(false);
 
@@ -221,7 +224,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         canSendAudio: false,
         canSendTemplates: false,
         has24HourWindow: false,
-        canSendAfter24Hours: false
+        canSendAfter24Hours: false,
+        canDeleteMessages: false
       });
       return;
     }
@@ -233,7 +237,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendAudio: true,        // Permite enviar áudio
           canSendTemplates: true,    // Permite enviar templates
           has24HourWindow: true,     // Tem janela de 24 horas
-          canSendAfter24Hours: true  // Pode enviar após 24h (com templates)
+          canSendAfter24Hours: true, // Pode enviar após 24h (com templates)
+          canDeleteMessages: false   // Não permite excluir mensagens
         });
         break;
       case 'whatsapp_wapi':
@@ -244,7 +249,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendAudio: true,        // Permite enviar áudio
           canSendTemplates: false,   // Não permite enviar templates
           has24HourWindow: false,    // Não tem janela de 24 horas
-          canSendAfter24Hours: true  // Pode enviar a qualquer momento
+          canSendAfter24Hours: true, // Pode enviar a qualquer momento
+          canDeleteMessages: true    // Permite excluir mensagens
         });
         break;
       case 'instagram':
@@ -254,7 +260,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendAudio: false,       // Não permite enviar áudio
           canSendTemplates: false,   // Não permite enviar templates
           has24HourWindow: true,     // Tem janela de 24 horas
-          canSendAfter24Hours: false // Não pode enviar após 24h
+          canSendAfter24Hours: false, // Não pode enviar após 24h
+          canDeleteMessages: false    // Permite excluir mensagens
         });
         break;
       default:
@@ -264,7 +271,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendAudio: false,
           canSendTemplates: false,
           has24HourWindow: false,
-          canSendAfter24Hours: true
+          canSendAfter24Hours: true,
+          canDeleteMessages: false
         });
     }
   }, []);
@@ -740,9 +748,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Recarrega as mensagens
       loadMessages();
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error attending chat:', error);
-      setError(error.message || t('errors.attend'));
+      setError(error instanceof Error ? error.message : t('errors.attend'));
     } finally {
       setIsAttending(false);
     }
@@ -1319,6 +1327,26 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  const handleDeleteMessage = async (message: Message) => {
+    try {
+      const response = await api.delete(`/api/${organizationId}/chat/${chatId}/message/${message.id}`);
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || t('errors.deleteMessage'));
+      }
+
+      // Atualizar o estado local removendo a mensagem
+      setMessages(prev => prev.filter(msg => msg.id !== message.id));
+      
+      toast.success(t('messageDeleted'));
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      const errorMessage = apiError.response?.data?.error || apiError.message || t('errors.deleteMessage');
+      toast.error(errorMessage);
+      console.error('Error deleting message:', error);
+    }
+  };
+
   if (!chatId) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -1751,6 +1779,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                       } : undefined}
                       isHighlighted={message.id === highlightedMessageId}
                       channelFeatures={channelFeatures}
+                      onDeleteMessage={handleDeleteMessage}
                     />
                   ))}
                 </div>

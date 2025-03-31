@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, MoreHorizontal, Trash2, Loader2 } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -16,8 +16,11 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
+  DialogDescription
 } from "../../components/ui/Dialog";
+import { Button } from "../../components/ui/button";
+import { cn } from "../../lib/utils";
 
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
@@ -26,6 +29,7 @@ interface ChannelFeatures {
   canSendTemplates: boolean;
   has24HourWindow: boolean;
   canSendAfter24Hours: boolean;
+  canDeleteMessages: boolean;
 }
 
 interface MessageBubbleProps {
@@ -34,6 +38,7 @@ interface MessageBubbleProps {
   onReply?: (message: Message) => void;
   isHighlighted?: boolean;
   channelFeatures?: ChannelFeatures;
+  onDeleteMessage?: (message: Message) => void;
 }
 
 export function MessageBubble({ 
@@ -46,14 +51,19 @@ export function MessageBubble({
     canSendAudio: false,
     canSendTemplates: false,
     has24HourWindow: false,
-    canSendAfter24Hours: true
-  }
+    canSendAfter24Hours: true,
+    canDeleteMessages: false
+  },
+  onDeleteMessage
 }: MessageBubbleProps) {
   const { t } = useTranslation('chats');
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [expandedMetadataKeys, setExpandedMetadataKeys] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const {
     content,
     created_at,
@@ -72,6 +82,24 @@ export function MessageBubble({
   const handleReply = () => {
     if (onReply) {
       onReply(message);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDeleteMessage) return;
+    
+    setIsDeleting(true);
+    setError(null);
+    
+    try {
+      await onDeleteMessage(message);
+      setShowDeleteModal(false);
+    } catch (err) {
+      setError(t("errors.deleteMessage"));
+      console.error("Erro ao excluir mensagem:", err);
+      // Não fechar o modal em caso de erro
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -332,6 +360,15 @@ export function MessageBubble({
                     {t('actions.reply')}
                   </DropdownMenuItem>
                 )}
+                {channelFeatures.canDeleteMessages && onDeleteMessage && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteModal(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('actions.delete')}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
                   <Info className="w-4 h-4 mr-2" />
                   {t('actions.details')}
@@ -409,6 +446,16 @@ export function MessageBubble({
                   <Info className="w-4 h-4 mr-2" />
                   {t('actions.details')}
                 </DropdownMenuItem>
+                {channelFeatures.canDeleteMessages && onDeleteMessage && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteModal(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('actions.delete')}
+                  </DropdownMenuItem>
+                )}
+                
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -565,6 +612,72 @@ export function MessageBubble({
                 <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
                   {renderMetadataValue(message.metadata, 0, 'root')}
                 </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteModal} onOpenChange={(open) => {
+        // Só permite fechar o modal se não estiver deletando
+        if (!isDeleting) {
+          setShowDeleteModal(open);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              {t("deleteConfirmation.title")}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-300">
+              {t("deleteConfirmation.message")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="flex items-start gap-3">
+                <div className="mt-1">
+                  <svg className="h-5 w-5 text-red-500 dark:text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="text-sm text-red-700 dark:text-red-300">
+                  {t("deleteConfirmation.warning")}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {t("deleteConfirmation.cancel")}
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-600 flex items-center"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("actions.deleting")}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t("deleteConfirmation.confirm")}
+                  </>
+                )}
+              </Button>
+            </div>
+            {error && (
+              <div className="mt-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                {error}
               </div>
             )}
           </div>

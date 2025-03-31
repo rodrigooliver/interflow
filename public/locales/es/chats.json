@@ -66,6 +66,8 @@
   "actions": {
     "reply": "Responder",
     "details": "Detalles",
+    "delete": "Eliminar mensaje",
+    "deleting": "Eliminando...",
     "pin": "Fijar",
     "unpin": "Desfijar",
     "archive": "Archivar",
@@ -76,7 +78,8 @@
     "customerDetails": "Detalles del cliente",
     "markSpam": "Marcar como spam",
     "unmarkSpam": "Desmarcar como spam",
-    "chatDetails": "Detalles del Chat"
+    "chatDetails": "Detalles del Chat",
+    "confirmDelete": "Confirmar eliminación"
   },
   "dateHeaders": {
     "today": "Hoy",
@@ -151,6 +154,7 @@
     "loading": "Error al cargar mensajes",
     "loadingChat": "Error al cargar conversación",
     "sending": "Error al enviar mensaje",
+    "deleteMessage": "Error al eliminar mensaje",
     "microphoneAccess": "Error al acceder al micrófono. Por favor, verifica tus permisos.",
     "uploadFailed": "Error al subir el archivo de audio",
     "waitingConnection": "Esperando conexión con el servidor...",
@@ -319,5 +323,13 @@
     "pauseShort": "Pausar",
     "pauseFlow": "Pausar Flujo",
     "paused": "¡Flujo pausado con éxito!"
+  },
+  "messageDeleted": "Mensaje eliminado con éxito",
+  "deleteConfirmation": {
+    "title": "Eliminar mensaje",
+    "message": "¿Estás seguro que deseas eliminar este mensaje? Esta acción no se puede deshacer.",
+    "warning": "Esta acción no se puede deshacer. El mensaje será eliminado permanentemente.",
+    "confirm": "Eliminar",
+    "cancel": "Cancelar"
   }
 }
