@@ -19,8 +19,7 @@ import {
   DialogTitle,
   DialogDescription
 } from "../../components/ui/Dialog";
-import { Button } from "../../components/ui/button";
-import { cn } from "../../lib/utils";
+import { Button } from "../../components/ui/Button";
 
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
