@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/Select';
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { 
   ChevronDown, 
   ChevronLeft, 
