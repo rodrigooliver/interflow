@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { CardTitle, CardHeader, CardContent, Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
-import { Switch } from "../../components/ui/Switch";
+import { Switch } from "../../components/ui/switch";
 import { Button } from "../../components/ui/Button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/Dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/Table";
