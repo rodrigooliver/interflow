@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Button } from '../../components/ui/Button';
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, Layers, PieChart } from 'lucide-react';
 import { format } from 'date-fns';
