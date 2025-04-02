@@ -16,7 +16,7 @@ import { timezones } from '../../utils/timezones';
 import Select from 'react-select';
 import TestPrompt from './TestPrompt';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
-import { SYSTEM_ACTIONS, SYSTEM_ACTION_TYPES, SystemActionType } from '../../constants/systemActions';
+import { SYSTEM_ACTIONS, SystemActionType } from '../../constants/systemActions';
 import SystemActionsList from './SystemActionsList';
 import { Trigger } from '../../types/flow';
 import { TriggersList } from '../flow/TriggersList';
@@ -181,6 +181,23 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
 }
 
 type TabType = 'general' | 'context' | 'tools' | 'test';
+
+// Função utilitária para criar nomes de ferramentas
+const nameTool = (text: string): string => {
+  const slug = text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/(^_|_$)/g, '');
+
+  // Valida se o slug corresponde ao padrão esperado
+  if (!/^[a-zA-Z0-9_]+$/.test(slug)) {
+    return 'invalid_name';
+  }
+
+  return slug;
+};
 
 const PromptFormMain: React.FC = () => {
   const { t } = useTranslation(['prompts', 'common', 'flows']);
@@ -619,23 +636,31 @@ const PromptFormMain: React.FC = () => {
     await queryClient.invalidateQueries({ queryKey: ['integrations', currentOrganizationMember?.organization.id] });
   };
 
-  const handleAddSystemAction = (actionType: SystemActionType) => {
-    const action = SYSTEM_ACTIONS.find(a => a.type === actionType);
-    if (action) {
-      // Verifica se a ação já existe
-      const actionExists = formData.actions.some(a => a.type === actionType);
-      if (!actionExists) {
-        // Cria uma cópia da ação com a descrição traduzida
-        const translatedAction = {
-          ...action,
-          description: t(action.description)
-        };
-        setFormData(prev => ({
-          ...prev,
-          actions: [...prev.actions, translatedAction]
-        }));
-      }
+  const handleAddSystemAction = (action: SystemActionType) => {
+    // Cria uma cópia da ação com a descrição traduzida
+    const translatedTitle = t(`prompts:form.systemActionTypes.${action.type}.name`);
+    let baseSlug = nameTool(translatedTitle);
+    
+    // Verifica se já existe uma ação com o mesmo nome
+    let finalSlug = baseSlug;
+    let counter = 1;
+    
+    while (formData.actions.some(a => a.name === finalSlug)) {
+      finalSlug = `${baseSlug}_${counter}`;
+      counter++;
     }
+
+    const translatedAction = {
+      ...action,
+      description: t(`prompts:form.systemActionTypes.${action.type}.description`),
+      title: translatedTitle,
+      name: finalSlug,
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      actions: [...prev.actions, translatedAction]
+    }));
     setIsSystemActionModalOpen(false);
   };
 
@@ -1254,8 +1279,27 @@ const PromptFormMain: React.FC = () => {
                                   newActions.splice(index, 1);
                                   setFormData({ ...formData, actions: newActions });
                                 }}
-                                onEditAction={() => {
-                                  // Implementar edição de ação do sistema se necessário
+                                onEditAction={(index, updatedAction) => {
+                                  const newActions = [...formData.actions];
+                                  
+                                  // Se o título foi alterado, atualiza o name usando nameTool
+                                  if (updatedAction.title !== newActions[index].title) {
+                                    let baseSlug = nameTool(updatedAction.title || '');
+                                    
+                                    // Verifica se já existe uma ação com o mesmo nome
+                                    let finalSlug = baseSlug;
+                                    let counter = 1;
+                                    
+                                    while (newActions.some(a => a.name === finalSlug && a !== newActions[index])) {
+                                      finalSlug = `${baseSlug}_${counter}`;
+                                      counter++;
+                                    }
+                                    
+                                    updatedAction.name = finalSlug;
+                                  }
+                                  
+                                  newActions[index] = updatedAction;
+                                  setFormData({ ...formData, actions: newActions });
                                 }}
                               />
                             )}
@@ -1391,13 +1435,13 @@ const PromptFormMain: React.FC = () => {
         title={t('prompts:form.systemActions')}
       >
         <div className="grid grid-cols-1 gap-2">
-          {Object.entries(SYSTEM_ACTION_TYPES).map(([type, translationKey]) => (
+          {SYSTEM_ACTIONS.map((action) => (
             <button
-              key={type}
-              onClick={() => handleAddSystemAction(type as SystemActionType)}
+              key={action.type}
+              onClick={() => handleAddSystemAction(action)}
               className="flex items-center justify-between p-3 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
             >
-              <span>{t(translationKey)}</span>
+              <span>{t(`prompts:form.systemActionTypes.${action.type}.name`)}</span>
               <Plus className="w-5 h-5 text-gray-500" />
             </button>
           ))}

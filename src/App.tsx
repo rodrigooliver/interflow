@@ -50,6 +50,7 @@ import { AuthProvider, useAuthContext } from './contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ClosureTypesPage } from './pages/ClosureTypesPage';
+import { ToastProvider } from './hooks/useToast';
 
 import PrivacyPolicy from './pages/public/privacy-policy';
 import TermsOfService from './pages/public/terms-of-service';
@@ -67,6 +68,15 @@ import SchedulesListPage from './pages/schedules/SchedulesListPage';
 import ScheduleAvailabilityPage from './pages/schedules/management/ScheduleAvailabilityPage';
 import ScheduleHolidaysPage from './pages/schedules/management/ScheduleHolidaysPage';
 import Tasks from './pages/Tasks';
+
+// Import das novas páginas do sistema financeiro
+import FinancialDashboard from './pages/financial/FinancialDashboard';
+import FinancialTransactions from './pages/financial/FinancialTransactions';
+import FinancialCashiers from './pages/financial/FinancialCashiers';
+import FinancialCashierOperations from './pages/financial/FinancialCashierOperations';
+import FinancialCategories from './pages/financial/FinancialCategories';
+import FinancialPaymentMethods from './pages/financial/FinancialPaymentMethods';
+import FinancialReports from './pages/financial/FinancialReports';
 
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
@@ -336,6 +346,13 @@ function AppContent() {
                         <Route path="schedules/:scheduleId/management" element={<ScheduleManagementPage />} />
                         <Route path="schedules/:scheduleId/availability" element={<ScheduleAvailabilityPage />} />
                         <Route path="schedules/:scheduleId/holidays" element={<ScheduleHolidaysPage />} />
+                        <Route path="financial" element={<FinancialDashboard />} />
+                        <Route path="financial/transactions" element={<FinancialTransactions />} />
+                        <Route path="financial/cashiers" element={<FinancialCashiers />} />
+                        <Route path="financial/cashiers/:id/operations" element={<FinancialCashierOperations />} />
+                        <Route path="financial/categories" element={<FinancialCategories />} />
+                        <Route path="financial/payment-methods" element={<FinancialPaymentMethods />} />
+                        <Route path="financial/reports" element={<FinancialReports />} />
                         <Route path="settings" element={<SettingsPage />} />
                         {!window.isNativeApp && (
                           <>
@@ -525,7 +542,9 @@ function App() {
   if (globalLoading || !contentReady) {
     return (
       <ThemeProvider>
-        <LoadingScreen />
+        <ToastProvider>
+          <LoadingScreen />
+        </ToastProvider>
       </ThemeProvider>
     );
   }
@@ -536,9 +555,11 @@ function App() {
         <I18nextProvider i18n={i18n}>
           <ThemeProvider>
             <NavbarVisibilityProvider>
-              <Router>
-                <AppContent />
-              </Router>
+              <ToastProvider>
+                <Router>
+                  <AppContent />
+                </Router>
+              </ToastProvider>
             </NavbarVisibilityProvider>
           </ThemeProvider>
         </I18nextProvider>

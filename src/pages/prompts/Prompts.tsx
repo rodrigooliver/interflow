@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquareText, Plus, Loader2, AlertTriangle, Pencil, Trash2, Bot, GitBranch } from 'lucide-react';
+import { MessageSquareText, Plus, Loader2, AlertTriangle, Pencil, Trash2, Bot, ChevronDown } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,7 @@ export default function Prompts() {
   const [selectedFlow, setSelectedFlow] = useState<{ id: string; triggers: Trigger[] } | null>(null);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Limpar mensagem de erro após 5 segundos
@@ -108,6 +109,10 @@ export default function Prompts() {
     }
   };
 
+  const toggleExpand = (promptId: string) => {
+    setExpandedPrompt(expandedPrompt === promptId ? null : promptId);
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -144,106 +149,125 @@ export default function Prompts() {
       )}
 
       {prompts.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6">
-          {prompts.map((prompt) => {
-            const linkedFlow = prompt.flows?.[0];
-            return (
-              <div key={prompt.id} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {prompt.title}
-                    </h3>
-                    {prompt.description && (
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {prompt.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => navigate(`/app/prompts/edit/${prompt.id}`)}
-                      className="p-2 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full"
-                      title={t('prompts:edit')}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedPrompt(prompt);
-                        setShowDeleteModal(true);
-                      }}
-                      className="p-2 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"
-                      title={t('prompts:delete')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="prose dark:prose-invert max-w-none">
-                  <button
-                    onClick={() => navigate(`/app/prompts/edit/${prompt.id}?tab=context`)}
-                    className="w-full text-left"
-                  >
-                    <pre className="text-sm bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto max-h-[100px] overflow-y-auto whitespace-pre-wrap text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      {prompt.content}
-                    </pre>
-                  </button>
-                </div>
-
-                <div className="mt-4 flex items-center space-x-2">
-                  <GitBranch className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                  {linkedFlow ? (
-                    <>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {t('flows:triggers.startWhen')}:
-                      </span>
-                      <TriggersList 
-                        triggers={linkedFlow.triggers}
-                        flowId={linkedFlow.id}
-                        onChange={async () => {
-                          if (!currentOrganizationMember) return;
-                          // Invalida o cache para forçar uma nova busca
-                          await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
-                        }}
-                        showWarning={true}
-                      />
-                    </>
-                  ) : (
-                    <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
-                      <AlertTriangle className="w-4 h-4" />
-                      <div>
-                        <div className="text-sm font-medium">
-                          {t('flows:triggers.noFlow')}
-                        </div>
-                        <div className="text-xs">
-                          {t('flows:triggers.noFlowDescription')}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {prompt.tags && prompt.tags.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {prompt.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                  {t('prompts:lastUpdated')}: {new Date(prompt.updated_at).toLocaleDateString()}
-                </div>
-              </div>
-            );
-          })}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {t('prompts:prompt')}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/5">
+                    {t('flows:triggers.startWhen')}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
+                    {t('prompts:updated')}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
+                    {t('common:actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {prompts.map((prompt) => {
+                  const linkedFlow = prompt.flows?.[0];
+                  return (
+                    <React.Fragment key={prompt.id}>
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                        <td className="px-6 py-4" onClick={() => toggleExpand(prompt.id)}>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                              <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${expandedPrompt === prompt.id ? 'transform rotate-180' : ''}`} />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900 dark:text-white">{prompt.title}</div>
+                              {prompt.description && (
+                                <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">{prompt.description}</div>
+                              )}
+                              {prompt.tags && prompt.tags.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {prompt.tags.map((tag, index) => (
+                                    <span
+                                      key={index}
+                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            {linkedFlow ? (
+                              <TriggersList 
+                                triggers={linkedFlow.triggers}
+                                flowId={linkedFlow.id}
+                                onChange={async () => {
+                                  if (!currentOrganizationMember) return;
+                                  await queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember.organization.id] });
+                                }}
+                                showWarning={false}
+                              />
+                            ) : (
+                              <div className="flex items-center text-yellow-600 dark:text-yellow-400 text-xs">
+                                <AlertTriangle className="w-3 h-3 mr-1 flex-shrink-0" />
+                                <span>{t('flows:triggers.noFlow')}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(prompt.updated_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => navigate(`/app/prompts/edit/${prompt.id}`)}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                              title={t('prompts:edit')}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPrompt(prompt);
+                                setShowDeleteModal(true);
+                              }}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              title={t('prompts:delete')}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedPrompt === prompt.id && (
+                        <tr className="bg-gray-50 dark:bg-gray-900">
+                          <td colSpan={4} className="px-6 py-4">
+                            <div className="prose dark:prose-invert max-w-none text-sm">
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">{t('prompts:content')}</h4>
+                              <button
+                                onClick={() => navigate(`/app/prompts/edit/${prompt.id}?tab=context`)}
+                                className="w-full text-left"
+                              >
+                                <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg overflow-x-auto max-h-[150px] overflow-y-auto whitespace-pre-wrap text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                  {prompt.content}
+                                </pre>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">

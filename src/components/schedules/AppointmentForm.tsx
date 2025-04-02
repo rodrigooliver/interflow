@@ -325,11 +325,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md max-w-2xl mx-auto">
-      <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center">
+    <div className="bg-white dark:bg-gray-800 p-1 sm:p-1 md:p-2 rounded-lg shadow-md max-w-2xl mx-auto">
+      {/* <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center">
         <CalendarIcon className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
         {appointment ? t('schedules:editAppointment') : t('schedules:newAppointment')}
-      </h2>
+      </h2> */}
       
       {/* Feedback de mensagens */}
       {error && (

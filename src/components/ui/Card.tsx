@@ -1,62 +1,55 @@
-import * as React from "react";
-import { cn } from "../../lib/utils";
+import React from 'react';
+import { twMerge } from 'tailwind-merge';
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-export function Card({ className, ...props }: CardProps) {
-  return (
-    <div
-      className={cn(
-        "rounded-lg border bg-card text-card-foreground shadow-sm",
-        className
-      )}
-      {...props}
-    />
-  );
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
 }
 
-Card.Header = function CardHeader({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export const Card: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <div
-      className={cn("flex flex-col space-y-1.5 p-6", className)}
-      {...props}
-    />
+    <div className={twMerge('bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm', className)}>
+      {children}
+    </div>
   );
 };
 
-Card.Title = function CardTitle({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLHeadingElement>) {
+export const CardHeader: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <h3
-      className={cn(
-        "text-lg font-semibold leading-none tracking-tight",
-        className
-      )}
-      {...props}
-    />
+    <div className={twMerge('p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700', className)}>
+      {children}
+    </div>
   );
 };
 
-Card.Content = function CardContent({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-6 pt-0", className)} {...props} />;
+export const CardTitle: React.FC<CardProps> = ({ children, className }) => {
+  return (
+    <h3 className={twMerge('text-xl font-semibold text-gray-900 dark:text-gray-100', className)}>
+      {children}
+    </h3>
+  );
 };
 
-Card.Footer = function CardFooter({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export const CardDescription: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <div
-      className={cn("flex items-center p-6 pt-0", className)}
-      {...props}
-    />
+    <p className={twMerge('text-sm text-gray-500 dark:text-gray-400 mt-1', className)}>
+      {children}
+    </p>
+  );
+};
+
+export const CardContent: React.FC<CardProps> = ({ children, className }) => {
+  return (
+    <div className={twMerge('p-4 sm:p-6', className)}>
+      {children}
+    </div>
+  );
+};
+
+export const CardFooter: React.FC<CardProps> = ({ children, className }) => {
+  return (
+    <div className={twMerge('p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700', className)}>
+      {children}
+    </div>
   );
 };

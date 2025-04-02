@@ -55,6 +55,8 @@
     "noChannelsAvailable": "Nenhum canal disponível para transferência",
     "transferChats": "Transferir Chats",
     "name": "Nome do Canal",
+    "defaultTeam": "Time Padrão",
+    "selectTeam": "Selecione o Time Padrão",
     "title": {
       "create": "Novo Canal de Atendimento",
       "edit": "Editar Canal de Atendimento"

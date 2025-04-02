@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Location } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown, ListTodo } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown, ListTodo, DollarSign } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -74,6 +74,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     { to: '/app/crm', icon: GitMerge, label: t('navigation:crm') },
     { to: '/app/appointments', icon: Calendar, label: t('navigation:appointments') },
     { to: '/app/tasks', icon: ListTodo, label: t('navigation:tasks') },
+    { to: '/app/financial', icon: DollarSign, label: t('navigation:financial') },
     { to: '/app/shortcuts', icon: Keyboard, label: t('navigation:shortcuts') },
     { to: '/app/tags', icon: Tag, label: t('navigation:tags') },
     { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },

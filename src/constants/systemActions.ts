@@ -1,107 +1,67 @@
 // Interface específica para ações do sistema
-export interface SystemAction {
-  type: 'update_chat' | 'update_customer' | 'start_flow' | 'check_schedule' | 'custom';
+export interface SystemActionType {
+  title?: string | null | undefined;
+  name: string;
   description: string;
-  config: Record<string, unknown>;
+  type: 'endChat' | 'changeCustomerName' | 'changeFunnel' | 'assignTeam' | 'schedule' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext';
+  config?: {
+    schedule?: string;
+    funnel?: string;
+    [key: string]: string | boolean | undefined;
+  };
 }
 
-export const SYSTEM_ACTIONS: SystemAction[] = [
+export const SYSTEM_ACTIONS: SystemActionType[] = [
+  // {
+  //   name: 'Encerrar Chat',
+  //   description: 'Encerra o chat atual',
+  //   type: 'endChat',
+  //   config: {}
+  // },
+  // {
+  //   name: 'Alterar Nome do Cliente',
+  //   description: 'Altera o nome do cliente no chat',
+  //   type: 'changeCustomerName',
+  //   config: {}
+  // },
+  // {
+  //   name: 'Alterar Funil',
+  //   description: 'Altera o funil do cliente',
+  //   type: 'changeFunnel',
+  //   config: {
+  //     funnel: ''
+  //   }
+  // },
+  // {
+  //   name: 'Atribuir Equipe',
+  //   description: 'Atribui uma equipe ao chat',
+  //   type: 'assignTeam',
+  //   config: {}
+  // },
   {
-    type: 'update_chat',
-    description: 'prompts:form.systemActionTypes.endChat',
+    name: 'Agendar',
+    description: 'Agenda uma ação para o futuro',
+    type: 'schedule',
     config: {
-      status: 'closed'
+      schedule: ''
     }
   },
-  {
-    type: 'update_customer',
-    description: 'prompts:form.systemActionTypes.changeCustomerName',
-    config: {
-      name: '{{customer_name}}'
-    }
-  },
-  {
-    type: 'update_customer',
-    description: 'prompts:form.systemActionTypes.changeFunnel',
-    config: {
-      funnel_id: '{{funnel_id}}',
-      stage_id: '{{stage_id}}'
-    }
-  },
-  {
-    type: 'update_chat',
-    description: 'prompts:form.systemActionTypes.updateChatStatus',
-    config: {
-      status: '{{status}}'
-    }
-  },
-  {
-    type: 'update_chat',
-    description: 'prompts:form.systemActionTypes.assignTeam',
-    config: {
-      team_id: '{{team_id}}'
-    }
-  },
-  {
-    type: 'start_flow',
-    description: 'prompts:form.systemActionTypes.startNewFlow',
-    config: {
-      flow_id: '{{flow_id}}'
-    }
-  },
-  {
-    type: 'check_schedule',
-    description: 'prompts:form.systemActionTypes.scheduleMeeting',
-    config: {
-      schedule_id: '{{schedule_id}}',
-      date: '{{date}}',
-      time: '{{time}}',
-      notes: '{{notes}}'
-    }
-  },
-  {
-    type: 'custom',
-    description: 'prompts:form.systemActionTypes.sendMessage',
-    config: {
-      content: '{{message_content}}'
-    }
-  },
-  {
-    type: 'update_customer',
-    description: 'prompts:form.systemActionTypes.updateCustomerData',
-    config: {
-      data: {
-        name: '{{customer_name}}',
-        email: '{{customer_email}}',
-        phone: '{{customer_phone}}'
-      }
-    }
-  },
-  {
-    type: 'custom',
-    description: 'prompts:form.systemActionTypes.createTask',
-    config: {
-      title: '{{task_title}}',
-      description: '{{task_description}}',
-      due_date: '{{due_date}}',
-      priority: '{{priority}}'
-    }
-  }
+  // {
+  //   name: 'Criar Tarefa',
+  //   description: 'Cria uma nova tarefa',
+  //   type: 'createTask',
+  //   config: {}
+  // },
+  // {
+  //   name: 'Retorno por Data',
+  //   description: 'Agenda um retorno para uma data específica',
+  //   type: 'dateReturn',
+  //   config: {}
+  // },
+  // {
+  //   name: 'Salvar Perguntas Fora de Contexto',
+  //   description: 'Salva perguntas que não estão no contexto atual',
+  //   type: 'saveQuestionsNotInContext',
+  //   config: {}
+  // }
 ];
-
-// Mapeamento de tipos de ação para suas chaves de tradução
-export const SYSTEM_ACTION_TYPES = {
-  'update_chat': 'prompts:form.systemActionTypes.endChat',
-  'update_customer': 'prompts:form.systemActionTypes.changeCustomerName',
-  'start_flow': 'prompts:form.systemActionTypes.startNewFlow',
-  'check_schedule': 'prompts:form.systemActionTypes.scheduleMeeting',
-  'custom': 'prompts:form.systemActionTypes.sendMessage',
-  'update_chat_status': 'prompts:form.systemActionTypes.updateChatStatus',
-  'assign_team': 'prompts:form.systemActionTypes.assignTeam',
-  'update_customer_data': 'prompts:form.systemActionTypes.updateCustomerData',
-  'create_task': 'prompts:form.systemActionTypes.createTask',
-  'change_funnel': 'prompts:form.systemActionTypes.changeFunnel'
-} as const;
-
-// Tipo para as chaves do mapeamento
-export type SystemActionType = keyof typeof SYSTEM_ACTION_TYPES; 

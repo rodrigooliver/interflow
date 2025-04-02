@@ -7,6 +7,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
+import { useTeams } from '../../hooks/useQueryes';
 
 type ConnectionType = 'custom' | 'interflow' | null;
 
@@ -24,6 +25,7 @@ export default function WhatsAppWApiForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganizationMember } = useAuthContext();
+  const { data: teams, isLoading: isLoadingTeams } = useTeams(currentOrganizationMember?.organization.id);
 
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -51,6 +53,7 @@ export default function WhatsAppWApiForm() {
       qrCode: '',
       qrExpiresAt: null as string | null
     },
+    settings: {} as Record<string, boolean | string | null | undefined>,
     is_tested: false,
     is_connected: false,
     status: 'inactive' as 'active' | 'inactive'
@@ -176,7 +179,8 @@ export default function WhatsAppWApiForm() {
                 qrExpiresAt: null
               },
               is_connected: true,
-              is_tested: updatedChannel.is_tested || false
+              is_tested: updatedChannel.is_tested || false,
+              settings: updatedChannel.settings
             };
           }
 
@@ -184,7 +188,8 @@ export default function WhatsAppWApiForm() {
             ...prev,
             credentials: updatedCredentials,
             is_connected: updatedChannel.is_connected || false,
-            is_tested: updatedChannel.is_tested || false
+            is_tested: updatedChannel.is_tested || false,
+            settings: updatedChannel.settings
           };
         });
       })
@@ -220,9 +225,11 @@ export default function WhatsAppWApiForm() {
           credentials,
           is_tested: data.is_tested || false,
           is_connected: data.is_connected || false,
-          status: data.status || 'inactive'
+          status: data.status || 'inactive',
+          settings: data.settings
         });
-        setShowConnectionSettings(!data.is_tested || false);
+        console.log(data);
+        setShowConnectionSettings(!data.is_tested && !data.settings.isInterflow || false);
       }
     } catch (error) {
       console.error('Error loading channel:', error);
@@ -494,7 +501,8 @@ export default function WhatsAppWApiForm() {
           : undefined,
         is_tested: showConnectionSettings ? true : formData.is_tested,
         is_connected: showConnectionSettings ? false : formData.is_connected,
-        status: formData.status
+        status: formData.status,
+        settings: formData.settings
       };
 
       if (id) {
@@ -798,8 +806,40 @@ export default function WhatsAppWApiForm() {
               />
             </div>
 
+            {/* Adicionar select de time padrão */}
+            <div>
+              <label htmlFor="defaultTeam" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('form.defaultTeam')}
+              </label>
+              <select
+                id="defaultTeam"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
+                value={formData.settings.defaultTeamId as string}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  settings: {
+                    ...formData.settings,
+                    defaultTeamId: e.target.value || null
+                  }
+                })}
+                disabled={isLoadingTeams}
+              >
+                <option value="">{t('form.selectTeam')}</option>
+                {teams?.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+              {isLoadingTeams && (
+                <div className="mt-1">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                </div>
+              )}
+            </div>
+
             {/* Seção de Configurações de Conexão */}
-            {formData.is_tested && !showConnectionSettings ? (
+            {(formData.is_tested || formData.settings.isInterflow) && !showConnectionSettings ? (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -934,7 +974,7 @@ export default function WhatsAppWApiForm() {
             )}
 
             {/* QR Code Section */}
-            {id && formData.is_tested && (
+            {id && (formData.is_tested || formData.settings.isInterflow) && (
               <div>
                 {formData.is_connected ? (
                   <div className="space-y-4">

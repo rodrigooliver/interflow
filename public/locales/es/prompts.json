@@ -10,6 +10,9 @@
   "noAgentsYet": "Aún no hay Agentes IA creados",
   "noAgentsDescription": "Los Agentes IA te permiten automatizar interacciones con tus clientes utilizando inteligencia artificial. Crea tu primer agente para comenzar.",
   "createFirstAgent": "Crear primer Agente IA",
+  "prompt": "Agente",
+  "updated": "Actualizado",
+  "content": "Contenido",
   "createFlow": "Crear Flujo basado en este Agente",
   "syncFlow": "Sincronizar Flujo",
   "viewLinkedFlow": "Ver Flujo Vinculado",
@@ -35,7 +38,7 @@
     "description": "Descripción",
     "descriptionPlaceholder": "Describe el propósito de este prompt",
     "content": "Contenido",
-    "contentPlaceholder": "Ingresa instrucciones para la IA",
+    "contentPlaceholder": "Sin contexto definido. Haga clic para agregar.",
     "tags": "Etiquetas",
     "tagsPlaceholder": "Ingresa etiquetas separadas por comas",
     "integration": "Integración",
@@ -181,6 +184,10 @@
           "method": "Método",
           "headers": "Cabeceras",
           "body": "Cuerpo de la Petición"
+        },
+        "schedule": {
+          "selectSchedule": "Seleccionar un horario",
+          "noSchedule": "Ningún horario seleccionado"
         }
       },
       "validation": {
@@ -244,17 +251,43 @@
     "aiSettings": "Configuración de IA",
     "addSystemAction": "+ Añadir Acción del Sistema",
     "systemActionTypes": {
-      "endChat": "Finalizar Chat",
-      "changeCustomerName": "Cambiar Nombre del Cliente",
-      "changeFunnel": "Cambiar Embudo",
-      "updateChatStatus": "Actualizar Estado del Chat",
-      "assignTeam": "Asignar Equipo",
-      "startNewFlow": "Iniciar Nuevo Flujo",
-      "scheduleMeeting": "Programar Reunión",
-      "sendMessage": "Enviar Mensaje",
-      "updateCustomerData": "Actualizar Datos del Cliente",
-      "createTask": "Crear Tarea"
-    }
+      "endChat": {
+        "name": "Finalizar Chat",
+        "description": "Finalizar el chat actual cuando... (ejemplo: el cliente dice 'finalizar' o 'adiós')"
+      },
+      "changeCustomerName": {
+        "name": "Cambiar Nombre del Cliente",
+        "description": "Cambiar el nombre del cliente actual cuando... (ejemplo: el cliente dice 'mi nombre es Juan')"
+      },
+      "changeFunnel": {
+        "name": "Cambiar Embudo",
+        "description": "Cambiar el embudo actual cuando se identifique comportamiento según la descripción de cada etapa del embudo"
+      },
+      "assignTeam": {
+        "name": "Asignar Equipo",
+        "description": "Asignar el equipo al chat cuando se identifique comportamiento según la descripción de cada equipo. (ejemplo: el cliente dice 'quiero hablar con ventas')"
+      },
+      "schedule": {
+        "name": "Programar Reunión",
+        "description": "Programar una reunión cuando... (ejemplo: el cliente dice 'quiero programar una consulta')"
+      },
+      "dateReturn": {
+        "name": "Devolver Fecha",
+        "description": "Devolver la fecha actual cuando... (ejemplo: el cliente dice 'devuélveme mañana o día x')"
+      },
+      "saveQuestionsNotInContext": {
+        "name": "Guardar Preguntas que no están en Contexto",
+        "description": "Guardar las preguntas que no están en contexto cuando... (ejemplo: el cliente dice 'quiero saber la fecha')"
+      },
+      "createTask": {
+        "name": "Crear Tarea",
+        "description": "Crear una tarea cuando... (ejemplo: el cliente dice 'crea una tarea para mí')"
+      }
+    },
+    "editSystemAction": "Editar Acción del Sistema",
+    "actionName": "Nombre de la Acción",
+    "actionDescription": "Descripción de la Acción",
+    "toolConfig": "Configuración"
   },
   "test": {
     "title": "Probar Prompt",

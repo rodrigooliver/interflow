@@ -10,7 +10,7 @@ import {
 } from "../../components/ui/Dialog";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Card } from "../../components/ui/Card";
+import { Card, CardContent } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { User, MessageSquare, Clock, Star, BarChart, Loader2 } from "lucide-react";
 import { supabase } from '../../lib/supabase';
@@ -49,6 +49,10 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
             id,
             full_name,
             email
+          ),
+          team:teams(
+            id,
+            name
           ),
           customer:customers(
             id,
@@ -122,7 +126,7 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
             <div className="grid grid-cols-1 gap-4 md:gap-6 max-w-2xl mx-auto">
               {/* Informações do Canal e Atendente */}
               <Card className="border-border">
-                <Card.Content className="pt-6">
+                <CardContent className="pt-6">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                       <MessageSquare className="w-5 h-5 text-gray-900 dark:text-gray-200" />
@@ -143,6 +147,15 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                   </div>
                   <div className="flex items-center gap-4 mt-4">
                     <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <User className="w-5 h-5 text-gray-900 dark:text-gray-200" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('chatDetails.team')}</h3>
+                      <p className="text-sm text-gray-900 dark:text-gray-200">{chat.team?.name || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 mt-4">
+                    <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                       <MessageSquare className="w-5 h-5 text-gray-900 dark:text-gray-200" />
                     </div>
                     <div>
@@ -159,12 +172,12 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                       <p className="text-sm text-gray-900 dark:text-gray-200 line-clamp-2">{chat.title || '-'}</p>
                     </div>
                   </div>
-                </Card.Content>
+                </CardContent>
               </Card>
 
               {/* Informações Básicas */}
               <Card className="border-border">
-                <Card.Content className="pt-6">
+                <CardContent className="pt-6">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                       <BarChart className="w-5 h-5 text-gray-900 dark:text-gray-200" />
@@ -191,12 +204,12 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                       <dd className="text-sm text-gray-900 dark:text-gray-200">{chat.is_fixed ? t('common.yes') : t('common.no')}</dd>
                     </div>
                   </dl>
-                </Card.Content>
+                </CardContent>
               </Card>
 
               {/* Datas e Horários */}
               <Card className="border-border">
-                <Card.Content className="pt-6">
+                <CardContent className="pt-6">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                       <Clock className="w-5 h-5 text-gray-900 dark:text-gray-200" />
@@ -225,12 +238,12 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                       <dd className="text-sm text-gray-900 dark:text-gray-200 sm:flex-1 text-right">{formatDate(chat.last_message_at)}</dd>
                     </div>
                   </dl>
-                </Card.Content>
+                </CardContent>
               </Card>
 
               {/* Feedback e Métricas */}
               <Card className="border-border">
-                <Card.Content className="pt-6">
+                <CardContent className="pt-6">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
                       <Star className="w-5 h-5 text-gray-900 dark:text-gray-200" />
@@ -258,7 +271,7 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
                       <dd className="text-sm text-gray-900 dark:text-gray-200">{chat.unread_count}</dd>
                     </div>
                   </dl>
-                </Card.Content>
+                </CardContent>
               </Card>
             </div>
           ) : null}

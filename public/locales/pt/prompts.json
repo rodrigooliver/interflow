@@ -29,6 +29,9 @@
   "timezoneDescription": "Define o fuso horário para operações de data e hora.",
   "selectTimezone": "Selecione um fuso horário",
   "noTimezoneFound": "Nenhum fuso horário encontrado",
+  "prompt": "Agente",
+  "updated": "Atualizado",
+  "content": "Conteúdo",
   "form": {
     "title": "Título",
     "titlePlaceholder": "Digite o título do prompt",
@@ -76,16 +79,38 @@
       "description": "Configure os gatilhos para que este agente IA possa ser acionado"
     },
     "systemActionTypes": {
-      "endChat": "Encerrar Atendimento",
-      "changeCustomerName": "Alterar Nome do Cliente",
-      "changeFunnel": "Alterar Funil",
-      "updateChatStatus": "Atualizar Status do Chat",
-      "assignTeam": "Atribuir Equipe",
-      "startNewFlow": "Iniciar Novo Fluxo",
-      "scheduleMeeting": "Agendar Reunião",
-      "sendMessage": "Enviar Mensagem",
-      "updateCustomerData": "Atualizar Dados do Cliente",
-      "createTask": "Criar Tarefa"
+      "endChat": {
+        "name": "Encerrar Atendimento",
+        "description": "Encerrar o atendimento atual quando... (exemplo: o cliente diz 'encerrar' ou 'tchau')"
+      },
+      "changeCustomerName": {
+        "name": "Alterar Nome do Cliente",
+        "description": "Alterar o nome do cliente atual quando... (exemplo: o cliente diz 'meu nome é João')"
+      },
+      "changeFunnel": {
+        "name": "Alterar Funil",
+        "description": "Alterar o funil atual quando identificar comportamento de acordo com a descrição de cada estágio do funil"
+      },
+      "assignTeam": {
+        "name": "Atribuir Equipe",
+        "description": "Atribuir a equipe ao atendimento quando identificar comportamento de acordo com a descrição de cada equipe. (exemplo: o cliente diz 'quero falar com o comercial')"
+      },
+      "schedule": {
+        "name": "Realizar Agendamento",
+        "description": "Realizar um agendamento quando... (exemplo: o cliente diz 'quero agendar uma consulta')"
+      },
+      "dateReturn": {
+        "name": "Retornar Data",
+        "description": "Retornar a data atual quando... (exemplo: o cliente diz 'me retorne amanhã ou dia x')"
+      },
+      "saveQuestionsNotInContext": {
+        "name": "Salvar Perguntas que não estão no contexto",
+        "description": "Salvar as perguntas que não estão no contexto quando... (exemplo: o cliente diz 'quero saber a data')"
+      },
+      "createTask": {
+        "name": "Criar Tarefa",
+        "description": "Criar uma tarefa quando... (exemplo: o cliente diz 'crie uma tarefa para mim')"
+      }
     },
     "customActions": "Ações Personalizadas",
     "customActionsDescription": "Ações criadas e personalizadas por você",
@@ -194,6 +219,10 @@
           "method": "Método",
           "headers": "Cabeçalhos",
           "body": "Corpo da Requisição"
+        },
+        "schedule": {
+          "selectSchedule": "Selecione uma agenda",
+          "noSchedule": "Nenhuma agenda selecionada"
         }
       },
       "validation": {
@@ -254,7 +283,11 @@
       "operationMapping": "Mapeamento de Operações",
       "appointmentId": "ID do Agendamento no formato YYYY-MM-DD-HH:MM",
       "aiSettings": "Configurações de IA"
-    }
+    },
+    "editSystemAction": "Editar Ação do Sistema",
+    "actionName": "Nome da Ação",
+    "actionDescription": "Descrição da Ação",
+    "toolConfig": "Configuração"
   },
   "test": {
     "title": "Testar Prompt",

@@ -605,7 +605,8 @@ export function MessageInput({
     if (showShortcuts && shortcutFilter !== '') {
       const filtered = messageShortcuts
         .filter(shortcut => 
-          shortcut.title.toLowerCase().includes(shortcutFilter.toLowerCase())
+          shortcut.title.toLowerCase().includes(shortcutFilter.toLowerCase()) || 
+          shortcut.content.toLowerCase().includes(shortcutFilter.toLowerCase())
         )
         .map(shortcut => ({
           id: shortcut.id,

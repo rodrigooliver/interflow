@@ -10,6 +10,9 @@
   "noAgentsYet": "No AI Agents created yet",
   "noAgentsDescription": "AI Agents allow you to automate interactions with your customers using artificial intelligence. Create your first agent to get started.",
   "createFirstAgent": "Create first AI Agent",
+  "prompt": "Agent",
+  "updated": "Updated",
+  "content": "Content",
   "createFlow": "Create Flow based on this Agent",
   "syncFlow": "Sync Flow",
   "viewLinkedFlow": "View Linked Flow",
@@ -35,7 +38,7 @@
     "description": "Description",
     "descriptionPlaceholder": "Describe the purpose of this prompt",
     "content": "Content",
-    "contentPlaceholder": "Enter instructions for the AI",
+    "contentPlaceholder": "No context defined. Click to add.",
     "tags": "Tags",
     "tagsPlaceholder": "Enter tags separated by commas",
     "integration": "Integration",
@@ -181,6 +184,10 @@
           "method": "Method",
           "headers": "Headers",
           "body": "Request Body"
+        },
+        "schedule": {
+          "selectSchedule": "Select a schedule",
+          "noSchedule": "No schedule selected"
         }
       },
       "validation": {
@@ -244,17 +251,43 @@
     "aiSettings": "AI Settings",
     "addSystemAction": "+ Add System Action",
     "systemActionTypes": {
-      "endChat": "End Chat",
-      "changeCustomerName": "Change Customer Name",
-      "changeFunnel": "Change Funnel",
-      "updateChatStatus": "Update Chat Status",
-      "assignTeam": "Assign Team",
-      "startNewFlow": "Start New Flow",
-      "scheduleMeeting": "Schedule Meeting",
-      "sendMessage": "Send Message",
-      "updateCustomerData": "Update Customer Data",
-      "createTask": "Create Task"
-    }
+      "endChat": {
+        "name": "End Chat",
+        "description": "End the current chat when... (example: customer says 'end' or 'goodbye')"
+      },
+      "changeCustomerName": {
+        "name": "Change Customer Name",
+        "description": "Change the current customer name when... (example: customer says 'my name is John')"
+      },
+      "changeFunnel": {
+        "name": "Change Funnel",
+        "description": "Change the current funnel when identifying behavior according to each funnel stage description"
+      },
+      "assignTeam": {
+        "name": "Assign Team",
+        "description": "Assign the team to the chat when identifying behavior according to each team description. (example: customer says 'I want to speak with sales')"
+      },
+      "schedule": {
+        "name": "Schedule Meeting",
+        "description": "Schedule a meeting when... (example: customer says 'I want to schedule a consultation')"
+      },
+      "dateReturn": {
+        "name": "Return Date",
+        "description": "Return the current date when... (example: customer says 'return tomorrow or day x')"
+      },
+      "saveQuestionsNotInContext": {
+        "name": "Save Questions Not in Context",
+        "description": "Save questions that are not in context when... (example: customer says 'I want to know the date')"
+      },
+      "createTask": {
+        "name": "Create Task",
+        "description": "Create a task when... (example: customer says 'create a task for me')"
+      }
+    },
+    "editSystemAction": "Edit System Action",
+    "actionName": "Action Name",
+    "actionDescription": "Action Description",
+    "toolConfig": "Configuration"
   },
   "test": {
     "title": "Test Prompt",

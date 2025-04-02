@@ -13,7 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
+} from "../../components/ui/DropdownMenu";
 import { CustomTooltip } from './CustomTooltip';
 import { ChatDetailsModal } from './ChatDetailsModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
