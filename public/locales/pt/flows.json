@@ -226,8 +226,8 @@
       "splitParagraphsDescription": "Cada parágrafo separado por uma linha em branco será enviado como uma mensagem individual.",
       "messages": "mensagens",
       "longText": "Texto longo",
-      "showListOptions": "Mostrar opções de listagem",
-      "listOptions": "Opções de Listagem",
+      "showListOptions": "Mostrar opções de lista",
+      "listOptions": "Opções de Lista",
       "listTitle": "Título da Lista",
       "listDescription": "Descrição da Lista",
       "listButtonText": "Texto do Botão",
@@ -238,11 +238,14 @@
       "rowId": "ID da Linha",
       "addRow": "Adicionar Linha",
       "addSection": "Adicionar Seção",
-      "listOptionsEnabled": "Listagem de opções ativada",
-      "listOptionsWarning": "Esta opção não está disponível em todos os tipos de canais",
-      "listOptionsOfficialWarning": "Esta opção só está disponível em canais oficiais dentro da janela de 24 horas",
-      "listOptionsOfficialWarning24h": "Esta opção só está disponível em canais oficiais dentro da janela de 24 horas",
-      "listOptionsWapiWarning": "Esta opção só está disponível em canais WAPI"
+      "listOptionsEnabled": "Opções de lista ativadas",
+      "listOptionsWarning": "Esta opção não está disponível em todos os tipos de canal",
+      "listOptionsOfficialWarning": "Esta opção está disponível apenas em canais oficiais dentro da janela de 24 horas",
+      "listOptionsOfficialWarning24h": "Esta opção está disponível apenas em canais oficiais dentro da janela de 24 horas",
+      "listOptionsWapiWarning": "Esta opção está disponível apenas em canais WAPI",
+      "extractLinks": "Extrair links e arquivos",
+      "extractLinksDescription": "Links de arquivos (imagens, PDFs, vídeos, áudios) serão transformados em arquivos. Links normais serão enviados separadamente em mensagens individuais.",
+      "extractLinksEnabled": "Extração de links ativada"
     },
     "sendVideo": {
       "title": "Enviar Vídeo"

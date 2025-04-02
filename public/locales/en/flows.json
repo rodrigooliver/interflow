@@ -64,7 +64,10 @@
       "listOptionsWarning": "This option is not available in all channel types",
       "listOptionsOfficialWarning": "This option is only available in official channels within the 24-hour window",
       "listOptionsOfficialWarning24h": "This option is only available in official channels within the 24-hour window",
-      "listOptionsWapiWarning": "This option is only available in WAPI channels"
+      "listOptionsWapiWarning": "This option is only available in WAPI channels",
+      "extractLinks": "Extract links and files",
+      "extractLinksDescription": "File links (images, PDFs, videos, audio) will be transformed into files. Regular links will be sent separately in individual messages.",
+      "extractLinksEnabled": "Link extraction enabled"
     },
     "sendAudio": {
       "title": "Send Audio"

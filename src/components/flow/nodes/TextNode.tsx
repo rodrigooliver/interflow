@@ -32,6 +32,7 @@ interface TextNodeProps {
     text?: string;
     label?: string;
     splitParagraphs?: boolean;
+    extractLinks?: boolean;
     listOptions?: ListOptions;
   };
   isConnectable: boolean;
@@ -48,15 +49,17 @@ interface TextEditorModalProps {
   text: string;
   variables: Variable[];
   splitParagraphs: boolean;
+  extractLinks: boolean;
   listOptions?: ListOptions;
-  onSave: (text: string, splitParagraphs: boolean, listOptions?: ListOptions) => void;
+  onSave: (text: string, splitParagraphs: boolean, extractLinks: boolean, listOptions?: ListOptions) => void;
 }
 
 // Componente para o modal de edição de texto
-function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, listOptions, onSave }: TextEditorModalProps) {
+function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, extractLinks, listOptions, onSave }: TextEditorModalProps) {
   const { t } = useTranslation(['flows', 'common']);
   const [editedText, setEditedText] = useState(text);
   const [shouldSplitParagraphs, setShouldSplitParagraphs] = useState(splitParagraphs);
+  const [shouldExtractLinks, setShouldExtractLinks] = useState(extractLinks);
   const [showListOptions, setShowListOptions] = useState(!!listOptions);
   const [editedListOptions, setEditedListOptions] = useState<ListOptions>(listOptions || {
     title: '',
@@ -90,7 +93,7 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, li
   };
   
   const handleSave = () => {
-    onSave(editedText, shouldSplitParagraphs, showListOptions ? editedListOptions : undefined);
+    onSave(editedText, shouldSplitParagraphs, shouldExtractLinks, showListOptions ? editedListOptions : undefined);
     onClose();
   };
   
@@ -178,6 +181,24 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, li
               </div>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('flows:nodes.sendText.splitParagraphsDescription')}
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="extract-links"
+                  checked={shouldExtractLinks}
+                  onChange={(e) => setShouldExtractLinks(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="extract-links" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  {t('flows:nodes.sendText.extractLinks')}
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('flows:nodes.sendText.extractLinksDescription')}
               </p>
             </div>
 
@@ -472,13 +493,15 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
   
   const text = data.text || '';
   const splitParagraphs = data.splitParagraphs || false;
+  const extractLinks = data.extractLinks || false;
   const listOptions = data.listOptions;
   
-  const handleSaveText = useCallback((newText: string, newSplitParagraphs: boolean, newListOptions?: ListOptions) => {
+  const handleSaveText = useCallback((newText: string, newSplitParagraphs: boolean, newExtractLinks: boolean, newListOptions?: ListOptions) => {
     updateNodeData(id, { 
       ...data, 
       text: newText,
       splitParagraphs: newSplitParagraphs,
+      extractLinks: newExtractLinks,
       listOptions: newListOptions
     });
   }, [id, data, updateNodeData]);
@@ -515,6 +538,14 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
           <div className="mb-2">
             <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded">
               {messageCount} {t('flows:nodes.sendText.messages')}
+            </span>
+          </div>
+        )}
+        
+        {extractLinks && (
+          <div className="mb-2">
+            <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded">
+              {t('flows:nodes.sendText.extractLinksEnabled')}
             </span>
           </div>
         )}
@@ -556,6 +587,7 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
           text={text}
           variables={variables}
           splitParagraphs={splitParagraphs}
+          extractLinks={extractLinks}
           listOptions={listOptions}
           onSave={handleSaveText}
         />
