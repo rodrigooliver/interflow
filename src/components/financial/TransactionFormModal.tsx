@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/Select';
-import { Tabs, TabsList, TabsTrigger } from '../ui/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
   Save, 
   TrendingUp, 
