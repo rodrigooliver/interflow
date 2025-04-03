@@ -1249,20 +1249,18 @@ const PromptFormMain: React.FC = () => {
                   )}
 
                   {activeTab === 'context' && (
-                    <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-2">
-                      <div className="flex-1 overflow-y-auto pr-2 min-h-0 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                        <div className="space-y-6">
-                          <div className="mb-4 hidden sm:block">
-                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
-                              {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
-                            </p>
-                          </div>
-                          
-                          <ContentEditor 
-                            content={formData.content} 
-                            onChange={(content) => setFormData({ ...formData, content })} 
-                          />
-                        </div>
+                    <div className="flex flex-col h-full">
+                      <div className="mb-4 hidden sm:block">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
+                          {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex-1 min-h-0">
+                        <ContentEditor 
+                          content={formData.content} 
+                          onChange={(content) => setFormData({ ...formData, content })} 
+                        />
                       </div>
                     </div>
                   )}

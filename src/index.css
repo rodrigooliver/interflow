@@ -300,42 +300,6 @@
   overflow: hidden !important;
   transition: all 0.2s ease !important;
   position: relative !important;
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-.w-md-editor-content {
-  flex: 1 !important;
-  overflow: hidden !important;
-  position: relative !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-.w-md-editor-input {
-  flex: 1 !important;
-  overflow: auto !important;
-  position: relative !important;
-}
-
-.w-md-editor-preview {
-  flex: 1 !important;
-  overflow: auto !important;
-  position: relative !important;
-}
-
-.w-md-editor-text {
-  height: 100% !important;
-  overflow: auto !important;
-  position: relative !important;
-}
-
-.w-md-editor-text-pre > code,
-.w-md-editor-text-input {
-  height: 100% !important;
-  overflow: auto !important;
-  position: relative !important;
 }
 
 .w-md-editor:hover {
