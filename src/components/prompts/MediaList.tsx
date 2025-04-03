@@ -166,7 +166,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       <div className="flex-none flex items-center justify-between mb-4">
         <button
           type="button"
@@ -196,7 +196,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('form.images.pendingUploads')}
           </h4>
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-y-auto max-h-40 pr-2">
             {pendingUploads.map((upload, index) => (
               <div
                 key={index}
@@ -250,7 +250,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
 
       {/* Lista de mídia existente */}
       {media.length > 0 && (
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-96">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-60">
           {media.map((item) => (
             <div
               key={item.id}
