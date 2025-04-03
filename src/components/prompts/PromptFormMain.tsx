@@ -1245,6 +1245,26 @@ const PromptFormMain: React.FC = () => {
                           </button>
                         </div>
                       </div>
+                      
+                      {/* Adicionar botões de salvar na aba Geral */}
+                      <div className="flex justify-end space-x-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          disabled={saving}
+                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        >
+                          {t('common:back')}
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={saving}
+                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          {t('common:save')}
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1292,12 +1312,34 @@ const PromptFormMain: React.FC = () => {
                         </p>
                       </div>
 
-                      <MediaList
-                        media={formData.media}
-                        onChange={(media) => setFormData({ ...formData, media })}
-                        organizationId={currentOrganizationMember?.organization.id || ''}
-                        promptId={id || ''}
-                      />
+                      <div className="mb-6">
+                        <MediaList
+                          media={formData.media}
+                          onChange={(media) => setFormData({ ...formData, media })}
+                          organizationId={currentOrganizationMember?.organization.id || ''}
+                          promptId={id || ''}
+                        />
+                      </div>
+                      
+                      {/* Adicionar botões de salvar na aba Arquivos */}
+                      <div className="flex justify-end space-x-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          disabled={saving}
+                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        >
+                          {t('common:back')}
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={saving}
+                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          {t('common:save')}
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1415,6 +1457,26 @@ const PromptFormMain: React.FC = () => {
                             )}
                           </div>
                         </div>
+                      </div>
+                      
+                      {/* Adicionar botões de salvar na aba Ferramentas */}
+                      <div className="flex justify-end space-x-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          disabled={saving}
+                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        >
+                          {t('common:back')}
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={saving}
+                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          {t('common:save')}
+                        </button>
                       </div>
                     </div>
                   )}

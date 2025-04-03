@@ -35,12 +35,26 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const fileNameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
-      setImageDescription(fileNameWithoutExtension);
-      setSelectedFile(file);
-      setShowUploadModal(true);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      // Se for apenas um arquivo, mostra o modal de upload
+      if (files.length === 1) {
+        const file = files[0];
+        const fileNameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
+        setImageDescription(fileNameWithoutExtension);
+        setSelectedFile(file);
+        setShowUploadModal(true);
+      } else {
+        // Se forem múltiplos arquivos, adiciona todos à lista de pendentes
+        const newPendingUploads = Array.from(files).map(file => {
+          const fileNameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
+          return {
+            file,
+            description: fileNameWithoutExtension
+          };
+        });
+        setPendingUploads(prev => [...prev, ...newPendingUploads]);
+      }
     }
   };
 
@@ -152,7 +166,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
   };
 
   return (
-    <div className="h-[calc(100vh-200px)] flex flex-col">
+    <div className="flex flex-col">
       <div className="flex-none flex items-center justify-between mb-4">
         <button
           type="button"
@@ -172,6 +186,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
           className="hidden"
           accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
           onChange={handleFileSelect}
+          multiple
         />
       </div>
 
@@ -190,11 +205,20 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
                 <div className="flex items-center space-x-3">
                   <File className="w-5 h-5 text-gray-400" />
                   <div>
+                    <div className="flex items-center mb-1">
+                      <input
+                        type="text"
+                        value={upload.description}
+                        onChange={(e) => {
+                          const newPendingUploads = [...pendingUploads];
+                          newPendingUploads[index].description = e.target.value;
+                          setPendingUploads(newPendingUploads);
+                        }}
+                        className="text-sm text-gray-500 dark:text-gray-400 p-1 border border-gray-200 dark:border-gray-700 rounded w-full bg-white dark:bg-gray-700 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"
+                      />
+                    </div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {upload.file.name}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {upload.description}
                     </p>
                   </div>
                 </div>
@@ -226,7 +250,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
 
       {/* Lista de mídia existente */}
       {media.length > 0 && (
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4 pb-16">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-96">
           {media.map((item) => (
             <div
               key={item.id}
