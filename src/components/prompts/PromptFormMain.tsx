@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, Plus, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, Plus, ChevronRight, AlertTriangle, File } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
@@ -20,6 +20,7 @@ import { SYSTEM_ACTIONS, SystemActionType } from '../../constants/systemActions'
 import SystemActionsList from './SystemActionsList';
 import { Trigger } from '../../types/flow';
 import { TriggersList } from '../flow/TriggersList';
+import MediaList from './MediaList';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -180,7 +181,7 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
   }
 }
 
-type TabType = 'general' | 'context' | 'tools' | 'test';
+type TabType = 'general' | 'context' | 'files' | 'tools' | 'test';
 
 // Função utilitária para criar nomes de ferramentas
 const nameTool = (text: string): string => {
@@ -214,7 +215,8 @@ const PromptFormMain: React.FC = () => {
     tools: [],
     destinations: {},
     actions: [],
-    config: {}
+    config: {},
+    media: []
   });
   
   // Adicionar estado para timezone usando o fuso horário padrão do navegador
@@ -330,7 +332,8 @@ const PromptFormMain: React.FC = () => {
           tools: data.tools || [],
           destinations: data.destinations || {},
           actions: data.actions || [],
-          config: data.config || {}
+          config: data.config || {},
+          media: data.media || []
         });
         
         // Set up integration, model, and temperature if they exist
@@ -517,7 +520,8 @@ const PromptFormMain: React.FC = () => {
         tools: formData.tools,
         destinations: formData.destinations,
         actions: formData.actions,
-        config: updatedConfig
+        config: updatedConfig,
+        media: formData.media
       };
 
       let promptId = id;
@@ -742,11 +746,13 @@ const PromptFormMain: React.FC = () => {
                           <div className="flex items-center space-x-2">
                             {activeTab === 'general' && <Settings className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
                             {activeTab === 'context' && <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                            {activeTab === 'files' && <File className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
                             {activeTab === 'tools' && <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
                             {activeTab === 'test' && <Play className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
                               {activeTab === 'general' && (t('prompts:form.tabs.general') || 'Configurações Gerais')}
                               {activeTab === 'context' && (t('prompts:form.tabs.context') || 'Contexto')}
+                              {activeTab === 'files' && (t('prompts:form.tabs.files') || 'Arquivos')}
                               {activeTab === 'tools' && (t('prompts:form.tabs.tools') || 'Ferramentas')}
                               {activeTab === 'test' && (t('prompts:form.tabs.test') || 'Testar')}
                             </span>
@@ -786,6 +792,21 @@ const PromptFormMain: React.FC = () => {
                               >
                                 <Info className="w-4 h-4 mr-2" />
                                 {t('prompts:form.tabs.context') || 'Contexto'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('files');
+                                  setTabsDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center px-4 py-3 text-sm ${
+                                  activeTab === 'files'
+                                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                <File className="w-4 h-4 mr-2" />
+                                {t('prompts:form.tabs.files') || 'Arquivos'}
                               </button>
                               <button
                                 type="button"
@@ -832,7 +853,7 @@ const PromptFormMain: React.FC = () => {
                               activeTab === 'general'
                                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                            } w-1/5 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Settings className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.general') || 'Configurações Gerais'}
@@ -844,10 +865,22 @@ const PromptFormMain: React.FC = () => {
                               activeTab === 'context'
                                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                            } w-1/5 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Info className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.context') || 'Contexto'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('files')}
+                            className={`${
+                              activeTab === 'files'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                            } w-1/5 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                          >
+                            <File className="w-4 h-4 mr-2" />
+                            {t('prompts:form.tabs.files') || 'Arquivos'}
                           </button>
                           <button
                             type="button"
@@ -856,7 +889,7 @@ const PromptFormMain: React.FC = () => {
                               activeTab === 'tools'
                                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                            } w-1/5 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Wrench className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.tools') || 'Ferramentas'}
@@ -868,7 +901,7 @@ const PromptFormMain: React.FC = () => {
                               activeTab === 'test'
                                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-                            } w-1/4 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
+                            } w-1/5 py-2 px-1 text-center border-b-2 font-medium text-sm flex items-center justify-center`}
                           >
                             <Play className="w-4 h-4 mr-2" />
                             {t('prompts:form.tabs.test') || 'Testar'}
@@ -1216,7 +1249,7 @@ const PromptFormMain: React.FC = () => {
                   )}
 
                   {activeTab === 'context' && (
-                    <div className="flex-grow flex flex-col min-h-0 overflow-hidden mb-6">
+                    <div className="space-y-6">
                       <div className="mb-4 hidden sm:block">
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
                           {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
@@ -1226,6 +1259,23 @@ const PromptFormMain: React.FC = () => {
                       <ContentEditor 
                         content={formData.content} 
                         onChange={(content) => setFormData({ ...formData, content })} 
+                      />
+                    </div>
+                  )}
+
+                  {activeTab === 'files' && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {t('prompts:form.filesDescription') || 'Adicione mídia que o agente pode enviar durante a conversa. Você pode incluir imagens, vídeos, áudios e documentos que serão disponibilizados para o agente.'}
+                        </p>
+                      </div>
+
+                      <MediaList
+                        media={formData.media}
+                        onChange={(media) => setFormData({ ...formData, media })}
+                        organizationId={currentOrganizationMember?.organization.id || ''}
+                        promptId={id || ''}
                       />
                     </div>
                   )}

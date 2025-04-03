@@ -122,6 +122,7 @@
     "tabs": {
       "context": "Contexto",
       "general": "Geral",
+      "files": "Arquivos",
       "tools": "Ações",
       "test": "Teste"
     },
@@ -287,7 +288,73 @@
     "editSystemAction": "Editar Ação do Sistema",
     "actionName": "Nome da Ação",
     "actionDescription": "Descrição da Ação",
-    "toolConfig": "Configuração"
+    "toolConfig": "Configuração",
+    "images": {
+      "title": "Mídia",
+      "description": "Adicione imagens, vídeos, áudios e documentos para enriquecer seu prompt",
+      "addButton": "Adicionar Mídia",
+      "uploadTitle": "Adicionar Mídia",
+      "editTitle": "Editar Descrição",
+      "file": "Arquivo",
+      "imageDescription": "Descrição",
+      "imageDescriptionPlaceholder": "Descreva o conteúdo deste arquivo...",
+      "cancel": "Cancelar",
+      "addToList": "Adicionar à Lista",
+      "save": "Salvar",
+      "uploading": "Enviando...",
+      "uploadAll": "Enviar Todos",
+      "pendingUploads": "Uploads Pendentes",
+      "noDescription": "Sem descrição",
+      "errors": {
+        "fileSize": "O arquivo é muito grande. O tamanho máximo permitido é 10MB.",
+        "fileType": "Tipo de arquivo não suportado. Use apenas imagens, vídeos, áudios, PDFs ou documentos.",
+        "uploadFailed": "Falha ao fazer upload do arquivo. Tente novamente.",
+        "deleteFailed": "Falha ao excluir o arquivo. Tente novamente."
+      },
+      "confirmDelete": "Confirmar Exclusão",
+      "confirmDeleteMessage": "Tem certeza que deseja excluir este arquivo? Esta ação não pode ser desfeita.",
+      "confirm": "Confirmar",
+      "deleting": "Excluindo...",
+      "confirmDelete": "Confirmar Exclusão",
+      "confirmDeleteMessage": "Tem certeza que deseja excluir este arquivo? Esta ação não pode ser desfeita.",
+      "confirm": "Confirmar"
+    },
+    "errors": {
+      "imageTooLarge": "A imagem é muito grande. Tamanho máximo: 5MB",
+      "uploadFailed": "Falha ao enviar imagem",
+      "deleteFailed": "Falha ao excluir imagem"
+    },
+    "media": {
+      "title": "Mídia",
+      "description": "Adicione imagens, vídeos, áudios e documentos para enriquecer o contexto do prompt",
+      "addButton": "Adicionar Mídia",
+      "uploading": "Enviando...",
+      "uploaded": "Enviado",
+      "error": "Erro ao enviar",
+      "deleteButton": "Excluir",
+      "viewButton": "Visualizar",
+      "modal": {
+        "title": "Adicionar Mídia",
+        "description": "Arraste e solte arquivos aqui ou clique para selecionar",
+        "fileTypes": {
+          "image": "Imagens (PNG, JPG, GIF)",
+          "video": "Vídeos (MP4, MOV, AVI)",
+          "audio": "Áudios (MP3, WAV, OGG)",
+          "document": "Documentos (DOC, DOCX, TXT)",
+          "pdf": "PDFs"
+        },
+        "maxSize": "Tamanho máximo: 10MB",
+        "mediaDescription": "Descrição da Mídia",
+        "mediaDescriptionPlaceholder": "Digite uma descrição para a mídia"
+      },
+      "errors": {
+        "fileTooLarge": "O arquivo é muito grande. Tamanho máximo: 10MB",
+        "invalidType": "Tipo de arquivo não suportado",
+        "uploadFailed": "Erro ao fazer upload do arquivo",
+        "deleteFailed": "Erro ao excluir arquivo"
+      }
+    },
+    "filesDescription": "Adicione mídia que o agente pode enviar durante a conversa. Você pode incluir imagens, vídeos, áudios e documentos que serão disponibilizados para o agente."
   },
   "test": {
     "title": "Testar Prompt",

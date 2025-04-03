@@ -287,7 +287,26 @@
     "editSystemAction": "Editar Acción del Sistema",
     "actionName": "Nombre de la Acción",
     "actionDescription": "Descripción de la Acción",
-    "toolConfig": "Configuración"
+    "toolConfig": "Configuración",
+    "images": {
+      "title": "Imágenes",
+      "description": "Agrega imágenes que se usarán en el contexto del prompt",
+      "addImage": "Agregar Imagen",
+      "noImages": "No hay imágenes agregadas",
+      "uploadTitle": "Subir Imagen",
+      "uploading": "Subiendo imagen...",
+      "dragAndDrop": "Arrastra y suelta una imagen aquí o haz clic para seleccionar",
+      "maxSize": "Tamaño máximo: 5MB",
+      "openFile": "Abrir archivo",
+      "deleteFile": "Eliminar archivo",
+      "imageDescription": "Descripción de la Imagen",
+      "imageDescriptionPlaceholder": "Ingresa una descripción para la imagen"
+    },
+    "errors": {
+      "imageTooLarge": "La imagen es demasiado grande. Tamaño máximo: 5MB",
+      "uploadFailed": "Error al subir la imagen",
+      "deleteFailed": "Error al eliminar la imagen"
+    }
   },
   "test": {
     "title": "Probar Prompt",

@@ -1,4 +1,4 @@
-import { SystemAction } from '../constants/systemActions';
+import { SystemActionType } from '../constants/systemActions';
 
 // Definindo o tipo para mensagens de chat
 export interface ChatMessage {
@@ -147,10 +147,18 @@ export interface Variable {
 export interface PromptFormData {
   title: string;
   content: string;
-  tools: Tool[];
-  destinations: Record<string, ToolAction[]>;
-  actions: SystemAction[];
-  config: Record<string, unknown>;
+  integration_id: string;
+  model: string;
+  temperature: number;
+  actions: SystemActionType[];
+  config: Record<string, any>;
+  media: Array<{
+    id: string;
+    url: string;
+    name: string;
+    type: 'image' | 'video' | 'audio' | 'document' | 'pdf';
+    description?: string;
+  }>;
 }
 
 export interface ToolExample {
