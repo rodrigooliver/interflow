@@ -37,6 +37,8 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      const fileNameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
+      setImageDescription(fileNameWithoutExtension);
       setSelectedFile(file);
       setShowUploadModal(true);
     }
@@ -150,8 +152,8 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="h-[calc(100vh-200px)] flex flex-col">
+      <div className="flex-none flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={(e) => {
@@ -173,11 +175,10 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
         />
       </div>
 
-
       {/* Lista de uploads pendentes */}
       {pendingUploads.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="flex-none mb-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('form.images.pendingUploads')}
           </h4>
           <div className="space-y-2">
@@ -209,7 +210,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
           <button
             onClick={handleUploadAll}
             disabled={isUploading}
-            className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
             {isUploading ? (
               <>
@@ -225,7 +226,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
 
       {/* Lista de mídia existente */}
       {media.length > 0 && (
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 pb-8">
           {media.map((item) => (
             <div
               key={item.id}
@@ -293,6 +294,9 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
                   setSelectedFile(null);
                   setImageDescription('');
                   setEditingMedia(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
                 }}
                 className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
               >
@@ -332,6 +336,9 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
                     setSelectedFile(null);
                     setImageDescription('');
                     setEditingMedia(null);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
