@@ -226,7 +226,7 @@ const MediaList: React.FC<MediaListProps> = ({ media, onChange, organizationId, 
 
       {/* Lista de mídia existente */}
       {media.length > 0 && (
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4 pb-8">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 pb-16">
           {media.map((item) => (
             <div
               key={item.id}
