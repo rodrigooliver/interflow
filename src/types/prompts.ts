@@ -159,6 +159,8 @@ export interface PromptFormData {
     type: 'image' | 'video' | 'audio' | 'document' | 'pdf';
     description?: string;
   }>;
+  tools: Tool[];
+  destinations: Record<string, ToolAction[]>;
 }
 
 export interface ToolExample {

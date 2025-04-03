@@ -47,7 +47,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
 
   return (
     <div className={`flex flex-col ${isExpanded ? 'fixed inset-0 z-50 bg-white dark:bg-gray-800' : ''}`}>
-      <div className={`relative flex flex-col ${isExpanded ? 'h-screen' : 'h-[calc(100vh-300px)]'}`}>
+      <div className={`relative flex flex-col ${isExpanded ? 'h-screen' : 'h-[calc(100vh-400px)]'}`}>
         <MDEditor
           value={content}
           onChange={(value) => onChange(value || '')}
