@@ -33,6 +33,7 @@ interface TextNodeProps {
     label?: string;
     splitParagraphs?: boolean;
     extractLinks?: boolean;
+    extractList?: boolean;
     listOptions?: ListOptions;
   };
   isConnectable: boolean;
@@ -50,16 +51,18 @@ interface TextEditorModalProps {
   variables: Variable[];
   splitParagraphs: boolean;
   extractLinks: boolean;
+  extractList?: boolean;
   listOptions?: ListOptions;
-  onSave: (text: string, splitParagraphs: boolean, extractLinks: boolean, listOptions?: ListOptions) => void;
+  onSave: (text: string, splitParagraphs: boolean, extractLinks: boolean, extractList: boolean, listOptions?: ListOptions) => void;
 }
 
 // Componente para o modal de edição de texto
-function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, extractLinks, listOptions, onSave }: TextEditorModalProps) {
+function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, extractLinks, extractList, listOptions, onSave }: TextEditorModalProps) {
   const { t } = useTranslation(['flows', 'common']);
   const [editedText, setEditedText] = useState(text);
   const [shouldSplitParagraphs, setShouldSplitParagraphs] = useState(splitParagraphs);
   const [shouldExtractLinks, setShouldExtractLinks] = useState(extractLinks);
+  const [shouldExtractList, setShouldExtractList] = useState(extractList || false);
   const [showListOptions, setShowListOptions] = useState(!!listOptions);
   const [editedListOptions, setEditedListOptions] = useState<ListOptions>(listOptions || {
     title: '',
@@ -93,7 +96,7 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, ex
   };
   
   const handleSave = () => {
-    onSave(editedText, shouldSplitParagraphs, shouldExtractLinks, showListOptions ? editedListOptions : undefined);
+    onSave(editedText, shouldSplitParagraphs, shouldExtractLinks, shouldExtractList, showListOptions ? editedListOptions : undefined);
     onClose();
   };
   
@@ -199,6 +202,24 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, ex
               </div>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('flows:nodes.sendText.extractLinksDescription')}
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="extract-list"
+                  checked={shouldExtractList}
+                  onChange={(e) => setShouldExtractList(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="extract-list" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  Extrair lista automaticamente
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Extrair lista automaticamente de textos enumerados com "-" ou "1.", "2.", etc.
               </p>
             </div>
 
@@ -494,14 +515,16 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
   const text = data.text || '';
   const splitParagraphs = data.splitParagraphs || false;
   const extractLinks = data.extractLinks || false;
+  const extractList = data.extractList || false;
   const listOptions = data.listOptions;
   
-  const handleSaveText = useCallback((newText: string, newSplitParagraphs: boolean, newExtractLinks: boolean, newListOptions?: ListOptions) => {
+  const handleSaveText = useCallback((newText: string, newSplitParagraphs: boolean, newExtractLinks: boolean, newExtractList: boolean, newListOptions?: ListOptions) => {
     updateNodeData(id, { 
       ...data, 
       text: newText,
       splitParagraphs: newSplitParagraphs,
       extractLinks: newExtractLinks,
+      extractList: newExtractList,
       listOptions: newListOptions
     });
   }, [id, data, updateNodeData]);
@@ -550,6 +573,14 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
           </div>
         )}
         
+        {extractList && (
+          <div className="mb-2">
+            <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
+              Extração automática de lista ativada
+            </span>
+          </div>
+        )}
+        
         {listOptions && (
           <div className="mb-2">
             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded">
@@ -588,6 +619,7 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
           variables={variables}
           splitParagraphs={splitParagraphs}
           extractLinks={extractLinks}
+          extractList={extractList}
           listOptions={listOptions}
           onSave={handleSaveText}
         />

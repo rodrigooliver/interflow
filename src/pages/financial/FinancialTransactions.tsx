@@ -38,25 +38,21 @@ import {
 } from '../../components/ui/Select';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { 
-  ChevronDown, 
   ChevronLeft, 
   ChevronRight, 
   Edit, 
   Eye, 
   Filter, 
   MoreHorizontal, 
-  Plus, 
   Search, 
   Trash, 
   CheckCircle, 
-  XCircle,
-  FileText,
   TrendingUp,
   TrendingDown
 } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import TransactionFormModal from '../../components/financial/TransactionFormModal';
+import { useToast } from '../../hooks/useToast';
 
 interface Transaction {
   id: string;
@@ -85,7 +81,7 @@ interface Transaction {
 const FinancialTransactions: React.FC = () => {
   const { t } = useTranslation('financial');
   const navigate = useNavigate();
-  const { currentOrganizationId } = useAuthContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -102,22 +98,23 @@ const FinancialTransactions: React.FC = () => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<'income' | 'expense' | null>(null);
+  const toast = useToast();
 
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
-    if (currentOrganizationId) {
+    if (currentOrganizationMember?.organization?.id) {
       fetchTransactions();
       fetchCategories();
     }
-  }, [currentOrganizationId, currentTab, page, categoryFilter, dateRange]);
+  }, [currentOrganizationMember, currentTab, page, categoryFilter, dateRange]);
 
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
         .from('financial_categories')
         .select('id, name, type')
-        .eq('organization_id', currentOrganizationId)
+        .eq('organization_id', currentOrganizationMember?.organization?.id)
         .order('name');
 
       if (error) throw error;
@@ -140,7 +137,7 @@ const FinancialTransactions: React.FC = () => {
           financial_payment_methods(name),
           customers(name)
         `, { count: 'exact' })
-        .eq('organization_id', currentOrganizationId);
+        .eq('organization_id', currentOrganizationMember?.organization?.id);
 
       // Adicionar filtros
       if (currentTab === 'income') {
@@ -207,15 +204,28 @@ const FinancialTransactions: React.FC = () => {
       const { error } = await supabase
         .from('financial_transactions')
         .delete()
-        .eq('id', selectedTransaction.id);
+        .eq('id', selectedTransaction.id)
+        .eq('organization_id', currentOrganizationMember?.organization?.id);
 
       if (error) throw error;
 
       setIsDeleteDialogOpen(false);
       setSelectedTransaction(null);
       fetchTransactions();
+      
+      // Mostrar mensagem de sucesso
+      toast?.show?.({
+        title: t('success'),
+        description: t('transactionDeletedSuccess')
+      });
     } catch (error) {
       console.error('Erro ao excluir transação:', error);
+      // Mostrar mensagem de erro
+      toast?.show?.({
+        title: t('error'),
+        description: t('errorDeletingTransaction'),
+        variant: 'destructive'
+      });
     }
   };
 
