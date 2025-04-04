@@ -284,11 +284,11 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('ai.result')}
                 </label>
-                {improvedText.trim() && improvedText !== text && (
+                {/* {improvedText.trim() && improvedText !== text && (
                   <div className="p-2 mb-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm rounded-md">
                     {t('ai.generateSuccess')}
                   </div>
-                )}
+                )} */}
                 <textarea
                   value={improvedText}
                   onChange={(e) => setImprovedText(e.target.value)}
