@@ -50,7 +50,7 @@ export function ChatDetailsModal({ chatId, isOpen, onClose }: ChatDetailsModalPr
             full_name,
             email
           ),
-          team:teams(
+          team:service_teams!chats_team_id_fkey(
             id,
             name
           ),

@@ -123,13 +123,34 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
     try {
       // Formatar o valor do contato baseado no tipo de canal
       let formattedValue = contactValue;
+      let alternativeFormattedValue = null;
+      
       if (contactType === 'whatsapp' || contactType === 'phone') {
         // Remover caracteres não numéricos
         const cleanNumber = contactValue.replace(/\D/g, '');
         
+        // Para números brasileiros, criar versão alternativa com/sem 9 adicional
+        if (cleanNumber.startsWith('55') && cleanNumber.length >= 12) {
+          const ddd = cleanNumber.substring(2, 4);
+          const rest = cleanNumber.substring(4);
+          
+          // Se o número tem 9 na frente (após DDD)
+          if (rest.startsWith('9') && rest.length > 8) {
+            // Alternativa sem o 9
+            alternativeFormattedValue = `55${ddd}${rest.substring(1)}`;
+          } else if (rest.length === 8) {
+            // Alternativa com o 9 adicionado
+            alternativeFormattedValue = `55${ddd}9${rest}`;
+          }
+        }
+        
+        // Formatar para o canal específico
         if (channel.type === 'whatsapp_evo') {
           formattedValue = `${cleanNumber}@s.whatsapp.net`;
-        } else if (channel.type === 'whatsapp_official' || channel.type === 'whatsapp_wapi') {
+          if (alternativeFormattedValue) {
+            alternativeFormattedValue = `${alternativeFormattedValue}@s.whatsapp.net`;
+          }
+        } else if (channel.type === 'whatsapp_official' || channel.type === 'whatsapp_wapi' || channel.type === 'whatsapp_zapi') {
           formattedValue = cleanNumber;
         }
       }
@@ -181,8 +202,8 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
         }
       }
 
-      // Verificar se já existe um chat ativo
-      const { data: existingChats, error: chatsError } = await supabase
+      // Verificar se já existe um chat ativo (em progresso ou pendente)
+      const { data: activeChats, error: activeChatsError } = await supabase
         .from('chats')
         .select('*')
         .eq('organization_id', currentOrganizationMember.organization.id)
@@ -190,16 +211,17 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
         .eq('customer_id', customerId)
         .in('status', ['in_progress', 'pending']);
 
-      if (chatsError) throw chatsError;
+      if (activeChatsError) throw activeChatsError;
 
       let chatId;
+      let existingExternalId = null;
 
-      if (existingChats && existingChats.length > 0) {
-        // Use o chat existente
-        chatId = existingChats[0].id;
+      if (activeChats && activeChats.length > 0) {
+        // Use o chat ativo existente
+        chatId = activeChats[0].id;
 
         // Atualizar o agente designado se não estiver definido
-        if (!existingChats[0].assigned_to) {
+        if (!activeChats[0].assigned_to) {
           await supabase
             .from('chats')
             .update({ 
@@ -210,17 +232,72 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
             .eq('id', chatId);
         }
       } else {
+        // Procurar em chats fechados para obter o external_id
+        const { data: closedChats, error: closedChatsError } = await supabase
+          .from('chats')
+          .select('*')
+          .eq('organization_id', currentOrganizationMember.organization.id)
+          .eq('channel_id', channel.id)
+          .eq('customer_id', customerId)
+          .eq('status', 'closed')
+          .order('last_message_at', { ascending: false })
+          .limit(1);
+
+        if (closedChatsError) throw closedChatsError;
+
+        // Se não encontrou chat com o número principal, tentar com o número alternativo
+        if ((!closedChats || closedChats.length === 0) && alternativeFormattedValue) {
+          // Buscar por external_id com número alternativo
+          const { data: altChats, error: altChatsError } = await supabase
+            .from('chats')
+            .select('*')
+            .eq('organization_id', currentOrganizationMember.organization.id)
+            .eq('channel_id', channel.id)
+            .eq('external_id', alternativeFormattedValue)
+            .order('last_message_at', { ascending: false })
+            .limit(1);
+            
+          if (altChatsError) throw altChatsError;
+          
+          if (altChats && altChats.length > 0) {
+            existingExternalId = altChats[0].external_id;
+          }
+        } else if (closedChats && closedChats.length > 0) {
+          existingExternalId = closedChats[0].external_id;
+        }
+
         // Obter a equipe do usuário (usar a primeira equipe se pertencer a várias)
         const teamId = userTeams.length > 0 ? userTeams[0].id : null;
 
-        // Criar um novo chat
+        // Para canais de WhatsApp e novo chat, usar a versão sem o 9 adicional se for BR
+        if ((contactType === 'whatsapp' || contactType === 'phone') && 
+            formattedValue.startsWith('55') && 
+            !existingExternalId) {
+          const cleanNumber = formattedValue.replace(/\D/g, '');
+          if (cleanNumber.length >= 12) {
+            const ddd = cleanNumber.substring(2, 4);
+            const rest = cleanNumber.substring(4);
+            
+            if (rest.startsWith('9') && rest.length > 8) {
+              // Remover o 9 para iniciar o chat
+              const withoutNine = `55${ddd}${rest.substring(1)}`;
+              if (channel.type === 'whatsapp_evo') {
+                formattedValue = `${withoutNine}@s.whatsapp.net`;
+              } else {
+                formattedValue = withoutNine;
+              }
+            }
+          }
+        }
+
+        // Criar um novo chat, usando o external_id existente se disponível
         const { data: newChat, error: createError } = await supabase
           .from('chats')
           .insert([{
             organization_id: currentOrganizationMember.organization.id,
             channel_id: channel.id,
             customer_id: customerId,
-            external_id: formattedValue,
+            external_id: existingExternalId || formattedValue,
             status: 'in_progress',
             assigned_to: session.user.id,
             team_id: teamId,
