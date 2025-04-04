@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { 
   Table, 
   TableBody, 
@@ -52,9 +52,11 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import TransactionFormModal from '../../components/financial/TransactionFormModal';
+import TransactionViewModal from '../../components/financial/TransactionViewModal';
 import { useToast } from '../../hooks/useToast';
+import { useFinancial } from '../../hooks/useFinancial';
 
-interface Transaction {
+export interface Transaction {
   id: string;
   description: string;
   amount: number;
@@ -80,8 +82,8 @@ interface Transaction {
 
 const FinancialTransactions: React.FC = () => {
   const { t } = useTranslation('financial');
-  const navigate = useNavigate();
   const { currentOrganizationMember } = useAuthContext();
+  const { categories } = useFinancial();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,10 +93,10 @@ const FinancialTransactions: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<'paid' | 'received' | 'pending' | 'cancelled'>('paid');
   const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [categories, setCategories] = useState<{ id: string; name: string; type: string }[]>([]);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<'income' | 'expense' | null>(null);
@@ -105,24 +107,8 @@ const FinancialTransactions: React.FC = () => {
   useEffect(() => {
     if (currentOrganizationMember?.organization?.id) {
       fetchTransactions();
-      fetchCategories();
     }
   }, [currentOrganizationMember, currentTab, page, categoryFilter, dateRange]);
-
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('financial_categories')
-        .select('id, name, type')
-        .eq('organization_id', currentOrganizationMember?.organization?.id)
-        .order('name');
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar categorias:', error);
-    }
-  };
 
   const fetchTransactions = async () => {
     try {
@@ -233,21 +219,35 @@ const FinancialTransactions: React.FC = () => {
     if (!selectedTransaction) return;
 
     try {
-      const { error } = await supabase
-        .from('financial_transactions')
-        .update({
+      const response = await api.post(
+        `/api/${currentOrganizationMember?.organization?.id}/financial/transactions/${selectedTransaction.id}/status`,
+        {
           status: newStatus,
           payment_date: newStatus === 'paid' || newStatus === 'received' ? paymentDate : null
-        })
-        .eq('id', selectedTransaction.id);
+        }
+      );
 
-      if (error) throw error;
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Erro ao atualizar status da transação');
+      }
 
       setIsStatusDialogOpen(false);
       setSelectedTransaction(null);
       fetchTransactions();
+      
+      // Mostrar mensagem de sucesso
+      toast?.show?.({
+        title: t('success'),
+        description: t('statusUpdateSuccess')
+      });
     } catch (error) {
       console.error('Erro ao atualizar status da transação:', error);
+      // Mostrar mensagem de erro
+      toast?.show?.({
+        title: t('error'),
+        description: t('errorUpdatingStatus'),
+        variant: 'destructive'
+      });
     }
   };
 
@@ -494,13 +494,16 @@ const FinancialTransactions: React.FC = () => {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 dark:hover:bg-gray-700">
+                        <button className="h-8 w-8 p-0 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                           <span className="sr-only">{t('openMenu')}</span>
                           <MoreHorizontal className="h-4 w-4 dark:text-gray-300" />
-                        </Button>
+                        </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="dark:bg-gray-800 dark:border-gray-700">
-                        <DropdownMenuItem onClick={() => navigate(`/app/financial/transactions/${transaction.id}`)} className="dark:text-gray-300 dark:hover:bg-gray-700">
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedTransaction(transaction);
+                          setIsViewModalOpen(true);
+                        }} className="dark:text-gray-300 dark:hover:bg-gray-700">
                           <Eye className="mr-2 h-4 w-4" />
                           {t('view')}
                         </DropdownMenuItem>
@@ -601,7 +604,9 @@ const FinancialTransactions: React.FC = () => {
                 onValueChange={(value) => setNewStatus(value as 'paid' | 'received' | 'pending' | 'cancelled')}
               >
                 <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                  <SelectValue />
+                <SelectValue placeholder={t('selectStatus')}>
+                    {getStatusTranslation(newStatus)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   {selectedTransaction?.transaction_type === 'income' ? (
@@ -648,6 +653,23 @@ const FinancialTransactions: React.FC = () => {
         transactionId={selectedTransaction?.id}
         defaultType={selectedType || 'expense'}
         onSuccess={handleModalSuccess}
+      />
+
+      {/* Modal de Visualização */}
+      <TransactionViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        transactionId={selectedTransaction?.id || null}
+        onEdit={(transaction) => {
+          setIsViewModalOpen(false);
+          // @ts-expect-error - Incompatibilidade de tipos entre Transaction nos diferentes arquivos
+          handleEdit(transaction);
+        }}
+        onChangeStatus={(transaction) => {
+          setIsViewModalOpen(false);
+          // @ts-expect-error - Incompatibilidade de tipos entre Transaction nos diferentes arquivos
+          openStatusDialog(transaction);
+        }}
       />
     </div>
   );

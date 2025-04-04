@@ -22,6 +22,7 @@ type MemberWithProfile = {
     avatar_url: string;
     whatsapp: string;
     created_at: string;
+    nickname?: string;
   } | null;
 };
 
@@ -33,9 +34,9 @@ interface InviteFormData {
 
 interface EditProfileFormData {
   fullName: string;
-  email: string;
-  avatarUrl: string;
+  nickname: string;
   whatsapp: string;
+  email: string;
 }
 
 export default function OrganizationMembers() {
@@ -58,9 +59,9 @@ export default function OrganizationMembers() {
   });
   const [editProfileForm, setEditProfileForm] = useState<EditProfileFormData>({
     fullName: '',
-    email: '',
-    avatarUrl: '',
-    whatsapp: ''
+    nickname: '',
+    whatsapp: '',
+    email: ''
   });
 
   // Usando o hook useAgents para buscar os membros
@@ -124,6 +125,8 @@ export default function OrganizationMembers() {
     }
   }
 
+  console.log(editProfileForm);
+
   async function handleRemoveMember() {
     if (!selectedMember || !currentOrganizationMember) return;
     
@@ -159,9 +162,9 @@ export default function OrganizationMembers() {
     try {
       const response = await api.put(`/api/${currentOrganizationMember.organization.id}/member/${selectedMember.profile.id}`, {
         fullName: editProfileForm.fullName,
-        email: editProfileForm.email,
-        avatarUrl: editProfileForm.avatarUrl,
-        whatsapp: editProfileForm.whatsapp
+        nickname: editProfileForm.nickname,
+        whatsapp: editProfileForm.whatsapp,
+        email: editProfileForm.email
       });
 
       const data = response.data;
@@ -245,6 +248,9 @@ export default function OrganizationMembers() {
                 {t('member:user.title')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('member:user.nickname', 'Como ser chamado')}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t('member:user.role')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -292,6 +298,11 @@ export default function OrganizationMembers() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {member.profile?.nickname || '-'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-900 dark:text-white capitalize">
                     {t(`member:roles.${member.role}`)}
                   </span>
@@ -328,9 +339,9 @@ export default function OrganizationMembers() {
                           setSelectedMember(member);
                           setEditProfileForm({
                             fullName: member.profile.full_name || '',
-                            email: member.profile.email || '',
-                            avatarUrl: member.profile.avatar_url || '',
-                            whatsapp: member.profile.whatsapp || ''
+                            nickname: member.profile.nickname || '',
+                            whatsapp: member.profile.whatsapp || '',
+                            email: member.profile.email || ''
                           });
                           setShowEditModal(true);
                         }
@@ -563,30 +574,19 @@ export default function OrganizationMembers() {
                 </div>
 
                 <div>
-                  <label htmlFor="editEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('member:form.email')}
+                  <label htmlFor="editNickname" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('member:form.nickname', 'Apelido')}
                   </label>
                   <input
-                    type="email"
-                    id="editEmail"
-                    required
+                    type="text"
+                    id="editNickname"
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={editProfileForm.email}
-                    onChange={(e) => setEditProfileForm({ ...editProfileForm, email: e.target.value })}
+                    value={editProfileForm.nickname}
+                    onChange={(e) => setEditProfileForm({ ...editProfileForm, nickname: e.target.value })}
                   />
-                </div>
-
-                <div>
-                  <label htmlFor="editAvatarUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('member:form.avatarUrl')}
-                  </label>
-                  <input
-                    type="url"
-                    id="editAvatarUrl"
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={editProfileForm.avatarUrl}
-                    onChange={(e) => setEditProfileForm({ ...editProfileForm, avatarUrl: e.target.value })}
-                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('member:form.nicknameHelp', 'Como esta pessoa prefere ser chamada.')}
+                  </p>
                 </div>
 
                 <div>
@@ -600,6 +600,19 @@ export default function OrganizationMembers() {
                     value={editProfileForm.whatsapp}
                     onChange={(e) => setEditProfileForm({ ...editProfileForm, whatsapp: e.target.value })}
                     placeholder="+55 (11) 98765-4321"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="editEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('member:form.email')}
+                  </label>
+                  <input
+                    type="email"
+                    id="editEmail"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+                    value={editProfileForm.email}
+                    onChange={(e) => setEditProfileForm({ ...editProfileForm, email: e.target.value })}
                   />
                 </div>
               </div>

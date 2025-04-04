@@ -7,6 +7,8 @@ import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import { toast } from 'react-hot-toast';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
+import ChannelBasicFields from '../../components/channels/ChannelBasicFields';
+import { useTeams } from '../../hooks/useQueryes';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -22,6 +24,7 @@ export default function InstagramForm() {
   const navigate = useNavigate();
   const { id } = useParams(); // Pega o ID da URL se estiver editando
   const { currentOrganizationMember } = useAuthContext();
+  const { data: teams, isLoading: isLoadingTeams } = useTeams(currentOrganizationMember?.organization.id);
   
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -38,7 +41,8 @@ export default function InstagramForm() {
     name: '',
     is_connected: false,
     status: 'inactive',
-    credentials: {} as { username?: string; instagram_id?: string }
+    credentials: {} as { username?: string; instagram_id?: string },
+    settings: {} as Record<string, boolean | string | null | undefined>
   });
 
   // Carrega os dados do canal se estiver editando
@@ -64,7 +68,8 @@ export default function InstagramForm() {
         name: data.name,
         is_connected: data.is_connected,
         status: data.status,
-        credentials: data.credentials || {}
+        credentials: data.credentials || {},
+        settings: data.settings || {}
       });
     } catch (error: unknown) {
       const err = error as Error;
@@ -87,7 +92,11 @@ export default function InstagramForm() {
         is_connected: false,
         is_tested: false,
         credentials: {},
-        settings: {}
+        settings: {
+          defaultTeamId: formData.settings.defaultTeamId || null,
+          autoReply: true,
+          notifyNewTickets: true
+        }
       };
       
       const { data, error } = await supabase
@@ -117,7 +126,13 @@ export default function InstagramForm() {
       
       const { error } = await supabase
         .from('chat_channels')
-        .update({ name: formData.name })
+        .update({ 
+          name: formData.name,
+          settings: {
+            ...formData.settings,
+            defaultTeamId: formData.settings.defaultTeamId || null
+          }
+        })
         .eq('id', id);
 
       if (error) {
@@ -317,19 +332,28 @@ export default function InstagramForm() {
               </div>
             )}
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('form.name')}
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
+            <ChannelBasicFields 
+              name={formData.name}
+              onNameChange={(name) => setFormData(prev => ({ ...prev, name }))}
+              defaultTeamId={formData.settings.defaultTeamId as string}
+              onDefaultTeamChange={(teamId) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  defaultTeamId: teamId || null
+                }
+              }))}
+              messageSignature={formData.settings.messageSignature as string || ''}
+              onMessageSignatureChange={(signature) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  messageSignature: signature
+                }
+              }))}
+              teams={teams}
+              isLoadingTeams={isLoadingTeams}
+            />
 
             {/* Seção de informações da conta conectada */}
             {id && formData.is_connected && formData.credentials.username && (

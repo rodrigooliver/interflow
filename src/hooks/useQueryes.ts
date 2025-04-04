@@ -214,6 +214,7 @@ export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 
           id: string;
           email: string;
           full_name: string;
+          nickname: string;
           avatar_url: string;
           whatsapp: string;
           created_at: string;
@@ -231,6 +232,7 @@ export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 
           profile:profiles!fk_organization_members_profile(
             id,
             email,
+            nickname,
             full_name,
             avatar_url,
             whatsapp,
@@ -238,7 +240,8 @@ export const useAgents = (organizationId?: string, roles?: ('agent' | 'admin' | 
           )
         `)
         .eq('organization_id', organizationId)
-        .in('role', roles || ['agent', 'admin', 'owner']) as PostgrestResponse<MemberWithProfile>;
+        .in('role', roles || ['agent', 'admin', 'owner'])
+        .order('profile(full_name)', { ascending: true }) as PostgrestResponse<MemberWithProfile>;
 
       if (error) throw error;
       

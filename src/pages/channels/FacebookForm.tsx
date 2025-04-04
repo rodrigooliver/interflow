@@ -6,6 +6,8 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
+import ChannelBasicFields from '../../components/channels/ChannelBasicFields';
+import { useTeams } from '../../hooks/useQueryes';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -21,6 +23,7 @@ export default function FacebookForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganizationMember } = useAuthContext();
+  const { data: teams, isLoading: isLoadingTeams } = useTeams(currentOrganizationMember?.organization.id);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -35,7 +38,8 @@ export default function FacebookForm() {
       accessToken: '',
       pageId: '',
       webhookUrl: ''
-    }
+    },
+    settings: {} as Record<string, boolean | string | null | undefined>
   });
 
   useEffect(() => {
@@ -70,7 +74,8 @@ export default function FacebookForm() {
 
         setFormData({
           name: data.name || '',
-          credentials
+          credentials,
+          settings: data.settings || {}
         });
       }
     } catch (error) {
@@ -96,6 +101,7 @@ export default function FacebookForm() {
           .update({
             name: formData.name,
             credentials: formData.credentials,
+            settings: formData.settings,
             updated_at: new Date().toISOString()
           })
           .eq('id', id);
@@ -111,6 +117,7 @@ export default function FacebookForm() {
             type: 'facebook',
             credentials: formData.credentials,
             settings: {
+              ...formData.settings,
               autoReply: true,
               notifyNewTickets: true
             },
@@ -209,19 +216,28 @@ export default function FacebookForm() {
               </div>
             )}
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('form.name')}
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
+            <ChannelBasicFields 
+              name={formData.name}
+              onNameChange={(name) => setFormData(prev => ({ ...prev, name }))}
+              defaultTeamId={formData.settings.defaultTeamId as string}
+              onDefaultTeamChange={(teamId) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  defaultTeamId: teamId || null
+                }
+              }))}
+              messageSignature={formData.settings.messageSignature as string || ''}
+              onMessageSignatureChange={(signature) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  messageSignature: signature
+                }
+              }))}
+              teams={teams}
+              isLoadingTeams={isLoadingTeams}
+            />
 
             <div>
               <label htmlFor="appId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

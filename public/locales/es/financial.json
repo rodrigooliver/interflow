@@ -11,7 +11,7 @@
   "incomePlural": "Ingresos",
   "expensePlural": "Gastos",
   "balance": "Saldo",
-  "cashiersBalance": "Saldo en Caja",
+  "cashiersBalance": "Saldo en Caja Registradora",
   "inCash": "En caja",
   "pending": "Pendiente",
   "pendingPlural": "Pendientes",
@@ -20,7 +20,7 @@
   "paid": "Pagado",
   "received": "Recibido",
   "cancelled": "Cancelado",
-  "paidOrReceived": "Pagadas/Recibidas",
+  "paidOrReceived": "Transacciones Pagadas/Recibidas",
   "toReceive": "Por cobrar",
   "toPay": "Por pagar",
   "futureImplementation": "Este componente se implementará en una actualización futura.",
@@ -162,5 +162,17 @@
   "deleteCategory": "Eliminar Categoría",
   "expenseCategories": "Categorías de Gastos",
   "incomeCategories": "Categorías de Ingresos",
-  "type": "Tipo"
+  "type": "Tipo",
+
+  "details": "Detalles",
+  "paymentInfo": "Información de Pago",
+  "systemInfo": "Información del Sistema",
+  "createdBy": "Creado por",
+  "createdAt": "Creado en",
+  "updatedAt": "Actualizado en",
+  "transactionDeletedSuccess": "Transacción eliminada con éxito",
+  "errorDeletingTransaction": "Error al eliminar la transacción",
+  "transactionNotFound": "Transacción no encontrada",
+  "email": "Correo electrónico",
+  "phone": "Teléfono"
 } 

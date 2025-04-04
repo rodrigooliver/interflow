@@ -57,6 +57,13 @@
     "name": "Nome do Canal",
     "defaultTeam": "Time Padrão",
     "selectTeam": "Selecione o Time Padrão",
+    "messageSignature": "Assinatura de Mensagem",
+    "messageSignaturePlaceholder": "Ex: Atenciosamente,\nEquipe de Suporte",
+    "messageSignatureHelp": "Use {{nickname}} para inserir automaticamente o nome do atendente",
+    "insertNicknameAtStart": "Inserir nickname no início da mensagem",
+    "insertNicknameAtEnd": "Inserir nickname no final da mensagem",
+    "regards": "Atenciosamente",
+    "namePlaceholder": "Digite o nome do canal. Ex: WhatsApp",
     "title": {
       "create": "Novo Canal de Atendimento",
       "edit": "Editar Canal de Atendimento"
@@ -153,8 +160,6 @@
       "manageTemplates": "Gerenciar Templates",
       "maxButtonsReached": "Máximo de 3 botões atingido",
       "messagePreview": "Prévia da mensagem",
-      "namePlaceholder": "Digite o nome do canal. Ex: Whatsapp",
-      "nameRequired": "Digite um nome para continuar",
       "newConnection": "Inserir novas configurações de conexão",
       "newConnectionWarning": "Atenção: Inserir novas configurações irá substituir as credenciais existentes. É necessário testar antes de salvar.",
       "newTemplate": "Novo Template",

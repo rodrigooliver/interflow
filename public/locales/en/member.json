@@ -10,7 +10,8 @@
     "since": "Since",
     "unknown": "Unknown User",
     "emailNotAvailable": "Email not available",
-    "actions": "Actions"
+    "actions": "Actions",
+    "nickname": "How to be called"
   },
   "form": {
     "fullName": "Full Name",
@@ -18,7 +19,9 @@
     "password": "Password",
     "role": "Role",
     "whatsapp": "WhatsApp",
-    "avatarUrl": "Avatar URL"
+    "avatarUrl": "Avatar URL",
+    "nickname": "Nickname",
+    "nicknameHelp": "How this person prefers to be called."
   },
   "actions": {
     "register": "Register",

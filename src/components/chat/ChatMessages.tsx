@@ -1425,21 +1425,22 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                     {chat?.customer?.name || t('unnamed')}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  {chat?.external_id && (
+                      <span className="truncate flex items-center">
+                        {/* <img 
+                          src={getChannelIcon(chat.channel_details?.type || 'whatsapp_official')} 
+                          alt="Canal" 
+                          className="w-3.5 h-3.5 mr-1"
+                        /> */}
+                        {chat.external_id}
+                      </span>
+                    )}
                     {chat?.ticket_number && (
                       <span className="truncate">
                         #{chat.ticket_number}
                       </span>
                     )}
-                    {chat?.external_id && (
-                      <span className="truncate flex items-center">
-                        <img 
-                          src={getChannelIcon(chat.channel_details?.type || 'whatsapp_official')} 
-                          alt="Canal" 
-                          className="w-3.5 h-3.5 mr-1"
-                        />
-                        {chat.external_id}
-                      </span>
-                    )}
+                    
                     {/* Tags do cliente */}
                     {chat?.customer?.tags && chat.customer.tags.length > 0 && (
                       <div className="flex items-center gap-1">

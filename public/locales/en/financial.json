@@ -8,10 +8,10 @@
   
   "income": "Income",
   "expense": "Expense",
-  "incomePlural": "Income",
+  "incomePlural": "Incomes",
   "expensePlural": "Expenses",
   "balance": "Balance",
-  "cashiersBalance": "Cash Balance",
+  "cashiersBalance": "Cash Register Balance",
   "inCash": "In cash",
   "pending": "Pending",
   "pendingPlural": "Pending",
@@ -20,7 +20,7 @@
   "paid": "Paid",
   "received": "Received",
   "cancelled": "Cancelled",
-  "paidOrReceived": "Paid/Received",
+  "paidOrReceived": "Paid/Received Transactions",
   "toReceive": "To receive",
   "toPay": "To pay",
   "futureImplementation": "This component will be implemented in a future update.",
@@ -162,5 +162,17 @@
   "deleteCategory": "Delete Category",
   "expenseCategories": "Expense Categories",
   "incomeCategories": "Income Categories",
-  "type": "Type"
+  "type": "Type",
+
+  "details": "Details",
+  "paymentInfo": "Payment Information",
+  "systemInfo": "System Information",
+  "createdBy": "Created by",
+  "createdAt": "Created at",
+  "updatedAt": "Updated at",
+  "transactionDeletedSuccess": "Transaction deleted successfully",
+  "errorDeletingTransaction": "Error deleting transaction",
+  "transactionNotFound": "Transaction not found",
+  "email": "Email",
+  "phone": "Phone"
 } 

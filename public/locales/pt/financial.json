@@ -162,5 +162,17 @@
   "deleteCategory": "Excluir Categoria",
   "expenseCategories": "Categorias de Despesa",
   "incomeCategories": "Categorias de Receita",
-  "type": "Tipo"
+  "type": "Tipo",
+
+  "details": "Detalhes",
+  "paymentInfo": "Informações de Pagamento",
+  "systemInfo": "Informações do Sistema",
+  "createdBy": "Criado por",
+  "createdAt": "Criado em",
+  "updatedAt": "Atualizado em",
+  "transactionDeletedSuccess": "Transação excluída com sucesso",
+  "errorDeletingTransaction": "Erro ao excluir transação",
+  "transactionNotFound": "Transação não encontrada",
+  "email": "E-mail",
+  "phone": "Telefone"
 } 

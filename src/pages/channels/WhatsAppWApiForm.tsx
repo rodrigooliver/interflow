@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
 import { useTeams } from '../../hooks/useQueryes';
+import ChannelBasicFields from '../../components/channels/ChannelBasicFields';
 
 type ConnectionType = 'custom' | 'interflow' | null;
 
@@ -53,7 +54,9 @@ export default function WhatsAppWApiForm() {
       qrCode: '',
       qrExpiresAt: null as string | null
     },
-    settings: {} as Record<string, boolean | string | null | undefined>,
+    settings: {
+      messageSignature: ''
+    } as Record<string, boolean | string | null | undefined>,
     is_tested: false,
     is_connected: false,
     status: 'inactive' as 'active' | 'inactive'
@@ -792,51 +795,28 @@ export default function WhatsAppWApiForm() {
               </div>
             )}
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('form.name')}
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-
-            {/* Adicionar select de time padrão */}
-            <div>
-              <label htmlFor="defaultTeam" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('form.defaultTeam')}
-              </label>
-              <select
-                id="defaultTeam"
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.settings.defaultTeamId as string}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  settings: {
-                    ...formData.settings,
-                    defaultTeamId: e.target.value || null
-                  }
-                })}
-                disabled={isLoadingTeams}
-              >
-                <option value="">{t('form.selectTeam')}</option>
-                {teams?.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-              {isLoadingTeams && (
-                <div className="mt-1">
-                  <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-                </div>
-              )}
-            </div>
+            <ChannelBasicFields 
+              name={formData.name}
+              onNameChange={(name) => setFormData(prev => ({ ...prev, name }))}
+              defaultTeamId={formData.settings.defaultTeamId as string}
+              onDefaultTeamChange={(teamId) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  defaultTeamId: teamId || null
+                }
+              }))}
+              messageSignature={formData.settings.messageSignature as string || ''}
+              onMessageSignatureChange={(signature) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  messageSignature: signature
+                }
+              }))}
+              teams={teams}
+              isLoadingTeams={isLoadingTeams}
+            />
 
             {/* Seção de Configurações de Conexão */}
             {(formData.is_tested || formData.settings.isInterflow) && !showConnectionSettings ? (

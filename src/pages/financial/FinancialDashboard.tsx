@@ -7,14 +7,33 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Button } from '../../components/ui/Button';
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, Layers, PieChart } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import TransactionFormModal from '../../components/financial/TransactionFormModal';
+
+// Define interfaces para os tipos
+interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  transaction_type: 'income' | 'expense';
+  status: string;
+  due_date: string;
+  category_id?: string;
+  customer_id?: string;
+  financial_categories?: { name: string };
+  financial_payment_methods?: { name: string };
+  customers?: { name: string };
+}
+
+interface CashierBalance {
+  id: string;
+  balance: number;
+}
 
 const FinancialDashboard: React.FC = () => {
   const { t } = useTranslation('financial');
   const navigate = useNavigate();
-  const { currentOrganizationId } = useAuthContext();
+  const { currentOrganizationMember } = useAuthContext();
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<'income' | 'expense' | null>(null);
@@ -28,15 +47,15 @@ const FinancialDashboard: React.FC = () => {
     overdueExpense: 0,
     cashiersBalance: 0
   });
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [period, setPeriod] = useState('month');
 
   useEffect(() => {
-    if (currentOrganizationId) {
+    if (currentOrganizationMember?.organization.id) {
       fetchSummaryData();
       fetchRecentTransactions();
     }
-  }, [currentOrganizationId, period]);
+  }, [currentOrganizationMember?.organization.id, period]);
 
   const fetchSummaryData = async () => {
     try {
@@ -59,7 +78,7 @@ const FinancialDashboard: React.FC = () => {
       const { data: transactions, error } = await supabase
         .from('financial_transactions')
         .select('*')
-        .eq('organization_id', currentOrganizationId)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .gte('due_date', startDate!.toISOString().split('T')[0])
         .lte('due_date', today.toISOString().split('T')[0]);
 
@@ -67,12 +86,26 @@ const FinancialDashboard: React.FC = () => {
 
       // Obter saldos de caixas
       const { data: cashiers, error: cashiersError } = await supabase
-        .rpc('get_cashier_current_balance')
-        .select('*')
-        .eq('organization_id', currentOrganizationId);
+        .from('financial_cashiers')
+        .select('id')
+        .eq('organization_id', currentOrganizationMember?.organization.id);
 
-      if (cashiersError && cashiersError.message !== 'Cannot read properties of null (reading \'map\')') {
-        throw cashiersError;
+      if (cashiersError) throw cashiersError;
+
+      // Buscar saldo de cada caixa
+      const cashierBalances: CashierBalance[] = [];
+      if (cashiers && cashiers.length > 0) {
+        for (const cashier of cashiers) {
+          const { data, error } = await supabase
+            .rpc('get_cashier_current_balance', { p_cashier_id: cashier.id });
+          
+          if (!error) {
+            cashierBalances.push({
+              id: cashier.id,
+              balance: data || 0
+            });
+          }
+        }
       }
 
       // Calcular totais
@@ -104,7 +137,7 @@ const FinancialDashboard: React.FC = () => {
       });
 
       // Calcular saldo de caixa
-      const cashiersBalance = cashiers ? cashiers.reduce((sum: number, cashier: any) => sum + cashier.balance, 0) : 0;
+      const cashiersBalance = cashierBalances.reduce((sum, cashier) => sum + cashier.balance, 0);
 
       setSummary({
         totalIncome,
@@ -134,7 +167,7 @@ const FinancialDashboard: React.FC = () => {
           financial_payment_methods(name),
           customers(name)
         `)
-        .eq('organization_id', currentOrganizationId)
+        .eq('organization_id', currentOrganizationMember?.organization.id)
         .order('due_date', { ascending: false })
         .limit(5);
 
@@ -178,7 +211,9 @@ const FinancialDashboard: React.FC = () => {
   };
 
   const handleModalSuccess = () => {
-    fetchDashboardData();
+    // Recarregar dados do dashboard
+    fetchSummaryData();
+    fetchRecentTransactions();
   };
 
   return (

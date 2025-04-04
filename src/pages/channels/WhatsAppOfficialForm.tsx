@@ -8,6 +8,8 @@ import api from '../../lib/api';
 import { toast } from 'react-hot-toast';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
+import ChannelBasicFields from '../../components/channels/ChannelBasicFields';
+import { useTeams } from '../../hooks/useQueryes';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -46,6 +48,7 @@ export default function WhatsAppOfficialForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganizationMember } = useAuthContext();
+  const { data: teams, isLoading: isLoadingTeams } = useTeams(currentOrganizationMember?.organization.id);
   
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -69,7 +72,8 @@ export default function WhatsAppOfficialForm() {
       accessToken: '',
       pageId: '',
       webhookUrl: ''
-    }
+    },
+    settings: {} as Record<string, boolean | string | null | undefined>
   });
   // Referência para armazenar as informações da sessão de forma síncrona
   const sessionInfoRef = useRef<Record<string, unknown>>({});
@@ -190,7 +194,8 @@ export default function WhatsAppOfficialForm() {
           accessToken: '',
           pageId: '',
           webhookUrl: ''
-        }
+        },
+        settings: data.settings || {}
       });
 
       // Extrair informações de configuração das credenciais
@@ -226,6 +231,7 @@ export default function WhatsAppOfficialForm() {
         is_tested: false,
         credentials: {},
         settings: {
+          ...formData.settings,
           autoReply: true,
           notifyNewTickets: true
         }
@@ -258,7 +264,13 @@ export default function WhatsAppOfficialForm() {
       
       const { error } = await supabase
         .from('chat_channels')
-        .update({ name: formData.name })
+        .update({
+          name: formData.name,
+          settings: formData.settings,
+          is_connected: formData.is_connected,
+          status: formData.status,
+          credentials: formData.credentials
+        })
         .eq('id', id);
 
       if (error) {
@@ -664,7 +676,8 @@ export default function WhatsAppOfficialForm() {
               accessToken: '',
               pageId: '',
               webhookUrl: ''
-            }
+            },
+            settings: updatedChannel.settings || {}
           });
           
           // Atualizar informações de configuração
@@ -820,19 +833,28 @@ export default function WhatsAppOfficialForm() {
                 </div>
               )}
 
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('form.name')}
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  required
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
+              <ChannelBasicFields 
+                name={formData.name}
+                onNameChange={(name) => setFormData(prev => ({ ...prev, name }))}
+                defaultTeamId={formData.settings.defaultTeamId as string}
+                onDefaultTeamChange={(teamId) => setFormData(prev => ({
+                  ...prev,
+                  settings: {
+                    ...prev.settings,
+                    defaultTeamId: teamId || null
+                  }
+                }))}
+                messageSignature={formData.settings.messageSignature as string || ''}
+                onMessageSignatureChange={(signature) => setFormData(prev => ({
+                  ...prev,
+                  settings: {
+                    ...prev.settings,
+                    messageSignature: signature
+                  }
+                }))}
+                teams={teams}
+                isLoadingTeams={isLoadingTeams}
+              />
 
               {/* Exibir o status da configuração */}
               <SetupStatus />

@@ -6,6 +6,8 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
+import ChannelBasicFields from '../../components/channels/ChannelBasicFields';
+import { useTeams } from '../../hooks/useQueryes';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -21,6 +23,7 @@ export default function WhatsAppEvoForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { currentOrganizationMember } = useAuthContext();
+  const { data: teams, isLoading: isLoadingTeams } = useTeams(currentOrganizationMember?.organization.id);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +37,8 @@ export default function WhatsAppEvoForm() {
       apiKey: '',
       instanceName: '',
       webhookUrl: ''
-    }
+    },
+    settings: {} as Record<string, boolean | string | null | undefined>
   });
 
   useEffect(() => {
@@ -59,7 +63,8 @@ export default function WhatsAppEvoForm() {
       if (data) {
         setFormData({
           name: data.name,
-          credentials: data.credentials || {}
+          credentials: data.credentials || {},
+          settings: data.settings || {}
         });
       }
     } catch (error) {
@@ -85,6 +90,7 @@ export default function WhatsAppEvoForm() {
           .update({
             name: formData.name,
             credentials: formData.credentials,
+            settings: formData.settings,
             updated_at: new Date().toISOString()
           })
           .eq('id', id);
@@ -100,6 +106,7 @@ export default function WhatsAppEvoForm() {
             type: 'whatsapp_evo',
             credentials: formData.credentials,
             settings: {
+              ...formData.settings,
               autoReply: true,
               notifyNewTickets: true
             },
@@ -198,19 +205,28 @@ export default function WhatsAppEvoForm() {
               </div>
             )}
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('form.name')}
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 h-10 px-3"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
+            <ChannelBasicFields 
+              name={formData.name}
+              onNameChange={(name) => setFormData(prev => ({ ...prev, name }))}
+              defaultTeamId={formData.settings.defaultTeamId as string}
+              onDefaultTeamChange={(teamId) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  defaultTeamId: teamId || null
+                }
+              }))}
+              messageSignature={formData.settings.messageSignature as string || ''}
+              onMessageSignatureChange={(signature) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  messageSignature: signature
+                }
+              }))}
+              teams={teams}
+              isLoadingTeams={isLoadingTeams}
+            />
 
             <div>
               <label htmlFor="apiUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
