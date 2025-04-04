@@ -64,7 +64,8 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
         id: crypto.randomUUID(),
         text: '{{Response}}',
         label: 'Send Text',
-        splitParagraphs: true
+        splitParagraphs: true,
+        extractLinks: true
       }
     };
 
@@ -141,7 +142,7 @@ export async function createFlowFromPrompt(promptId: string, organizationId: str
         draft_nodes: [defaultStartNode, agentNode, textNode, inputNode],
         draft_edges: edges,
         variables: variables,
-        debounce_time: 15000,
+        debounce_time: 20000,
         is_published: true,
         published_at: new Date().toISOString(),
         viewport: {
@@ -1241,7 +1242,10 @@ const PromptFormMain: React.FC = () => {
                                 <TriggersList 
                                   triggers={triggers}
                                   flowId={linkedFlow.id}
-                                  onChange={setTriggers}
+                                  onChange={() => {
+                                    setTriggers(triggers);
+                                    queryClient.invalidateQueries({ queryKey: ['prompts', currentOrganizationMember?.organization.id] });
+                                  }}
                                 />
                               ) : (
                                 <div className="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">

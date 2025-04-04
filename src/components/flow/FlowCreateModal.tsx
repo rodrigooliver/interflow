@@ -156,7 +156,7 @@ export default function FlowCreateModal({ isOpen, onClose, onSuccess, redirectTo
             description: newFlowData.description,
             nodes: [],
             edges: [],
-            debounce_time: 15000,
+            debounce_time: 20000,
             draft_nodes: [defaultStartNode],
             draft_edges: [],
             variables: [],

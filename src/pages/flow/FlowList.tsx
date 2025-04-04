@@ -47,7 +47,7 @@ export default function FlowList() {
       if (flowError) throw flowError;
 
       // Invalidar o cache dos flows
-      await queryClient.invalidateQueries({ queryKey: ['flows'] });
+      await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember?.organization.id] });
       
       setShowDeleteFlowModal(false);
       setSelectedFlow(null);
@@ -74,7 +74,7 @@ export default function FlowList() {
       if (updateError) throw updateError;
 
       // Invalidar o cache dos flows
-      await queryClient.invalidateQueries({ queryKey: ['flows'] });
+      await queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember?.organization.id] });
       
       setShowEditFlowModal(false);
       setSelectedFlow(null);
@@ -180,7 +180,7 @@ export default function FlowList() {
                     triggers={flow.triggers || []}
                     flowId={flow.id}
                     showWarning={true}
-                    onChange={() => queryClient.invalidateQueries({ queryKey: ['flows'] })}
+                    onChange={() => queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember?.organization.id] })}
                   />
                 </div>
               </Link>
