@@ -204,7 +204,7 @@ export function IntegrationFormOpenAI({
       }
 
       // Invalida o cache da query useOpenAIIntegrations
-      await queryClient.invalidateQueries({ queryKey: ['useOpenAIIntegrations'] });
+      await queryClient.invalidateQueries({ queryKey: ['useOpenAIIntegrations', currentOrganizationMember?.organization.id] });
 
       onSuccess();
     } catch (error: unknown) {
