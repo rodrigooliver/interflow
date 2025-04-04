@@ -180,7 +180,14 @@ export default function Prompts() {
                               <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${expandedPrompt === prompt.id ? 'transform rotate-180' : ''}`} />
                             </div>
                             <div>
-                              <div className="font-medium text-gray-900 dark:text-white">{prompt.title}</div>
+                              <div className="font-medium text-gray-900 dark:text-white flex items-center">
+                                {prompt.title}
+                                {prompt.is_default && (
+                                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400">
+                                    {t('prompts:defaultAgent')}
+                                  </span>
+                                )}
+                              </div>
                               {prompt.description && (
                                 <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">{prompt.description}</div>
                               )}

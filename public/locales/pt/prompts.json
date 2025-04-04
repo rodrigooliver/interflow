@@ -32,6 +32,7 @@
   "prompt": "Agente",
   "updated": "Atualizado",
   "content": "Conteúdo",
+  "defaultAgent": "Agente Padrão",
   "form": {
     "title": "Título",
     "titlePlaceholder": "Digite o título do prompt",
@@ -47,6 +48,8 @@
     "selectModel": "Selecione um modelo",
     "temperature": "Temperatura",
     "temperatureDescription": "Controla a criatividade das respostas. Valores mais baixos tornam as respostas mais determinísticas, valores mais altos tornam mais criativas.",
+    "isDefault": "Definir como Agente IA padrão",
+    "isDefaultDescription": "O agente padrão é chamado em algumas situações como Melhorador de Texto",
     "toolName": "Nome da Ferramenta",
     "toolNamePlaceholder": "Ex: get_weather",
     "toolDescription": "Descrição da Ferramenta",

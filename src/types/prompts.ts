@@ -147,9 +147,9 @@ export interface Variable {
 export interface PromptFormData {
   title: string;
   content: string;
-  integration_id: string;
-  model: string;
-  temperature: number;
+  integration_id?: string;
+  model?: string;
+  temperature?: number;
   actions: SystemActionType[];
   config: Record<string, any>;
   media: Array<{

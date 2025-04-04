@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Loader2, MessageSquare, ArrowLeftRight, ArrowUpDown, Sparkles, BookOpen, MessageCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { Prompt } from '../../types/database';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import api from '../../lib/api';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { usePrompts } from '../../hooks/useQueryes';
 
 interface AIImproveModalProps {
   text: string;
@@ -15,35 +14,37 @@ interface AIImproveModalProps {
 }
 
 export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImproveModalProps) {
-  const { t, i18n } = useTranslation('chats');
+  const { t, i18n } = useTranslation(['chats', 'prompts']);
   const { currentOrganizationMember } = useAuthContext();
   const organizationId = currentOrganizationMember?.organization.id || '';
   const [improvedText, setImprovedText] = useState(text);
   const [selectedOption, setSelectedOption] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState('');
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const { data: prompts = [], isLoading: loadingPrompts } = usePrompts(organizationId);
   const [error, setError] = useState('');
   const [customInstructions, setCustomInstructions] = useState('');
   const isMobile = useMediaQuery('(max-width: 640px)');
 
+  // Selecionar o prompt padrão ou único quando os prompts forem carregados
   useEffect(() => {
-    async function loadPrompts() {
-      const { data, error } = await supabase
-        .from('prompts')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        setPrompts(data);
-        if (data.length === 1) {
-          setSelectedPrompt(data[0].id);
+    if (prompts.length > 0 && !selectedPrompt) {
+      // Se existe apenas um prompt, selecione-o automaticamente
+      if (prompts.length === 1) {
+        setSelectedPrompt(prompts[0].id);
+      } 
+      // Se existem múltiplos prompts, verifique se algum é o padrão
+      else if (prompts.length > 1) {
+        // Verificar se existe um prompt padrão (is_default = true)
+        const defaultPrompt = prompts.find(prompt => prompt.is_default);
+        
+        if (defaultPrompt) {
+          // Se existir um prompt padrão, selecione-o automaticamente
+          setSelectedPrompt(defaultPrompt.id);
         }
       }
     }
-
-    loadPrompts();
-  }, []);
+  }, [prompts, selectedPrompt]);
 
   // Atualizar o texto melhorado quando o texto original mudar
   useEffect(() => {
@@ -227,11 +228,12 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
                 value={selectedPrompt}
                 onChange={(e) => setSelectedPrompt(e.target.value)}
                 className="w-full p-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={loadingPrompts}
               >
-                <option value="">{t('ai.selectAgentPlaceholder')}</option>
+                <option value="">{loadingPrompts ? t('common:loading') : t('ai.selectAgentPlaceholder')}</option>
                 {prompts.map((prompt) => (
                   <option key={prompt.id} value={prompt.id}>
-                    {prompt.title}
+                    {prompt.title}{prompt.is_default ? ` (${t('prompts:defaultAgent')})` : ''}
                   </option>
                 ))}
               </select>

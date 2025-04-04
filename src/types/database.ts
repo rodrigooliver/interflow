@@ -513,6 +513,7 @@ export interface Prompt {
   tags?: string[];
   created_at: string;
   updated_at: string;
+  is_default?: boolean;
 }
 
 // ==========================================

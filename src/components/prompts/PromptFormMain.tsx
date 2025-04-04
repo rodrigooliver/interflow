@@ -205,10 +205,11 @@ const PromptFormMain: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // for editing
   const [searchParams] = useSearchParams();
-  const { currentOrganizationMember } = useAuthContext();
+  const { currentOrganizationMember, profile } = useAuthContext();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDefault, setIsDefault] = useState(false);
   const [formData, setFormData] = useState<PromptFormData>({
     title: '',
     content: '',
@@ -336,7 +337,7 @@ const PromptFormMain: React.FC = () => {
           media: data.media || []
         });
         
-        // Set up integration, model, and temperature if they exist
+        // Set up integration, model, temperature, is_default if they exist
         if (data.integration) {
           setSelectedIntegration(data.integration);
         }
@@ -347,6 +348,10 @@ const PromptFormMain: React.FC = () => {
         
         if (data.temperature !== null && data.temperature !== undefined) {
           setTemperature(data.temperature);
+        }
+        
+        if (data.is_default !== null && data.is_default !== undefined) {
+          setIsDefault(data.is_default);
         }
         
         // Carregar timezone do config se existir
@@ -511,6 +516,17 @@ const PromptFormMain: React.FC = () => {
         timezone: timezone
       };
       
+      // Se o usuário marcar como prompt padrão, verificar se já existe outro prompt padrão
+      if (isDefault) {
+        // Apenas superadmins podem definir prompts como padrão
+        // Verificar se já existe outro prompt padrão
+        await supabase
+          .from('prompts')
+          .update({ is_default: false })
+          .eq('organization_id', currentOrganizationMember.organization.id)
+          .eq('is_default', true)
+      }
+      
       const promptData = {
         title: formData.title,
         content: formData.content,
@@ -521,7 +537,8 @@ const PromptFormMain: React.FC = () => {
         destinations: formData.destinations,
         actions: formData.actions,
         config: updatedConfig,
-        media: formData.media
+        media: formData.media,
+        is_default: profile?.is_superadmin ? isDefault : false
       };
 
       let promptId = id;
@@ -929,6 +946,30 @@ const PromptFormMain: React.FC = () => {
                           placeholder={t('prompts:form.titlePlaceholder') || 'Digite o título do prompt'}
                         />
                       </div>
+
+                      {/* Checkbox para Prompt Padrão - apenas para superadmins */}
+                      {profile?.is_superadmin && (
+                        <div className="mb-6">
+                          <div className="flex items-center">
+                            <input
+                              id="is-default-checkbox"
+                              type="checkbox"
+                              checked={isDefault}
+                              onChange={(e) => setIsDefault(e.target.checked)}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <label
+                              htmlFor="is-default-checkbox"
+                              className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
+                              {t('prompts:form.isDefault') || 'Definir como prompt padrão (disponível para todas as organizações)'}
+                            </label>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {t('prompts:form.isDefaultDescription') || 'Prompts padrão são disponíveis para todas as organizações e não podem ser editados por usuários comuns.'}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Configurações de IA */}
                       <div className="">

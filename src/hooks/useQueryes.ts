@@ -618,7 +618,10 @@ export function usePrompts(organizationId?: string) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as (Prompt & { flows: { id: string; name: string; triggers: Trigger[] }[] })[];
+      return data as (Prompt & { 
+        flows: { id: string; name: string; triggers: Trigger[] }[];
+        is_default?: boolean;
+      })[];
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutos
