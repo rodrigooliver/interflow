@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useEffect } from 'react';
+import React, { useState, Suspense, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import * as Sentry from "@sentry/react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -97,6 +97,113 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Componente para detecção de tela branca
+const WhiteScreenDetector = () => {
+  const checkIntervalRef = useRef<number | null>(null);
+  const lastVisibilityState = useRef<string>(document.visibilityState);
+  
+  useEffect(() => {
+    // Função que verifica se a tela está branca
+    const checkWhiteScreen = () => {
+      try {
+        // Verificar se o body está vazio ou tem apenas elementos vazios
+        const body = document.body;
+        const hasContent = body.children.length > 0 && 
+          Array.from(body.children).some(el => 
+            (el as HTMLElement).offsetHeight > 0 && (el as HTMLElement).offsetWidth > 0
+          );
+        
+        // Verificar se há elementos visíveis
+        const visibleElements = document.querySelectorAll('*');
+        const hasVisibleElements = Array.from(visibleElements).some(el => {
+          const style = window.getComputedStyle(el as Element);
+          return style.display !== 'none' && 
+                 style.visibility !== 'hidden' && 
+                 style.opacity !== '0' &&
+                 (el as HTMLElement).offsetHeight > 0 && 
+                 (el as HTMLElement).offsetWidth > 0;
+        });
+
+        // Verificar se o body está vazio ou só tem um loader
+        const hasOnlyLoader = document.body.innerHTML.trim() === '' || 
+                            (document.body.children.length <= 2 && 
+                             document.body.textContent?.trim() === '');
+
+        // Se não houver conteúdo visível, considerar como tela branca
+        if ((!hasContent || !hasVisibleElements || hasOnlyLoader) && document.readyState === 'complete') {
+          console.warn('Tela branca detectada! Recarregando a página...');
+          
+          // Registrar no Sentry
+          Sentry.captureMessage('Tela branca detectada', {
+            level: 'warning',
+            tags: {
+              location: 'WhiteScreenDetector',
+              type: 'WHITE_SCREEN'
+            },
+            extra: {
+              url: window.location.href,
+              timestamp: new Date().toISOString(),
+              visibilityState: document.visibilityState,
+              hasContent,
+              hasVisibleElements,
+              hasOnlyLoader
+            }
+          });
+          
+          // Recarregar a página após um breve delay
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar tela branca:', error);
+        Sentry.captureException(error, {
+          tags: {
+            location: 'WhiteScreenDetector',
+            type: 'CHECK_ERROR'
+          }
+        });
+      }
+    };
+    
+    // Handler para o evento de visibilidade do documento
+    const handleVisibilityChange = () => {
+      // Se o documento estava oculto e agora está visível (retornou do background)
+      if (lastVisibilityState.current === 'hidden' && document.visibilityState === 'visible') {
+        console.log('Aplicação voltou do background, verificando tela branca...');
+        
+        // Aguardar um momento para que a interface tenha chance de se renderizar
+        setTimeout(checkWhiteScreen, 2000);
+      }
+      
+      lastVisibilityState.current = document.visibilityState;
+    };
+    
+    // Verificar pela primeira vez depois de 5 segundos
+    const initialTimeout = setTimeout(() => {
+      checkWhiteScreen();
+      
+      // Depois, continuar verificando a cada minuto
+      checkIntervalRef.current = window.setInterval(checkWhiteScreen, 60000);
+    }, 5000);
+    
+    // Adicionar event listener para mudanças de visibilidade
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Limpar os timeouts e intervalos ao desmontar
+    return () => {
+      clearTimeout(initialTimeout);
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+  
+  // Este componente não renderiza nada visível
+  return null;
+};
 
 function AppContent() {
   const { session, profile, loading, userOrganizations, loadingOrganizations, currentOrganizationMember, setCurrentOrganizationId } = useAuthContext();
@@ -251,6 +358,8 @@ function AppContent() {
   return (
     <>
       <ConnectionStatus />
+      {/* Detector de tela branca */}
+      <WhiteScreenDetector />
       
       {/* Modal de seleção de organização */}
       {(modalOrganization || (!currentOrganizationMember && userOrganizations && userOrganizations.length > 0)) && location.pathname.startsWith('/app') && modalRoot && createPortal(
