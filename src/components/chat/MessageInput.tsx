@@ -11,6 +11,7 @@ import { Message } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import { useMessageShortcuts } from '../../hooks/useQueryes';
+import axios from 'axios';
 
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
@@ -266,7 +267,11 @@ export function MessageInput({
       
       // Melhorar o tratamento de erro
       let errorMessage = t('errors.sending', 'Erro ao enviar mensagem');
-      if (error instanceof Error) {
+      
+      // Verificar se é um erro de rede
+      if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
+        errorMessage = t('errors.network', 'Erro de conexão. Verifique sua internet e tente novamente.');
+      } else if (error instanceof Error) {
         const apiError = error as { response?: { data?: { error?: string } } };
         if (apiError.response?.data?.error) {
           errorMessage = apiError.response.data.error;

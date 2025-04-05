@@ -110,4 +110,47 @@
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #4b5563;
+}
+
+/* Animação de aparecimento e desaparecimento para o indicador de carregamento */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading-indicator-enter {
+  animation: fadeInDown 0.3s ease-out forwards;
+}
+
+/* Transição suave para carregar mais mensagens no topo */
+.messages-loading-transition {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Animação suave para novas mensagens aparecendo */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-fade-in {
+  animation: fadeInUp 0.4s ease-out forwards;
+  transform-origin: top center;
+}
+
+/* Transição suave para o contêiner de mensagens */
+.flex-1.overflow-y-auto {
+  transition: opacity 0.3s ease;
 } 

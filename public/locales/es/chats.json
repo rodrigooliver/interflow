@@ -15,6 +15,7 @@
   "archivedChats": "Conversaciones Archivadas",
   "backToActiveChats": "Volver a Conversaciones Activas",
   "resolutionTitle": "Resumen",
+  "allMessagesLoaded": "Todos los mensajes cargados",
   "collaborator": {
     "collaborators": "Colaboradores",
     "attendedBy": "Atendido por {{name}}",
@@ -158,6 +159,7 @@
     "microphoneAccess": "Error al acceder al micrófono. Por favor, verifica tus permisos.",
     "uploadFailed": "Error al subir el archivo de audio",
     "waitingConnection": "Esperando conexión con el servidor...",
+    "network": "Error de conexión. Verifica tu internet e intenta nuevamente.",
     "instagram24HourWindow": "No es posible enviar mensaje a este cliente porque han pasado más de 24 horas desde su última interacción",
     "instagramNoCustomerMessage": "No es posible enviar mensaje a este cliente porque aún no ha enviado ningún mensaje. Solo a través de plantilla."
   },
