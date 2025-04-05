@@ -304,25 +304,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     return () => window.removeEventListener('resize', checkMobileView);
   }, [showFilters]);
 
-  // A função que torna o container visível após o carregamento
-  const showMessagesContainer = () => {
-    if (messagesContainerRef.current) {
-      // Primeiro garantir que o scroll está na posição final
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: "auto" });
-      }
-      
-      // Pequeno atraso para garantir que a rolagem já foi aplicada
-      setTimeout(() => {
-        if (messagesContainerRef.current) {
-          messagesContainerRef.current.style.opacity = '1';
-          initialScrollDoneRef.current = true;
-        }
-      }, 50);
-    }
-  };
-
-  // Modifico useEffect para usar a nova função
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
 
@@ -335,11 +316,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       previousChatIdRef.current = chatId;
       // Resetar o flag de rolagem inicial quando o chat mudar
       initialScrollDoneRef.current = false;
-      
-      // Adicionar um estilo para esconder o contêiner até que tudo esteja carregado
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.style.opacity = '0';
-      }
     } else {
       console.log(`ChatMessages: chatId não mudou (${chatId}), provavelmente apenas os filtros foram alterados`);
     }
@@ -360,27 +336,18 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         
         // Verificar se há um messageId na URL
         const messageId = searchParams.get('messageId');
-        
-        // Promise para garantir que todas as operações de carregamento sejam concluídas
-        Promise.all([
-          // Carregar mensagens
-          messageId 
-            ? (setHighlightedMessageId(messageId), loadSpecificMessage(messageId).catch(err => {
-                console.error('Erro ao carregar mensagem específica:', err);
-                // Em caso de erro, tentar carregar mensagens normais
-                return loadMessages(1, false);
-              }))
-            : loadMessages(1, false),
-          
-          // Carregar detalhes do chat
-          loadChat()
-        ])
-        .finally(() => {
-          // Garantir que o contêiner seja mostrado após o carregamento, mesmo se houver erro
-          showMessagesContainer();
+        if (messageId) {
+          setHighlightedMessageId(messageId);
+          loadSpecificMessage(messageId);
+        } else {
+          // Só carregar mensagens se o chatId mudou ou se for o primeiro carregamento
+          loadMessages(1, false);
           isFirstLoadRef.current = false;
           messagesLoadedRef.current = true;
-        });
+        }
+        
+        // Sempre carregamos os detalhes do chat quando o chatId muda
+        loadChat();
       }
       
       // Sempre nos inscrevemos para atualizações de mensagens
@@ -414,10 +381,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
   useEffect(() => {
     if (page === 1 && messages.length > 0 && !initialScrollDoneRef.current && !loading) {
-      // Usar setTimeout apenas se o carregamento inicial já estiver concluído
-      if (!isFirstLoadRef.current) {
-        scrollToBottom();
-      }
+      scrollToBottom();
     }
   }, [messages, page, loading]);
 
@@ -687,16 +651,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   };
 
   const scrollToBottom = () => {
-    // Para o carregamento inicial, já estamos posicionando corretamente no momento de exibir
-    // Para mensagens subsequentes, usamos o método mais direto
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
-      
-      // Garantir que o contêiner esteja visível após qualquer scrollToBottom
-      if (messagesContainerRef.current && messagesContainerRef.current.style.opacity === '0') {
-        messagesContainerRef.current.style.opacity = '1';
+    // Usar setTimeout para garantir que o DOM foi atualizado
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+        
+        // Marcar que o scroll inicial foi concluído
+        if (!initialScrollDoneRef.current) {
+          initialScrollDoneRef.current = true;
+        }
       }
-    }
+    }, 50);
   };
 
   const formatMessageDate = (date: string) => {
@@ -885,7 +850,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     const container = messagesContainerRef.current;
     if (!container || !hasMore || isLoadingSpecificMessage || isLoadingMore || !initialScrollDoneRef.current) return;
 
-    // Somente carregar mais quando chegar exatamente no topo (scrollTop = 0)
+    // Carregar mais mensagens apenas quando chegar exatamente no topo
     if (container.scrollTop === 0) {
       // Evitar carregamentos múltiplos usando debounce
       if (scrollDebounceTimerRef.current) {
@@ -1039,7 +1004,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           // Rolar para a mensagem após o carregamento
           setTimeout(() => {
             scrollToMessage(messageId);
-          }, 100);
+          }, 500);
         } else {
           // Se a mensagem não estiver nos resultados, precisamos buscar mais mensagens
           // Isso pode acontecer se a mensagem for muito antiga
@@ -1076,7 +1041,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             // Rolar para a mensagem após o carregamento
             setTimeout(() => {
               scrollToMessage(messageId);
-            }, 100);
+            }, 500);
           }
         }
       }
@@ -1084,7 +1049,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       console.error('Erro ao carregar mensagem específica:', error);
       setError(t('errors.loading'));
       // Carregar mensagens normalmente como fallback
-      await loadMessages(1, false);
+      loadMessages(1, false);
     } finally {
       setIsLoadingSpecificMessage(false);
       setLoading(false);
@@ -1857,7 +1822,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-2 custom-scrollbar opacity-0 transition-opacity duration-300"
+        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-2 custom-scrollbar"
         onScroll={handleScroll}
       >
         {/* Indicador de carregamento relativo ao contêiner de mensagens */}
