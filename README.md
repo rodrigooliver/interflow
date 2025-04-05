@@ -12,6 +12,10 @@ Interflow's frontend provides:
 - Multi-language support (English, Spanish, Portuguese)
 - Dark mode support
 - File attachments and media handling
+- Financial management module
+- Appointment scheduling system
+- Task management system
+- Custom fields for customers
 
 ## Technologies
 
@@ -102,6 +106,8 @@ npm run dev
 - Notes and tags
 - Custom fields
 - File attachments
+- Customer search with advanced filters
+- Custom fields with different types (text, number, date, boolean, select, multiselect)
 
 ### Team Management
 - Role-based access control
@@ -124,6 +130,38 @@ npm run dev
 - Task management
 - Notes and activities
 
+### Financial Management
+- Financial dashboard with key metrics
+- Income and expense tracking
+- Transaction management
+- Multiple payment methods
+- Cashier operations
+- Financial categories
+- Financial reports
+- Transaction attachments (receipts, invoices)
+- Installment management
+- Recurring transactions
+
+### Appointment Scheduling
+- Calendar management
+- Service scheduling
+- Provider availability
+- Customer appointments
+- Appointment reminders
+- Video conferencing integration
+- Google Calendar integration
+- Time slot management
+- Service capacity configuration
+- Holiday and exception dates
+
+### Task Management
+- Task prioritization (low, medium, high)
+- Task status tracking (pending, in progress, completed, cancelled)
+- Due dates and reminders
+- Task assignments to team members
+- Customer-related tasks
+- Appointment-related tasks
+
 ### Internationalization
 - English
 - Spanish
@@ -143,6 +181,49 @@ npm run dev
 - Storage quotas
 - File previews
 - Drag and drop
+
+## Database Structure
+
+Interflow uses Supabase as its backend database with the following key tables:
+
+### Authentication and Users
+- `auth.users` - Supabase Auth users
+- `profiles` - Extended user profiles
+- `organizations` - Multi-tenant organization structures
+- `organization_members` - User membership in organizations
+
+### Messaging and Communication
+- `channels` - Communication channels configuration
+- `chats` - Customer conversations
+- `messages` - Individual messages
+- `message_templates` - Pre-defined message templates
+
+### CRM
+- `customers` - Customer records
+- `custom_fields_definition` - Custom field definitions
+- `customer_field_values` - Values for custom fields
+- `customer_tags` - Tag management for customers
+- `crm_funnels` - Sales pipeline structure
+- `crm_stages` - Stages within sales funnels
+- `crm_deals` - Customer deals within the funnel
+
+### Financial System
+- `financial_transactions` - All financial movements
+- `financial_categories` - Income and expense categories
+- `financial_cashiers` - Cash register management
+- `financial_payment_methods` - Payment method configurations
+- `financial_cashier_operations` - Opening/closing operations
+
+### Appointment Scheduling
+- `schedules` - Calendar configurations
+- `schedule_providers` - Service providers
+- `schedule_availability` - Provider availability time slots
+- `schedule_services` - Services offered
+- `appointments` - Customer appointments
+- `appointment_reminders` - Notification system
+
+### Task Management
+- `tasks` - Task tracking and management
 
 ## Project Structure
 

@@ -607,30 +607,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
       
       if (append) {
-        // Adicionar as novas mensagens ao estado
         setMessages(prev => [...newMessages.reverse(), ...prev]);
-        
-        // Aplicar classe de animação às novas mensagens após um pequeno delay
-        setTimeout(() => {
-          const container = messagesContainerRef.current;
-          if (container) {
-            // Para resolver problemas de referência, calcular o número exato de novas mensagens
-            const messageCount = newMessages.length; 
-            // Selecionar apenas as novas mensagens
-            const newMessageElements = Array.from(container.querySelectorAll('[id^="message-"]')).slice(0, messageCount);
-            
-            // Aplicar animação a cada elemento
-            newMessageElements.forEach(el => {
-              el.classList.add('message-fade-in');
-              // Remover a classe após a animação para evitar problemas em carregamentos futuros
-              setTimeout(() => {
-                if (el) {
-                  el.classList.remove('message-fade-in');
-                }
-              }, 500);
-            });
-          }
-        }, 100);
       } else {
         setMessages(newMessages.reverse());
         
@@ -935,54 +912,35 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         const newPage = page + 1;
         setPage(newPage);
         
-        // Adicionar uma classe de transição ao container
-        container.classList.add('messages-loading-transition');
-        // Adicionar um pequeno deslocamento para evitar oscilações visuais
-        container.style.transform = 'translateY(5px)';
-        
         loadMessages(newPage, true)
           .then(() => {
             // Após o conteúdo ser carregado, mantém a posição de referência
             setTimeout(() => {
               if (container) {
-                // Restaurar a posição do container
-                container.style.transform = 'translateY(0)';
-                
                 if (firstMessageId && document.getElementById(firstMessageId)) {
                   // Mantém a mesma distância do topo que o elemento tinha antes
                   const messageElement = document.getElementById(firstMessageId);
                   if (messageElement) {
                     const newTop = messageElement.getBoundingClientRect().top - container.getBoundingClientRect().top;
-                    // Ajusta o scroll para manter a mesma posição relativa com uma pequena margem de segurança
-                    container.scrollTop = oldScrollTop + (newTop - firstMessageDistanceFromTop) + 5; // +5px de margem
+                    // Ajusta o scroll para manter a mesma posição relativa
+                    container.scrollTop = oldScrollTop + (newTop - firstMessageDistanceFromTop);
                   }
                 } else {
                   // Fallback: usa a diferença de altura como referência
                   const newScrollHeight = container.scrollHeight;
                   const scrollDiff = newScrollHeight - oldScrollHeight;
-                  container.scrollTop = oldScrollTop + scrollDiff + 5; // +5px de margem
+                  container.scrollTop = oldScrollTop + scrollDiff;
                 }
                 
                 // Verificar visibilidade da mensagem destacada após carregar mais mensagens
                 checkHighlightedMessageVisibility();
-                
-                // Remover a classe de transição após um pequeno atraso
-                setTimeout(() => {
-                  container.classList.remove('messages-loading-transition');
-                }, 300);
               }
-            }, 0);
+            }, 50);
           })
           .catch((error) => {
             console.error('Erro ao carregar mais mensagens:', error);
             // Exibir mensagem de erro
             setError(t('errors.loading'));
-            // Remover a classe de transição em caso de erro
-            container.classList.remove('messages-loading-transition');
-            // Restaurar a posição do container
-            if (container) {
-              container.style.transform = 'translateY(0)';
-            }
           })
           .finally(() => {
             // Garantir que o estado de carregamento seja limpo mesmo em caso de erro
