@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
 import ChannelBasicFields from '../../components/channels/ChannelBasicFields';
 import { useTeams } from '../../hooks/useQueryes';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Interface para erros com resposta
 interface ApiError extends Error {
@@ -25,6 +26,7 @@ export default function InstagramForm() {
   const { id } = useParams(); // Pega o ID da URL se estiver editando
   const { currentOrganizationMember } = useAuthContext();
   const { data: teams, isLoading: isLoadingTeams } = useTeams(currentOrganizationMember?.organization.id);
+  const queryClient = useQueryClient();
   
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -44,6 +46,13 @@ export default function InstagramForm() {
     credentials: {} as { username?: string; instagram_id?: string },
     settings: {} as Record<string, boolean | string | null | undefined>
   });
+
+  // Invalidar cache quando a página é carregada
+  useEffect(() => {
+    if (currentOrganizationMember?.organization.id) {
+      queryClient.invalidateQueries({ queryKey: ['channels', currentOrganizationMember.organization.id] });
+    }
+  }, [currentOrganizationMember?.organization.id, queryClient]);
 
   // Carrega os dados do canal se estiver editando
   useEffect(() => {
@@ -110,6 +119,9 @@ export default function InstagramForm() {
         throw error;
       }
 
+      // Invalidar cache de canais
+      queryClient.invalidateQueries({ queryKey: ['channels', currentOrganizationMember?.organization.id] });
+
       navigate(`/app/channels/${data.id}/edit/instagram`);
     } catch (error: unknown) {
       const err = error as Error;
@@ -140,6 +152,11 @@ export default function InstagramForm() {
         throw error;
       }
 
+      // Invalidar cache de canais
+      queryClient.invalidateQueries({ queryKey: ['channels', currentOrganizationMember?.organization.id] });
+      
+      toast.success(t('common:saveSuccess'));
+
       // Não navegamos após atualizar, permanecemos na mesma página
     } catch (error: unknown) {
       const err = error as Error;
@@ -169,10 +186,13 @@ export default function InstagramForm() {
         'instagram_business_basic',
         'instagram_business_manage_messages',
         // 'instagram_business_manage_comments',
-        // 'instagram_business_content_publish',
+        // 'instagram_business_manage_content_publish',
         // 'instagram_business_manage_insights'
       ].join(',')
     });
+
+    // Armazenar uma flag para verificar quando o usuário retornar
+    localStorage.setItem('pendingInstagramConnection', 'true');
 
     window.location.href = `${INSTAGRAM_AUTH_URL}?${params}`;
   };
@@ -192,6 +212,9 @@ export default function InstagramForm() {
         .eq('id', id);
 
       if (error) throw error;
+
+      // Invalidar cache de canais
+      queryClient.invalidateQueries({ queryKey: ['channels', currentOrganizationMember?.organization.id] });
 
       // Atualizar estado local
       setFormData(prev => ({
@@ -221,6 +244,9 @@ export default function InstagramForm() {
         throw new Error(response.data.error || t('common:error'));
       }
 
+      // Invalidar cache de canais
+      queryClient.invalidateQueries({ queryKey: ['channels', currentOrganizationMember?.organization.id] });
+
       // Usar a função handleGoBack em vez de navegar diretamente
       handleGoBack();
       toast.success(t('channels:deleteSuccess'));
@@ -234,6 +260,23 @@ export default function InstagramForm() {
       setShowDeleteModal(false);
     }
   };
+
+  // Verificar se o usuário voltou da autenticação do Instagram
+  useEffect(() => {
+    const pendingConnection = localStorage.getItem('pendingInstagramConnection');
+    if (pendingConnection === 'true' && id) {
+      // Remover a flag
+      localStorage.removeItem('pendingInstagramConnection');
+      
+      // Recarregar os dados do canal
+      loadChannelData();
+      
+      // Invalidar o cache de canais
+      queryClient.invalidateQueries({ queryKey: ['channels', currentOrganizationMember?.organization.id] });
+      
+      toast.success(t('channels:form.instagram.connectionSuccess'));
+    }
+  }, [id, currentOrganizationMember?.organization.id]);
 
   if (loading) {
     return (
