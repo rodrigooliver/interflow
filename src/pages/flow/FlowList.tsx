@@ -153,13 +153,14 @@ export default function FlowList() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <Link
-                to={`/app/flows/${flow.id}`}
-                className="flex flex-col"
-              >
-                <div className="flex items-center mb-3">
-                  <GitFork className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-3" />
-                  <div className="flex-1 min-w-0">
+              
+              <div className="flex items-center mb-3">
+                <GitFork className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-3" />
+                <div className="flex-1 min-w-0">
+                  <Link
+                    to={`/app/flows/${flow.id}`}
+                    className="block"
+                  >
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
                       {flow.name}
                     </h3>
@@ -168,22 +169,22 @@ export default function FlowList() {
                         {flow.description}
                       </p>
                     )}
-                  </div>
+                  </Link>
                 </div>
+              </div>
 
-                {/* Adicionar TriggersList */}
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {t('flows:triggers.startWhen')}:
-                  </span>
-                  <TriggersList 
-                    triggers={flow.triggers || []}
-                    flowId={flow.id}
-                    showWarning={true}
-                    onChange={() => queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember?.organization.id] })}
-                  />
-                </div>
-              </Link>
+              {/* Adicionar TriggersList */}
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('flows:triggers.startWhen')}:
+                </span>
+                <TriggersList 
+                  triggers={flow.triggers || []}
+                  flowId={flow.id}
+                  showWarning={true}
+                  onChange={() => queryClient.invalidateQueries({ queryKey: ['flows', currentOrganizationMember?.organization.id] })}
+                />
+              </div>
 
               {flow.prompt && (
                 <div className="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
@@ -233,8 +234,17 @@ export default function FlowList() {
 
       {/* Modal de exclusão de fluxo */}
       {showDeleteFlowModal && selectedFlow && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50"
+             onClick={(e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               setShowDeleteFlowModal(false);
+               setSelectedFlow(null);
+             }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+               onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -299,14 +309,25 @@ export default function FlowList() {
       {/* Modal de edição de fluxo */}
       {showEditFlowModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div 
+            className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowEditFlowModal(false);
+              setSelectedFlow(null);
+            }}
+          >
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
               <div className="absolute inset-0 bg-gray-500 opacity-75 dark:bg-gray-900 dark:opacity-90"></div>
             </div>
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left shadow-xl transform sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div 
+              className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left shadow-xl transform sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="bg-white dark:bg-gray-800 px-6 py-4">
                 <FlowEditForm 
                   flowId={selectedFlow?.id || null}
