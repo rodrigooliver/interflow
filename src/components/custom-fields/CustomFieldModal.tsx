@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Plus, XCircle } from 'lucide-react';
 import { CustomFieldFormData, CustomFieldDefinition } from '../../types/database';
 import { createCustomFieldDefinition } from '../../services/customFieldsService';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,7 @@ export function CustomFieldModal({
     custom_mask: undefined,
     description: ''
   });
+  const [newOption, setNewOption] = useState('');
 
   useEffect(() => {
     if (field) {
@@ -49,6 +50,10 @@ export function CustomFieldModal({
       });
     }
   }, [field]);
+
+  useEffect(() => {
+    console.log('Tipo atual mudou:', formData.type);
+  }, [formData.type]);
 
   const handleSubmit = async () => {
     // Validação básica
@@ -179,7 +184,14 @@ export function CustomFieldModal({
               <select
                 id="type"
                 value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'text' | 'number' | 'date' | 'datetime' | 'select' }))}
+                onChange={(e) => {
+                  console.log('Tipo selecionado:', e.target.value);
+                  setFormData(prev => {
+                    const newData = { ...prev, type: e.target.value as 'text' | 'number' | 'date' | 'datetime' | 'select' };
+                    console.log('Novo estado:', newData);
+                    return newData;
+                  });
+                }}
                 className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
                 required
               >
@@ -194,42 +206,101 @@ export function CustomFieldModal({
             {/* Opções do Campo (apenas para tipo select) */}
             {formData.type === 'select' && (
               <div>
-                <label htmlFor="options" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('customFields.fieldTypes.select')}
                 </label>
-                <textarea
-                  id="options"
-                  value={formData.options?.join('\n') || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, options: e.target.value.split('\n').filter(opt => opt.trim()) }))}
-                  className="w-full h-32 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                  placeholder={t('customFields.selectOption')}
-                />
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newOption}
+                    onChange={(e) => setNewOption(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && newOption.trim()) {
+                        e.preventDefault();
+                        setFormData(prev => ({
+                          ...prev,
+                          options: [...(prev.options || []), newOption.trim()]
+                        }));
+                        setNewOption('');
+                      }
+                    }}
+                    placeholder={t('customFields.selectOption')}
+                    className="flex-1 h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newOption.trim()) {
+                        setFormData(prev => ({
+                          ...prev,
+                          options: [...(prev.options || []), newOption.trim()]
+                        }));
+                        setNewOption('');
+                      }
+                    }}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Lista de opções */}
+                <div className="mt-2 space-y-2">
+                  {formData.options?.map((option, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
+                    >
+                      <span className="text-gray-900 dark:text-white">{option}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            options: prev.options?.filter((_, i) => i !== index) || []
+                          }));
+                        }}
+                        className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {(!formData.options || formData.options.length === 0) && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    {t('customFields.noOptions')}
+                  </p>
+                )}
               </div>
             )}
 
             {/* Máscara do Campo */}
-            <div>
-              <label htmlFor="mask_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('customFields.masks.title')}
-              </label>
-              <select
-                id="mask_type"
-                value={formData.mask_type || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, mask_type: e.target.value as 'cpf' | 'cnpj' | 'phone' | 'cep' | 'rg' | 'custom' | undefined }))}
-                className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
-              >
-                <option value="">{t('customFields.masks.none')}</option>
-                <option value="cpf">{t('customFields.masks.cpf')}</option>
-                <option value="cnpj">{t('customFields.masks.cnpj')}</option>
-                <option value="phone">{t('customFields.masks.phone')}</option>
-                <option value="cep">{t('customFields.masks.cep')}</option>
-                <option value="rg">{t('customFields.masks.rg')}</option>
-                <option value="custom">{t('customFields.masks.custom')}</option>
-              </select>
-            </div>
+            {formData.type === 'text' && (
+              <div>
+                <label htmlFor="mask_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('customFields.masks.title')}
+                </label>
+                <select
+                  id="mask_type"
+                  value={formData.mask_type || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, mask_type: e.target.value as 'cpf' | 'cnpj' | 'phone' | 'cep' | 'rg' | 'custom' | undefined }))}
+                  className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
+                >
+                  <option value="">{t('customFields.masks.none')}</option>
+                  <option value="cpf">{t('customFields.masks.cpf')}</option>
+                  <option value="cnpj">{t('customFields.masks.cnpj')}</option>
+                  <option value="phone">{t('customFields.masks.phone')}</option>
+                  <option value="cep">{t('customFields.masks.cep')}</option>
+                  <option value="rg">{t('customFields.masks.rg')}</option>
+                  <option value="custom">{t('customFields.masks.custom')}</option>
+                </select>
+              </div>
+            )}
 
             {/* Máscara Customizada */}
-            {formData.mask_type === 'custom' && (
+            {formData.type === 'text' && formData.mask_type === 'custom' && (
               <div>
                 <label htmlFor="custom_mask" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('customFields.masks.custom')}

@@ -81,6 +81,7 @@
     "title": "Campos Personalizados",
     "addField": "Adicionar campo",
     "noFields": "Nenhum campo personalizado cadastrado",
+    "noOptions": "Nenhuma opção adicionada",
     "edit": "Editar",
     "fieldName": "Nome do Campo",
     "fieldType": "Tipo do Campo",

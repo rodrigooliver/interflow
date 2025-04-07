@@ -81,6 +81,7 @@
     "title": "Custom Fields",
     "addField": "Add field",
     "noFields": "No custom fields registered",
+    "noOptions": "No options added",
     "edit": "Edit",
     "fieldName": "Field Name",
     "fieldType": "Field Type",
