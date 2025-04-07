@@ -258,7 +258,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       case 'whatsapp_official':
         setChannelFeatures({
           canReplyToMessages: false, // Não permite responder mensagens específicas
-          canSendAudio: false,        // Permite enviar áudio
+          canSendAudio: true,        // Permite enviar áudio
           canSendTemplates: true,    // Permite enviar templates
           has24HourWindow: true,     // Tem janela de 24 horas
           canSendAfter24Hours: true, // Pode enviar após 24h (com templates)
@@ -270,7 +270,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       case 'whatsapp_evo':
         setChannelFeatures({
           canReplyToMessages: true,  // Permite responder mensagens específicas
-          canSendAudio: false,        // Permite enviar áudio
+          canSendAudio: true,        // Permite enviar áudio
           canSendTemplates: false,   // Não permite enviar templates
           has24HourWindow: false,    // Não tem janela de 24 horas
           canSendAfter24Hours: true, // Pode enviar a qualquer momento
