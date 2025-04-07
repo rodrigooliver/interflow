@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Message, ClosureType } from '../../types/database';
+import { Message } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
@@ -15,7 +15,6 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
-import { getChannelIcon } from '../../utils/channel';
 import { FlowModal } from './FlowModal';
 import { ApiError } from 'axios';
 
@@ -259,7 +258,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       case 'whatsapp_official':
         setChannelFeatures({
           canReplyToMessages: false, // Não permite responder mensagens específicas
-          canSendAudio: true,        // Permite enviar áudio
+          canSendAudio: false,        // Permite enviar áudio
           canSendTemplates: true,    // Permite enviar templates
           has24HourWindow: true,     // Tem janela de 24 horas
           canSendAfter24Hours: true, // Pode enviar após 24h (com templates)
@@ -271,7 +270,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       case 'whatsapp_evo':
         setChannelFeatures({
           canReplyToMessages: true,  // Permite responder mensagens específicas
-          canSendAudio: true,        // Permite enviar áudio
+          canSendAudio: false,        // Permite enviar áudio
           canSendTemplates: false,   // Não permite enviar templates
           has24HourWindow: false,    // Não tem janela de 24 horas
           canSendAfter24Hours: true, // Pode enviar a qualquer momento
