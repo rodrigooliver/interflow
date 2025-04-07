@@ -30,6 +30,7 @@
     "save": "Salvar",
     "cancel": "Cancelar",
     "invite": "Enviar Convite",
+    "resendInvite": "Reenviar convite",
     "referrals": "Indicações"
   },
   "delete": {
@@ -52,6 +53,7 @@
   },
   "invite": {
     "success": "Convite enviado com sucesso! Um email foi enviado para {{email}}.",
+    "resendSuccess": "Convite reenviado com sucesso! Um novo email foi enviado para {{email}}.",
     "info": "Um convite será enviado para o email informado. O usuário precisará clicar no link recebido para ativar sua conta."
   },
   "errors": {

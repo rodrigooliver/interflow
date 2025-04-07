@@ -50,6 +50,7 @@ export default function OrganizationMembers() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [deletingMember, setDeletingMember] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [resendingInvite, setResendingInvite] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [inviteForm, setInviteForm] = useState<InviteFormData>({
@@ -186,6 +187,45 @@ export default function OrganizationMembers() {
     }
   }
 
+  async function handleResendInvite(member: MemberWithProfile) {
+    if (!currentOrganizationMember || !member.profile) return;
+    
+    setResendingInvite(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      // Obter o idioma atual da aplicação
+      const currentLanguage = i18n.language || 'pt';
+      
+      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/member/invite`, {
+        email: member.profile.email,
+        fullName: member.profile.full_name,
+        role: member.role,
+        language: currentLanguage.substring(0, 2) // Pegar apenas os primeiros 2 caracteres (pt-BR -> pt)
+      });
+
+      const data = response.data;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao reenviar convite');
+      }
+
+      // Mostrar mensagem de sucesso
+      setSuccessMessage(t('member:invite.resendSuccess', 'Convite reenviado com sucesso! Um novo email foi enviado para {email}.', { email: member.profile.email }));
+      
+      // Esconder mensagem após 5 segundos
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+    } catch (err: unknown) {
+      console.error('Error resending invite:', err);
+      setError(err instanceof Error ? err.message : t('common:error'));
+    } finally {
+      setResendingInvite(false);
+    }
+  }
+
   if (!currentOrganizationMember) {
     return (
       <div className="p-6">
@@ -317,6 +357,20 @@ export default function OrganizationMembers() {
                   {member.status === 'pending' ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                       {t('member:status.pending', 'Aguardando aceitação')}
+                      {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
+                        <button
+                          onClick={() => handleResendInvite(member)}
+                          disabled={resendingInvite}
+                          className="ml-2 text-yellow-800 dark:text-yellow-300 hover:text-yellow-900 dark:hover:text-yellow-200 focus:outline-none"
+                          title={t('member:actions.resendInvite', 'Reenviar convite')}
+                        >
+                          {resendingInvite ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Mail className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
                     </span>
                   ) : member.status === 'inactive' ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">

@@ -4,6 +4,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import ResetPasswordForm from './ResetPasswordForm';
 
 // Estendendo a interface Window para incluir nossas propriedades personalizadas
 declare global {
@@ -29,6 +30,7 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const { signIn } = useAuthContext();
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
@@ -83,6 +85,28 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
 
   return (
     <>
+      {showResetPassword ? (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4 relative">
+            <button
+              onClick={() => setShowResetPassword(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <ResetPasswordForm
+              isModal={true}
+              onSuccess={() => {
+                setShowResetPassword(false);
+                // Opcional: mostrar uma mensagem de sucesso no formulário de login
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
       <form className={`space-y-5 ${isModal ? '' : 'bg-white dark:bg-gray-800 p-5 sm:p-6 shadow rounded-lg'}`} onSubmit={handleSubmit}>
         {error && (
           <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/50 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800 flex items-center">
@@ -145,16 +169,27 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
         </button>
 
         {!isModal && !window.isNativeApp && (
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t('login.noAccount')}{' '}
-              <Link
-                to="/signup"
-                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+          <div className="space-y-3">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('login.noAccount')}{' '}
+                <Link
+                  to="/signup"
+                  className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  {t('login.createAccount')}
+                </Link>
+              </p>
+            </div>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowResetPassword(true)}
+                className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
               >
-                {t('login.createAccount')}
-              </Link>
-            </p>
+                {t('login.forgotPassword')}
+              </button>
+            </div>
           </div>
         )}
       </form>

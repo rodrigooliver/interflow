@@ -29,6 +29,7 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "invite": "Enviar Invitación",
+    "resendInvite": "Reenviar invitación",
     "referrals": "Referencias"
   },
   "delete": {
@@ -51,6 +52,7 @@
   },
   "invite": {
     "success": "¡Invitación enviada con éxito! Se ha enviado un correo a {{email}}.",
+    "resendSuccess": "¡Invitación reenviada con éxito! Se ha enviado un nuevo correo a {{email}}.",
     "info": "Se enviará una invitación al correo proporcionado. El usuario deberá hacer clic en el enlace recibido para activar su cuenta."
   },
   "errors": {

@@ -514,17 +514,33 @@ export function MessageBubble({
                   status={status} 
                   errorMessage={error_message}
                 />
-                {status === 'failed' && onRetry && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRetry(message);
-                    }}
-                    className="ml-2 px-2 py-0.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs flex items-center whitespace-nowrap"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                    {t('actions.retry')}
-                  </button>
+                {status === 'failed' && (
+                  <div className="flex items-center gap-1">
+                    {onRetry && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRetry(message);
+                        }}
+                        className="ml-2 px-2 py-0.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        {t('actions.retry')}
+                      </button>
+                    )}
+                    {onDeleteMessage && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDeleteModal(true);
+                        }}
+                        className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        {t('actions.delete')}
+                      </button>
+                    )}
+                  </div>
                 )}
               </>
             )}
