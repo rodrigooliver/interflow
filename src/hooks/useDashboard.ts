@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Chat } from '../types/database';
+import { useAuthContext } from '../contexts/AuthContext';
 
 // Constantes para configuração de cache (em milissegundos)
 const CACHE_CONFIG = {
@@ -50,6 +51,7 @@ export const useDashboard = ({
 }: UseDashboardParams) => {
   // Verificar se tem organizationId antes de fazer qualquer consulta
   const enabled = !!organizationId;
+  const { currentOrganizationMember } = useAuthContext()
 
   // Consulta para contar clientes
   const customerCount = useQuery({
@@ -210,9 +212,18 @@ export const useDashboard = ({
             created_at,
             sender_type,
             type
+          ),
+          team:service_teams!inner(
+            id,
+            name,
+            members:service_team_members!inner(
+              id,
+              user_id
+            )
           )
         `)
         .eq('organization_id', organizationId)
+        .eq('team.members.user_id', currentOrganizationMember?.profile_id)
         .order('last_message_at', { ascending: false })
         .limit(4);
 

@@ -70,10 +70,20 @@ export default function CustomerChats() {
             id,
             name,
             type
+          ),
+          team:service_teams!inner(
+            id,
+            name,
+            members:service_team_members!inner(
+              id,
+              user_id
+            )
           )
         `)
         .eq('customer_id', id)
+        .eq('team.members.user_id', currentOrganizationMember?.profile_id)
         .order('created_at', { ascending: false });
+        console.log(currentOrganizationMember?.profile_id);
 
       if (chatsError) throw chatsError;
 

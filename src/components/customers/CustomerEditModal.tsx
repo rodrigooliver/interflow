@@ -639,9 +639,18 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
             id,
             name,
             type
+          ),
+          team:service_teams!inner(
+            id,
+            name,
+            members:service_team_members!inner(
+              id,
+              user_id
+            )
           )
         `)
         .eq('customer_id', customer.id)
+        .eq('team.members.user_id', currentOrganizationMember?.profile_id)
         .order('created_at', { ascending: false });
 
       if (chatsError) throw chatsError;

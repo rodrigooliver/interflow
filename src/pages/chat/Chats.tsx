@@ -271,6 +271,14 @@ export default function Chats() {
           created_at,
           sender_type,
           type
+        ),
+        team:service_teams!inner(
+            id,
+            name,
+            members:service_team_members!inner(
+              id,
+              user_id
+          )
         )
       `)
       .eq('id', chatId)
@@ -424,15 +432,24 @@ export default function Chats() {
             created_at,
             sender_type,
             type
+          ),
+          team:service_teams!inner(
+            id,
+            name,
+            members:service_team_members!inner(
+              id,
+              user_id
+            )
           )
         `)
         .eq('organization_id', currentOrganizationMember.organization.id)
+        .eq('team.members.user_id', session.user.id)
         .order('is_fixed', { ascending: false })
         .order('last_message_at', { ascending: false });
 
       // Mover declarações para fora do switch
-      let teamMembers;
-      let teamIds;
+      // let teamMembers;
+      // let teamIds;
 
       // Aplicar filtros
       switch (selectedFilter) {
@@ -446,17 +463,17 @@ export default function Chats() {
           break;
         case 'team':
           // Get user's teams first
-          teamMembers = await supabase
-            .from('service_team_members')
-            .select('team_id')
-            .eq('user_id', session.user.id);
+          // teamMembers = await supabase
+          //   .from('service_team_members')
+          //   .select('team_id')
+          //   .eq('user_id', session.user.id);
 
-          teamIds = teamMembers?.data?.map(tm => tm.team_id) || [];
+          // teamIds = teamMembers?.data?.map(tm => tm.team_id) || [];
           
           // Filter chats by team and exclude those assigned to the current user
           query = query
             .eq('status', 'in_progress')
-            .in('team_id', teamIds)
+            // .in('team_id', teamIds)
             .neq('assigned_to', session.user.id);
           break;
         case 'completed':
