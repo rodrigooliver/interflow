@@ -12,11 +12,12 @@ import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause } from 'lucide-react';
+import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2 } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { FlowModal } from './FlowModal';
 import { ApiError } from 'axios';
+import { LeaveAttendanceModal } from './LeaveAttendanceModal';
 
 // Interface para tags do cliente
 interface CustomerTag {
@@ -210,7 +211,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
   const [isLeavingCollaboration, setIsLeavingCollaboration] = useState(false);
-  const [isLeavingChat, setIsLeavingChat] = useState(false);
   const [isAttending, setIsAttending] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const scrollDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -229,6 +229,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [failedMessages, setFailedMessages] = useState<OptimisticMessage[]>([]);
   // Estado para rastrear mensagens que estão sendo reenviadas
   const [retryingMessages, setRetryingMessages] = useState<string[]>([]);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
@@ -1559,7 +1560,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         .from('messages')
         .insert({
           chat_id: chatId,
-          type: 'user_transferred',
+          type: 'user_transferred_himself',
           sender_type: 'system',
           sender_agent_id: currentUserId,
           organization_id: organizationId,
@@ -1645,49 +1646,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   };
 
   // Função para o atendente responsável sair do atendimento
-  const handleLeaveChat = async () => {
-    if (!currentUserId || !chatId) return;
-    
-    setIsLeavingChat(true);
-    
-    try {
-      // Inserir mensagem de sistema
-      await supabase
-        .from('messages')
-        .insert({
-          chat_id: chatId,
-          type: 'user_left',
-          sender_type: 'system',
-          sender_agent_id: currentUserId,
-          organization_id: organizationId,
-          created_at: new Date().toISOString()
-        });
-      
-      // Atualizar o status do chat para "pending"
-      const { error: chatError } = await supabase
-        .from('chats')
-        .update({
-          status: 'pending',
-          assigned_to: null as unknown as string // Corrigindo o tipo
-        })
-        .eq('id', chatId);
-        
-      if (chatError) throw chatError;
-      
-      // Atualizar o estado local
-      setChat(prev => prev ? {
-        ...prev,
-        status: 'pending',
-        assigned_to: undefined // Usando undefined em vez de null
-      } : null);
-      
-      toast.success(t('collaborator.leaveAttendanceSuccess'));
-    } catch (error) {
-      console.error('Erro ao sair do atendimento:', error);
-      toast.error(t('collaborator.leaveAttendanceError'));
-    } finally {
-      setIsLeavingChat(false);
-    }
+  const handleLeaveChat = () => {
+    setShowLeaveModal(true);
   };
 
   const handleDeleteMessage = async (message: Message) => {
@@ -2425,16 +2385,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 <button
                   className="md:px-4 md:py-2 p-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors flex items-center justify-center"
                   onClick={handleLeaveChat}
-                  disabled={isLeavingChat}
+                  disabled={showLeaveModal}
                   aria-label={t('collaborator.leaveAttendance')}
                 >
-                  {isLeavingChat ? (
+                  {showLeaveModal ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       <span className="hidden md:inline">{t('loading')}</span>
                     </>
                   ) : (
@@ -2857,6 +2813,25 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           } : null);
         }}
         currentFlowSessionId={chat?.flow_session_id}
+      />
+
+      {/* Adicionar o modal de sair do atendimento */}
+      <LeaveAttendanceModal
+        isOpen={showLeaveModal}
+        onClose={() => {
+          setShowLeaveModal(false);
+          loadChat();
+        }}
+        chatId={chatId}
+        organizationId={organizationId}
+        currentTeamId={chat?.team_id}
+        onLeave={() => {
+          setChat(prev => prev ? {
+            ...prev,
+            status: 'pending',
+            assigned_to: undefined
+          } : null);
+        }}
       />
     </div>
   );

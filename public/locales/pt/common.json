@@ -1,7 +1,7 @@
 {
   "search": "Buscar",
   "add": "Adicionar",
-  "loading": "Carregando",
+  "loading": "Carregando...",
   "saving": "Salvando...",
   "create": "Criar",
   "contacts": "Contatos",
@@ -117,5 +117,6 @@
   "today": "Hoje",
   "filters": "Filtros",
   "clearAll": "Limpar todos",
-  "disabled": "Desativado"
+  "disabled": "Desativado",
+  "leaving": "Saindo..."
 }

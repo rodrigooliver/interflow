@@ -261,7 +261,19 @@ export const useTeams = (organizationId?: string) => {
 
       const { data, error } = await supabase
         .from('service_teams')
-        .select('id, name')
+        .select(`
+          id,
+          name,
+          members:service_team_members(
+            id,
+            user_id,
+            profile:profiles(
+              id,
+              full_name,
+              avatar_url
+            )
+          )
+        `)
         .eq('organization_id', organizationId)
         .order('name');
 

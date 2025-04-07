@@ -68,6 +68,7 @@ alter table public.chats
 ALTER TYPE message_type ADD VALUE 'user_entered';
 ALTER TYPE message_type ADD VALUE 'user_left';
 ALTER TYPE message_type ADD VALUE 'user_transferred';
+ALTER TYPE message_type ADD VALUE 'user_transferred_himself';
 ALTER TYPE message_type ADD VALUE 'user_closed';
 ALTER TYPE message_type ADD VALUE 'user_start';
 ALTER TYPE message_type ADD VALUE 'user_join';

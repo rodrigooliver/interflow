@@ -89,7 +89,7 @@ export interface Message {
   organization_id: Organization;
   content: string;
   type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'email' | 
-        'user_entered' | 'user_left' | 'user_transferred' | 'user_closed' | 'user_start' | 'user_join' | 'template';
+        'user_entered' | 'user_left' | 'user_transferred' | 'user_transferred_himself' | 'user_closed' | 'user_start' | 'user_join' | 'template';
   sent_from_system: boolean;
   sender_type: 'customer' | 'agent' | 'system';
   status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted';
@@ -225,6 +225,7 @@ export interface ServiceTeam {
   description?: string;
   created_at: string;
   updated_at: string;
+  members: ServiceTeamMember[]; // Não está no banco, mas útil para UI
   _count?: {
     members: number;
   };
@@ -240,7 +241,7 @@ export interface ServiceTeamMember {
   user_id: string;
   role: 'leader' | 'member';
   created_at: string;
-  profile?: Profile;
+  profile?: Profile; // Não está no banco, mas útil para UI
 }
 
 // ==========================================

@@ -249,6 +249,7 @@ export function MessageBubble({
       case 'user_left':
         return <UserMinus className="w-4 h-4" />;
       case 'user_transferred':
+      case 'user_transferred_himself':
         return <UserCog className="w-4 h-4" />;
       case 'user_join':
         return <UserPlus className="w-4 h-4" />;
@@ -272,6 +273,8 @@ export function MessageBubble({
         return t('systemMessages.userLeft', { name: agentName });
       case 'user_transferred':
         return t('systemMessages.userTransfer', { name: agentName });
+      case 'user_transferred_himself':
+        return t('systemMessages.userTransferredHimself', { name: agentName });
       case 'user_join':
         return t('systemMessages.userJoin', { name: agentName });
       case 'user_closed':

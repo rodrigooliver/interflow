@@ -132,7 +132,7 @@
   "attachments": {
     "title": "Attach file",
     "image": "Image",
-    "document": "Document", 
+    "document": "Document",
     "uploadImage": "Upload Image",
     "uploadDocument": "Upload Document",
     "dragAndDrop": "Drag and drop a file here, or click to select",
@@ -142,7 +142,9 @@
     "errors": {
       "invalidType": "Invalid file type",
       "tooLarge": "File is too large (max 10MB)",
-      "uploadFailed": "Failed to upload file"
+      "uploadFailed": "Failed to upload file",
+      "deleteFailed": "Failed to delete file",
+      "readFailed": "Failed to read file"
     }
   },
   "emoji": {
@@ -164,7 +166,12 @@
     "waitingConnection": "Waiting for server connection...",
     "network": "Connection error. Please check your internet connection and try again.",
     "instagram24HourWindow": "Cannot send message to this customer as it has been more than 24 hours since their last interaction",
-    "instagramNoCustomerMessage": "Cannot send message to this customer as they haven't sent any messages yet. Only through template."
+    "instagramNoCustomerMessage": "Cannot send message to this customer as they haven't sent any messages yet. Only through template.",
+    "pendingMessages": "Pending messages to resend",
+    "oneMessagePending": "1 pending message for automatic resend",
+    "manyMessagesPending": "{{count}} pending messages for automatic resend",
+    "resendNow": "Resend now",
+    "resending": "Resending..."
   },
   "ai": {
     "title": "Improve text with AI",
@@ -210,10 +217,11 @@
     "userStart": "Chat started by {{name}}",
     "userEntered": "{{name}} entered the chat",
     "userLeft": "{{name}} left the chat",
-    "userTransfer": "{{name}} transferred the chat to themselves",
+    "userTransfer": "Chat transferred to {{name}}",
     "userClosed": "Chat closed by {{name}}",
     "userJoin": "{{name}} joined as collaborator",
-    "userLeftAttendance": "{{name}} left the attendance"
+    "userLeftAttendance": "{{name}} left the attendance",
+    "userTransferredHimself": "{{name}} transferred the chat to themselves"
   },
   "noChatsFound": "No chats found",
   "resolution": {

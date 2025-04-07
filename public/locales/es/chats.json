@@ -166,7 +166,12 @@
     "waitingConnection": "Esperando conexión con el servidor...",
     "network": "Error de conexión. Verifica tu internet e intenta nuevamente.",
     "instagram24HourWindow": "No es posible enviar mensaje a este cliente porque han pasado más de 24 horas desde su última interacción",
-    "instagramNoCustomerMessage": "No es posible enviar mensaje a este cliente porque aún no ha enviado ningún mensaje. Solo a través de plantilla."
+    "instagramNoCustomerMessage": "No es posible enviar mensaje a este cliente porque aún no ha enviado ningún mensaje. Solo a través de plantilla.",
+    "pendingMessages": "Mensajes pendientes para reenvío",
+    "oneMessagePending": "1 mensaje pendiente para reenvío automático",
+    "manyMessagesPending": "{{count}} mensajes pendientes para reenvío automático",
+    "resendNow": "Reenviar ahora",
+    "resending": "Reenviando..."
   },
   "ai": {
     "title": "Mejorar texto con IA",
@@ -212,10 +217,11 @@
     "userStart": "Chat iniciado por {{name}}",
     "userEntered": "{{name}} entró en el chat",
     "userLeft": "{{name}} salió del chat",
-    "userTransfer": "{{name}} transfirió el chat a sí mismo",
+    "userTransfer": "Chat transferido a {{name}}",
     "userClosed": "Chat cerrado por {{name}}",
     "userJoin": "{{name}} se unió como colaborador",
-    "userLeftAttendance": "{{name}} salió de la atención"
+    "userLeftAttendance": "{{name}} salió de la atención",
+    "userTransferredHimself": "{{name}} transfirió el chat a sí mismo"
   },
   "noChatsFound": "No se encontraron chats",
   "resolution": {

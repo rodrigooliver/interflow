@@ -221,10 +221,11 @@
     "userStart": "Chat iniciado por {{name}}",
     "userEntered": "{{name}} entrou no chat",
     "userLeft": "{{name}} saiu do chat",
-    "userTransfer": "{{name}} transferiu o chat para si",
+    "userTransfer": "Chat transferido para {{name}}",
     "userClosed": "Chat encerrado por {{name}}",
     "userJoin": "{{name}} entrou como colaborador",
-    "userLeftAttendance": "{{name}} saiu do atendimento"
+    "userLeftAttendance": "{{name}} saiu do atendimento",
+    "userTransferredHimself": "{{name}} transferiu o chat para si"
   },
   "messageDetails": {
     "title": "Detalhes da Mensagem",
@@ -280,6 +281,7 @@
     "description": "Visualize informações detalhadas sobre o chat, incluindo canal, atendente, status e métricas.",
     "basicInfo": "Informações Básicas",
     "ticketNumber": "Número do Ticket",
+    "team": "Equipe",
     "status": "Status",
     "isArchived": "Arquivado",
     "isFixed": "Fixado",
@@ -315,6 +317,7 @@
     "user_entered": "Usuário entrou",
     "user_left": "Usuário saiu",
     "user_transferred": "Chat transferido",
+    "user_transferred_himself": "Chat transferido para si",
     "user_closed": "Chat fechado",
     "user_join": "Usuário entrou como colaborador",
     "template": "Mensagem template",
@@ -347,5 +350,13 @@
     "warning": "Esta ação não pode ser desfeita. A mensagem será excluída permanentemente.",
     "confirm": "Excluir",
     "cancel": "Cancelar"
+  },
+  "leaveAttendance": {
+    "title": "Sair do Atendimento",
+    "description": "Selecione a equipe para transferir o atendimento:",
+    "selectTeam": "Selecione uma equipe",
+    "selectAgent": "Selecione um agente (opcional)",
+    "pendingOption": "Deixar pendente aguardando atendimento",
+    "assignmentInfo": "O atendimento será transferido diretamente para este agente"
   }
 }
