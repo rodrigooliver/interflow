@@ -412,7 +412,7 @@ export function MessageBubble({
         <div
           className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-3 relative overflow-hidden ${
             isAgent
-              ? 'bg-blue-600 text-white'
+              ? 'bg-blue-600 text-gray-300'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
           } ${isPending ? 'opacity-80 border-2 border-dashed border-yellow-300 dark:border-yellow-500 animate-pulse' : ''}`}
         >
@@ -449,7 +449,7 @@ export function MessageBubble({
                 hover:opacity-90 transition-opacity cursor-pointer
                 overflow-hidden break-words
                 ${isAgent 
-                  ? 'bg-blue-700/60 text-blue-100' 
+                  ? 'bg-blue-900/60 text-blue-100' 
                   : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                 }
               `}

@@ -95,7 +95,7 @@ function processLineBreaks(content: string): string {
 export function MarkdownRenderer({ content, className = '', variant = 'default' }: MarkdownRendererProps) {
   const baseClasses = variant === 'compact' 
     ? 'text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis' 
-    : 'whitespace-pre-wrap break-words overflow-hidden overflow-wrap-anywhere prose dark:prose-invert max-w-none leading-tight';
+    : 'whitespace-pre-wrap break-words overflow-hidden overflow-wrap-anywhere max-w-none leading-tight';
 
   // Processa o conteúdo para preservar quebras de linha e formatar URLs
   const processedContent = variant === 'compact' 
