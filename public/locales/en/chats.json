@@ -11,6 +11,10 @@
   "connected": "Connected",
   "disconnected": "Disconnected",
   "scrollToHighlightedMessage": "Scroll to highlighted message",
+  "newMessages_one": "{{count}} new message",
+  "newMessages_other": "{{count}} new messages",
+  "scrollToNewMessages_one": "Scroll to {{count}} new message",
+  "scrollToNewMessages_other": "Scroll to {{count}} new messages",
   "noFunnelStage": "No stage defined",
   "archivedChats": "Archived Conversations",
   "backToActiveChats": "Back to Active Conversations",
@@ -80,7 +84,8 @@
     "markSpam": "Mark as spam",
     "unmarkSpam": "Unmark as spam",
     "chatDetails": "Chat Details",
-    "confirmDelete": "Confirm deletion"
+    "confirmDelete": "Confirm deletion",
+    "retry": "Try again"
   },
   "dateHeaders": {
     "today": "Today",

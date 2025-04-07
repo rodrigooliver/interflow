@@ -15,6 +15,10 @@
   "assignedTo": "Atendente",
   "channel": "Canal",
   "scrollToHighlightedMessage": "Rolar até a mensagem destacada",
+  "newMessages_one": "{{count}} nova mensagem",
+  "newMessages_other": "{{count}} novas mensagens",
+  "scrollToNewMessages_one": "Rolar para {{count}} nova mensagem",
+  "scrollToNewMessages_other": "Rolar para {{count}} novas mensagens",
   "noFunnelStage": "Sem estágio definido",
   "archivedChats": "Atendimentos Arquivados",
   "backToActiveChats": "Voltar para Atendimentos Ativos",
@@ -84,7 +88,8 @@
     "markSpam": "Marcar como spam",
     "unmarkSpam": "Desmarcar como spam",
     "chatDetails": "Detalhes do Atendimento",
-    "confirmDelete": "Confirmar exclusão"
+    "confirmDelete": "Confirmar exclusão",
+    "retry": "Tentar novamente"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -165,7 +170,12 @@
     "waitingConnection": "Aguardando conexão com o servidor...",
     "network": "Erro de conexão. Verifique sua internet e tente novamente.",
     "instagram24HourWindow": "Não é possível enviar mensagem para este cliente pois já se passaram mais de 24 horas desde a última interação",
-    "instagramNoCustomerMessage": "Não é possível enviar mensagem para este cliente pois ele ainda não enviou nenhuma mensagem. Apenas através de template."
+    "instagramNoCustomerMessage": "Não é possível enviar mensagem para este cliente pois ele ainda não enviou nenhuma mensagem. Apenas através de template.",
+    "pendingMessages": "Mensagens pendentes para reenvio",
+    "oneMessagePending": "1 mensagem pendente para reenvio automático",
+    "manyMessagesPending": "{{count}} mensagens pendentes para reenvio automático",
+    "resendNow": "Reenviar agora",
+    "resending": "Reenviando..."
   },
   "ai": {
     "title": "Melhorar texto com IA",

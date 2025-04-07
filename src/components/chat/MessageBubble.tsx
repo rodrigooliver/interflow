@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2 } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +38,8 @@ interface MessageBubbleProps {
   isHighlighted?: boolean;
   channelFeatures?: ChannelFeatures;
   onDeleteMessage?: (message: Message) => void;
+  isPending?: boolean;
+  onRetry?: (message: Message) => void;
 }
 
 export function MessageBubble({ 
@@ -53,7 +55,9 @@ export function MessageBubble({
     canSendAfter24Hours: true,
     canDeleteMessages: false
   },
-  onDeleteMessage
+  onDeleteMessage,
+  isPending = false,
+  onRetry
 }: MessageBubbleProps) {
   const { t } = useTranslation('chats');
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -347,7 +351,7 @@ export function MessageBubble({
       <div className="flex justify-center my-2 relative group">
         <div className={`flex items-center flex-row gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-300 ${
           isHighlighted ? 'ring-2 ring-blue-500 dark:ring-blue-400 animate-pulse' : ''
-        }`}>
+        } ${isPending ? 'opacity-70' : ''}`}>
           {renderSystemIcon()}
           <span className=''>{getSystemMessage()}</span>
           <span className="text-xs text-gray-500">
@@ -356,6 +360,12 @@ export function MessageBubble({
               minute: '2-digit' 
             })}
           </span>
+          {isPending && (
+            <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
+              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+              <span className="font-medium">{t('messageStatus.sending')}</span>
+            </div>
+          )}
           <div className="absolute right-0 top-0 mr-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -401,8 +411,14 @@ export function MessageBubble({
             isAgent
               ? 'bg-blue-600 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-          }`}
+          } ${isPending ? 'opacity-80 border-2 border-dashed border-yellow-300 dark:border-yellow-500 animate-pulse' : ''}`}
         >
+          {isPending && (
+            <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
+              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+              <span className="font-medium">{t('messageStatus.sending')}</span>
+            </div>
+          )}
           {message.response_to && (
             <button 
               onClick={() => {
@@ -493,10 +509,24 @@ export function MessageBubble({
           }`}>
             <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             {isAgent && status && (
-              <MessageStatus 
-                status={status} 
-                errorMessage={error_message}
-              />
+              <>
+                <MessageStatus 
+                  status={status} 
+                  errorMessage={error_message}
+                />
+                {status === 'failed' && onRetry && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRetry(message);
+                    }}
+                    className="ml-2 px-2 py-0.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    {t('actions.retry')}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

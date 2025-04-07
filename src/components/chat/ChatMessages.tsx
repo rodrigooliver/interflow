@@ -159,6 +159,20 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [searchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  // Estado para armazenar mensagens otimistas temporárias
+  interface OptimisticMessage {
+    id: string;
+    content: string | null;
+    attachments?: { url: string; type: string; name: string }[];
+    replyToMessageId?: string;
+    isPending: boolean;
+    created_at: string;
+    sender_type: string;
+    chat_id: string;
+    status: string;
+    error_message?: string;
+  }
+  const [optimisticMessages, setOptimisticMessages] = useState<OptimisticMessage[]>([]);
   const [chat, setChat] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -171,6 +185,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const MESSAGES_PER_PAGE = 20;
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [showNewMessagesIndicator, setShowNewMessagesIndicator] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [headerLoading, setHeaderLoading] = useState(false);
   const [footerLoading, setFooterLoading] = useState(false);
@@ -208,6 +225,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     canDeleteMessages: false
   });
   const [showFlowModal, setShowFlowModal] = useState(false);
+
+  // Estado para mensagens que falharam e podem ser reenviadas
+  const [failedMessages, setFailedMessages] = useState<OptimisticMessage[]>([]);
+  // Estado para rastrear mensagens que estão sendo reenviadas
+  const [retryingMessages, setRetryingMessages] = useState<string[]>([]);
 
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
@@ -312,18 +334,18 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     
     // Só atualizar o previousChatIdRef se o chatId realmente mudou
     if (isChatIdChanged) {
-      console.log(`ChatMessages: chatId mudou de ${previousChatIdRef.current || 'null'} para ${chatId}`);
+      // console.log(`ChatMessages: chatId mudou de ${previousChatIdRef.current || 'null'} para ${chatId}`);
       previousChatIdRef.current = chatId;
       // Resetar o flag de rolagem inicial quando o chat mudar
       initialScrollDoneRef.current = false;
     } else {
-      console.log(`ChatMessages: chatId não mudou (${chatId}), provavelmente apenas os filtros foram alterados`);
+      // console.log(`ChatMessages: chatId não mudou (${chatId}), provavelmente apenas os filtros foram alterados`);
     }
 
     if (chatId) {
       // Só mostrar loading e recarregar mensagens se o chatId realmente mudou ou se for o primeiro carregamento
       if (isChatIdChanged || isInitialRender()) {
-        console.log('ChatMessages: Carregando mensagens para novo chat ou primeiro carregamento');
+        // console.log('ChatMessages: Carregando mensagens para novo chat ou primeiro carregamento');
         setLoading(true);
         setInitialLoading(true);
         setHeaderLoading(true);
@@ -440,6 +462,16 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   }, [highlightedMessageId]);
 
+  // Adicionar função para verificar se está próximo do final
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    
+    const threshold = 300; // 300px do final
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  }, []);
+
+  // Modificar o subscribeToMessages para usar o novo indicador
   const subscribeToMessages = () => {
     const subscription = supabase
       .channel('messages')
@@ -450,7 +482,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         filter: `chat_id=eq.${chatId}`
       }, async (payload) => {
         if (payload.eventType === 'INSERT') {
+          setNewMessagesCount(prev => prev + 1);
+          
           const newMessage = payload.new as Message;
+          
+          // Verificar se o usuário está próximo do final
+          const shouldAutoScroll = isNearBottom();
+          
+          if (!shouldAutoScroll) {
+            setUnreadMessagesCount(prev => prev + 1);
+            setShowNewMessagesIndicator(true);
+          }
           
           // Se for mensagem do sistema, buscar informações adicionais do agente
           if (newMessage.sender_type === 'system' && newMessage.sender_agent_id) {
@@ -475,7 +517,118 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             }
           }
           
-          setMessages(prev => [...prev, newMessage]);
+          // Verificar se esta mensagem substitui uma mensagem otimista existente
+          let metadata: { tempId?: string } | null = null;
+          
+          // console.log(`Mensagem recebida:`, newMessage.metadata);
+          try {
+            metadata = newMessage.metadata ? 
+              (typeof newMessage.metadata === 'string' ? 
+                JSON.parse(newMessage.metadata) : newMessage.metadata) as { tempId?: string } : 
+              null;
+          } catch (e) {
+            console.error('Erro ao processar metadata da mensagem:', e);
+            metadata = null;
+          }
+          
+          // console.log(`Verificando metadata para tempId:`, metadata);
+          const tempId = metadata?.tempId;
+          
+          // Adicionar a nova mensagem à lista primeiro, antes de remover a otimista
+          // console.log(`Adicionando nova mensagem à lista antes de remover a otimista. Total atual: ${messages.length}`);
+          setMessages(prev => {
+            // Verificar se já existe uma mensagem com o mesmo ID (evitar duplicação)
+            if (!prev.some(m => m.id === newMessage.id)) {
+              return [...prev, newMessage];
+            }
+            return prev;
+          });
+          
+          // Agora tratamos a remoção da mensagem otimista
+          if (tempId) {
+            // console.log(`Encontrada mensagem real com tempId ${tempId}, removendo mensagem otimista após breve atraso`);
+            
+            // Força imediatamente a limpeza das mensagens otimistas com este tempId
+            // Isso deve resolver problemas de estado React que podem atrasar a atualização
+            // console.log('Forçando limpeza imediata de mensagens otimistas com este tempId');
+            setOptimisticMessages(prev => {
+              const filtered = prev.filter(msg => msg.id !== tempId);
+              // console.log(`Limpeza imediata: Removendo mensagem otimista com ID ${tempId}`);
+              return filtered;
+            });
+            
+            // Pequeno atraso para garantir que a mensagem real já esteja visível
+            setTimeout(() => {
+              // Verificar se a mensagem otimista existe antes de tentar removê-la
+              // console.log('Estado atual das mensagens otimistas:', optimisticMessages);
+              
+              const hasOptimisticMessage = optimisticMessages.some(msg => {
+                // console.log(`Comparando tempId ${tempId} com mensagem id ${msg.id}`);
+                return msg.id === tempId;
+              });
+              
+              if (hasOptimisticMessage) {
+                // console.log(`Mensagem otimista com ID ${tempId} encontrada, removendo...`);
+                
+                // Remover a mensagem otimista correspondente
+                setOptimisticMessages(prev => {
+                  const filtered = prev.filter(msg => msg.id !== tempId);
+                  // console.log(`Mensagens otimistas antes: ${prev.length}, depois: ${filtered.length}`);
+                  return filtered;
+                });
+              } else {
+                // console.log(`Mensagem otimista com ID ${tempId} não encontrada no estado atual`);
+                
+                // Tentar procurar com uma busca mais flexível (ex: o início do ID pode corresponder)
+                const possibleMatches = optimisticMessages.filter(msg => 
+                  msg.id.includes(tempId) || tempId.includes(msg.id)
+                );
+                
+                if (possibleMatches.length > 0) {
+                  // console.log(`Encontradas possíveis correspondências por substring:`, possibleMatches);
+                  
+                  // Remover essas mensagens possíveis
+                  setOptimisticMessages(prev => {
+                    const newList = prev.filter(msg => 
+                      !possibleMatches.some(match => match.id === msg.id)
+                    );
+                    // console.log(`Removendo ${possibleMatches.length} mensagens por correspondência parcial`);
+                    return newList;
+                  });
+                }
+              }
+              
+              // Verificar também na lista de mensagens falhas
+              setFailedMessages(prev => {
+                const hasFailed = prev.some(msg => msg.id === tempId);
+                if (hasFailed) {
+                  // console.log(`Mensagem falha com ID ${tempId} encontrada, removendo...`);
+                  const filtered = prev.filter(msg => msg.id !== tempId);
+                  // Atualizar o localStorage
+                  saveFailedMessagesToStorage(filtered);
+                  return filtered;
+                }
+                
+                // Tentar busca flexível também para mensagens falhas
+                const possibleFailedMatches = prev.filter(msg => 
+                  msg.id.includes(tempId) || tempId.includes(msg.id)
+                );
+                
+                if (possibleFailedMatches.length > 0) {
+                  // console.log(`Encontradas possíveis mensagens falhas por substring:`, possibleFailedMatches);
+                  const filtered = prev.filter(msg => 
+                    !possibleFailedMatches.some(match => match.id === msg.id)
+                  );
+                  saveFailedMessagesToStorage(filtered);
+                  return filtered;
+                }
+                
+                return prev;
+              });
+            }, 300); // Atraso de 300ms para garantir que a UI tenha tempo de atualizar
+          } else {
+            // console.log('Mensagem sem tempId, adicionando normalmente');
+          }
           
           // Verificar se o usuário está próximo do final para rolar automaticamente
           setTimeout(() => {
@@ -495,6 +648,26 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           if (updatedMessage.status === 'deleted') {
             setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
             return;
+          }
+          
+          // Se a mensagem falhou, adicioná-la à lista de mensagens falhas
+          if (updatedMessage.status === 'failed') {
+            // console.log(`Mensagem ${updatedMessage.id} falhou. Adicionando à lista de mensagens falhas.`);
+            
+            // Adicionar à lista de mensagens falhas (se ainda não estiver lá)
+            setFailedMessages(prev => {
+              // Verificar se a mensagem já está na lista
+              if (!prev.some(msg => msg.id === updatedMessage.id)) {
+                const updatedMessages = [...prev, {
+                  ...updatedMessage as unknown as OptimisticMessage,
+                  isPending: false
+                }];
+                // Salvar no localStorage
+                saveFailedMessagesToStorage(updatedMessages);
+                return updatedMessages;
+              }
+              return prev;
+            });
           }
           
           // Se for mensagem do sistema, buscar informações adicionais do agente
@@ -520,13 +693,98 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             }
           }
           
+          // Atualizar a mensagem na lista primeiro
           setMessages(prev => prev.map(msg => 
             msg.id === updatedMessage.id ? updatedMessage : msg
           ));
+          
+          // Verificar se esta mensagem atualizada substitui uma mensagem otimista existente
+          let metadata: { tempId?: string } | null = null;
+          
+          try {
+            metadata = updatedMessage.metadata ? 
+              (typeof updatedMessage.metadata === 'string' ? 
+                JSON.parse(updatedMessage.metadata) : updatedMessage.metadata) as { tempId?: string } : 
+              null;
+          } catch (e) {
+            console.error('Erro ao processar metadata da mensagem atualizada:', e);
+            metadata = null;
+          }
+          
+          const tempId = metadata?.tempId;
+          
+          if (tempId) {
+            // console.log(`Encontrada mensagem atualizada com tempId ${tempId}, verificando mensagens otimistas`);
+            // console.log('Estado atual das mensagens otimistas durante UPDATE:', optimisticMessages);
+            
+            // Pequeno atraso para garantir que a mensagem atualizada já esteja visível
+            setTimeout(() => {
+              // Verificar se a mensagem otimista existe antes de tentar removê-la
+              const hasOptimisticMessage = optimisticMessages.some(msg => {
+                // console.log(`UPDATE: Comparando tempId ${tempId} com mensagem id ${msg.id}`);
+                return msg.id === tempId;
+              });
+              
+              if (hasOptimisticMessage) {
+                // console.log(`Mensagem otimista com ID ${tempId} encontrada, removendo durante UPDATE`);
+                
+                // Remover a mensagem otimista correspondente
+                setOptimisticMessages(prev => prev.filter(msg => msg.id !== tempId));
+              } else {
+                // console.log(`Mensagem otimista com ID ${tempId} não encontrada durante UPDATE`);
+                
+                // Tentar procurar com uma busca mais flexível (ex: o início do ID pode corresponder)
+                const possibleMatches = optimisticMessages.filter(msg => 
+                  msg.id.includes(tempId) || tempId.includes(msg.id)
+                );
+                
+                if (possibleMatches.length > 0) {
+                  // console.log(`UPDATE: Encontradas possíveis correspondências por substring:`, possibleMatches);
+                  
+                  // Remover essas mensagens possíveis
+                  setOptimisticMessages(prev => {
+                    const newList = prev.filter(msg => 
+                      !possibleMatches.some(match => match.id === msg.id)
+                    );
+                    // console.log(`UPDATE: Removendo ${possibleMatches.length} mensagens por correspondência parcial`);
+                    return newList;
+                  });
+                }
+              }
+              
+              // Verificar também na lista de mensagens falhas
+              setFailedMessages(prev => {
+                const hasFailed = prev.some(msg => msg.id === tempId);
+                if (hasFailed) {
+                  // console.log(`Mensagem falha com ID ${tempId} encontrada, removendo durante UPDATE`);
+                  const filtered = prev.filter(msg => msg.id !== tempId);
+                  // Atualizar o localStorage
+                  saveFailedMessagesToStorage(filtered);
+                  return filtered;
+                }
+                
+                // Tentar busca flexível também para mensagens falhas
+                const possibleFailedMatches = prev.filter(msg => 
+                  msg.id.includes(tempId) || tempId.includes(msg.id)
+                );
+                
+                if (possibleFailedMatches.length > 0) {
+                  // console.log(`UPDATE: Encontradas possíveis mensagens falhas por substring:`, possibleFailedMatches);
+                  const filtered = prev.filter(msg => 
+                    !possibleFailedMatches.some(match => match.id === msg.id)
+                  );
+                  saveFailedMessagesToStorage(filtered);
+                  return filtered;
+                }
+                
+                return prev;
+              });
+            }, 300); // Atraso de 300ms para garantir que a UI tenha tempo de atualizar
+          }
         }
       })
       .subscribe((status) => {
-        console.log('Subscription status:', status);
+        // console.log('Subscription status:', status);
         if(status === 'SUBSCRIBED') {
           setTimeout(() => {
             setIsSubscriptionReady(true);
@@ -541,6 +799,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       if (append) {
         setIsLoadingMore(true);
       }
+      
+      // Calcular o offset considerando as novas mensagens
+      const offset = (pageNumber - 1) * MESSAGES_PER_PAGE + newMessagesCount;
       
       const { data, error } = await supabase
         .from('messages')
@@ -563,13 +824,27 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         .eq('chat_id', chatId)
         .neq('status', 'deleted')
         .order('created_at', { ascending: false })
-        .range((pageNumber - 1) * MESSAGES_PER_PAGE, pageNumber * MESSAGES_PER_PAGE - 1);
-
+        .range(offset, offset + MESSAGES_PER_PAGE - 1);
+        
       if (error) throw error;
-
+      
+      // Verificar mensagens recebidas para remover otimistas correspondentes
+      if (data && data.length > 0) {
+        data.forEach((message) => {
+          const metadata = message.metadata as { tempId?: string };
+          const tempId = metadata?.tempId;
+          
+          if (tempId) {
+            // Se encontrou uma mensagem com tempId, remover a mensagem otimista
+            setOptimisticMessages(prev => prev.filter(msg => msg.id !== tempId));
+            // console.log(`Removendo mensagem otimista com ID ${tempId} durante carregamento`);
+          }
+        });
+      }
+      
       const newMessages = data || [];
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
-      
+        
       if (append) {
         setMessages(prev => [...newMessages.reverse(), ...prev]);
       } else {
@@ -650,13 +925,16 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Modificar a função scrollToBottom para resetar o contador
   const scrollToBottom = () => {
-    // Usar setTimeout para garantir que o DOM foi atualizado
     setTimeout(() => {
       if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: "auto" });
         
-        // Marcar que o scroll inicial foi concluído
+        // Resetar o contador de mensagens não lidas
+        setUnreadMessagesCount(0);
+        setShowNewMessagesIndicator(false);
+        
         if (!initialScrollDoneRef.current) {
           initialScrollDoneRef.current = true;
         }
@@ -1123,7 +1401,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         table: 'chats',
         filter: `id=eq.${chatId}`
       }, (payload) => {
-        console.log('Chat atualizado:', payload);
+        // console.log('Chat atualizado:', payload);x
         
         if (payload.eventType === 'UPDATE') {
           const updatedChat = payload.new as Chat;
@@ -1131,7 +1409,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
           // Verificar se houve mudança no responsável
           if (updatedChat.assigned_to !== previousChat.assigned_to) {
-            console.log(`Responsável alterado: de ${previousChat.assigned_to || 'ninguém'} para ${updatedChat.assigned_to || 'ninguém'}`);
+            // console.log(`Responsável alterado: de ${previousChat.assigned_to || 'ninguém'} para ${updatedChat.assigned_to || 'ninguém'}`);
             
             // Se o chat foi atribuído a outro usuário e o usuário atual era o responsável
             if (previousChat.assigned_to === currentUserId && updatedChat.assigned_to !== currentUserId) {
@@ -1177,7 +1455,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
           // Verificar se houve mudança no status
           if (updatedChat.status !== previousChat.status) {
-            console.log(`Status alterado: de ${previousChat.status} para ${updatedChat.status}`);
+            // console.log(`Status alterado: de ${previousChat.status} para ${updatedChat.status}`);
             
             // Se o chat foi fechado
             if (updatedChat.status === 'closed' && previousChat.status !== 'closed') {
@@ -1433,6 +1711,379 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Função para adicionar uma mensagem otimista ao estado
+  const addOptimisticMessage = (message: {
+    id: string;
+    content: string | null;
+    attachments?: { file: File; preview: string; type: string; name: string }[];
+    replyToMessageId?: string;
+    isPending: boolean;
+  }) => {
+    // Verificar se já existe uma mensagem otimista com esse ID
+    const existingOptimisticMessage = optimisticMessages.find(msg => msg.id === message.id);
+    if (existingOptimisticMessage) {
+      console.log(`Mensagem otimista com ID ${message.id} já existe e não será duplicada`);
+      return;
+    }
+    
+    // Verificar se já existe uma mensagem real com esse ID
+    const existingRealMessage = messages.find(msg => msg.id === message.id);
+    if (existingRealMessage) {
+      console.log(`Mensagem real com ID ${message.id} já existe, não adicionando versão otimista`);
+      return;
+    }
+    
+    // Verificar se existe uma mensagem real com conteúdo idêntico e criada nos últimos segundos
+    // Isso ajuda a evitar duplicatas quando a mensagem real chega muito rapidamente
+    const contentToCheck = message.content?.trim() || '';
+    const recentRealMessage = messages.find(msg => {
+      // Verificar se o conteúdo é idêntico
+      if (msg.content?.trim() !== contentToCheck) return false;
+      
+      // Verificar se foi criada nos últimos segundos
+      const msgDate = new Date(msg.created_at).getTime();
+      const now = Date.now();
+      const isRecent = (now - msgDate) < 5000; // 5 segundos
+      
+      return isRecent;
+    });
+    
+    if (recentRealMessage) {
+      // console.log(`Encontrada mensagem real recente com conteúdo idêntico (ID: ${recentRealMessage.id}). Não adicionando otimista.`);
+      return;
+    }
+    
+    // Verificar se esta mensagem está na lista de falhas
+    const isFailedMessage = failedMessages.some(msg => msg.id === message.id);
+    
+    // console.log(`Adicionando nova mensagem otimista com ID ${message.id}, status: ${isFailedMessage ? 'failed' : 'pending'}`);
+    
+    // Criar uma mensagem temporária com os dados mínimos necessários
+    const tempMessage: OptimisticMessage = {
+      id: message.id,
+      content: message.content,
+      attachments: message.attachments?.map(att => ({
+        url: att.preview,
+        type: att.type,
+        name: att.name
+      })),
+      replyToMessageId: message.replyToMessageId,
+      isPending: !isFailedMessage && message.isPending, // Não mostrar como pendente se for uma mensagem falha
+      created_at: new Date().toISOString(),
+      sender_type: 'agent', // Assumindo que apenas agentes podem enviar mensagens pelo componente
+      chat_id: chatId,
+      status: isFailedMessage ? 'failed' : 'pending',
+      error_message: isFailedMessage ? 'Falha ao enviar mensagem' : undefined
+    };
+    
+    // Debug do estado antes de adicionar
+    // console.log('Estado atual antes de adicionar mensagem otimista:', 
+    //   { 
+    //     otimistas: optimisticMessages.length, 
+    //     reais: messages.length, 
+    //     falhas: failedMessages.length 
+    //   }
+    // );
+    
+    // Adicionar a mensagem ao estado de mensagens otimistas
+    setOptimisticMessages(prev => [...prev, tempMessage]);
+    
+    // Rolar para o final se necessário
+    setTimeout(scrollToBottom, 100);
+  };
+
+  // Função para salvar mensagens falhas no localStorage
+  const saveFailedMessagesToStorage = useCallback((messages: OptimisticMessage[]) => {
+    try {
+      // Usar o chatId como parte da chave para separar mensagens de diferentes chats
+      const storageKey = `failed_messages_${chatId}`;
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+      console.log(`Salvas ${messages.length} mensagens falhas no localStorage para o chat ${chatId}`);
+    } catch (error) {
+      console.error('Erro ao salvar mensagens falhas no localStorage:', error);
+    }
+  }, [chatId]);
+
+  // Função para carregar mensagens falhas do localStorage
+  const loadFailedMessagesFromStorage = useCallback(() => {
+    try {
+      const storageKey = `failed_messages_${chatId}`;
+      const storedData = localStorage.getItem(storageKey);
+      
+      if (storedData) {
+        const parsedData = JSON.parse(storedData) as OptimisticMessage[];
+        // console.log(`Carregadas ${parsedData.length} mensagens falhas do localStorage para o chat ${chatId}`);
+        return parsedData;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar mensagens falhas do localStorage:', error);
+    }
+    
+    return [];
+  }, [chatId]);
+
+  // Carregar mensagens falhas do localStorage quando o chatId mudar
+  useEffect(() => {
+    if (chatId) {
+      const storedMessages = loadFailedMessagesFromStorage();
+      setFailedMessages(storedMessages);
+    }
+  }, [chatId, loadFailedMessagesFromStorage]);
+
+  // Efeito para verificar e remover mensagens otimistas quando novas mensagens reais são adicionadas
+  useEffect(() => {
+    if (messages.length > 0 && optimisticMessages.length > 0) {
+      // console.log('Verificando mensagens otimistas após atualização de mensagens reais');
+      
+      // Procurar por mensagens otimistas que precisam ser removidas
+      const messagesToRemove: string[] = [];
+      
+      // Verificar baseado em tempId
+      messages.forEach(realMsg => {
+        try {
+          let metadata: { tempId?: string } | null = null;
+          
+          if (realMsg.metadata) {
+            metadata = typeof realMsg.metadata === 'string' 
+              ? JSON.parse(realMsg.metadata) 
+              : realMsg.metadata;
+          }
+          
+          const tempId = metadata?.tempId;
+          
+          if (tempId) {
+            const matchingOptimistic = optimisticMessages.find(optMsg => optMsg.id === tempId);
+            
+            if (matchingOptimistic) {
+              console.log(`useEffect: Encontrada mensagem otimista ${matchingOptimistic.id} correspondente à mensagem real ${realMsg.id} com tempId ${tempId}`);
+              messagesToRemove.push(matchingOptimistic.id);
+            }
+          }
+        } catch (e) {
+          console.error('Erro ao processar metadata em useEffect:', e);
+        }
+      });
+      
+      // Verificar baseado em conteúdo
+      optimisticMessages.forEach(optMsg => {
+        const optContent = optMsg.content?.trim() || '';
+        
+        messages.forEach(realMsg => {
+          const realContent = realMsg.content?.trim() || '';
+          
+          if (optContent === realContent && optContent !== '') {
+            const msgDate = new Date(realMsg.created_at).getTime();
+            const now = Date.now();
+            const isRecent = (now - msgDate) < 10000; // 10 segundos
+            
+            if (isRecent && !messagesToRemove.includes(optMsg.id)) {
+              // console.log(`useEffect: Encontrada mensagem otimista ${optMsg.id} com conteúdo idêntico à mensagem real ${realMsg.id}`);
+              messagesToRemove.push(optMsg.id);
+            }
+          }
+        });
+      });
+      
+      // Remover as mensagens identificadas
+      if (messagesToRemove.length > 0) {
+        // console.log(`useEffect: Removendo ${messagesToRemove.length} mensagens otimistas redundantes:`, messagesToRemove);
+        setOptimisticMessages(prev => prev.filter(msg => !messagesToRemove.includes(msg.id)));
+      }
+    }
+  }, [messages, optimisticMessages]);
+
+  // Função para reenviar uma mensagem que falhou
+  const handleRetryMessage = async (message: Message) => {
+    if (!message.id) return;
+    
+    // Adicionar ID à lista de mensagens sendo reenviadas
+    setRetryingMessages(prev => [...prev, message.id]);
+    
+    try {
+      // console.log(`Tentando reenviar mensagem: ${message.id}`);
+      
+      // Criar FormData para enviar a mensagem
+      const formData = new FormData();
+      
+      // Adicionar conteúdo da mensagem se houver
+      if (message.content) {
+        formData.append('content', message.content);
+      }
+      
+      // Se havia um ID de resposta
+      if (message.response_message_id) {
+        formData.append('replyToMessageId', message.response_message_id);
+      }
+
+      // IMPORTANTE: Sempre usar o mesmo ID da mensagem original como tempId
+      // Isso garante que a mensagem otimista possa ser removida quando a real chegar
+      const tempId = message.id;
+      // console.log(`Reenvio: Incluindo tempId ${tempId} nos metadados da mensagem a ser reenviada`);
+      
+      // Adicionar o metadata com o tempId para rastreamento
+      let metadata: any = {};
+      
+      // Se a mensagem já tem metadata, preservar e adicionar ou atualizar o tempId
+      if (message.metadata) {
+        try {
+          if (typeof message.metadata === 'string') {
+            metadata = JSON.parse(message.metadata);
+          } else {
+            metadata = { ...message.metadata };
+          }
+        } catch (e) {
+          console.error('Erro ao processar metadata da mensagem ao reenviar:', e);
+          // Se houver erro, simplesmente criar um novo objeto
+          metadata = {};
+        }
+      }
+      
+      // Garantir que o tempId seja incluído/atualizado no metadata
+      metadata.tempId = tempId;
+      
+      // Adicionar o metadata atualizado ao formData
+      // console.log(`Reenvio: Metadata final:`, metadata);
+      formData.append('metadata', JSON.stringify(metadata));
+      
+      // Debug para verificar o que está sendo enviado
+      // formData.forEach((value, key) => {
+      //   console.log(`Reenvio: FormData ${key}:`, value);
+      // });
+      
+      // Remover a mensagem falha da lista
+      setFailedMessages(prev => {
+        const updated = prev.filter(msg => msg.id !== message.id);
+        // Salvar no localStorage
+        saveFailedMessagesToStorage(updated);
+        return updated;
+      });
+      
+      // Marcar mensagem como pendente novamente
+      setOptimisticMessages(prev => 
+        prev.map(msg => 
+          msg.id === message.id 
+            ? { ...msg, isPending: true, status: 'pending' } 
+            : msg
+        )
+      );
+      
+      // Enviar a mensagem
+      const response = await api.post(`/api/${organizationId}/chat/${chatId}/message`, formData);
+      
+      // console.log(`Resposta ao reenviar mensagem:`, response.data);
+      
+      // Se chegou aqui, a mensagem foi enviada com sucesso
+      // A mensagem real será recebida por websocket e a mensagem otimista será removida automaticamente
+      // pelo código no subscribeToMessages
+      
+      // console.log(`Mensagem ${message.id} reenviada com sucesso. Esperando confirmação do servidor.`);
+    } catch (error) {
+      console.error(`Erro ao reenviar mensagem ${message.id}:`, error);
+      
+      // Manter na lista de mensagens falhas
+      setFailedMessages(prev => {
+        // Verificar se a mensagem já está na lista
+        if (!prev.some(msg => msg.id === message.id)) {
+          const updatedMessages = [...prev, {
+            ...message as unknown as OptimisticMessage,
+            isPending: false,
+            status: 'failed'
+          }];
+          // Salvar no localStorage
+          saveFailedMessagesToStorage(updatedMessages);
+          return updatedMessages;
+        }
+        return prev;
+      });
+      
+      // Atualizar a mensagem otimista para mostrar erro
+      setOptimisticMessages(prev => 
+        prev.map(msg => 
+          msg.id === message.id 
+            ? { ...msg, isPending: false, status: 'failed', error_message: 'Erro ao enviar mensagem' } 
+            : msg
+        )
+      );
+      
+      toast.error(t('errors.sendingMessage'));
+    } finally {
+      // Remover da lista de mensagens sendo reenviadas
+      setRetryingMessages(prev => prev.filter(id => id !== message.id));
+    }
+  };
+
+  // Adicionar ouvinte para o evento de atualização de status de mensagem
+  useEffect(() => {
+    // Handler para o evento de atualização de status de mensagem
+    const handleUpdateMessageStatus = (event: CustomEvent) => {
+      const { id, status, error_message } = event.detail;
+      // console.log(`Recebido evento para atualizar mensagem ${id} para status ${status}`);
+      
+      // Atualizar a mensagem otimista
+      setOptimisticMessages(prev => 
+        prev.map(msg => 
+          msg.id === id 
+            ? { ...msg, isPending: false, status, error_message } 
+            : msg
+        )
+      );
+      
+      // Se for falha, adicionar à lista de mensagens falhas
+      if (status === 'failed') {
+        setFailedMessages(prev => {
+          // Verificar se já existe na lista
+          if (!prev.some(msg => msg.id === id)) {
+            // Encontrar a mensagem otimista para adicionar à lista de falhas
+            const failedMsg = optimisticMessages.find(msg => msg.id === id);
+            if (failedMsg) {
+              const updatedMessages = [...prev, {
+                ...failedMsg,
+                isPending: false,
+                status: 'failed',
+                error_message
+              }];
+              // Salvar no localStorage
+              saveFailedMessagesToStorage(updatedMessages);
+              return updatedMessages;
+            }
+          }
+          return prev;
+        });
+      }
+    };
+
+    // Adicionar event listener
+    window.addEventListener('update-message-status', handleUpdateMessageStatus as EventListener);
+    
+    // Limpar o listener quando o componente for desmontado
+    return () => {
+      window.removeEventListener('update-message-status', handleUpdateMessageStatus as EventListener);
+    };
+  }, [optimisticMessages, saveFailedMessagesToStorage]);
+
+  // Adicionar um useEffect para resetar o contador quando o chatId mudar
+  useEffect(() => {
+    if (chatId) {
+      setNewMessagesCount(0);
+    }
+  }, [chatId]);
+
+  // Adicionar handler de scroll para esconder o indicador quando chegar ao final
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (isNearBottom()) {
+        setUnreadMessagesCount(0);
+        setShowNewMessagesIndicator(false);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [isNearBottom]);
+
   if (!chatId) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -1460,6 +2111,14 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         </div>
       </div>
     );
+  }
+
+  if (!initialLoading || messagesLoadedRef.current) {
+    // console.log('======= ESTADO ATUAL NO MOMENTO DA RENDERIZAÇÃO =======');
+    // console.log('Mensagens reais:', messages.length);
+    // console.log('Mensagens otimistas:', optimisticMessages.length, optimisticMessages);
+    // console.log('Mensagens falhas:', failedMessages.length);
+    // console.log('=======================================================');
   }
 
   return (
@@ -1877,11 +2536,101 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                       isHighlighted={message.id === highlightedMessageId}
                       channelFeatures={channelFeatures}
                       onDeleteMessage={handleDeleteMessage}
+                      onRetry={handleRetryMessage}
                     />
                   ))}
                 </div>
               </div>
             ))}
+            
+            {/* Renderizar mensagens otimistas em seu próprio grupo */}
+            {optimisticMessages.length > 0 && (
+              <div className="w-full">
+                <div className="flex flex-col gap-2 w-full">
+                  {optimisticMessages
+                    .filter(msg => {
+                      // Filtrar mensagens otimistas que têm conteúdo idêntico a mensagens reais recentes
+                      const contentToCheck = msg.content?.trim() || '';
+                      // console.log(`Verificando mensagem otimista ${msg.id} para renderização. Conteúdo: "${contentToCheck.substring(0, 50)}${contentToCheck.length > 50 ? '...' : ''}"`);
+                      
+                      const hasIdenticalRealMessage = messages.some(realMsg => {
+                        // Verificar se o conteúdo é idêntico
+                        if (realMsg.content?.trim() !== contentToCheck) return false;
+                        
+                        // Verificar se foi criada nos últimos segundos
+                        const msgDate = new Date(realMsg.created_at).getTime();
+                        const now = Date.now();
+                        const isRecent = (now - msgDate) < 5000; // 5 segundos
+                        
+                        if (isRecent) {
+                          // console.log(`Filtrando mensagem otimista ${msg.id} porque já existe mensagem real com conteúdo idêntico (${realMsg.id})`);
+                        }
+                        
+                        return isRecent;
+                      });
+                      
+                      // Manter apenas mensagens que NÃO têm correspondente real recente
+                      // console.log(`Mensagem otimista ${msg.id} será ${!hasIdenticalRealMessage ? 'renderizada' : 'filtrada'}`);
+                      return !hasIdenticalRealMessage;
+                    })
+                    .map(msg => {
+                      // console.log(`Renderizando mensagem otimista: ${msg.id}`);
+                      return (
+                        <MessageBubble
+                          key={msg.id}
+                          message={msg as unknown as Message}
+                          chatStatus={chat?.status || ''}
+                          isPending={msg.isPending}
+                          channelFeatures={channelFeatures}
+                          onRetry={handleRetryMessage}
+                        />
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Adicionar aqui o bloco para mensagens falhas */}
+            {failedMessages.length > 0 && (
+              <div className="w-full">
+                <div className="flex flex-col gap-2 w-full">
+                  {failedMessages
+                    .filter(failedMsg => !optimisticMessages.some(optMsg => optMsg.id === failedMsg.id))
+                    .filter(msg => {
+                      // Filtrar mensagens falhas que têm conteúdo idêntico a mensagens reais recentes
+                      const contentToCheck = msg.content?.trim() || '';
+                      const hasIdenticalRealMessage = messages.some(realMsg => {
+                        // Verificar se o conteúdo é idêntico
+                        if (realMsg.content?.trim() !== contentToCheck) return false;
+                        
+                        // Verificar se foi criada nos últimos segundos
+                        const msgDate = new Date(realMsg.created_at).getTime();
+                        const now = Date.now();
+                        const isRecent = (now - msgDate) < 10000; // 10 segundos (um pouco mais que otimistas)
+                        
+                        if (isRecent) {
+                          // console.log(`Filtrando mensagem falha ${msg.id} porque já existe mensagem real com conteúdo idêntico (${realMsg.id})`);
+                        }
+                        
+                        return isRecent;
+                      });
+                      
+                      // Manter apenas mensagens que NÃO têm correspondente real recente
+                      return !hasIdenticalRealMessage;
+                    })
+                    .map(msg => (
+                      <MessageBubble
+                        key={msg.id}
+                        message={msg as unknown as Message}
+                        chatStatus={chat?.status || ''}
+                        isPending={false}
+                        channelFeatures={channelFeatures}
+                        onRetry={handleRetryMessage}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
             
             {/* Adicionar título do chat quando fechado */}
             {chat?.status === 'closed' && chat?.title && (
@@ -1898,6 +2647,23 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           </>
         )}
       </div>
+
+      {/* Indicador de novas mensagens */}
+      {showNewMessagesIndicator && unreadMessagesCount > 0 && (
+        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-50">
+          <button 
+            onClick={scrollToBottom}
+            className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors animate-bounce"
+            type="button"
+            aria-label={t('scrollToNewMessages', { count: unreadMessagesCount })}
+          >
+            <ArrowDown className="w-4 h-4" />
+            <span>
+              {t('newMessages', { count: unreadMessagesCount })}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Botão para rolar até a mensagem destacada */}
       {showScrollToHighlighted && highlightedMessageId && (
@@ -1920,7 +2686,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             <MessageInput
               chatId={chatId}
               organizationId={organizationId}
-              onMessageSent={() => {}}
+              onMessageSent={() => {
+                // Otimização para carregar apenas a mensagem mais recente
+                // Isso será substituído pelo listener de tempo real
+              }}
               replyTo={
                 replyingTo && channelFeatures.canReplyToMessages ? {
                   message: replyingTo,
@@ -1929,6 +2698,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               }
               isSubscriptionReady={isSubscriptionReady}
               channelFeatures={channelFeatures}
+              addOptimisticMessage={addOptimisticMessage}
             />
           )}
 

@@ -232,7 +232,7 @@ export default function Chats() {
 
   // Função auxiliar para atualizar um chat específico na lista
   const updateChatInList = async (chatId: string) => {
-    console.log('updateChatInList', chatId);
+    // console.log('updateChatInList', chatId);
     const { data: chatData } = await supabase
       .from('chats')
       .select(`

@@ -12,6 +12,8 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import { useMessageShortcuts } from '../../hooks/useQueryes';
 import axios from 'axios';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { toast } from 'react-hot-toast';
 
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
@@ -32,6 +34,13 @@ interface MessageInputProps {
   };
   isSubscriptionReady?: boolean;
   channelFeatures?: ChannelFeatures;
+  addOptimisticMessage?: (message: {
+    id: string;
+    content: string | null;
+    attachments?: { file: File; preview: string; type: string; name: string }[];
+    replyToMessageId?: string;
+    isPending: boolean;
+  }) => void;
 }
 
 interface EmojiData {
@@ -62,7 +71,8 @@ export function MessageInput({
     canSendTemplates: false,
     has24HourWindow: false,
     canSendAfter24Hours: true
-  }
+  },
+  addOptimisticMessage
 }: MessageInputProps) {
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -77,6 +87,7 @@ export function MessageInput({
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState<'image' | 'document' | null>(null);
   const [error, setError] = useState('');
+  const [errorTimeout, setErrorTimeout] = useState<NodeJS.Timeout | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<{ 
     file: File; 
     preview: string; 
@@ -99,6 +110,16 @@ export function MessageInput({
   const [filteredShortcuts, setFilteredShortcuts] = useState<ShortcutSuggestion[]>([]);
   const selectedItemRef = useRef<HTMLLIElement>(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  
+  // Usar o hook de status de conexão
+  const { isOnline } = useOnlineStatus();
+  
+  // Fila de mensagens que falharam em enviar devido a problemas de conexão
+  const [failedMessages, setFailedMessages] = useState<{
+    content: string | null;
+    attachments: File[];
+    tempId?: string;
+  }[]>([]);
   
   // Função para detectar se o dispositivo é móvel
   // Usada para alterar o comportamento da tecla Enter (quebra de linha em vez de enviar)
@@ -219,8 +240,82 @@ export function MessageInput({
     reader.readAsDataURL(file);
   };
 
-  const handleSendMessage = async (content: string | null, attachments?: File[]) => {
+  // Efeito para tentar enviar mensagens pendentes quando a conexão for restaurada
+  useEffect(() => {
+    const sendFailedMessages = async () => {
+      if (isOnline && failedMessages.length > 0 && isSubscriptionReady) {
+        // Copiar as mensagens falhas para evitar problemas com a atualização do estado
+        const messagesToSend = [...failedMessages];
+        
+        // Limpar a lista para evitar duplicação
+        setFailedMessages([]);
+        
+        // Tentar enviar cada mensagem
+        for (const msg of messagesToSend) {
+          try {
+            await handleSendMessage(msg.content, msg.attachments, msg.tempId);
+          } catch (error) {
+            console.error('Falha ao reenviar mensagem:', error);
+            // Se falhar novamente, adiciona de volta à lista
+            setFailedMessages(prev => [...prev, msg]);
+            
+            // Apenas mostra um erro para o usuário se for a última mensagem
+            if (msg === messagesToSend[messagesToSend.length - 1]) {
+              const errorMessage = axios.isAxiosError(error) && error.code === 'ERR_NETWORK'
+                ? t('errors.network')
+                : t('errors.sending');
+              setError(errorMessage);
+            }
+            
+            // Parar o processo de reenvio para evitar múltiplos erros
+            break;
+          }
+        }
+      }
+    };
+    
+    sendFailedMessages();
+  }, [isOnline, isSubscriptionReady]);
+
+  // Função para gerar um ID temporário único para mensagens otimistas
+  const generateTempId = () => {
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+    // console.log(`Gerando ID temporário: ${tempId}`);
+    return tempId;
+  };
+
+  // Função para verificar se o erro é de conexão
+  const isConnectionError = (error: unknown): boolean => {
+    // Se não temos conexão, é definitivamente um erro de conexão
+    if (!isOnline) return true;
+    
+    // Verificar se é um erro do Axios de timeout ou network
+    if (axios.isAxiosError(error)) {
+      return error.code === 'ECONNABORTED' || 
+             error.message.includes('Network Error') || 
+             !error.response;
+    }
+    
+    // Verificar mensagens de erro comuns relacionadas à rede
+    if (error instanceof Error) {
+      const errorMsg = error.message.toLowerCase();
+      return errorMsg.includes('network') || 
+             errorMsg.includes('connection') || 
+             errorMsg.includes('offline') || 
+             errorMsg.includes('internet');
+    }
+    
+    return false;
+  };
+
+  const handleSendMessage = async (content: string | null, attachments?: File[], tempId?: string) => {
     try {
+      // Garantir que temos um tempId válido
+      if (!tempId) {
+        tempId = generateTempId();
+        // console.log(`Gerando novo tempId ${tempId} pois não foi fornecido`);
+      }
+      
       // Validação: content só pode ser null se houver anexos
       if (content === null && (!attachments || attachments.length === 0)) {
         throw new Error(t('errors.emptyMessage'));
@@ -243,6 +338,13 @@ export function MessageInput({
       
       if (replyTo?.message.id) {
         formData.append('replyToMessageId', replyTo.message.id);
+      }
+
+      // Se temos um ID temporário, adicioná-lo para rastreamento
+      if (tempId) {
+        // Precisamos usar o campo metadata para passar informações adicionais
+        // console.log(`Incluindo tempId ${tempId} nos metadados da mensagem`);
+        formData.append('metadata', JSON.stringify({ tempId }));
       }
 
       // Enviar para a nova API de mensagens usando api
@@ -269,24 +371,61 @@ export function MessageInput({
       let errorMessage = t('errors.sending', 'Erro ao enviar mensagem');
       
       // Verificar se é um erro de rede
-      if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
+      if (isConnectionError(error)) {
         errorMessage = t('errors.network', 'Erro de conexão. Verifique sua internet e tente novamente.');
-      } else if (error instanceof Error) {
-        const apiError = error as { response?: { data?: { error?: string } } };
-        if (apiError.response?.data?.error) {
-          errorMessage = apiError.response.data.error;
+        
+        // Adicionar à fila de reenvio quando online
+        setFailedMessages(prev => {
+          // Verificar se já existe na lista
+          if (prev.some(msg => msg.tempId === tempId)) {
+            // console.log(`Mensagem com tempId ${tempId} já está na lista de falhas`);
+            return prev;
+          }
+          
+          // console.log(`Adicionando mensagem com tempId ${tempId} à lista de falhas`);
+          return [...prev, { 
+            content: content?.trim() || null, 
+            attachments: attachments || [],
+            tempId
+          }];
+        });
+        
+        // NÃO adicionar outra mensagem otimista aqui
+        // A mensagem já foi adicionada anteriormente no handleSend
+        // Apenas emitir um evento personalizado para atualizar o status da mensagem
+        if (tempId) {
+          // console.log(`Emitindo evento para atualizar status da mensagem ${tempId} para falha`);
+          const event = new CustomEvent('update-message-status', {
+            detail: {
+              id: tempId,
+              status: 'failed',
+              isPending: false,
+              error_message: 'Falha ao enviar mensagem'
+            }
+          });
+          window.dispatchEvent(event);
+          // console.log('Evento de atualização de status emitido');
+        } else {
+          console.warn('tempId não definido ao tentar emitir evento de erro');
         }
+      } else if (axios.isAxiosError(error) && error.response?.status === 429) {
+        errorMessage = t('errors.tooManyRequests', 'Muitas mensagens em pouco tempo. Aguarde alguns segundos.');
       }
       
       setError(errorMessage);
+      toast.error(errorMessage);
       throw error;
+    } finally {
+      setSending(false);
     }
   };
 
   const handleSend = async () => {
+    // Não bloqueamos mais o envio por problemas de conexão
+    // Mostramos o aviso, mas deixamos o usuário continuar tentando
     if (!isSubscriptionReady) {
       setError(t('errors.waitingConnection'));
-      return;
+      // Não retornamos aqui para permitir tentar enviar mesmo assim
     }
 
     if (!message.trim() && pendingAttachments.length === 0) return;
@@ -305,25 +444,45 @@ export function MessageInput({
     setSending(true);
     setError('');
 
+    // Formatar a mensagem
+    let formattedMessage = currentMessage;
+    if (textFormat.bold) formattedMessage = `**${formattedMessage}**`;
+    if (textFormat.italic) formattedMessage = `_${formattedMessage}_`;
+
+    // Preparar arquivos para upload
+    const attachmentFiles = currentAttachments.map(attachment => attachment.file);
+
+    // Criar ID temporário para a mensagem otimista
+    const tempId = generateTempId();
+    // console.log(`Enviando mensagem com ID temporário: ${tempId}`);
+
+    // Se temos a função de adicionar mensagem otimista, usá-la
+    if (addOptimisticMessage) {
+      // console.log(`Adicionando mensagem otimista com ID: ${tempId}`);
+      addOptimisticMessage({
+        id: tempId,
+        content: formattedMessage.trim() || null,
+        attachments: currentAttachments,
+        replyToMessageId: replyTo?.message.id,
+        isPending: true
+      });
+    }
+
     try {
-      let formattedMessage = currentMessage;
-      if (textFormat.bold) formattedMessage = `**${formattedMessage}**`;
-      if (textFormat.italic) formattedMessage = `_${formattedMessage}_`;
-
-      // Preparar arquivos para upload
-      const attachmentFiles = currentAttachments.map(attachment => attachment.file);
-
-      // Enviar mensagem com possíveis anexos
-      await handleSendMessage(
+      // Enviar mensagem com possíveis anexos (passando tempId como string definida)
+      const response = await handleSendMessage(
         formattedMessage.trim() || null, 
-        attachmentFiles
+        attachmentFiles,
+        tempId // Aqui tempId é garantido que seja uma string (não é undefined)
       );
+      // console.log(`Mensagem enviada com sucesso`, response);
 
       // Limpar erro se houver
       setError('');
     } catch (error) {
-      console.error('Error sending message:', error);
-      setError(t('errors.sending'));
+      // console.error(`Erro ao enviar mensagem com ID ${tempId}:`, error);
+      // O erro já foi definido na função handleSendMessage, então não precisamos
+      // definir novamente aqui, apenas registramos no console
     } finally {
       setSending(false);
     }
@@ -469,8 +628,46 @@ export function MessageInput({
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
       }
+      // Limpar o timeout de erro ao desmontar
+      if (errorTimeout) {
+        clearTimeout(errorTimeout);
+      }
     };
-  }, []);
+  }, [errorTimeout]);
+
+  // Efeito para limpar erros após um período de tempo
+  useEffect(() => {
+    if (error) {
+      // Limpar qualquer timeout anterior
+      if (errorTimeout) {
+        clearTimeout(errorTimeout);
+      }
+      
+      // Definir primeiro timeout para iniciar o fade
+      const fadeTimeout = setTimeout(() => {
+        // setErrorFading(true);
+      }, 4000);
+      
+      // Definir um novo timeout para limpar o erro após 5 segundos (após o fade)
+      const timeout = setTimeout(() => {
+        setError('');
+        // setErrorFading(false);
+      }, 5000);
+      
+      setErrorTimeout(timeout);
+      
+      return () => {
+        clearTimeout(fadeTimeout);
+        clearTimeout(timeout);
+      };
+    }
+    
+    return () => {
+      if (errorTimeout) {
+        clearTimeout(errorTimeout);
+      }
+    };
+  }, [error]);
 
   const applyFormatting = (format: 'bold' | 'italic') => {
     if (textareaRef.current) {
@@ -786,15 +983,12 @@ export function MessageInput({
   return (
     <div className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700">
       {replyTo && (
-        <div className="p-2 mb-2 rounded-lg bg-gray-50 dark:bg-gray-800 grid grid-cols-[1fr,auto] gap-2 max-w-full">
-          <div className="text-sm border-l-2 border-blue-500 pl-2 overflow-hidden">
-            <div className="text-blue-500 font-medium">
-              {replyTo.message.sender_type === 'agent' 
-                ? t('you') 
-                : t('customer')
-              }
+        <div className="mb-4 flex items-start p-2 bg-blue-50 dark:bg-blue-900/20 text-gray-700 dark:text-gray-300 rounded-lg border border-blue-200 dark:border-blue-900">
+          <div className="flex-1 overflow-hidden">
+            <div className="text-xs text-blue-600 dark:text-blue-400 mb-1">
+              {t('actions.reply')}
             </div>
-            <div className="text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis">
+            <div className="line-clamp-1 text-sm">
               {replyTo.message.content}
             </div>
           </div>
@@ -804,11 +998,6 @@ export function MessageInput({
           >
             <X className="w-4 h-4" />
           </button>
-        </div>
-      )}
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-md">
-          {error}
         </div>
       )}
 
