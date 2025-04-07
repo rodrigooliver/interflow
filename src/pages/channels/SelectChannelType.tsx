@@ -28,12 +28,12 @@ export default function SelectChannelType() {
       description: t('descriptions.whatsapp_wapi'),
       icon: getChannelIcon('whatsapp_wapi')
     }] : []),
-    // {
-    //   id: 'whatsapp_wapi', 
-    //   name: t('types.whatsapp_wapi'),
-    //   description: t('descriptions.whatsapp_wapi'),
-    //   icon: getChannelIcon('whatsapp_wapi')
-    // },
+    {
+      id: 'whatsapp_wapi', 
+      name: t('types.whatsapp_wapi'),
+      description: t('descriptions.whatsapp_wapi'),
+      icon: getChannelIcon('whatsapp_wapi')
+    },
     // { 
     //   id: 'whatsapp_zapi', 
     //   name: t('types.whatsapp_zapi'),
