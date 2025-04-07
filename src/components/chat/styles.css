@@ -14,6 +14,30 @@
   position: relative;
 }
 
+/* Estilos para contenção de mensagens em mobile */
+.break-words {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%;
+}
+
+/* Utilitário para truncamento de texto em múltiplas linhas */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Estilos para as citações de respostas */
+button[class*="mb-2 text-sm rounded-md"] {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 /* Estilos para rolagem suave */
 .smooth-scroll {
   scroll-behavior: smooth;

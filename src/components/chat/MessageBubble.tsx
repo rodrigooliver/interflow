@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, MoreHorizontal, Trash2, Loader2 } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2 } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -73,6 +73,17 @@ export function MessageBubble({
     type,
     sender_agent
   } = message;
+  
+  // Se a mensagem estiver com status deletado, não renderiza nada
+  if (status === 'deleted') {
+    return null;
+  }
+  
+  // Se a mensagem for uma resposta a uma mensagem que foi apagada, precisamos verificar
+  if (message.response_to && message.response_to.status === 'deleted') {
+    // Remover a referência à mensagem deletada
+    message.response_to = undefined;
+  }
   
   const isAgent = sender_type === 'agent';
   const isSystem = sender_type === 'system';
@@ -404,7 +415,8 @@ export function MessageBubble({
               }}
               className={`
                 mb-2 text-sm rounded-md p-2 w-full max-w-full text-left
-                hover:opacity-90 transition-opacity cursor-pointer overflow-hidden overflow-wrap-anywhere
+                hover:opacity-90 transition-opacity cursor-pointer
+                overflow-hidden break-words
                 ${isAgent 
                   ? 'bg-blue-700/60 text-blue-100' 
                   : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
@@ -416,7 +428,7 @@ export function MessageBubble({
                   {message.response_to.sender_type === 'agent' ? t('you') : t('customer')}:
                 </span>
               </div>
-              <div className="truncate mt-1 overflow-wrap-anywhere">
+              <div className="mt-1 break-words overflow-hidden line-clamp-2 text-ellipsis">
                 {message.response_to.content}
               </div>
             </button>

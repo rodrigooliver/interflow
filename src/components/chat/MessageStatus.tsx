@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
 interface MessageStatusProps {
-  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted';
   errorMessage?: string;
   className?: string;
 }
@@ -24,6 +24,10 @@ export function MessageStatus({ status, errorMessage, className = '' }: MessageS
         return <CheckCheck className={`w-4 h-4 text-blue-400 ${className}`} />;
       case 'failed':
         return <AlertCircle className={`w-4 h-4 text-red-500 ${className}`} />;
+      case 'received':
+        return <Check className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
+      case 'deleted':
+        return <AlertCircle className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
       default:
         return null;
     }
@@ -41,6 +45,10 @@ export function MessageStatus({ status, errorMessage, className = '' }: MessageS
         return t('messageStatus.read');
       case 'failed':
         return errorMessage || t('messageStatus.failed');
+      case 'received':
+        return t('messageStatus.received');
+      case 'deleted':
+        return t('messageStatus.deleted');
       default:
         return '';
     }
