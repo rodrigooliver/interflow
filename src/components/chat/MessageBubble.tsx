@@ -417,6 +417,18 @@ export function MessageBubble({
             <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
               <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
               <span className="font-medium">{t('messageStatus.sending')}</span>
+              {onDeleteMessage && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteModal(true);
+                  }}
+                  className="ml-2 px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  {t('actions.delete')}
+                </button>
+              )}
             </div>
           )}
           {message.response_to && (
@@ -514,20 +526,18 @@ export function MessageBubble({
                   status={status} 
                   errorMessage={error_message}
                 />
-                {status === 'failed' && (
+                {status === 'failed' && onRetry && (
                   <div className="flex items-center gap-1">
-                    {onRetry && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRetry(message);
-                        }}
-                        className="ml-2 px-2 py-0.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs flex items-center whitespace-nowrap"
-                      >
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        {t('actions.retry')}
-                      </button>
-                    )}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRetry(message);
+                      }}
+                      className="ml-2 px-2 py-0.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      {t('actions.retry')}
+                    </button>
                     {onDeleteMessage && (
                       <button 
                         onClick={(e) => {

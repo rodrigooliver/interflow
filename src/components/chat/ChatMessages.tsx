@@ -1692,6 +1692,26 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
   const handleDeleteMessage = async (message: Message) => {
     try {
+      // Se a mensagem é otimista ou falha, apenas remover do estado local
+      const isOptimistic = optimisticMessages.some(msg => msg.id === message.id);
+      const isFailed = failedMessages.some(msg => msg.id === message.id);
+
+      if (isOptimistic || isFailed) {
+        // Remover da lista de mensagens otimistas
+        setOptimisticMessages(prev => prev.filter(msg => msg.id !== message.id));
+        
+        // Remover da lista de mensagens falhas e do localStorage
+        setFailedMessages(prev => {
+          const updated = prev.filter(msg => msg.id !== message.id);
+          saveFailedMessagesToStorage(updated);
+          return updated;
+        });
+        
+        toast.success(t('messageDeleted'));
+        return;
+      }
+
+      // Se não é otimista nem falha, proceder com a exclusão no servidor
       const response = await api.delete(`/api/${organizationId}/chat/${chatId}/message/${message.id}`);
 
       if (!response.data.success) {
@@ -2550,8 +2570,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                     .filter(msg => {
                       // Filtrar mensagens otimistas que têm conteúdo idêntico a mensagens reais recentes
                       const contentToCheck = msg.content?.trim() || '';
-                      // console.log(`Verificando mensagem otimista ${msg.id} para renderização. Conteúdo: "${contentToCheck.substring(0, 50)}${contentToCheck.length > 50 ? '...' : ''}"`);
-                      
                       const hasIdenticalRealMessage = messages.some(realMsg => {
                         // Verificar se o conteúdo é idêntico
                         if (realMsg.content?.trim() !== contentToCheck) return false;
@@ -2572,19 +2590,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                       // console.log(`Mensagem otimista ${msg.id} será ${!hasIdenticalRealMessage ? 'renderizada' : 'filtrada'}`);
                       return !hasIdenticalRealMessage;
                     })
-                    .map(msg => {
-                      // console.log(`Renderizando mensagem otimista: ${msg.id}`);
-                      return (
-                        <MessageBubble
-                          key={msg.id}
-                          message={msg as unknown as Message}
-                          chatStatus={chat?.status || ''}
-                          isPending={msg.isPending}
-                          channelFeatures={channelFeatures}
-                          onRetry={handleRetryMessage}
-                        />
-                      );
-                    })}
+                    .map(msg => (
+                      <MessageBubble
+                        key={msg.id}
+                        message={msg as unknown as Message}
+                        chatStatus={chat?.status || ''}
+                        isPending={msg.isPending}
+                        channelFeatures={channelFeatures}
+                        onRetry={handleRetryMessage}
+                        onDeleteMessage={handleDeleteMessage}
+                      />
+                    ))}
                 </div>
               </div>
             )}
@@ -2625,6 +2641,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                         isPending={false}
                         channelFeatures={channelFeatures}
                         onRetry={handleRetryMessage}
+                        onDeleteMessage={handleDeleteMessage}
                       />
                     ))}
                 </div>
