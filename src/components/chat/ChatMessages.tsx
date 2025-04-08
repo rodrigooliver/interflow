@@ -488,6 +488,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       }, async (payload) => {
         if (payload.eventType === 'INSERT') {
           setNewMessagesCount(prev => prev + 1);
+          // console.log('payload INSERT', payload);
           
           const newMessage = payload.new as Message;
           
@@ -689,6 +690,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             }
           }, 100);
         } else if (payload.eventType === 'UPDATE') {
+          // console.log('payload UPDATE', payload);
           const updatedMessage = payload.new as Message;
           
           // Se a mensagem foi deletada, removê-la da lista

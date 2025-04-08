@@ -598,14 +598,31 @@ export function MessageInput({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // // Determinar o formato suportado
-      // const mimeType = MediaRecorder.isTypeSupported('audio/webm')
-      //   ? 'audio/webm'
-      //   : 'audio/mp4';
-      // Forçar o uso do formato MP4
-      const mimeType = 'audio/mp4';
+      // Encontrar o melhor formato suportado pelo navegador
+      const supportedMimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg',
+        'audio/mpeg'
+      ];
+      
+      let mimeType = 'audio/webm'; // Formato intermediário para conversão posterior
+      for (const type of supportedMimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          console.log(`Formato suportado encontrado: ${mimeType}`);
+          break;
+        }
+      }
+      
+      // Opções para melhor qualidade
+      const options = { 
+        mimeType,
+        audioBitsPerSecond: 128000 // 128kbps
+      };
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorder = new MediaRecorder(stream, options);
       
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -614,43 +631,63 @@ export function MessageInput({
       };
 
       recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        audioChunksRef.current = [];
-
         try {
-          // const extension = mimeType.split('/')[1];
-          const timestamp = new Date().getTime(); // Usar timestamp como número
-          // const fileName = `audio-${timestamp}.${extension}`;
-          const fileName = `audio-${timestamp}.mp4`;
-          const file = new File([audioBlob], fileName, { type: mimeType });
+          // Criar um blob com os chunks coletados
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          audioChunksRef.current = [];
           
-          const { error } = await supabase.storage
-            .from('attachments')
-            .upload(`${currentOrganizationMember?.organization.id}/chat-attachments/${fileName}`, file);
-
-          if (error) throw error;
-
-          // Obter a URL pública do arquivo
-          supabase.storage
-            .from('attachments')
-            .getPublicUrl(`${currentOrganizationMember?.organization.id}/chat-attachments/${fileName}`);
-
-          // Usar a URL pública se necessário
-          // console.log('Arquivo disponível em:', storageData?.publicUrl);
-
-          handleFileUploadComplete(file, mimeType, fileName);
+          // Converter o áudio gravado para OGG/Opus usando o formato intermediário
+          const targetFileName = `audio-${Date.now()}.ogg`;
+          
+          try {
+            // Tentar carregar o módulo de áudio
+            const audioConverter = await import('../../lib/audioConverter');
+            console.log('Convertendo áudio para OGG/Opus...');
+            
+            // Converter o blob para OGG/Opus
+            const convertedBlob = await audioConverter.convertToOggOpus(audioBlob);
+            const convertedFile = new File([convertedBlob], targetFileName, { type: 'audio/ogg;codecs=opus' });
+            
+            // Adicionar o arquivo ao estado de anexos pendentes em vez de fazer upload
+            handleFileUploadComplete(convertedFile, 'audio/ogg;codecs=opus', targetFileName);
+            
+          } catch (conversionError) {
+            console.error('Erro na conversão de áudio:', conversionError);
+            console.log('Usando formato original sem conversão');
+            
+            // Determinar a extensão baseada no tipo MIME
+            let extension = 'webm';
+            if (mimeType.includes('mp4')) {
+              extension = 'mp4';
+            } else if (mimeType.includes('ogg')) {
+              extension = 'ogg';
+            } else if (mimeType.includes('mpeg')) {
+              extension = 'mp3';
+            }
+            
+            const fileName = `audio-${Date.now()}.${extension}`;
+            const file = new File([audioBlob], fileName, { type: mimeType });
+            
+            // Adicionar o arquivo ao estado de anexos pendentes
+            handleFileUploadComplete(file, mimeType, fileName);
+          }
+          
+          // Opcional: Focar no campo de texto para que o usuário possa adicionar uma mensagem junto com o áudio
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+          }
+          
         } catch (error) {
-          setError(t('errors.uploadFailed'));
-          console.error('Error uploading audio:', error);
+          setError(t('errors.audioProcessingFailed'));
+          console.error('Erro ao processar áudio:', error);
         }
       };
 
       setMediaRecorder(recorder);
-      recorder.start();
+      recorder.start(1000); // Gravar em chunks de 1 segundo
       setIsRecording(true);
       setRecordingDuration(0);
       
-      // Iniciar o contador
       timerIntervalRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
@@ -1012,10 +1049,7 @@ export function MessageInput({
     if (channelFeatures.canSendAudio) {
       return (
         <button
-          onMouseDown={startRecording}
-          onMouseUp={stopRecording}
-          onTouchStart={startRecording}
-          onTouchEnd={stopRecording}
+          onClick={isRecording ? stopRecording : startRecording}
           className={`p-2 rounded-full ${
             isRecording
               ? "bg-red-600 hover:bg-red-700"
