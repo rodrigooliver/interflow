@@ -587,7 +587,27 @@ export function MessageInput({
   };
 
   const onEmojiSelect = (emoji: EmojiData) => {
-    setMessage(prev => prev + emoji.native);
+    if (textareaRef.current) {
+      const cursorPosition = textareaRef.current.selectionStart;
+      const textBeforeCursor = message.substring(0, cursorPosition);
+      const textAfterCursor = message.substring(cursorPosition);
+      
+      // Inserir o emoji na posição do cursor
+      const newText = textBeforeCursor + emoji.native + textAfterCursor;
+      setMessage(newText);
+      
+      // Atualizar a posição do cursor para logo após o emoji inserido
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const newCursorPosition = cursorPosition + emoji.native.length;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition);
+        }
+      }, 0);
+    } else {
+      // Fallback para o comportamento anterior
+      setMessage(prev => prev + emoji.native);
+    }
   };
 
   const handleRemoveAttachment = (index: number) => {
