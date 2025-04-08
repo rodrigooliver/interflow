@@ -13,6 +13,16 @@
     <meta property="og:image" content="https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/interflow.svg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJpbWFnZXMvaW50ZXJmbG93LnN2ZyIsImlhdCI6MTc0Mjc0OTA0MiwiZXhwIjozMzE5NTQ5MDQyfQ.zoqxyHHv9t1pPSGIc22Dc21IGGygkuFOF6Pn-6hYyS8" />
     <link rel="icon" type="image/svg+xml" href="https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/interflow.svg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJpbWFnZXMvaW50ZXJmbG93LnN2ZyIsImlhdCI6MTc0Mjc0OTA0MiwiZXhwIjozMzE5NTQ5MDQyfQ.zoqxyHHv9t1pPSGIc22Dc21IGGygkuFOF6Pn-6hYyS8" />
     <title>Interflow Chat</title>
+    <!-- OneSignal Web Push SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "7aef872c-3a1d-43db-bb0b-113a55a9f402",
+        });
+      });
+    </script>
     <style>
       /* Estilo para evitar flash de tela branca durante o carregamento */
       html, body {
