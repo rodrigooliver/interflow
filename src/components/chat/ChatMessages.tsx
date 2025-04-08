@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Message } from '../../types/database';
+import { Message as BaseMessage } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
@@ -16,8 +16,13 @@ import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2 } from 'lucid
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { FlowModal } from './FlowModal';
-import { ApiError } from 'axios';
+import { AxiosError } from 'axios';
 import { LeaveAttendanceModal } from './LeaveAttendanceModal';
+
+// Estendendo a interface Message para incluir a propriedade response_to
+interface Message extends BaseMessage {
+  response_to?: Message;
+}
 
 // Interface para tags do cliente
 interface CustomerTag {
@@ -517,6 +522,43 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             }
           }
           
+          // Verificar se é uma resposta a outra mensagem e buscar a mensagem original
+          if (newMessage.response_message_id) {
+            try {
+              const { data: originalMessage, error: messageError } = await supabase
+                .from('messages')
+                .select(`
+                  id, 
+                  content, 
+                  type, 
+                  sender_type, 
+                  status, 
+                  created_at,
+                  sender_agent_id,
+                  sender_customer_id,
+                  sender_agent:profiles!messages_sender_agent_id_fkey(
+                    id, 
+                    full_name, 
+                    avatar_url
+                  ),
+                  sender_customer:customers!messages_sender_customer_id_fkey(
+                    id, 
+                    name
+                  ),
+                  attachments
+                `)
+                .eq('id', newMessage.response_message_id)
+                .single();
+              
+              if (!messageError && originalMessage) {
+                // @ts-expect-error - Adicionando propriedade response_to à mensagem
+                newMessage.response_to = originalMessage;
+              }
+            } catch (error) {
+              console.error('Erro ao buscar mensagem de referência:', error);
+            }
+          }
+          
           // Verificar se esta mensagem substitui uma mensagem otimista existente
           let metadata: { tempId?: string } | null = null;
           
@@ -691,7 +733,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             } catch (error) {
               console.error('Erro ao buscar informações do agente:', error);
             }
-          }
+          }          
           
           // Atualizar a mensagem na lista primeiro
           setMessages(prev => prev.map(msg => 
@@ -1683,7 +1725,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       
       toast.success(t('messageDeleted'));
     } catch (error: unknown) {
-      const apiError = error as ApiError;
+      const apiError = error as AxiosError;
       const errorMessage = apiError.response?.data?.error || apiError.message || t('errors.deleteMessage');
       toast.error(errorMessage);
       console.error('Error deleting message:', error);
