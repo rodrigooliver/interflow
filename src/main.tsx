@@ -206,7 +206,7 @@ const initOneSignal = () => {
                 localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, path);
                 
                 // Redirecionar diretamente
-                window.location.href = path;
+                // window.location.href = path;
               } else {
                 // Domínio externo - abrir em nova aba
                 window.open(url, '_blank');
