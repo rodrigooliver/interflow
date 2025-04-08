@@ -196,20 +196,6 @@ export default function Chats() {
   }, [showFilters]);
 
   const subscribeToChats = () => {
-    const messagesSubscription = supabase
-      .channel('messages-status-changes')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'messages',
-        filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
-      }, async (payload) => {
-        if (payload.new && 'chat_id' in payload.new) {
-          await updateChatInList(payload.new.chat_id as string);
-        }
-      })
-      .subscribe();
-
     const chatsSubscription = supabase
       .channel('chats-changes')
       .on('postgres_changes', {
@@ -218,6 +204,7 @@ export default function Chats() {
         table: 'chats',
         filter: `organization_id=eq.${currentOrganizationMember?.organization.id}`
       }, async (payload) => {
+        // console.log('payload', payload);
         if (payload.new && 'id' in payload.new) {
           await updateChatInList(payload.new.id as string);
         }
@@ -225,7 +212,6 @@ export default function Chats() {
       .subscribe();
 
     return () => {
-      messagesSubscription.unsubscribe();
       chatsSubscription.unsubscribe();
     };
   };
@@ -233,7 +219,7 @@ export default function Chats() {
   // Função auxiliar para atualizar um chat específico na lista
   const updateChatInList = async (chatId: string) => {
     // console.log('updateChatInList', chatId);
-    const { data: chatData } = await supabase
+    const { data: chatData, error: chatError } = await supabase
       .from('chats')
       .select(`
         *,
@@ -281,12 +267,17 @@ export default function Chats() {
           )
         )
       `)
-      .eq('id', chatId)
+      .eq('id', chatId) 
+      .eq('organization_id', currentOrganizationMember?.organization.id)
+      .eq('team.members.user_id', session?.user?.id)
       .single();
+
+    // console.log('chatData', chatData, chatError);
 
     if (chatData) {
       // console.log('chatData', chatData);
       // Verificar se o chat corresponde aos filtros atuais
+      
       const shouldIncludeChat = () => {
         switch (selectedFilter) {
           case 'unassigned':
@@ -303,6 +294,7 @@ export default function Chats() {
             return true;
         }
       };
+      // console.log('selectedFilter', selectedFilter, shouldIncludeChat());
 
       // Verificar filtros adicionais
       const matchesAdditionalFilters = async () => {
@@ -340,6 +332,8 @@ export default function Chats() {
         
         return true;
       };
+
+      // console.log('matchesAdditionalFilters', await matchesAdditionalFilters());
 
       // Como matchesAdditionalFilters agora é assíncrono, precisamos chamar de forma diferente
       const additionalFiltersMatch = await matchesAdditionalFilters();
