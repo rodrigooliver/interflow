@@ -459,8 +459,8 @@ export function MessageBubble({
                   {message.response_to.sender_type === 'agent' ? t('you') : t('customer')}:
                 </span>
               </div>
-              <div className="mt-1 break-words overflow-hidden line-clamp-2 text-ellipsis">
-                {message.response_to.content}
+              <div className="mt-1 break-words overflow-hidden line-clamp-2 text-ellipsis max-w-[400px] max-h-[35px] overflow-x-hidden">
+                {message.response_to.content ? <MarkdownRenderer content={message.response_to.content}  /> : message.response_to.content}
               </div>
             </button>
           )}
