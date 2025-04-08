@@ -14,6 +14,7 @@ import { useMessageShortcuts } from '../../hooks/useQueryes';
 import axios from 'axios';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { toast } from 'react-hot-toast';
+import { MarkdownRenderer } from '../../components/ui/MarkdownRenderer';
 
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
@@ -1031,7 +1032,7 @@ export function MessageInput({
               {t('actions.reply')}
             </div>
             <div className="line-clamp-1 text-sm">
-              {replyTo.message.content}
+              {replyTo.message.content ? <MarkdownRenderer content={replyTo.message.content} variant="compact" /> : replyTo.message.content}
             </div>
           </div>
           <button 
