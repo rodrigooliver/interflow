@@ -37,7 +37,7 @@ interface MessageInputProps {
   addOptimisticMessage?: (message: {
     id: string;
     content: string | null;
-    attachments?: { file: File; preview: string; type: string; name: string }[];
+    attachments?: { file: File; preview: string; type: string; name: string; url?: string }[];
     replyToMessageId?: string;
     isPending: boolean;
   }) => void;
@@ -89,10 +89,11 @@ export function MessageInput({
   const [error, setError] = useState('');
   const [errorTimeout, setErrorTimeout] = useState<NodeJS.Timeout | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<{ 
-    file: File; 
+    file?: File; 
     preview: string; 
     type: string; 
-    name: string 
+    name: string;
+    url?: string;
   }[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -240,6 +241,16 @@ export function MessageInput({
     reader.readAsDataURL(file);
   };
 
+  // Nova função para adicionar anexo a partir de uma URL
+  const addAttachmentFromUrl = (url: string, type: string, name: string) => {
+    setPendingAttachments(prev => [...prev, { 
+      preview: url, 
+      type, 
+      name,
+      url
+    }]);
+  };
+
   // Efeito para tentar enviar mensagens pendentes quando a conexão for restaurada
   useEffect(() => {
     const sendFailedMessages = async () => {
@@ -308,16 +319,17 @@ export function MessageInput({
     return false;
   };
 
-  const handleSendMessage = async (content: string | null, attachments?: File[], tempId?: string) => {
+  const handleSendMessage = async (content: string | null, attachments?: File[], tempId?: string, attachmentUrls?: {url: string, type: string, name: string}[]) => {
     try {
       // Garantir que temos um tempId válido
       if (!tempId) {
         tempId = generateTempId();
-        // console.log(`Gerando novo tempId ${tempId} pois não foi fornecido`);
       }
       
-      // Validação: content só pode ser null se houver anexos
-      if (content === null && (!attachments || attachments.length === 0)) {
+      // Validação: content só pode ser null se houver anexos ou urls
+      if (content === null && 
+          (!attachments || attachments.length === 0) && 
+          (!attachmentUrls || attachmentUrls.length === 0)) {
         throw new Error(t('errors.emptyMessage'));
       }
 
@@ -328,6 +340,23 @@ export function MessageInput({
       if (attachments && attachments.length > 0) {
         attachments.forEach(file => {
           formData.append(`attachments`, file, file.name);
+        });
+      }
+
+      // Adicionar URLs de anexos se existirem
+      if (attachmentUrls && attachmentUrls.length > 0) {
+        attachmentUrls.forEach((attachment) => {
+          // Criar objeto com os dados do anexo URL para envio
+          const attachmentData = {
+            url: attachment.url,
+            type: attachment.type,
+            name: attachment.name
+          };
+          
+          // Em vez de criar um blob, vamos adicionar um campo 'url_attachments'
+          // com o objeto JSON diretamente. O backend precisará ser modificado
+          // para reconhecer este campo.
+          formData.append('url_attachments', JSON.stringify(attachmentData));
         });
       }
 
@@ -342,8 +371,6 @@ export function MessageInput({
 
       // Se temos um ID temporário, adicioná-lo para rastreamento
       if (tempId) {
-        // Precisamos usar o campo metadata para passar informações adicionais
-        // console.log(`Incluindo tempId ${tempId} nos metadados da mensagem`);
         formData.append('metadata', JSON.stringify({ tempId }));
       }
 
@@ -378,11 +405,9 @@ export function MessageInput({
         setFailedMessages(prev => {
           // Verificar se já existe na lista
           if (prev.some(msg => msg.tempId === tempId)) {
-            // console.log(`Mensagem com tempId ${tempId} já está na lista de falhas`);
             return prev;
           }
           
-          // console.log(`Adicionando mensagem com tempId ${tempId} à lista de falhas`);
           return [...prev, { 
             content: content?.trim() || null, 
             attachments: attachments || [],
@@ -390,11 +415,7 @@ export function MessageInput({
           }];
         });
         
-        // NÃO adicionar outra mensagem otimista aqui
-        // A mensagem já foi adicionada anteriormente no handleSend
-        // Apenas emitir um evento personalizado para atualizar o status da mensagem
         if (tempId) {
-          // console.log(`Emitindo evento para atualizar status da mensagem ${tempId} para falha`);
           const event = new CustomEvent('update-message-status', {
             detail: {
               id: tempId,
@@ -404,7 +425,6 @@ export function MessageInput({
             }
           });
           window.dispatchEvent(event);
-          // console.log('Evento de atualização de status emitido');
         } else {
           console.warn('tempId não definido ao tentar emitir evento de erro');
         }
@@ -449,40 +469,52 @@ export function MessageInput({
     if (textFormat.bold) formattedMessage = `**${formattedMessage}**`;
     if (textFormat.italic) formattedMessage = `_${formattedMessage}_`;
 
-    // Preparar arquivos para upload
-    const attachmentFiles = currentAttachments.map(attachment => attachment.file);
+    // Separar anexos com arquivo dos anexos com URL
+    const fileAttachments = currentAttachments
+      .filter(attachment => attachment.file)
+      .map(attachment => attachment.file!);
+    
+    const urlAttachments = currentAttachments
+      .filter(attachment => attachment.url)
+      .map(attachment => ({
+        url: attachment.url!,
+        type: attachment.type,
+        name: attachment.name
+      }));
 
     // Criar ID temporário para a mensagem otimista
     const tempId = generateTempId();
-    // console.log(`Enviando mensagem com ID temporário: ${tempId}`);
 
     // Se temos a função de adicionar mensagem otimista, usá-la
     if (addOptimisticMessage) {
-      // console.log(`Adicionando mensagem otimista com ID: ${tempId}`);
       addOptimisticMessage({
         id: tempId,
         content: formattedMessage.trim() || null,
-        attachments: currentAttachments,
+        attachments: currentAttachments.map(att => ({
+          file: att.file!,
+          preview: att.preview,
+          type: att.type,
+          name: att.name,
+          url: att.url
+        })).filter(att => att.file || att.url) as { file: File; preview: string; type: string; name: string; url?: string }[],
         replyToMessageId: replyTo?.message.id,
         isPending: true
       });
     }
 
     try {
-      // Enviar mensagem com possíveis anexos (passando tempId como string definida)
-      const response = await handleSendMessage(
+      // Enviar mensagem com anexos (arquivos e URLs)
+      await handleSendMessage(
         formattedMessage.trim() || null, 
-        attachmentFiles,
-        tempId // Aqui tempId é garantido que seja uma string (não é undefined)
+        fileAttachments,
+        tempId,
+        urlAttachments
       );
-      // console.log(`Mensagem enviada com sucesso`, response);
 
       // Limpar erro se houver
       setError('');
-    } catch (error) {
-      // console.error(`Erro ao enviar mensagem com ID ${tempId}:`, error);
-      // O erro já foi definido na função handleSendMessage, então não precisamos
-      // definir novamente aqui, apenas registramos no console
+    } catch {
+      // O erro já foi definido na função handleSendMessage
     } finally {
       setSending(false);
     }
@@ -839,16 +871,26 @@ export function MessageInput({
     if (shortcut.attachments && shortcut.attachments.length > 0) {
       try {
         for (const attachment of shortcut.attachments) {
-          // Buscar o arquivo do storage
-          const { data, error } = await supabase.storage
-            .from('attachments')
-            .download(`${organizationId}/shortcut-attachments/${attachment.name}`);
+          // Verificar se o anexo já tem URL
+          if (attachment.url) {
+            // Adicionar diretamente como anexo com URL
+            addAttachmentFromUrl(
+              attachment.url,
+              attachment.type || 'document',
+              attachment.name
+            );
+          } else {
+            // Buscar o arquivo do storage (para compatibilidade com versões anteriores)
+            const { data, error } = await supabase.storage
+              .from('attachments')
+              .download(`${organizationId}/shortcut-attachments/${attachment.name}`);
+              
+            if (error) throw error;
             
-          if (error) throw error;
-          
-          if (data) {
-            const file = new File([data], attachment.name, { type: attachment.type });
-            handleFileUploadComplete(file, attachment.type, attachment.name);
+            if (data) {
+              const file = new File([data], attachment.name, { type: attachment.type });
+              handleFileUploadComplete(file, attachment.type, attachment.name);
+            }
           }
         }
       } catch (error) {
