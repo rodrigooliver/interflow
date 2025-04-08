@@ -386,10 +386,20 @@ export function MessageInput({
         throw new Error(response.data.error || t('errors.sending'));
       }
 
-      onMessageSent();
-      if (replyTo?.onClose) {
-        replyTo.onClose();
+      // Emitir evento para atualizar o status da mensagem otimista para "enviada"
+      if (tempId) {
+        const event = new CustomEvent('update-message-status', {
+          detail: {
+            id: tempId,
+            serverId: response.data.messageId, // ID real retornado pelo servidor
+            status: 'sent',
+            isPending: false
+          }
+        });
+        window.dispatchEvent(event);
       }
+
+      onMessageSent();
 
       return response.data;
     } catch (error: unknown) {
@@ -455,15 +465,15 @@ export function MessageInput({
     const currentMessage = message;
     const currentAttachments = [...pendingAttachments];
     
-    // Limpar o campo de mensagem e anexos imediatamente
+    // Limpar o campo de mensagem e anexos imediatamente para permitir nova entrada
     setMessage('');
     setPendingAttachments([]);
     setShowEmojiPicker(false);
     setShowAttachmentMenu(false);
+    setError(''); // Limpar qualquer erro anterior
     
     // Iniciar o processo de envio
     setSending(true);
-    setError('');
 
     // Formatar a mensagem
     let formattedMessage = currentMessage;
@@ -488,6 +498,7 @@ export function MessageInput({
 
     // Se temos a função de adicionar mensagem otimista, usá-la
     if (addOptimisticMessage) {
+      // Adicionar mensagem otimista ao estado
       addOptimisticMessage({
         id: tempId,
         content: formattedMessage.trim() || null,
@@ -501,22 +512,32 @@ export function MessageInput({
         replyToMessageId: replyTo?.message.id,
         isPending: true
       });
+      
+      // Limpar a referência de resposta se existir
+      if (replyTo?.onClose) {
+        replyTo.onClose();
+      }
+      
+      // Liberar o botão de envio imediatamente após adicionar a mensagem otimista
+      // para permitir que o usuário continue enviando mensagens sem esperar
+      setSending(false);
     }
 
     try {
-      // Enviar mensagem com anexos (arquivos e URLs)
+      // Enviar mensagem com anexos (arquivos e URLs) em segundo plano
+      // A UI já foi atualizada com a mensagem otimista
       await handleSendMessage(
         formattedMessage.trim() || null, 
         fileAttachments,
         tempId,
         urlAttachments
       );
-
-      // Limpar erro se houver
-      setError('');
     } catch {
       // O erro já foi definido na função handleSendMessage
+      // Não precisamos fazer nada aqui, pois o estado de envio já foi liberado acima
     } finally {
+      // Garantir que o botão de envio seja liberado em qualquer caso
+      // (isso é redundante caso addOptimisticMessage exista, mas serve como fallback)
       setSending(false);
     }
   };
@@ -962,17 +983,7 @@ export function MessageInput({
 
   // Renderizar o botão de enviar ou gravar áudio
   const renderSendButton = () => {
-    if (sending) {
-      return (
-        <button
-          className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-          disabled
-        >
-          <Loader2 className="w-5 h-5 animate-spin" />
-        </button>
-      );
-    }
-
+    // Primeiro verificamos se há mensagem ou anexos - isso tem prioridade
     if (message.trim() || pendingAttachments.length > 0) {
       return (
         <button
@@ -981,6 +992,18 @@ export function MessageInput({
           aria-label={t('send')}
         >
           <Send className="w-5 h-5" />
+        </button>
+      );
+    }
+
+    // Se não há mensagem, mas estamos enviando, mostrar loader
+    if (sending) {
+      return (
+        <button
+          className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+          disabled
+        >
+          <Loader2 className="w-5 h-5 animate-spin" />
         </button>
       );
     }
