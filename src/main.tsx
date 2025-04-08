@@ -8,15 +8,129 @@ import './index.css';
 import { LoadingScreen } from './components/LoadingScreen.tsx';
 import OneSignal from 'react-onesignal';
 
-// Declarando um evento customizado para comunicação entre componentes
-interface NavigateEventDetail {
-  url: string;
-}
-declare global {
-  interface WindowEventMap {
-    'onesignal:navigate': CustomEvent<NavigateEventDetail>;
+// Chave usada para armazenar URL de navegação no localStorage
+const ONESIGNAL_NAVIGATION_KEY = 'onesignal_navigation_url';
+
+// Canal de comunicação entre abas
+let broadcastChannel: BroadcastChannel | null = null;
+
+// Flag para indicar se esta aba está "viva" (ativa e visível)
+let isTabAlive = false;
+
+// Inicializar canal de comunicação entre abas
+const initBroadcastChannel = () => {
+  try {
+    // Verificar se o navegador suporta BroadcastChannel
+    if ('BroadcastChannel' in window) {
+      // Criar ou recuperar o canal para o app
+      broadcastChannel = new BroadcastChannel('interflow_app_channel');
+      
+      // Quando receber uma mensagem
+      broadcastChannel.onmessage = (event) => {
+        const { type, url } = event.data;
+        
+        // Se receber um ping e esta aba estiver ativa, responder
+        if (type === 'ping' && isTabAlive) {
+          broadcastChannel?.postMessage({
+            type: 'pong',
+            tabId: Date.now().toString(),
+            url: url
+          });
+        }
+        
+        // Se receber um comando para navegar e a URL corresponder
+        else if (type === 'navigate' && isTabAlive) {
+          console.log('Recebendo comando para navegar para:', url);
+          
+          // Armazenar URL para navegação
+          localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, url);
+          
+          // Focar nesta janela
+          window.focus();
+          
+          // Recarregar a página atual para processar a navegação
+          if (window.location.pathname !== url) {
+            window.location.href = url;
+          }
+        }
+      };
+      
+      // Marcar esta aba como "viva" quando estiver visível
+      const handleVisibilityChange = () => {
+        isTabAlive = document.visibilityState === 'visible';
+      };
+      
+      // Inicializar estado de visibilidade
+      isTabAlive = document.visibilityState === 'visible';
+      
+      // Adicionar listeners para eventos de visibilidade
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', () => { isTabAlive = true; });
+      window.addEventListener('blur', () => { isTabAlive = false; });
+      
+      console.log('Canal de comunicação entre abas inicializado');
+    }
+  } catch (error) {
+    console.error('Erro ao inicializar canal de comunicação:', error);
+    Sentry.captureException(error, {
+      tags: {
+        location: 'initBroadcastChannel'
+      }
+    });
   }
-}
+};
+
+// Verificar se o app está aberto em outra aba
+const checkAppOpenInOtherTab = async (url: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    // Se não há suporte a BroadcastChannel, retornar false
+    if (!broadcastChannel) {
+      resolve(false);
+      return;
+    }
+    
+    // Flag para indicar se alguma aba respondeu
+    let hasResponse = false;
+    
+    // Timeout para caso nenhuma aba responda
+    const timeout = setTimeout(() => {
+      if (!hasResponse) {
+        resolve(false);
+      }
+    }, 300); // 300ms deve ser suficiente para uma resposta local
+    
+    // Listener para respostas
+    const messageHandler = (event: MessageEvent) => {
+      const { type } = event.data;
+      
+      if (type === 'pong') {
+        hasResponse = true;
+        clearTimeout(timeout);
+        
+        // Enviar comando para navegar para a aba que respondeu
+        broadcastChannel?.postMessage({
+          type: 'navigate',
+          url: url
+        });
+        
+        // Resolver como true (app aberto em outra aba)
+        resolve(true);
+        
+        // Remover listener após receber resposta
+        broadcastChannel?.removeEventListener('message', messageHandler);
+      }
+    };
+    
+    // Adicionar listener temporário para a resposta
+    broadcastChannel.addEventListener('message', messageHandler);
+    
+    // Enviar ping para outras abas
+    broadcastChannel.postMessage({
+      type: 'ping',
+      url: url
+    });
+  });
+};
 
 // Inicialização do OneSignal
 const initOneSignal = () => {
@@ -55,7 +169,7 @@ const initOneSignal = () => {
     });
 
     // Adicionar ouvidor para notificações clicadas
-    OneSignal.Notifications.addEventListener('click', function(event) {
+    OneSignal.Notifications.addEventListener('click', async function(event) {
       try {
         console.log('Notificação clicada:', event);
         
@@ -75,15 +189,24 @@ const initOneSignal = () => {
               const urlOrigin = urlObj.origin;
               
               if (urlOrigin === currentDomain) {
-                // Mesmo domínio - usar navegação interna para não recarregar a página
+                // Mesmo domínio - extrair o caminho relativo
                 const path = urlObj.pathname + urlObj.search + urlObj.hash;
                 console.log('Navegação interna para:', path);
                 
-                // Disparar evento customizado para o App.tsx capturar e usar o navigate
-                const navigateEvent = new CustomEvent('onesignal:navigate', {
-                  detail: { url: path }
-                });
-                window.dispatchEvent(navigateEvent);
+                // Verificar se o app já está aberto em outra aba
+                const isOpenInOtherTab = await checkAppOpenInOtherTab(path);
+                
+                if (isOpenInOtherTab) {
+                  console.log('App já está aberto em outra aba, redirecionando lá.');
+                  // Não precisamos fazer nada aqui, a outra aba já recebeu o comando para navegar
+                  return;
+                }
+                
+                // Armazenar a URL para navegação após inicialização do app
+                localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, path);
+                
+                // Redirecionar diretamente
+                window.location.href = path;
               } else {
                 // Domínio externo - abrir em nova aba
                 window.open(url, '_blank');
@@ -94,14 +217,23 @@ const initOneSignal = () => {
               window.open(url, '_blank');
             }
           } else {
-            // URL relativa - usar navegação interna
+            // URL relativa - verificar se o app já está aberto em outra aba
+            const isOpenInOtherTab = await checkAppOpenInOtherTab(url);
+            
+            if (isOpenInOtherTab) {
+              console.log('App já está aberto em outra aba, redirecionando lá.');
+              // Não precisamos fazer nada aqui, a outra aba já recebeu o comando para navegar
+              return;
+            }
+            
+            // URL relativa - redirecionar diretamente
             console.log('Navegação interna para URL relativa:', url);
             
-            // Disparar evento customizado para o App.tsx capturar e usar o navigate
-            const navigateEvent = new CustomEvent('onesignal:navigate', {
-              detail: { url }
-            });
-            window.dispatchEvent(navigateEvent);
+            // Armazenar a URL para navegação após inicialização do app
+            localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, url);
+            
+            // Redirecionar diretamente
+            window.location.href = url;
           }
         }
       } catch (error) {
@@ -118,6 +250,9 @@ const initOneSignal = () => {
     });
   }
 };
+
+// Inicializar canal de comunicação entre abas
+initBroadcastChannel();
 
 // Inicializar OneSignal
 initOneSignal();

@@ -104,6 +104,58 @@ const queryClient = new QueryClient({
   },
 });
 
+// Chave usada para armazenar URL de navegação no localStorage
+const ONESIGNAL_NAVIGATION_KEY = 'onesignal_navigation_url';
+
+// Componente para verificar e processar navegação pendente do OneSignal
+const OneSignalNavigationHandler = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const navigationProcessed = useRef(false);
+  
+  useEffect(() => {
+    // Executar apenas uma vez após a inicialização do componente
+    if (!navigationProcessed.current) {
+      navigationProcessed.current = true;
+      
+      try {
+        // Verificar se há uma URL pendente no localStorage
+        const pendingUrl = localStorage.getItem(ONESIGNAL_NAVIGATION_KEY);
+        
+        if (pendingUrl) {
+          console.log('[OneSignalNavigationHandler] URL pendente encontrada:', pendingUrl);
+          
+          // Remover do localStorage para não repetir a navegação
+          localStorage.removeItem(ONESIGNAL_NAVIGATION_KEY);
+          
+          // Aguardar um momento para garantir que o App está totalmente inicializado
+          setTimeout(() => {
+            // Verificar se ainda não estamos na URL de destino
+            if (location.pathname !== pendingUrl) {
+              console.log('[OneSignalNavigationHandler] Navegando para URL pendente:', pendingUrl);
+              navigate(pendingUrl);
+            } else {
+              console.log('[OneSignalNavigationHandler] Já estamos na URL de destino, ignorando navegação.');
+            }
+          }, 500);
+        }
+      } catch (error) {
+        console.error('[OneSignalNavigationHandler] Erro ao processar URL pendente:', error);
+        Sentry.captureException(error, {
+          tags: {
+            location: 'OneSignalNavigationHandler'
+          }
+        });
+        
+        // Limpar URL pendente em caso de erro
+        localStorage.removeItem(ONESIGNAL_NAVIGATION_KEY);
+      }
+    }
+  }, [navigate, location.pathname]);
+  
+  return null;
+};
+
 // Componente para detecção de tela branca
 const WhiteScreenDetector = () => {
   const checkIntervalRef = useRef<number | null>(null);
@@ -280,39 +332,6 @@ const WhiteScreenDetector = () => {
   return null;
 };
 
-// Componente para ouvir eventos de navegação do OneSignal
-const OneSignalNavigationListener = () => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    const handleOneSignalNavigate = (event: CustomEvent<{ url: string }>) => {
-      try {
-        const { url } = event.detail;
-        console.log('[OneSignalNavigationListener] Navegando para:', url);
-        navigate(url);
-      } catch (error) {
-        console.error('[OneSignalNavigationListener] Erro ao navegar:', error);
-        Sentry.captureException(error, {
-          tags: {
-            location: 'OneSignalNavigationListener'
-          }
-        });
-      }
-    };
-    
-    // Adicionar o listener para o evento personalizado
-    window.addEventListener('onesignal:navigate', handleOneSignalNavigate as EventListener);
-    
-    // Remover o listener quando o componente for desmontado
-    return () => {
-      window.removeEventListener('onesignal:navigate', handleOneSignalNavigate as EventListener);
-    };
-  }, [navigate]);
-  
-  // Este componente não renderiza nada visível
-  return null;
-};
-
 function AppContent() {
   const { session, profile, loading, userOrganizations, loadingOrganizations, currentOrganizationMember, setCurrentOrganizationId } = useAuthContext();
   // console.log('userOrganizations', userOrganizations);
@@ -469,8 +488,8 @@ function AppContent() {
       {/* Detector de tela branca */}
       <WhiteScreenDetector />
       
-      {/* Ouvidor de navegação para o OneSignal */}
-      <OneSignalNavigationListener />
+      {/* Handler de navegação do OneSignal */}
+      <OneSignalNavigationHandler />
       
       {/* Modal de seleção de organização */}
       {(modalOrganization || (!currentOrganizationMember && userOrganizations && userOrganizations.length > 0)) && location.pathname.startsWith('/app') && modalRoot && createPortal(
