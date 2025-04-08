@@ -270,7 +270,7 @@ export default function Chats() {
       .eq('id', chatId) 
       .eq('organization_id', currentOrganizationMember?.organization.id)
       .eq('team.members.user_id', session?.user?.id)
-      .single();
+      .maybeSingle();
 
     // console.log('chatData', chatData, chatError);
 
