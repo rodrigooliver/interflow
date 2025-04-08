@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ResetPasswordForm from './ResetPasswordForm';
+import OneSignal from 'react-onesignal';
 
 // Estendendo a interface Window para incluir nossas propriedades personalizadas
 declare global {
@@ -60,6 +61,16 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
         if (user && window.isNativeApp && window.nativeApp?.registerForNotifications) {
           console.log('Registrando usuário no OneSignal:', user.id);
           window.nativeApp.registerForNotifications(user.id);
+        }
+        
+        // Fazer login no OneSignal com o ID do usuário como externalId
+        if (user) {
+          try {
+            console.log('Registrando externalId no OneSignal:', user.id);
+            await OneSignal.login(user.id);
+          } catch (oneSignalError) {
+            console.error('Erro ao registrar usuário no OneSignal:', oneSignalError);
+          }
         }
 
         if (onSuccess) {

@@ -7,6 +7,7 @@ import { useReferral } from '../../../../hooks/useReferral';
 import { useTrackingPixel } from '../../../../hooks/useTrackingPixel';
 import { generateSlug } from '../../../../utils/string';
 import { countryCodes } from '../../../../utils/countryCodes';
+import OneSignal from 'react-onesignal';
 
 interface SignupFormData {
   fullName: string;
@@ -411,6 +412,18 @@ export default function SignupForm() {
           if (window.isNativeApp && window.nativeApp?.registerForNotifications && sessionData.session?.user?.id) {
             console.log('Registrando usuário no OneSignal após signup:', sessionData.session.user.id);
             window.nativeApp.registerForNotifications(sessionData.session.user.id);
+          }
+          
+          // Fazer login no OneSignal com o ID do usuário como externalId
+          if (sessionData.session?.user?.id) {
+            try {
+              console.log('Registrando externalId no OneSignal após signup:', sessionData.session.user.id);
+              OneSignal.login(sessionData.session.user.id)
+                .then(() => console.log('OneSignal login bem-sucedido'))
+                .catch(error => console.error('Erro no OneSignal login:', error));
+            } catch (oneSignalError) {
+              console.error('Erro ao registrar usuário no OneSignal após signup:', oneSignalError);
+            }
           }
           
           // Armazenar credenciais temporariamente para login automático na página de destino

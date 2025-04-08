@@ -6,6 +6,7 @@ import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useCurrentSubscription } from '../hooks/useQueryes';
+import OneSignal from 'react-onesignal';
 
 // Definindo tipos para interface de link
 interface LinkChild {
@@ -285,9 +286,18 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
             onClick={() => {
               // Deslogar do OneSignal se estiver em ambiente nativo
               if (typeof window.isNativeApp === 'boolean' && window.isNativeApp && window.nativeApp?.unregisterFromNotifications) {
-                console.log('Deslogando do OneSignal');
+                console.log('Deslogando do OneSignal (nativo)');
                 window.nativeApp.unregisterFromNotifications();
               }
+              
+              // Deslogar do OneSignal web
+              try {
+                console.log('Deslogando do OneSignal');
+                OneSignal.logout();
+              } catch (error) {
+                console.error('Erro ao deslogar do OneSignal:', error);
+              }
+              
               signOut();
             }}
             className={`flex items-center ${shouldCollapse ? 'justify-center' : 'justify-start'} rounded-lg transition-colors text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
