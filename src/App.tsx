@@ -83,6 +83,12 @@ declare global {
   interface Window {
     removeInitialLoader?: () => void;
     isNativeApp?: boolean;
+    webkit?: {
+      messageHandlers?: Record<string, unknown>;
+    };
+    ReactNativeWebView?: {
+      postMessage: (message: string) => void;
+    };
   }
 }
 
@@ -102,6 +108,16 @@ const queryClient = new QueryClient({
 const WhiteScreenDetector = () => {
   const checkIntervalRef = useRef<number | null>(null);
   const lastVisibilityState = useRef<string>(document.visibilityState);
+  const isWebView = useRef<boolean>(
+    // Detecção de WebView - diversos métodos para diferentes plataformas
+    /WebView|wv/.test(navigator.userAgent) || 
+    // iOS webview não tem scrollbars
+    !/(Chrome|Firefox|Safari)/.test(navigator.userAgent) ||
+    // Verificação adicional para iOS
+    'webkit' in window && !!window.webkit?.messageHandlers ||
+    // Verificar variável isNativeApp que é injetada pelo nosso WebView 
+    window.isNativeApp === true
+  );
   
   useEffect(() => {
     // Função que verifica se a tela está branca
@@ -130,16 +146,45 @@ const WhiteScreenDetector = () => {
                             (document.body.children.length <= 2 && 
                              document.body.textContent?.trim() === '');
 
+        // Verificação adicional para detectar conteúdo renderizado mas invisível (problema comum em WebViews)
+        const mainRoot = document.getElementById('root');
+        const appContainer = document.querySelector('.mobile-container');
+        const isRootEmpty = !mainRoot || mainRoot.children.length === 0;
+        const isAppContainerInvisible = !appContainer || 
+                                      (appContainer as HTMLElement).offsetHeight === 0 ||
+                                      window.getComputedStyle(appContainer as Element).display === 'none';
+
         // Se não houver conteúdo visível, considerar como tela branca
-        if ((!hasContent || !hasVisibleElements || hasOnlyLoader) && document.readyState === 'complete') {
+        if (((!hasContent || !hasVisibleElements || hasOnlyLoader || isRootEmpty || isAppContainerInvisible)) && 
+             document.readyState === 'complete') {
           console.warn('Tela branca detectada! Recarregando a página...');
+          
+          // Tenta comunicar com o WebView nativo, se disponível
+          if (window.isNativeApp && window.ReactNativeWebView?.postMessage) {
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'whiteScreen',
+                timestamp: Date.now(),
+                details: {
+                  hasContent,
+                  hasVisibleElements,
+                  hasOnlyLoader,
+                  isRootEmpty,
+                  isAppContainerInvisible
+                }
+              }));
+            } catch (e) {
+              console.error('Erro ao enviar mensagem para WebView nativo:', e);
+            }
+          }
           
           // Registrar no Sentry
           Sentry.captureMessage('Tela branca detectada', {
             level: 'warning',
             tags: {
               location: 'WhiteScreenDetector',
-              type: 'WHITE_SCREEN'
+              type: 'WHITE_SCREEN',
+              isWebView: isWebView.current
             },
             extra: {
               url: window.location.href,
@@ -147,7 +192,10 @@ const WhiteScreenDetector = () => {
               visibilityState: document.visibilityState,
               hasContent,
               hasVisibleElements,
-              hasOnlyLoader
+              hasOnlyLoader,
+              isRootEmpty,
+              isAppContainerInvisible,
+              userAgent: navigator.userAgent
             }
           });
           
@@ -173,11 +221,36 @@ const WhiteScreenDetector = () => {
       if (lastVisibilityState.current === 'hidden' && document.visibilityState === 'visible') {
         console.log('Aplicação voltou do background, verificando tela branca...');
         
-        // Aguardar um momento para que a interface tenha chance de se renderizar
-        setTimeout(checkWhiteScreen, 2000);
+        // Em WebViews, fazemos uma verificação mais agressiva e mais rápida
+        if (isWebView.current) {
+          // Verificação imediata para "capturar" o estado logo após voltar
+          checkWhiteScreen();
+          
+          // Várias verificações em intervalos curtos para detectar problemas de renderização após retorno
+          setTimeout(checkWhiteScreen, 500);
+          setTimeout(checkWhiteScreen, 1500);
+          setTimeout(checkWhiteScreen, 3000);
+        } else {
+          // Para browsers normais, basta uma verificação após um tempo razoável
+          setTimeout(checkWhiteScreen, 2000);
+        }
       }
       
       lastVisibilityState.current = document.visibilityState;
+    };
+    
+    // Handler para pageshow (específico para WebViews e iOS)
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // event.persisted indica que a página foi restaurada do cache de bfcache
+      // comum em iOS WebView quando retorna de background
+      if (event.persisted) {
+        console.log('Página restaurada do cache (bfcache), verificando integridade...');
+        
+        // Verificação imediata e sequencial
+        checkWhiteScreen();
+        setTimeout(checkWhiteScreen, 1000);
+        setTimeout(checkWhiteScreen, 2000);
+      }
     };
     
     // Verificar pela primeira vez depois de 5 segundos
@@ -188,8 +261,9 @@ const WhiteScreenDetector = () => {
       checkIntervalRef.current = window.setInterval(checkWhiteScreen, 60000);
     }, 5000);
     
-    // Adicionar event listener para mudanças de visibilidade
+    // Adicionar event listeners para detecção
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
     
     // Limpar os timeouts e intervalos ao desmontar
     return () => {
@@ -198,6 +272,7 @@ const WhiteScreenDetector = () => {
         clearInterval(checkIntervalRef.current);
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
     };
   }, []);
   
