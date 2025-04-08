@@ -938,6 +938,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       
       const newMessages = data || [];
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
+
+      // console.log('newMessages', newMessages);
         
       if (append) {
         setMessages(prev => [...newMessages.reverse(), ...prev]);
@@ -1062,7 +1064,21 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       groups[date].push(message);
     });
     
-    return groups;
+    // Transformar em um array ordenado por data (mais antiga para mais recente)
+    const sortedGroups = Object.entries(groups)
+      .sort((a, b) => {
+        const dateA = new Date(a[0]);
+        const dateB = new Date(b[0]);
+        return dateA.getTime() - dateB.getTime();
+      });
+    
+    // Converter de volta para objeto preservando a ordem
+    const orderedGroups: { [key: string]: Message[] } = {};
+    sortedGroups.forEach(([date, msgs]) => {
+      orderedGroups[date] = msgs;
+    });
+    
+    return orderedGroups;
   };
 
   const handleResolveChat = async ({ closureTypeId, title }: { closureTypeId: string; title: string }) => {
