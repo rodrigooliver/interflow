@@ -120,17 +120,17 @@ const OneSignalNavigationHandler = () => {
     // Função para processar navegação
     const processNavigation = (url: string) => {
       try {
-        console.log('[OneSignalNavigationHandler] Processando navegação para:', url);
+        // console.log('[OneSignalNavigationHandler] Processando navegação para:', url);
         
         // Verificar se ainda não estamos na URL de destino
         if (location.pathname !== url) {
-          console.log('[OneSignalNavigationHandler] Navegando para URL:', url);
+          // console.log('[OneSignalNavigationHandler] Navegando para URL:', url);
           navigate(url);
         } else {
-          console.log('[OneSignalNavigationHandler] Já estamos na URL de destino, ignorando navegação.');
+          // console.log('[OneSignalNavigationHandler] Já estamos na URL de destino, ignorando navegação.');
         }
       } catch (error) {
-        console.error('[OneSignalNavigationHandler] Erro ao processar navegação:', error);
+        // console.error('[OneSignalNavigationHandler] Erro ao processar navegação:', error);
         Sentry.captureException(error, {
           tags: {
             location: 'OneSignalNavigationHandler.processNavigation'

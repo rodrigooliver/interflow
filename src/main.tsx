@@ -174,14 +174,14 @@ const initOneSignal = () => {
     // Adicionar ouvidor para notificações clicadas
     OneSignal.Notifications.addEventListener('click', async function(event) {
       try {
-        console.log('Notificação clicada:', event);
+        // console.log('Notificação clicada:', event);
         
         // Verificar se existe uma URL na notificação
         const additionalData = event.notification?.additionalData as Record<string, unknown> | undefined;
         const url = additionalData?.url;
         
         if (url && typeof url === 'string') {
-          console.log('Redirecionando para:', url);
+          // console.log('Redirecionando para:', url);
           
           // Verificar se a URL é absoluta
           if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -230,13 +230,13 @@ const initOneSignal = () => {
             const isOpenInOtherTab = await checkAppOpenInOtherTab(url);
             
             if (isOpenInOtherTab) {
-              console.log('App já está aberto em outra aba, redirecionando lá.');
+              // console.log('App já está aberto em outra aba, redirecionando lá.');
               // Não precisamos fazer nada aqui, a outra aba já recebeu o comando para navegar
               return;
             }
             
             // URL relativa - redirecionar diretamente
-            console.log('Navegação interna para URL relativa:', url);
+            // console.log('Navegação interna para URL relativa:', url);
             
             // Armazenar a URL para navegação após inicialização do app (para compatibilidade)
             localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, url);

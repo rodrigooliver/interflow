@@ -19,22 +19,8 @@ export function AudioPlayer({ src, fileName, compact = false }: AudioPlayerProps
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Testa se a reprodução de áudio é suportada
-    const testAudioSupport = async () => {
-      try {
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          await playPromise;
-        }
-        audio.pause();
-        setIsAudioSupported(true);
-      } catch (error) {
-        console.error('Reprodução de áudio não suportada:', error);
-        setIsAudioSupported(false);
-      }
-    };
-
-    testAudioSupport();
+    // Verifica se o navegador suporta a API de áudio
+    setIsAudioSupported(typeof audio.play === 'function');
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleDurationChange = () => setDuration(audio.duration);
@@ -128,8 +114,7 @@ export function AudioPlayer({ src, fileName, compact = false }: AudioPlayerProps
   };
 
   return (
-    //${compact ? 'space-x-0' : 'space-x-2'}
-    <div className={`flex items-center  w-full max-w-[300px] sm:max-w-[400px]`}>
+    <div className={`flex items-center ${compact ? 'space-x-1' : 'space-x-2'} w-full max-w-[300px] sm:max-w-[400px]`}>
       <audio ref={audioRef} src={src} />
       
       <button

@@ -335,10 +335,10 @@ export function MessageBubble({
           href={attachment.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors overflow-hidden max-w-[200px] md:max-w-[300px]"
         >
           <FileText className="w-4 h-4 flex-shrink-0 text-gray-500 dark:text-gray-400" />
-          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+          <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1 min-w-0">
             {attachment.name}
           </span>
         </a>
