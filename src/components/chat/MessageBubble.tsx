@@ -31,6 +31,24 @@ interface ChannelFeatures {
   canDeleteMessages: boolean;
 }
 
+// Interfaces para o formato de lista do WhatsApp
+interface WhatsAppListRow {
+  title: string;
+  description: string;
+}
+
+interface WhatsAppListSection {
+  title: string;
+  rows: WhatsAppListRow[];
+}
+
+interface WhatsAppList {
+  title: string;
+  description: string;
+  buttonText: string;
+  sections: WhatsAppListSection[];
+}
+
 interface MessageBubbleProps {
   message: Message
   chatStatus: string;
@@ -75,8 +93,12 @@ export function MessageBubble({
     error_message,
     attachments,
     type,
-    sender_agent
+    sender_agent,
+    metadata
   } = message;
+  
+  // Verificar se existe uma lista no metadata
+  const whatsappList = metadata?.list as WhatsAppList | undefined;
   
   // Se a mensagem estiver com status deletado, não renderiza nada
   if (status === 'deleted') {
@@ -509,8 +531,13 @@ export function MessageBubble({
               </div>
             ))}
 
-            {/* Existing message content */}
-            {content && !attachments?.some(attachment => 
+            {/* Renderizar a lista do WhatsApp se estiver presente no metadata */}
+            {whatsappList && (
+              <WhatsappList list={whatsappList} />
+            )}
+
+            {/* Existing message content - não exibir quando tiver lista */}
+            {content && !whatsappList && !attachments?.some(attachment => 
               attachment.type.startsWith('audio') || attachment.type.startsWith('audio/')
             ) && (
               <MarkdownRenderer content={content} />
@@ -753,6 +780,83 @@ export function MessageBubble({
           </div>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+// Componente para renderizar uma lista no formato do WhatsApp
+function WhatsappList({ list }: { list: WhatsAppList }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  if (!list) return null;
+
+  return (
+    <>
+      <div className="w-full mt-2">
+        {/* Título e descrição como texto normal */}
+        <div className="mb-2">
+          <MarkdownRenderer content={`**${list.title}**`} />
+          <div className="text-sm mt-1">{list.description}</div>
+        </div>
+
+        {/* Botão com estilo WhatsApp */}
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="w-full p-2.5 text-center flex justify-center items-center rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        >
+          <span className="text-blue-600 dark:text-blue-400 font-medium">{list.buttonText}</span>
+        </button>
+      </div>
+
+      {/* Modal da lista */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-xl font-bold">{list.title}</h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">{list.description}</p>
+              
+              {list.sections.map((section, sectionIndex) => (
+                <div key={sectionIndex} className="mb-4 last:mb-0">
+                  <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-t-lg font-medium">
+                    {section.title}
+                  </div>
+                  
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-b-lg">
+                    {section.rows.map((row, rowIndex) => (
+                      <div 
+                        key={rowIndex} 
+                        className="p-3 border-t border-gray-200 dark:border-gray-700 first:border-t-0 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="font-bold">{row.title}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">{row.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
