@@ -8,23 +8,14 @@ import './index.css';
 import { LoadingScreen } from './components/LoadingScreen.tsx';
 import OneSignal from 'react-onesignal';
 
-// Interface para dados adicionais da notificação
-interface NotificationAdditionalData {
-  url?: string;
-  [key: string]: any;
+// Declarando um evento customizado para comunicação entre componentes
+interface NavigateEventDetail {
+  url: string;
 }
-
-// Interface para o objeto notification
-interface NotificationData {
-  additionalData?: NotificationAdditionalData;
-  [key: string]: any;
-}
-
-// Interface para o evento de clique na notificação
-interface NotificationClickEvent {
-  notification?: NotificationData;
-  result: any;
-  [key: string]: any;
+declare global {
+  interface WindowEventMap {
+    'onesignal:navigate': CustomEvent<NavigateEventDetail>;
+  }
 }
 
 // Inicialização do OneSignal
@@ -64,21 +55,53 @@ const initOneSignal = () => {
     });
 
     // Adicionar ouvidor para notificações clicadas
-    OneSignal.Notifications.addEventListener('click', function(event: NotificationClickEvent) {
+    OneSignal.Notifications.addEventListener('click', function(event) {
       try {
         console.log('Notificação clicada:', event);
         
         // Verificar se existe uma URL na notificação
-        const url = event.notification?.additionalData?.url;
-        if (url) {
+        const additionalData = event.notification?.additionalData as Record<string, unknown> | undefined;
+        const url = additionalData?.url;
+        
+        if (url && typeof url === 'string') {
           console.log('Redirecionando para:', url);
           
-          // Se a URL for externa (começa com http ou https), abrir em uma nova aba
+          // Verificar se a URL é absoluta
           if (url.startsWith('http://') || url.startsWith('https://')) {
-            window.open(url, '_blank');
+            // Verificar se é do mesmo domínio
+            try {
+              const currentDomain = window.location.origin;
+              const urlObj = new URL(url);
+              const urlOrigin = urlObj.origin;
+              
+              if (urlOrigin === currentDomain) {
+                // Mesmo domínio - usar navegação interna para não recarregar a página
+                const path = urlObj.pathname + urlObj.search + urlObj.hash;
+                console.log('Navegação interna para:', path);
+                
+                // Disparar evento customizado para o App.tsx capturar e usar o navigate
+                const navigateEvent = new CustomEvent('onesignal:navigate', {
+                  detail: { url: path }
+                });
+                window.dispatchEvent(navigateEvent);
+              } else {
+                // Domínio externo - abrir em nova aba
+                window.open(url, '_blank');
+              }
+            } catch (urlError) {
+              // Se houver erro ao analisar a URL, abrir em nova aba como fallback
+              console.error('Erro ao analisar URL:', urlError);
+              window.open(url, '_blank');
+            }
           } else {
-            // Se for uma URL interna, navegar usando a própria aplicação
-            window.location.href = url;
+            // URL relativa - usar navegação interna
+            console.log('Navegação interna para URL relativa:', url);
+            
+            // Disparar evento customizado para o App.tsx capturar e usar o navigate
+            const navigateEvent = new CustomEvent('onesignal:navigate', {
+              detail: { url }
+            });
+            window.dispatchEvent(navigateEvent);
           }
         }
       } catch (error) {

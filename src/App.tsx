@@ -1,7 +1,7 @@
 import React, { useState, Suspense, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import * as Sentry from "@sentry/react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MobileNavBar from './components/MobileNavBar';
 import Dashboard from './pages/Dashboard';
@@ -280,6 +280,39 @@ const WhiteScreenDetector = () => {
   return null;
 };
 
+// Componente para ouvir eventos de navegação do OneSignal
+const OneSignalNavigationListener = () => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const handleOneSignalNavigate = (event: CustomEvent<{ url: string }>) => {
+      try {
+        const { url } = event.detail;
+        console.log('[OneSignalNavigationListener] Navegando para:', url);
+        navigate(url);
+      } catch (error) {
+        console.error('[OneSignalNavigationListener] Erro ao navegar:', error);
+        Sentry.captureException(error, {
+          tags: {
+            location: 'OneSignalNavigationListener'
+          }
+        });
+      }
+    };
+    
+    // Adicionar o listener para o evento personalizado
+    window.addEventListener('onesignal:navigate', handleOneSignalNavigate as EventListener);
+    
+    // Remover o listener quando o componente for desmontado
+    return () => {
+      window.removeEventListener('onesignal:navigate', handleOneSignalNavigate as EventListener);
+    };
+  }, [navigate]);
+  
+  // Este componente não renderiza nada visível
+  return null;
+};
+
 function AppContent() {
   const { session, profile, loading, userOrganizations, loadingOrganizations, currentOrganizationMember, setCurrentOrganizationId } = useAuthContext();
   // console.log('userOrganizations', userOrganizations);
@@ -435,6 +468,9 @@ function AppContent() {
       <ConnectionStatus />
       {/* Detector de tela branca */}
       <WhiteScreenDetector />
+      
+      {/* Ouvidor de navegação para o OneSignal */}
+      <OneSignalNavigationListener />
       
       {/* Modal de seleção de organização */}
       {(modalOrganization || (!currentOrganizationMember && userOrganizations && userOrganizations.length > 0)) && location.pathname.startsWith('/app') && modalRoot && createPortal(
