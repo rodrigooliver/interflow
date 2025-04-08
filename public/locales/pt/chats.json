@@ -89,7 +89,8 @@
     "unmarkSpam": "Desmarcar como spam",
     "chatDetails": "Detalhes do Atendimento",
     "confirmDelete": "Confirmar exclusão",
-    "retry": "Tentar novamente"
+    "retry": "Tentar novamente",
+    "transferTeam": "Transferir equipe"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -358,5 +359,15 @@
     "selectAgent": "Selecione um agente (opcional)",
     "pendingOption": "Deixar pendente aguardando atendimento",
     "assignmentInfo": "O atendimento será transferido diretamente para este agente"
+  },
+  "teamTransfer": {
+    "title": "Transferir para Outra Equipe",
+    "selectTeam": "Selecione a equipe",
+    "selectTeamPrompt": "Escolha uma equipe",
+    "current": "atual",
+    "transferButton": "Transferir",
+    "noTeams": "Nenhuma equipe disponível",
+    "success": "Atendimento transferido com sucesso para outra equipe",
+    "selectTeamError": "Por favor, selecione uma equipe"
   }
 }

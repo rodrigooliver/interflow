@@ -85,7 +85,8 @@
     "unmarkSpam": "Unmark as spam",
     "chatDetails": "Chat Details",
     "confirmDelete": "Confirm deletion",
-    "retry": "Try again"
+    "retry": "Try again",
+    "transferTeam": "Transfer team"
   },
   "dateHeaders": {
     "today": "Today",
@@ -344,5 +345,15 @@
     "warning": "This action cannot be undone. The message will be permanently deleted.",
     "confirm": "Delete",
     "cancel": "Cancel"
+  },
+  "teamTransfer": {
+    "title": "Transfer to Another Team",
+    "selectTeam": "Select team",
+    "selectTeamPrompt": "Choose a team",
+    "current": "current",
+    "transferButton": "Transfer",
+    "noTeams": "No teams available",
+    "success": "Chat successfully transferred to another team",
+    "selectTeamError": "Please select a team"
   }
 }

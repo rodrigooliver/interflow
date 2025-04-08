@@ -1222,15 +1222,15 @@ export function MessageInput({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full p-1 border border-gray-200 dark:border-gray-600">
           {/* Botão de anexo (Plus) no lado esquerdo */}
           <div className="relative" ref={attachmentMenuRef}>
             <button
               onMouseDown={handleAttachmentClick}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-2 rounded-full transition-colors ${
                 showAttachmentMenu
                   ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400'
               }`}
               title={t('attachments.title')}
             >
@@ -1270,7 +1270,7 @@ export function MessageInput({
             onFocus={handleTextareaFocus}
             onBlur={handleTextareaBlur}
             placeholder={t('input.placeholder')}
-            className="flex-1 max-h-[120px] px-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+            className="flex-1 max-h-[120px] px-4 py-2 bg-transparent border-0 rounded-lg focus:ring-0 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
             // Em dispositivos móveis, Enter quebra linha; em desktop, envia a mensagem
           />
           

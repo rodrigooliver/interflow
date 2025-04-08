@@ -7,7 +7,7 @@ import { formatLastMessageTime } from '../../utils/date';
 import { supabase } from '../../lib/supabase';
 import { MoreVertical, Pin, Archive, Eye, CheckCircle, User, AlertTriangle, Info,
   Image, Video, Mic, FileText, Sticker, Mail, UserPlus, LogIn, LogOut, 
-  UserCog, XCircle, Users, FileCode } from 'lucide-react';
+  UserCog, XCircle, Users, FileCode, Users2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import { CustomTooltip } from './CustomTooltip';
 import { ChatDetailsModal } from './ChatDetailsModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
+import { TeamTransferModal } from './TeamTransferModal';
 
 interface CustomerTag {
   tag_id: string;
@@ -53,6 +54,7 @@ export function ChatItem({
   const { t, i18n } = useTranslation('chats');
   const [showDetails, setShowDetails] = useState(false);
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
+  const [showTeamTransferModal, setShowTeamTransferModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const handleUpdateChat = async (chatId: string, updates: Partial<Chat>) => {
@@ -156,6 +158,9 @@ export function ChatItem({
         break;
       case 'chat_details':
         setShowDetails(true);
+        break;
+      case 'team_transfer':
+        setShowTeamTransferModal(true);
         break;
     }
   };
@@ -286,29 +291,27 @@ export function ChatItem({
           </div>
           
           <div className="flex-1 truncate">
-            <div className="flex justify-between items-center w-full mb-1">
-              <div className="flex items-center gap-2 min-w-0">
-                {chat.is_fixed && (
-                  <Pin className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-                )}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {chat.customer?.name || t('unnamed')}
-                    </span>
-                    {chat.customer?.is_spam && (
-                      <div className="relative group">
-                        <AlertTriangle className="w-4 h-4 text-red-500" />
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {t('chats:filters.spam')}
-                        </div>
+            <div className="flex items-center w-full mb-1">
+              {chat.is_fixed && (
+                <Pin className="w-3 h-3 text-yellow-500 flex-shrink-0 mr-2" />
+              )}
+              <div className="flex-1 min-w-0 mr-2">
+                <div className="flex items-center space-x-2 overflow-hidden">
+                  <span className="font-medium text-gray-900 dark:text-white truncate block w-full">
+                    {chat.customer?.name || t('unnamed')}
+                  </span>
+                  {chat.customer?.is_spam && (
+                    <div className="relative group flex-shrink-0">
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        {t('chats:filters.spam')}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                   {formatLastMessageTime(chat.last_message_at || chat.created_at, i18n.language, t)}
                 </span>
                 <DropdownMenu>
@@ -359,6 +362,15 @@ export function ChatItem({
                       }}>
                         <CheckCircle className="w-4 h-4 mr-2" />
                         {t('actions.markResolved')}
+                      </DropdownMenuItem>
+                    )}
+                    {chat.status === 'pending' && (
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleChatAction('team_transfer', chat);
+                      }}>
+                        <Users2 className="w-4 h-4 mr-2" />
+                        {t('actions.transferTeam')}
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={(e) => {
@@ -512,6 +524,31 @@ export function ChatItem({
           customer={selectedCustomer}
           onClose={handleCloseEditCustomerModal}
           onSuccess={handleCustomerEditSuccess}
+        />
+      )}
+
+      {showTeamTransferModal && (
+        <TeamTransferModal
+          chatId={chat.id || ''}
+          isOpen={showTeamTransferModal}
+          onClose={() => setShowTeamTransferModal(false)}
+          organizationId={chat.organization_id || ''}
+          currentTeamId={chat.team_id || ''}
+          onTransfer={() => {
+            if (onUpdateChat && chat.id) {
+              // Recarregar os dados do chat após a transferência
+              supabase
+                .from('chats')
+                .select('*')
+                .eq('id', chat.id)
+                .single()
+                .then(({ data }) => {
+                  if (data && onUpdateChat) {
+                    onUpdateChat(chat.id, data);
+                  }
+                });
+            }
+          }}
         />
       )}
     </>

@@ -85,7 +85,8 @@
     "unmarkSpam": "Desmarcar como spam",
     "chatDetails": "Detalles del Chat",
     "confirmDelete": "Confirmar eliminación",
-    "retry": "Intentar de nuevo"
+    "retry": "Intentar de nuevo",
+    "transferTeam": "Transferir equipo"
   },
   "dateHeaders": {
     "today": "Hoy",
@@ -344,5 +345,15 @@
     "warning": "Esta acción no se puede deshacer. El mensaje será eliminado permanentemente.",
     "confirm": "Eliminar",
     "cancel": "Cancelar"
+  },
+  "teamTransfer": {
+    "title": "Transferir a Otro Equipo",
+    "selectTeam": "Seleccionar equipo",
+    "selectTeamPrompt": "Elija un equipo",
+    "current": "actual",
+    "transferButton": "Transferir",
+    "noTeams": "No hay equipos disponibles",
+    "success": "Chat transferido con éxito a otro equipo",
+    "selectTeamError": "Por favor, seleccione un equipo"
   }
 }
