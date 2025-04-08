@@ -502,20 +502,25 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           // Se for mensagem do sistema, buscar informações adicionais do agente
           if (newMessage.sender_type === 'system' && newMessage.sender_agent_id) {
             try {
-              const { data: agentData } = await supabase
-                .from('profiles')
-                .select('id, full_name, avatar_url')
-                .eq('id', newMessage.sender_agent_id)
-                .single();
-                
-              if (agentData) {
-                // Adicionar informações do agente à mensagem
-                // @ts-expect-error - Simplificando o tipo para corresponder ao que é usado na função loadMessages
-                newMessage.sender_agent = {
-                  id: agentData.id,
-                  full_name: agentData.full_name,
-                  avatar_url: agentData.avatar_url
-                };
+              // Verificar se já temos informações do agente
+              const hasSenderAgent = !!newMessage.sender_agent?.id;
+              
+              if (!hasSenderAgent) {
+                const { data: agentData } = await supabase
+                  .from('profiles')
+                  .select('id, full_name, avatar_url')
+                  .eq('id', newMessage.sender_agent_id)
+                  .single();
+                  
+                if (agentData) {
+                  // Adicionar informações do agente à mensagem
+                  // @ts-expect-error - Simplificando o tipo para corresponder ao que é usado na função loadMessages
+                  newMessage.sender_agent = {
+                    id: agentData.id,
+                    full_name: agentData.full_name,
+                    avatar_url: agentData.avatar_url
+                  };
+                }
               }
             } catch (error) {
               console.error('Erro ao buscar informações do agente:', error);
@@ -715,25 +720,72 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           // Se for mensagem do sistema, buscar informações adicionais do agente
           if (updatedMessage.sender_type === 'system' && updatedMessage.sender_agent_id) {
             try {
-              const { data: agentData } = await supabase
-                .from('profiles')
-                .select('id, full_name, avatar_url')
-                .eq('id', updatedMessage.sender_agent_id)
-                .single();
-                
-              if (agentData) {
-                // Adicionar informações do agente à mensagem
-                // @ts-expect-error - Simplificando o tipo para corresponder ao que é usado na função loadMessages
-                updatedMessage.sender_agent = {
-                  id: agentData.id,
-                  full_name: agentData.full_name,
-                  avatar_url: agentData.avatar_url
-                };
+              // Verificar se já temos informações do agente
+              const hasSenderAgent = !!updatedMessage.sender_agent?.id;
+              
+              if (!hasSenderAgent) {
+                const { data: agentData } = await supabase
+                  .from('profiles')
+                  .select('id, full_name, avatar_url')
+                  .eq('id', updatedMessage.sender_agent_id)
+                  .single();
+                  
+                if (agentData) {
+                  // Adicionar informações do agente à mensagem
+                  // @ts-expect-error - Simplificando o tipo para corresponder ao que é usado na função loadMessages
+                  updatedMessage.sender_agent = {
+                    id: agentData.id,
+                    full_name: agentData.full_name,
+                    avatar_url: agentData.avatar_url
+                  };
+                }
               }
             } catch (error) {
               console.error('Erro ao buscar informações do agente:', error);
             }
-          }          
+          }
+          
+          // Verificar se é uma resposta a outra mensagem e buscar a mensagem original
+          if (updatedMessage.response_message_id) {
+            try {
+              // Verificar se a mensagem já tem a propriedade response_to
+              const hasResponseTo = !!updatedMessage.response_to;
+              
+              if (!hasResponseTo) {
+                const { data: originalMessage, error: messageError } = await supabase
+                  .from('messages')
+                  .select(`
+                    id, 
+                    content, 
+                    type, 
+                    sender_type, 
+                    status, 
+                    created_at,
+                    sender_agent_id,
+                    sender_customer_id,
+                    sender_agent:profiles!messages_sender_agent_id_fkey(
+                      id, 
+                      full_name, 
+                      avatar_url
+                    ),
+                    sender_customer:customers!messages_sender_customer_id_fkey(
+                      id, 
+                      name
+                    ),
+                    attachments
+                  `)
+                  .eq('id', updatedMessage.response_message_id)
+                  .single();
+                
+                if (!messageError && originalMessage) {
+                  // @ts-expect-error - Adicionando propriedade response_to à mensagem
+                  updatedMessage.response_to = originalMessage;
+                }
+              }
+            } catch (error) {
+              console.error('Erro ao buscar mensagem de referência:', error);
+            }
+          }
           
           // Atualizar a mensagem na lista primeiro
           setMessages(prev => prev.map(msg => 
