@@ -1031,7 +1031,7 @@ export function MessageInput({
             <div className="text-xs text-blue-600 dark:text-blue-400 mb-1">
               {t('actions.reply')}
             </div>
-            <div className="line-clamp-1 text-sm">
+            <div className="line-clamp-1 text-sm max-h-[35px] overflow-x-hidden">
               {replyTo.message.content ? <MarkdownRenderer content={replyTo.message.content} variant="compact" /> : replyTo.message.content}
             </div>
           </div>
