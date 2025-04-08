@@ -107,6 +107,9 @@ const queryClient = new QueryClient({
 // Chave usada para armazenar URL de navegação no localStorage
 const ONESIGNAL_NAVIGATION_KEY = 'onesignal_navigation_url';
 
+// Nome do evento personalizado para navegação
+const ONESIGNAL_NAVIGATION_EVENT = 'onesignal_navigation';
+
 // Componente para verificar e processar navegação pendente do OneSignal
 const OneSignalNavigationHandler = () => {
   const navigate = useNavigate();
@@ -114,7 +117,40 @@ const OneSignalNavigationHandler = () => {
   const navigationProcessed = useRef(false);
   
   useEffect(() => {
-    // Executar apenas uma vez após a inicialização do componente
+    // Função para processar navegação
+    const processNavigation = (url: string) => {
+      try {
+        console.log('[OneSignalNavigationHandler] Processando navegação para:', url);
+        
+        // Verificar se ainda não estamos na URL de destino
+        if (location.pathname !== url) {
+          console.log('[OneSignalNavigationHandler] Navegando para URL:', url);
+          navigate(url);
+        } else {
+          console.log('[OneSignalNavigationHandler] Já estamos na URL de destino, ignorando navegação.');
+        }
+      } catch (error) {
+        console.error('[OneSignalNavigationHandler] Erro ao processar navegação:', error);
+        Sentry.captureException(error, {
+          tags: {
+            location: 'OneSignalNavigationHandler.processNavigation'
+          }
+        });
+      }
+    };
+
+    // Handler para eventos personalizados de navegação
+    const handleNavigationEvent = (event: CustomEvent) => {
+      const url = event.detail?.url;
+      if (url && typeof url === 'string') {
+        processNavigation(url);
+      }
+    };
+
+    // Adicionar listener para o evento personalizado
+    window.addEventListener(ONESIGNAL_NAVIGATION_EVENT, handleNavigationEvent as EventListener);
+    
+    // Verificar se há uma URL pendente no localStorage (para compatibilidade)
     if (!navigationProcessed.current) {
       navigationProcessed.current = true;
       
@@ -130,13 +166,7 @@ const OneSignalNavigationHandler = () => {
           
           // Aguardar um momento para garantir que o App está totalmente inicializado
           setTimeout(() => {
-            // Verificar se ainda não estamos na URL de destino
-            if (location.pathname !== pendingUrl) {
-              console.log('[OneSignalNavigationHandler] Navegando para URL pendente:', pendingUrl);
-              navigate(pendingUrl);
-            } else {
-              console.log('[OneSignalNavigationHandler] Já estamos na URL de destino, ignorando navegação.');
-            }
+            processNavigation(pendingUrl);
           }, 500);
         }
       } catch (error) {
@@ -151,6 +181,11 @@ const OneSignalNavigationHandler = () => {
         localStorage.removeItem(ONESIGNAL_NAVIGATION_KEY);
       }
     }
+
+    // Limpar o listener quando o componente for desmontado
+    return () => {
+      window.removeEventListener(ONESIGNAL_NAVIGATION_EVENT, handleNavigationEvent as EventListener);
+    };
   }, [navigate, location.pathname]);
   
   return null;

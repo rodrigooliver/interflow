@@ -11,6 +11,9 @@ import OneSignal from 'react-onesignal';
 // Chave usada para armazenar URL de navegação no localStorage
 const ONESIGNAL_NAVIGATION_KEY = 'onesignal_navigation_url';
 
+// Nome do evento personalizado para navegação
+const ONESIGNAL_NAVIGATION_EVENT = 'onesignal_navigation';
+
 // Canal de comunicação entre abas
 let broadcastChannel: BroadcastChannel | null = null;
 
@@ -202,10 +205,16 @@ const initOneSignal = () => {
                   return;
                 }
                 
-                // Armazenar a URL para navegação após inicialização do app
+                // Armazenar a URL para navegação após inicialização do app (para compatibilidade)
                 localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, path);
                 
-                // Redirecionar diretamente
+                // Disparar evento personalizado para navegação
+                const navigationEvent = new CustomEvent(ONESIGNAL_NAVIGATION_EVENT, {
+                  detail: { url: path }
+                });
+                window.dispatchEvent(navigationEvent);
+                
+                // Não redirecionamos mais diretamente aqui
                 // window.location.href = path;
               } else {
                 // Domínio externo - abrir em nova aba
@@ -229,11 +238,17 @@ const initOneSignal = () => {
             // URL relativa - redirecionar diretamente
             console.log('Navegação interna para URL relativa:', url);
             
-            // Armazenar a URL para navegação após inicialização do app
+            // Armazenar a URL para navegação após inicialização do app (para compatibilidade)
             localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, url);
             
-            // Redirecionar diretamente
-            window.location.href = url;
+            // Disparar evento personalizado para navegação
+            const navigationEvent = new CustomEvent(ONESIGNAL_NAVIGATION_EVENT, {
+              detail: { url: url }
+            });
+            window.dispatchEvent(navigationEvent);
+            
+            // Não redirecionamos mais diretamente aqui
+            // window.location.href = url;
           }
         }
       } catch (error) {
