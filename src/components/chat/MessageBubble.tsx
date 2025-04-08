@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -802,8 +802,9 @@ function WhatsappList({ list }: { list: WhatsAppList }) {
         {/* Botão com estilo WhatsApp */}
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="w-full p-2.5 text-center flex justify-center items-center rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          className="w-full p-2.5 text-center flex justify-center items-center rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors gap-1.5"
         >
+          <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           <span className="text-blue-600 dark:text-blue-400 font-medium">{list.buttonText}</span>
         </button>
       </div>
