@@ -11,36 +11,59 @@ import OneSignal from 'react-onesignal';
 // Chave usada para armazenar URL de navegação no localStorage
 const ONESIGNAL_NAVIGATION_KEY = 'onesignal_navigation_url';
 
+// ID único para esta aba
+const TAB_ID = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
 // Canal de comunicação entre abas
 let broadcastChannel: BroadcastChannel | null = null;
 
 // Flag para indicar se esta aba está "viva" (ativa e visível)
 let isTabAlive = false;
 
+// Debug flag - defina como true para ver logs detalhados
+const DEBUG_TABS = true;
+
+// Função para logs de debug
+const debugLog = (...args: any[]) => {
+  if (DEBUG_TABS) {
+    console.log(`[Tab ${TAB_ID.slice(0, 8)}]`, ...args);
+  }
+};
+
 // Inicializar canal de comunicação entre abas
 const initBroadcastChannel = () => {
   try {
     // Verificar se o navegador suporta BroadcastChannel
     if ('BroadcastChannel' in window) {
+      debugLog('Iniciando BroadcastChannel');
+      
       // Criar ou recuperar o canal para o app
       broadcastChannel = new BroadcastChannel('interflow_app_channel');
       
       // Quando receber uma mensagem
       broadcastChannel.onmessage = (event) => {
-        const { type, url } = event.data;
+        const { type, url, tabId } = event.data;
+        
+        // Ignorar mensagens da própria aba
+        if (tabId === TAB_ID) {
+          return;
+        }
+        
+        debugLog('Mensagem recebida:', type, url, tabId);
         
         // Se receber um ping e esta aba estiver ativa, responder
         if (type === 'ping' && isTabAlive) {
+          debugLog('Respondendo com pong para:', url);
           broadcastChannel?.postMessage({
             type: 'pong',
-            tabId: Date.now().toString(),
+            tabId: TAB_ID,
             url: url
           });
         }
         
-        // Se receber um comando para navegar e a URL corresponder
+        // Se receber um comando para navegar
         else if (type === 'navigate' && isTabAlive) {
-          console.log('Recebendo comando para navegar para:', url);
+          debugLog('Comando para navegar para:', url);
           
           // Armazenar URL para navegação
           localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, url);
@@ -58,17 +81,35 @@ const initBroadcastChannel = () => {
       // Marcar esta aba como "viva" quando estiver visível
       const handleVisibilityChange = () => {
         isTabAlive = document.visibilityState === 'visible';
+        debugLog('Estado de visibilidade alterado:', isTabAlive ? 'visível' : 'oculto');
       };
       
       // Inicializar estado de visibilidade
       isTabAlive = document.visibilityState === 'visible';
+      debugLog('Estado inicial de visibilidade:', isTabAlive ? 'visível' : 'oculto');
       
       // Adicionar listeners para eventos de visibilidade
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('focus', () => { isTabAlive = true; });
-      window.addEventListener('blur', () => { isTabAlive = false; });
+      window.addEventListener('focus', () => { 
+        isTabAlive = true; 
+        debugLog('Aba recebeu foco');
+      });
+      window.addEventListener('blur', () => { 
+        isTabAlive = false; 
+        debugLog('Aba perdeu foco');
+      });
       
-      console.log('Canal de comunicação entre abas inicializado');
+      // Enviar sinal de que esta aba está ativa quando o site carrega
+      if (isTabAlive) {
+        broadcastChannel.postMessage({
+          type: 'tab_active',
+          tabId: TAB_ID
+        });
+      }
+      
+      debugLog('Canal de comunicação entre abas inicializado');
+    } else {
+      debugLog('BroadcastChannel não suportado neste navegador');
     }
   } catch (error) {
     console.error('Erro ao inicializar canal de comunicação:', error);
@@ -85,9 +126,12 @@ const checkAppOpenInOtherTab = async (url: string): Promise<boolean> => {
   return new Promise((resolve) => {
     // Se não há suporte a BroadcastChannel, retornar false
     if (!broadcastChannel) {
+      debugLog('BroadcastChannel não disponível, não é possível verificar outras abas');
       resolve(false);
       return;
     }
+    
+    debugLog('Verificando se app está aberto em outra aba para URL:', url);
     
     // Flag para indicar se alguma aba respondeu
     let hasResponse = false;
@@ -95,21 +139,30 @@ const checkAppOpenInOtherTab = async (url: string): Promise<boolean> => {
     // Timeout para caso nenhuma aba responda
     const timeout = setTimeout(() => {
       if (!hasResponse) {
+        debugLog('Timeout - Nenhuma aba respondeu ao ping');
         resolve(false);
       }
-    }, 300); // 300ms deve ser suficiente para uma resposta local
+    }, 500); // Aumentado para 500ms para dar mais tempo em redes lentas
     
     // Listener para respostas
     const messageHandler = (event: MessageEvent) => {
-      const { type } = event.data;
+      const { type, tabId } = event.data;
+      
+      // Ignorar mensagens da própria aba
+      if (tabId === TAB_ID) {
+        return;
+      }
       
       if (type === 'pong') {
+        debugLog('Recebido pong de outra aba:', tabId);
         hasResponse = true;
         clearTimeout(timeout);
         
         // Enviar comando para navegar para a aba que respondeu
+        debugLog('Enviando comando de navegação para aba:', tabId);
         broadcastChannel?.postMessage({
           type: 'navigate',
+          tabId: TAB_ID,
           url: url
         });
         
@@ -125,10 +178,24 @@ const checkAppOpenInOtherTab = async (url: string): Promise<boolean> => {
     broadcastChannel.addEventListener('message', messageHandler);
     
     // Enviar ping para outras abas
+    debugLog('Enviando ping para outras abas');
     broadcastChannel.postMessage({
       type: 'ping',
+      tabId: TAB_ID,
       url: url
     });
+    
+    // Fazer uma segunda tentativa após 100ms para casos em que a primeira mensagem se perde
+    setTimeout(() => {
+      if (!hasResponse) {
+        debugLog('Reenviando ping para outras abas (segunda tentativa)');
+        broadcastChannel?.postMessage({
+          type: 'ping',
+          tabId: TAB_ID,
+          url: url
+        });
+      }
+    }, 100);
   });
 };
 
@@ -194,13 +261,18 @@ const initOneSignal = () => {
                 console.log('Navegação interna para:', path);
                 
                 // Verificar se o app já está aberto em outra aba
+                debugLog('Notificação clicada - verificando abas existentes para:', path);
                 const isOpenInOtherTab = await checkAppOpenInOtherTab(path);
                 
                 if (isOpenInOtherTab) {
-                  console.log('App já está aberto em outra aba, redirecionando lá.');
+                  debugLog('App detectado em outra aba, dando foco lá.');
                   // Não precisamos fazer nada aqui, a outra aba já recebeu o comando para navegar
-                  return;
+                  
+                  // Retornamos false para impedir que o OneSignal processe o clique padrão
+                  return false;
                 }
+                
+                debugLog('Nenhuma aba existente encontrada, abrindo nova aba.');
                 
                 // Armazenar a URL para navegação após inicialização do app
                 localStorage.setItem(ONESIGNAL_NAVIGATION_KEY, path);
@@ -218,13 +290,18 @@ const initOneSignal = () => {
             }
           } else {
             // URL relativa - verificar se o app já está aberto em outra aba
+            debugLog('Notificação clicada - verificando abas existentes para URL relativa:', url);
             const isOpenInOtherTab = await checkAppOpenInOtherTab(url);
             
             if (isOpenInOtherTab) {
-              console.log('App já está aberto em outra aba, redirecionando lá.');
+              debugLog('App detectado em outra aba, dando foco lá.');
               // Não precisamos fazer nada aqui, a outra aba já recebeu o comando para navegar
-              return;
+              
+              // Retornamos false para impedir que o OneSignal processe o clique padrão
+              return false;
             }
+            
+            debugLog('Nenhuma aba existente encontrada, abrindo nova aba.');
             
             // URL relativa - redirecionar diretamente
             console.log('Navegação interna para URL relativa:', url);
@@ -247,6 +324,9 @@ const initOneSignal = () => {
           }
         });
       }
+      
+      // Retornar true para permitir que o OneSignal continue processando o clique
+      return true;
     });
   }
 };
