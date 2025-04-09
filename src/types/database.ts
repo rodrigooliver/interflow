@@ -698,6 +698,7 @@ export interface CustomFieldFormData {
   custom_mask?: string;
   description?: string;
   isNew?: boolean;
+  slug?: string;
 }
 
 // Appointment (Agendamento)

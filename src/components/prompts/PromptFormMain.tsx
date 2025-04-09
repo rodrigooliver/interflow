@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, Plus, ChevronRight, AlertTriangle, File } from 'lucide-react';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, ChevronRight, AlertTriangle, File, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
@@ -16,7 +16,6 @@ import { timezones } from '../../utils/timezones';
 import Select from 'react-select';
 import TestPrompt from './TestPrompt';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
-import { SYSTEM_ACTIONS, SystemActionType } from '../../constants/systemActions';
 import SystemActionsList from './SystemActionsList';
 import { Trigger } from '../../types/flow';
 import { TriggersList } from '../flow/TriggersList';
@@ -269,7 +268,6 @@ const PromptFormMain: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [showIntegrationModal, setShowIntegrationModal] = useState(false);
-  const [isSystemActionModalOpen, setIsSystemActionModalOpen] = useState(false);
   const [triggers, setTriggers] = useState<Trigger[]>([]);
 
   useEffect(() => {
@@ -380,45 +378,6 @@ const PromptFormMain: React.FC = () => {
       setLoading(false);
     }
   }
-
-  // Função para salvar os triggers
-  const handleSaveTriggers = async (newTriggers: Trigger[]) => {
-    if (!linkedFlow?.id || !currentOrganizationMember) return;
-
-    try {
-      // Excluir triggers existentes
-      const { error: deleteError } = await supabase
-        .from('flow_triggers')
-        .delete()
-        .eq('flow_id', linkedFlow.id);
-
-      if (deleteError) throw deleteError;
-
-      // Inserir novos triggers
-      if (newTriggers.length > 0) {
-        const { error: insertError } = await supabase
-          .from('flow_triggers')
-          .insert(
-            newTriggers.map(trigger => ({
-              ...trigger,
-              flow_id: linkedFlow.id,
-              organization_id: currentOrganizationMember.organization.id,
-              updated_at: new Date().toISOString()
-            }))
-          );
-
-        if (insertError) throw insertError;
-      }
-
-      // Atualizar o estado local com os novos triggers
-      setLinkedFlow(prev => prev ? { ...prev, triggers: newTriggers } : null);
-      
-      // Recarregar os dados do prompt para garantir que tudo está sincronizado
-      await loadPrompt();
-    } catch (error) {
-      console.error('Erro ao salvar triggers:', error);
-    }
-  };
 
   async function createOrSyncFlow() {
     if (!id || !currentOrganizationMember) return;
@@ -656,34 +615,6 @@ const PromptFormMain: React.FC = () => {
     setShowIntegrationModal(false);
     // Invalidar cache das integrações para recarregar a lista
     await queryClient.invalidateQueries({ queryKey: ['integrations', currentOrganizationMember?.organization.id] });
-  };
-
-  const handleAddSystemAction = (action: SystemActionType) => {
-    // Cria uma cópia da ação com a descrição traduzida
-    const translatedTitle = t(`prompts:form.systemActionTypes.${action.type}.name`);
-    let baseSlug = nameTool(translatedTitle);
-    
-    // Verifica se já existe uma ação com o mesmo nome
-    let finalSlug = baseSlug;
-    let counter = 1;
-    
-    while (formData.actions.some(a => a.name === finalSlug)) {
-      finalSlug = `${baseSlug}_${counter}`;
-      counter++;
-    }
-
-    const translatedAction = {
-      ...action,
-      description: t(`prompts:form.systemActionTypes.${action.type}.description`),
-      title: translatedTitle,
-      name: finalSlug,
-    };
-    
-    setFormData(prev => ({
-      ...prev,
-      actions: [...prev.actions, translatedAction]
-    }));
-    setIsSystemActionModalOpen(false);
   };
 
   // Função para lidar com o botão voltar
@@ -1414,53 +1345,69 @@ const PromptFormMain: React.FC = () => {
                                   {t('prompts:form.systemActionsDescription')}
                                 </p>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => setIsSystemActionModalOpen(true)}
-                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                              >
-                                {t('prompts:form.addSystemAction')}
-                              </button>
                             </div>
                             
-                            {formData.actions.length === 0 ? (
-                              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  {t('prompts:form.noSystemActions')}
-                                </p>
-                              </div>
-                            ) : (
-                              <SystemActionsList 
-                                actions={formData.actions} 
-                                onRemoveAction={(index) => {
-                                  const newActions = [...formData.actions];
-                                  newActions.splice(index, 1);
-                                  setFormData({ ...formData, actions: newActions });
-                                }}
-                                onEditAction={(index, updatedAction) => {
-                                  const newActions = [...formData.actions];
+                            <SystemActionsList 
+                              actions={formData.actions} 
+                              onRemoveAction={(index) => {
+                                const newActions = [...formData.actions];
+                                newActions.splice(index, 1);
+                                setFormData({ ...formData, actions: newActions });
+                              }}
+                              onEditAction={(index, updatedAction) => {
+                                const newActions = [...formData.actions];
+                                
+                                // Se o título foi alterado, atualiza o name usando nameTool
+                                if (updatedAction.title !== newActions[index].title) {
+                                  const baseSlug = nameTool(updatedAction.title || '');
                                   
-                                  // Se o título foi alterado, atualiza o name usando nameTool
-                                  if (updatedAction.title !== newActions[index].title) {
-                                    let baseSlug = nameTool(updatedAction.title || '');
-                                    
-                                    // Verifica se já existe uma ação com o mesmo nome
-                                    let finalSlug = baseSlug;
-                                    let counter = 1;
-                                    
-                                    while (newActions.some(a => a.name === finalSlug && a !== newActions[index])) {
-                                      finalSlug = `${baseSlug}_${counter}`;
-                                      counter++;
-                                    }
-                                    
-                                    updatedAction.name = finalSlug;
+                                  // Verifica se já existe uma ação com o mesmo nome
+                                  let finalSlug = baseSlug;
+                                  let counter = 1;
+                                  
+                                  while (newActions.some(a => a.name === finalSlug && a !== newActions[index])) {
+                                    finalSlug = `${baseSlug}_${counter}`;
+                                    counter++;
                                   }
                                   
-                                  newActions[index] = updatedAction;
-                                  setFormData({ ...formData, actions: newActions });
-                                }}
-                              />
-                            )}
+                                  updatedAction.name = finalSlug;
+                                }
+
+                                newActions[index] = updatedAction;
+                                setFormData({ ...formData, actions: newActions });
+                              }}
+                              onAddAction={(action) => {
+                                // Cria uma cópia da ação com a descrição traduzida
+                                const translatedTitle = t(`prompts:form.systemActionTypes.${action.type}.nameInsert`, { fields: action.config?.customFields?.map(field => field.name).join(', ') || '...' });
+                                const baseSlug = nameTool(translatedTitle);
+                                
+                                // Verifica se já existe uma ação com o mesmo nome
+                                let finalSlug = baseSlug;
+                                let counter = 1;
+                                
+                                while (formData.actions.some(a => a.name === finalSlug)) {
+                                  finalSlug = `${baseSlug}_${counter}`;
+                                  counter++;
+                                }
+
+                                const translatedAction = {
+                                  ...action,
+                                  description: t(`prompts:form.systemActionTypes.${action.type}.description`, { fields: action.config?.customFields?.map(field => field.name).join(', ') || '...' }),
+                                  title: translatedTitle,
+                                  name: finalSlug,
+                                  customFields: [],
+                                  config: {
+                                    customFields: [],
+                                    schedule: null
+                                  }
+                                };
+                                
+                                setFormData(prev => ({
+                                  ...prev,
+                                  actions: [...prev.actions, translatedAction]
+                                }));
+                              }}
+                            />
                           </div>
 
                           {/* Ações Personalizadas */}
@@ -1583,26 +1530,6 @@ const PromptFormMain: React.FC = () => {
           onSuccess={handleIntegrationSuccess}
           onCancel={() => setShowIntegrationModal(false)}
         />
-      </Modal>
-
-      {/* Modal de Ações do Sistema */}
-      <Modal
-        isOpen={isSystemActionModalOpen}
-        onClose={() => setIsSystemActionModalOpen(false)}
-        title={t('prompts:form.systemActions')}
-      >
-        <div className="grid grid-cols-1 gap-2">
-          {SYSTEM_ACTIONS.map((action) => (
-            <button
-              key={action.type}
-              onClick={() => handleAddSystemAction(action)}
-              className="flex items-center justify-between p-3 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <span>{t(`prompts:form.systemActionTypes.${action.type}.name`)}</span>
-              <Plus className="w-5 h-5 text-gray-500" />
-            </button>
-          ))}
-        </div>
       </Modal>
     </div>
   );

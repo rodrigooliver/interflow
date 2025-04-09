@@ -3,10 +3,13 @@ export interface SystemActionType {
   title?: string | null | undefined;
   name: string;
   description: string;
-  type: 'endChat' | 'changeCustomerName' | 'changeFunnel' | 'assignTeam' | 'schedule' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext' | 'updateCustomFields';
+  type: 'endChat' | 'changeCustomerName' | 'changeFunnel' | 'assignTeam' | 'schedule' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext' | 'updateCustomerCustomData';
   config?: {
-    schedule?: string;
+    schedule?: string | null;
     funnel?: string;
+    fields?: Array<{
+      [key: string]: string | boolean | undefined;
+    }>;
     customFields?: Array<{
       [key: string]: string | boolean | undefined;
     }>;
@@ -49,9 +52,9 @@ export const SYSTEM_ACTIONS: SystemActionType[] = [
     }
   },
   {
-    name: 'Atualizar campos customizados',
-    description: 'Atualiza os campos customizados do cliente',
-    type: 'updateCustomFields',
+    name: 'Atualizar dados do cliente',
+    description: 'Atualiza os dados do cliente',
+    type: 'updateCustomerCustomData',
     config: {
       customFields: []
     }

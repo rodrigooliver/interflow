@@ -191,6 +191,9 @@
         "schedule": {
           "selectSchedule": "Seleccionar un horario",
           "noSchedule": "Ningún horario seleccionado"
+        },
+        "customFields": {
+          "selectedFields": "Campos seleccionados"
         }
       },
       "validation": {
@@ -254,36 +257,49 @@
     "aiSettings": "Configuración de IA",
     "addSystemAction": "+ Añadir Acción del Sistema",
     "systemActionTypes": {
+      "updateCustomerCustomData": {
+        "name": "Actualizar campos customizados del cliente",
+        "nameInsert": "Actualizar {{fields}} del cliente",
+        "description": "Actualizar {{fields}} del cliente cuando el cliente envía esos datos"
+      },
       "endChat": {
-        "name": "Finalizar Chat",
+        "name": "Finalizar Chat", 
+        "nameInsert": "Finalizar Chat",
         "description": "Finalizar el chat actual cuando... (ejemplo: el cliente dice 'finalizar' o 'adiós')"
       },
       "changeCustomerName": {
         "name": "Cambiar Nombre del Cliente",
+        "nameInsert": "Cambiar Nombre del Cliente",
         "description": "Cambiar el nombre del cliente actual cuando... (ejemplo: el cliente dice 'mi nombre es Juan')"
       },
       "changeFunnel": {
         "name": "Cambiar Embudo",
+        "nameInsert": "Cambiar Embudo",
         "description": "Cambiar el embudo actual cuando se identifique comportamiento según la descripción de cada etapa del embudo"
       },
       "assignTeam": {
         "name": "Asignar Equipo",
+        "nameInsert": "Asignar Equipo",
         "description": "Asignar el equipo al chat cuando se identifique comportamiento según la descripción de cada equipo. (ejemplo: el cliente dice 'quiero hablar con ventas')"
       },
       "schedule": {
         "name": "Programar Reunión",
+        "nameInsert": "Programar Reunión",
         "description": "Programar una reunión cuando... (ejemplo: el cliente dice 'quiero programar una consulta')"
       },
       "dateReturn": {
         "name": "Devolver Fecha",
+        "nameInsert": "Devolver Fecha",
         "description": "Devolver la fecha actual cuando... (ejemplo: el cliente dice 'devuélveme mañana o día x')"
       },
       "saveQuestionsNotInContext": {
         "name": "Guardar Preguntas que no están en Contexto",
+        "nameInsert": "Guardar Preguntas que no están en Contexto",
         "description": "Guardar las preguntas que no están en contexto cuando... (ejemplo: el cliente dice 'quiero saber la fecha')"
       },
       "createTask": {
         "name": "Crear Tarea",
+        "nameInsert": "Crear Tarea",
         "description": "Crear una tarea cuando... (ejemplo: el cliente dice 'crea una tarea para mí')"
       }
     },

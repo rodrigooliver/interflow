@@ -82,36 +82,49 @@
       "description": "Configure os gatilhos para que este agente IA possa ser acionado"
     },
     "systemActionTypes": {
+      "updateCustomerCustomData": {
+        "name": "Atualizar campos customizados do cliente",
+        "nameInsert": "Atualizar {{fields}} do cliente",
+        "description": "Atualizar {{fields}} do cliente quando o mesmo enviar esses dados"
+      },
       "endChat": {
         "name": "Encerrar Atendimento",
+        "nameInsert": "Encerrar Atendimento",
         "description": "Encerrar o atendimento atual quando... (exemplo: o cliente diz 'encerrar' ou 'tchau')"
       },
       "changeCustomerName": {
-        "name": "Alterar Nome do Cliente",
+        "name": "Alterar Nome do Cliente",  
+        "nameInsert": "Alterar Nome do Cliente",
         "description": "Alterar o nome do cliente atual quando... (exemplo: o cliente diz 'meu nome é João')"
       },
       "changeFunnel": {
         "name": "Alterar Funil",
+        "nameInsert": "Alterar Funil",
         "description": "Alterar o funil atual quando identificar comportamento de acordo com a descrição de cada estágio do funil"
       },
       "assignTeam": {
         "name": "Atribuir Equipe",
+        "nameInsert": "Atribuir Equipe",
         "description": "Atribuir a equipe ao atendimento quando identificar comportamento de acordo com a descrição de cada equipe. (exemplo: o cliente diz 'quero falar com o comercial')"
       },
       "schedule": {
         "name": "Realizar Agendamento",
+        "nameInsert": "Realizar Agendamento",
         "description": "Realizar um agendamento quando... (exemplo: o cliente diz 'quero agendar uma consulta')"
       },
       "dateReturn": {
         "name": "Retornar Data",
+        "nameInsert": "Retornar Data",
         "description": "Retornar a data atual quando... (exemplo: o cliente diz 'me retorne amanhã ou dia x')"
       },
       "saveQuestionsNotInContext": {
         "name": "Salvar Perguntas que não estão no contexto",
+        "nameInsert": "Salvar Perguntas que não estão no contexto",
         "description": "Salvar as perguntas que não estão no contexto quando... (exemplo: o cliente diz 'quero saber a data')"
       },
       "createTask": {
         "name": "Criar Tarefa",
+        "nameInsert": "Criar Tarefa",
         "description": "Criar uma tarefa quando... (exemplo: o cliente diz 'crie uma tarefa para mim')"
       }
     },
@@ -227,6 +240,9 @@
         "schedule": {
           "selectSchedule": "Selecione uma agenda",
           "noSchedule": "Nenhuma agenda selecionada"
+        },
+        "customFields": {
+          "selectedFields": "Campos selecionados"
         }
       },
       "validation": {
@@ -314,9 +330,6 @@
         "uploadFailed": "Falha ao fazer upload do arquivo. Tente novamente.",
         "deleteFailed": "Falha ao excluir o arquivo. Tente novamente."
       },
-      "confirmDelete": "Confirmar Exclusão",
-      "confirmDeleteMessage": "Tem certeza que deseja excluir este arquivo? Esta ação não pode ser desfeita.",
-      "confirm": "Confirmar",
       "deleting": "Excluindo...",
       "confirmDelete": "Confirmar Exclusão",
       "confirmDeleteMessage": "Tem certeza que deseja excluir este arquivo? Esta ação não pode ser desfeita.",

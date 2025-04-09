@@ -191,6 +191,9 @@
         "schedule": {
           "selectSchedule": "Select a schedule",
           "noSchedule": "No schedule selected"
+        },
+        "customFields": {
+          "selectedFields": "Selected fields"
         }
       },
       "validation": {
@@ -255,36 +258,50 @@
     "aiSettings": "AI Settings",
     "addSystemAction": "+ Add System Action",
     "systemActionTypes": {
+      "schedule": {
+        "name": "Schedule Meeting",
+        "nameInsert": "Schedule Meeting",
+        "description": "Schedule a meeting when... (example: customer says 'I want to schedule a consultation')"
+      },
+      "updateCustomerCustomData": {
+        "name": "Update Customer Custom Data",
+        "nameInsert": "Update {{fields}} of the customer",
+        "description": "Update {{fields}} of the customer when they send these data"
+      },
       "endChat": {
         "name": "End Chat",
+        "nameInsert": "End Chat",
         "description": "End the current chat when... (example: customer says 'end' or 'goodbye')"
       },
       "changeCustomerName": {
         "name": "Change Customer Name",
+        "nameInsert": "Change Customer Name",
         "description": "Change the current customer name when... (example: customer says 'my name is John')"
       },
       "changeFunnel": {
         "name": "Change Funnel",
+        "nameInsert": "Change Funnel",
         "description": "Change the current funnel when identifying behavior according to each funnel stage description"
       },
       "assignTeam": {
         "name": "Assign Team",
+        "nameInsert": "Assign Team",
         "description": "Assign the team to the chat when identifying behavior according to each team description. (example: customer says 'I want to speak with sales')"
       },
-      "schedule": {
-        "name": "Schedule Meeting",
-        "description": "Schedule a meeting when... (example: customer says 'I want to schedule a consultation')"
-      },
+     
       "dateReturn": {
         "name": "Return Date",
+        "nameInsert": "Return Date",
         "description": "Return the current date when... (example: customer says 'return tomorrow or day x')"
       },
       "saveQuestionsNotInContext": {
         "name": "Save Questions Not in Context",
+        "nameInsert": "Save Questions Not in Context",
         "description": "Save questions that are not in context when... (example: customer says 'I want to know the date')"
       },
       "createTask": {
         "name": "Create Task",
+        "nameInsert": "Create Task",
         "description": "Create a task when... (example: customer says 'create a task for me')"
       }
     },
