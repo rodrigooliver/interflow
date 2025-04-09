@@ -491,6 +491,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     if (timeSinceLastUpdate > 30000) {
       setIsReconnecting(true);
       try {
+        // Resetar para a página 1, independente da página atual
+        setPage(1);
+        setHasMore(true);
         await loadMessages(1, false);
         setLastSubscriptionUpdate(new Date());
       } catch (error) {
@@ -511,8 +514,24 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         }
         
         // Aguardar 2 segundos antes de verificar reconexão
-        reconnectTimeoutRef.current = setTimeout(() => {
-          checkAndReloadMessages();
+        reconnectTimeoutRef.current = setTimeout(async () => {
+          // Verificar se há novas mensagens desde a última atualização
+          // Isso é útil para pequenas ausências que não exigem recarga completa
+          const now = new Date();
+          const lastUpdate = lastSubscriptionUpdate || new Date(0);
+          const timeSinceLastUpdate = now.getTime() - lastUpdate.getTime();
+          
+          // Se estiver na página > 1, voltar para a página 1 para ver as mensagens mais recentes
+          if (page > 1) {
+            setPage(1);
+            setHasMore(true);
+            await loadMessages(1, false);
+            setLastSubscriptionUpdate(new Date());
+          } 
+          // Se passou mais de 30 segundos, fazer verificação mais profunda
+          else if (timeSinceLastUpdate > 30000) {
+            checkAndReloadMessages();
+          }
         }, 2000);
       }
     };
@@ -525,7 +544,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, [checkAndReloadMessages]);
+  }, [checkAndReloadMessages, page]);
 
   // Modificar o subscribeToMessages para atualizar o lastSubscriptionUpdate
   const subscribeToMessages = () => {
