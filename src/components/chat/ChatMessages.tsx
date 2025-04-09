@@ -516,23 +516,55 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         // Aguardar 2 segundos antes de verificar reconexão
         reconnectTimeoutRef.current = setTimeout(async () => {
           // Verificar se há novas mensagens desde a última atualização
-          // Isso é útil para pequenas ausências que não exigem recarga completa
           const now = new Date();
           const lastUpdate = lastSubscriptionUpdate || new Date(0);
           const timeSinceLastUpdate = now.getTime() - lastUpdate.getTime();
           
+          // Se passou mais de 30 segundos, recarregar completamente o chat
+          if (timeSinceLastUpdate > 30000) {
+            // Ativar o loading inicial para mostrar o skeleton
+            setInitialLoading(true);
+            messagesLoadedRef.current = false;
+            
+            // Resetar todos os estados relevantes
+            setMessages([]);
+            setOptimisticMessages([]);
+            setFailedMessages([]);
+            setPage(1);
+            setHasMore(true);
+            setUnreadMessagesCount(0);
+            setShowNewMessagesIndicator(false);
+            setNewMessagesCount(0);
+            
+            // Primeiro carregar o chat para obter informações atualizadas
+            await loadChat();
+            
+            // Depois carregar as mensagens a partir da página 1
+            await loadMessages(1, false);
+            
+            // Atualizar timestamp de última atualização
+            setLastSubscriptionUpdate(new Date());
+            
+            // Rolar para o final após o carregamento
+            // setTimeout(() => {
+            //   // Desativar o loading inicial após carregar as mensagens
+            //   setInitialLoading(false);
+            //   messagesLoadedRef.current = true;
+            //   scrollToBottom();
+            // }, 1000);
+          } 
           // Se estiver na página > 1, voltar para a página 1 para ver as mensagens mais recentes
-          if (page > 1) {
+          else if (page > 1) {
             setPage(1);
             setHasMore(true);
             await loadMessages(1, false);
             setLastSubscriptionUpdate(new Date());
           } 
-          // Se passou mais de 30 segundos, fazer verificação mais profunda
-          else if (timeSinceLastUpdate > 30000) {
+          // Para atualizações menores que 30 segundos
+          else {
             checkAndReloadMessages();
           }
-        }, 2000);
+        }, 500);
       }
     };
 
