@@ -11,6 +11,21 @@ interface Cashier {
   updated_at: string;
 }
 
+interface CashierOperator {
+  id: string;
+  cashier_id: string;
+  profile_id: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    id: string;
+    full_name: string;
+    email: string;
+    avatar_url?: string;
+  };
+}
+
 interface Category {
   id: string;
   name: string;
@@ -31,6 +46,14 @@ interface PaymentMethod {
   updated_at: string;
 }
 
+interface OrganizationProfileUser {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string | null;
+  role: string;
+}
+
 interface UseFinancialReturn {
   cashiers: Cashier[];
   categories: Category[];
@@ -39,6 +62,11 @@ interface UseFinancialReturn {
   error: Error | null;
   refetch: () => Promise<void>;
   invalidateCache: () => void;
+  cashierOperators: (cashierId: string) => Promise<CashierOperator[]>;
+  organizationProfiles: () => Promise<OrganizationProfileUser[]>;
+  addCashierOperator: (cashierId: string, profileId: string) => Promise<{ success: boolean; error?: Error }>;
+  updateCashierOperator: (id: string, data: { is_active: boolean }) => Promise<{ success: boolean; error?: Error }>;
+  removeCashierOperator: (id: string) => Promise<{ success: boolean; error?: Error }>;
 }
 
 export function useFinancial(): UseFinancialReturn {
@@ -131,6 +159,7 @@ export function useFinancial(): UseFinancialReturn {
     queryClient.invalidateQueries({ queryKey: ['financial-cashiers'] });
     queryClient.invalidateQueries({ queryKey: ['financial-categories'] });
     queryClient.invalidateQueries({ queryKey: ['financial-payment-methods'] });
+    queryClient.invalidateQueries({ queryKey: ['financial-cashier-operators'] });
   };
 
   const refetch = async () => {
@@ -141,6 +170,108 @@ export function useFinancial(): UseFinancialReturn {
     ]);
   };
 
+  const cashierOperators = async (cashierId: string): Promise<CashierOperator[]> => {
+    if (!currentOrganizationMember?.organization.id || !cashierId) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('financial_cashier_operators')
+      .select(`
+        *,
+        profile:profiles(
+          id,
+          full_name,
+          email,
+          avatar_url
+        )
+      `)
+      .eq('cashier_id', cashierId);
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+  };
+
+  const organizationProfiles = async (): Promise<OrganizationProfileUser[]> => {
+    if (!currentOrganizationMember?.organization.id) {
+      return [];
+    }
+
+    const { data, error } = await supabase.rpc(
+      'get_organization_users',
+      { org_id: currentOrganizationMember.organization.id }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+  };
+
+  const addCashierOperator = async (cashierId: string, profileId: string): Promise<{ success: boolean; error?: Error }> => {
+    try {
+      const { error } = await supabase
+        .from('financial_cashier_operators')
+        .insert([{
+          cashier_id: cashierId,
+          profile_id: profileId,
+          is_active: true
+        }]);
+
+      if (error) {
+        throw error;
+      }
+
+      invalidateCache();
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao adicionar operador:', error);
+      return { success: false, error: error as Error };
+    }
+  };
+
+  const updateCashierOperator = async (id: string, data: { is_active: boolean }): Promise<{ success: boolean; error?: Error }> => {
+    try {
+      const { error } = await supabase
+        .from('financial_cashier_operators')
+        .update(data)
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      invalidateCache();
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao atualizar operador:', error);
+      return { success: false, error: error as Error };
+    }
+  };
+
+  const removeCashierOperator = async (id: string): Promise<{ success: boolean; error?: Error }> => {
+    try {
+      const { error } = await supabase
+        .from('financial_cashier_operators')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      invalidateCache();
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao remover operador:', error);
+      return { success: false, error: error as Error };
+    }
+  };
+
   return {
     cashiers,
     categories,
@@ -148,6 +279,11 @@ export function useFinancial(): UseFinancialReturn {
     isLoading: isLoadingCashiers || isLoadingCategories || isLoadingPaymentMethods,
     error: (errorCashiers || errorCategories || errorPaymentMethods) as Error | null,
     refetch,
-    invalidateCache
+    invalidateCache,
+    cashierOperators,
+    organizationProfiles,
+    addCashierOperator,
+    updateCashierOperator,
+    removeCashierOperator
   };
 } 

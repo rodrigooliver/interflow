@@ -39,12 +39,12 @@ BEGIN
             VALUES (
                 v_cashier_id,
                 v_current_date,
-                (SELECT closing_balance 
+                COALESCE((SELECT closing_balance 
                  FROM public.financial_cashier_balances 
                  WHERE cashier_id = v_cashier_id 
                  AND date < v_current_date 
                  ORDER BY date DESC 
-                 LIMIT 1),
+                 LIMIT 1), 0),
                 0
             )
             ON CONFLICT (cashier_id, date) DO NOTHING;
@@ -63,12 +63,14 @@ BEGIN
             -- Atualizar os saldos de abertura dos dias seguintes
             UPDATE public.financial_cashier_balances
             SET opening_balance = (
-                SELECT closing_balance
-                FROM public.financial_cashier_balances
-                WHERE cashier_id = v_cashier_id
-                AND date < financial_cashier_balances.date
-                ORDER BY date DESC
-                LIMIT 1
+                SELECT COALESCE((
+                    SELECT closing_balance
+                    FROM public.financial_cashier_balances
+                    WHERE cashier_id = v_cashier_id
+                    AND date < financial_cashier_balances.date
+                    ORDER BY date DESC
+                    LIMIT 1
+                ), 0)
             )
             WHERE cashier_id = v_cashier_id
             AND date > v_current_date;
@@ -122,12 +124,14 @@ BEGIN
         -- Atualizar os saldos de abertura dos dias seguintes
         UPDATE public.financial_cashier_balances
         SET opening_balance = (
-            SELECT closing_balance
-            FROM public.financial_cashier_balances
-            WHERE cashier_id = v_cashier_id
-            AND date < financial_cashier_balances.date
-            ORDER BY date DESC
-            LIMIT 1
+            SELECT COALESCE((
+                SELECT closing_balance
+                FROM public.financial_cashier_balances
+                WHERE cashier_id = v_cashier_id
+                AND date < financial_cashier_balances.date
+                ORDER BY date DESC
+                LIMIT 1
+            ), 0)
         )
         WHERE cashier_id = v_cashier_id
         AND date > v_current_date;

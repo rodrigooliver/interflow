@@ -350,7 +350,7 @@ const FinancialDashboard: React.FC = () => {
                       </p>
                       <div className="flex flex-col text-xs">
                         <span className={`${getStatusColor(transaction.status)} dark:text-${getStatusColor(transaction.status).split('-')[1]}-400`}>
-                          {t(transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1))}
+                          {t(transaction.status.charAt(0).toLowerCase() + transaction.status.slice(1))}
                         </span>
                         <span className="text-muted-foreground dark:text-gray-400">
                           {format(new Date(transaction.due_date), 'dd/MM/yyyy')}

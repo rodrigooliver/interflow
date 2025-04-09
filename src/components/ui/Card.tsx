@@ -16,7 +16,7 @@ export const Card: React.FC<CardProps> = ({ children, className }) => {
 
 export const CardHeader: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <div className={twMerge('p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700', className)}>
+    <div className={twMerge('p-2 sm:p-3 border-b border-gray-200 dark:border-gray-700', className)}>
       {children}
     </div>
   );
@@ -40,7 +40,7 @@ export const CardDescription: React.FC<CardProps> = ({ children, className }) =>
 
 export const CardContent: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <div className={twMerge('p-4 sm:p-6', className)}>
+    <div className={twMerge('p-2 sm:p-3', className)}>
       {children}
     </div>
   );
@@ -48,7 +48,7 @@ export const CardContent: React.FC<CardProps> = ({ children, className }) => {
 
 export const CardFooter: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <div className={twMerge('p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700', className)}>
+    <div className={twMerge('p-2 sm:p-3 border-t border-gray-200 dark:border-gray-700', className)}>
       {children}
     </div>
   );

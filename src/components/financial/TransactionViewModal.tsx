@@ -189,7 +189,7 @@ const TransactionViewModal: React.FC<TransactionViewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center p-6">
+          <div className="flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-2"></div>
               <p className="text-gray-600 dark:text-gray-300">{t('loading')}</p>
@@ -219,7 +219,7 @@ const TransactionViewModal: React.FC<TransactionViewModalProps> = ({
                     </Badge>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-4">
                   {onEdit && (
                     <Button 
                       variant="outline" 
@@ -243,7 +243,7 @@ const TransactionViewModal: React.FC<TransactionViewModalProps> = ({
               </div>
             </CardHeader>
             <CardContent className="px-0 pb-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-0">
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('details')}</h3>

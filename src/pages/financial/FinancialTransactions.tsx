@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
-import api from '../../lib/api';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Table, 
   TableBody, 
@@ -53,6 +53,7 @@ import {
 import { format, parseISO, isValid } from 'date-fns';
 import TransactionFormModal from '../../components/financial/TransactionFormModal';
 import TransactionViewModal from '../../components/financial/TransactionViewModal';
+import TransactionStatusChangeModal from '../../components/financial/TransactionStatusChangeModal';
 import { useToast } from '../../hooks/useToast';
 import { useFinancial } from '../../hooks/useFinancial';
 
@@ -84,6 +85,8 @@ const FinancialTransactions: React.FC = () => {
   const { t } = useTranslation('financial');
   const { currentOrganizationMember } = useAuthContext();
   const { categories } = useFinancial();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,21 +97,40 @@ const FinancialTransactions: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState<'paid' | 'received' | 'pending' | 'cancelled'>('paid');
-  const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<'income' | 'expense' | null>(null);
+  const [cashierFilter, setCashierFilter] = useState<string>('');
+  const [cashierName, setCashierName] = useState<string>('');
   const toast = useToast();
 
   const ITEMS_PER_PAGE = 10;
 
-  useEffect(() => {
-    if (currentOrganizationMember?.organization?.id) {
-      fetchTransactions();
+  // Função para buscar o nome do caixa pelo ID
+  const fetchCashierName = async (cashierId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('financial_cashiers')
+        .select('name')
+        .eq('id', cashierId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCashierName(data.name);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar nome do caixa:', error);
     }
-  }, [currentOrganizationMember, currentTab, page, categoryFilter, dateRange]);
+  };
+
+  // Função para limpar o filtro de caixa
+  const clearCashierFilter = () => {
+    setCashierFilter('');
+    setCashierName('');
+    navigate('/app/financial/transactions');
+  };
 
   const fetchTransactions = async () => {
     try {
@@ -143,6 +165,11 @@ const FinancialTransactions: React.FC = () => {
         query = query.eq('category_id', categoryFilter);
       }
 
+      // Filtro por caixa
+      if (cashierFilter) {
+        query = query.eq('cashier_id', cashierFilter);
+      }
+
       // Filtro por intervalo de datas
       if (dateRange.start) {
         query = query.gte('due_date', dateRange.start);
@@ -171,6 +198,22 @@ const FinancialTransactions: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (currentOrganizationMember?.organization?.id) {
+      fetchTransactions();
+    }
+  }, [currentOrganizationMember, currentTab, page, categoryFilter, dateRange, cashierFilter]);
+
+  useEffect(() => {
+    // Pegar o parâmetro cashier da URL, se existir
+    const cashierId = searchParams.get('cashier');
+    if (cashierId) {
+      setCashierFilter(cashierId);
+      // Buscar o nome do caixa para exibir na interface
+      fetchCashierName(cashierId);
+    }
+  }, [searchParams]);
 
   const handleSearch = () => {
     // Implementar busca por termo depois
@@ -215,47 +258,8 @@ const FinancialTransactions: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async () => {
-    if (!selectedTransaction) return;
-
-    try {
-      const response = await api.post(
-        `/api/${currentOrganizationMember?.organization?.id}/financial/transactions/${selectedTransaction.id}/status`,
-        {
-          status: newStatus,
-          payment_date: newStatus === 'paid' || newStatus === 'received' ? paymentDate : null
-        }
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Erro ao atualizar status da transação');
-      }
-
-      setIsStatusDialogOpen(false);
-      setSelectedTransaction(null);
-      fetchTransactions();
-      
-      // Mostrar mensagem de sucesso
-      toast?.show?.({
-        title: t('success'),
-        description: t('statusUpdateSuccess')
-      });
-    } catch (error) {
-      console.error('Erro ao atualizar status da transação:', error);
-      // Mostrar mensagem de erro
-      toast?.show?.({
-        title: t('error'),
-        description: t('errorUpdatingStatus'),
-        variant: 'destructive'
-      });
-    }
-  };
-
   const openStatusDialog = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    // Definir status inicial com base no tipo de transação
-    setNewStatus(transaction.transaction_type === 'income' ? 'received' : 'paid');
-    setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
     setIsStatusDialogOpen(true);
   };
 
@@ -333,7 +337,20 @@ const FinancialTransactions: React.FC = () => {
   return (
     <div className="container mx-auto p-6 dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('financialTransactions')}</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            {cashierName ? `${t('transactionsForCashier')}: ${cashierName}` : t('financialTransactions')}
+          </h1>
+          {cashierName && (
+            <Button 
+              variant="ghost" 
+              onClick={clearCashierFilter}
+              className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+            >
+              {t('backToAllTransactions')}
+            </Button>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button 
             onClick={() => handleNewTransaction('income')}
@@ -580,71 +597,13 @@ const FinancialTransactions: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para mudar status */}
-      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-        <DialogContent className="dark:bg-gray-800 dark:border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="dark:text-white">
-              {selectedTransaction?.transaction_type === 'income' 
-                ? t('markAsReceived') 
-                : t('markAsPaid')}
-            </DialogTitle>
-            <DialogDescription className="dark:text-gray-300">
-              {t('updateTransactionStatus')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300">
-                {t('status')}
-              </label>
-              <Select 
-                value={newStatus} 
-                onValueChange={(value) => setNewStatus(value as 'paid' | 'received' | 'pending' | 'cancelled')}
-              >
-                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                <SelectValue placeholder={t('selectStatus')}>
-                    {getStatusTranslation(newStatus)}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                  {selectedTransaction?.transaction_type === 'income' ? (
-                    <SelectItem value="received" className="dark:text-white">{t('received')}</SelectItem>
-                  ) : (
-                    <SelectItem value="paid" className="dark:text-white">{t('paid')}</SelectItem>
-                  )}
-                  <SelectItem value="pending" className="dark:text-white">{t('pending')}</SelectItem>
-                  <SelectItem value="cancelled" className="dark:text-white">{t('cancelled')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(newStatus === 'paid' || newStatus === 'received') && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300">
-                  {t('paymentDate')}
-                </label>
-                <Input
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
-              {t('cancel')}
-            </Button>
-            <Button onClick={handleStatusChange} className="dark:bg-blue-600 dark:hover:bg-blue-700">
-              {t('confirm')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modal de mudança de status */}
+      <TransactionStatusChangeModal
+        isOpen={isStatusDialogOpen}
+        onClose={() => setIsStatusDialogOpen(false)}
+        transaction={selectedTransaction}
+        onSuccess={fetchTransactions}
+      />
 
       {/* Modal de Formulário */}
       <TransactionFormModal

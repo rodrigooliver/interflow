@@ -39,6 +39,12 @@ interface PaymentMethod {
   max_installments: number | null;
 }
 
+interface Cashier {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
 interface TransactionFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -56,7 +62,7 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
 }) => {
   const { t } = useTranslation('financial');
   const { currentOrganizationMember, profile } = useAuthContext();
-  const { cashiers, categories, paymentMethods } = useFinancial();
+  const { categories, paymentMethods } = useFinancial();
   const { data: customers = [] } = useCustomers(currentOrganizationMember?.organization.id);
   const isEdit = Boolean(transactionId);
   const toast = useToast();
@@ -77,6 +83,7 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   
   // Estado para método de pagamento selecionado
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [cashiers, setCashiers] = useState<Cashier[]>([]);
 
   // Carregar dados para edição
   useEffect(() => {
@@ -94,6 +101,23 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
       setSelectedPaymentMethod(null);
     }
   }, [paymentMethodId, paymentMethods]);
+
+  // Buscar caixas
+  const fetchCashiers = async () => {
+    try {
+      const { data: cashiersData, error } = await supabase
+        .from('financial_cashiers')
+        .select('id, name, is_active')
+        .eq('organization_id', currentOrganizationMember?.organization?.id)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCashiers(cashiersData || []);
+    } catch (error) {
+      console.error('Erro ao buscar caixas:', error);
+    }
+  };
 
   const fetchTransaction = async (transactionId: string) => {
     try {
@@ -138,6 +162,11 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     }
   };
 
+  // Carregar dados necessários ao montar o componente
+  useEffect(() => {
+    fetchCashiers();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -154,7 +183,7 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     try {
       setIsSaving(true);
       
-      const parsedAmount = parseFloat(amount.replace(',', '.'));
+      const parsedAmount = parseFloat(amount.replace(/[^\d,.-]/g, '').replace(',', '.'));
       
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
         throw new Error('Valor inválido');
@@ -427,13 +456,11 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="cashier" className="dark:text-gray-300">{t('cashier')}</Label>
                   <Select value={cashierId} onValueChange={setCashierId}>
-                    <SelectTrigger id="cashier" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <SelectValue placeholder={t('selectCashier')}>
-                        {cashierId ? cashiers.find(c => c.id === cashierId)?.name : t('selectCashier')}
-                      </SelectValue>
+                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                      <SelectValue placeholder={t('selectCashier')} />
                     </SelectTrigger>
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="" className="dark:text-white">{t('none')}</SelectItem>
+                      <SelectItem value="" className="dark:text-white">{t('noCashier')}</SelectItem>
                       {cashiers.map(cashier => (
                         <SelectItem key={cashier.id} value={cashier.id} className="dark:text-white">
                           {cashier.name}

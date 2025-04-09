@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { CardTitle, CardHeader, CardContent, Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -20,6 +21,8 @@ import {
   Search,
   CheckCircle2,
   XCircle,
+  Users,
+  Receipt,
 } from 'lucide-react';
 
 // Interface para o tipo Cashier
@@ -32,10 +35,33 @@ interface Cashier {
   updated_at: string;
 }
 
+interface CashierOperator {
+  id: string;
+  cashier_id: string;
+  profile_id: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    id: string;
+    full_name: string;
+    email: string;
+    avatar_url?: string;
+  };
+}
+
 interface CashierFormData {
   name: string;
   description: string | null;
   is_active: boolean;
+}
+
+interface OrganizationProfileUser {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string | null;
+  role: string;
 }
 
 // O componente principal
@@ -43,7 +69,16 @@ export function FinancialCashiers() {
   const { t } = useTranslation('financial');
   const { currentOrganizationMember } = useAuthContext();
   const toast = useToast();
-  const { cashiers, isLoading, invalidateCache } = useFinancial();
+  const navigate = useNavigate();
+  const { 
+    cashiers, 
+    isLoading, 
+    invalidateCache, 
+    cashierOperators, 
+    organizationProfiles,
+    addCashierOperator,
+    removeCashierOperator
+  } = useFinancial();
 
   // Estados
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,6 +92,14 @@ export function FinancialCashiers() {
     description: '',
     is_active: true
   });
+  
+  // Estados para operadores
+  const [isOperatorsModalOpen, setIsOperatorsModalOpen] = useState(false);
+  const [operators, setOperators] = useState<CashierOperator[]>([]);
+  const [availableProfiles, setAvailableProfiles] = useState<OrganizationProfileUser[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('');
+  const [loadingOperators, setLoadingOperators] = useState(false);
+  const [addingOperator, setAddingOperator] = useState(false);
 
   const filteredCashiers = cashiers.filter(cashier =>
     cashier.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -91,6 +134,7 @@ export function FinancialCashiers() {
   // Função para fechar o modal
   const handleCloseModal = () => {
     setIsEditModalOpen(false);
+    setIsCreateModalOpen(false);
     setSelectedCashier(null);
   };
 
@@ -208,6 +252,112 @@ export function FinancialCashiers() {
     }
   };
 
+  // Função para abrir o modal de operadores
+  const handleManageOperators = async (cashier: Cashier) => {
+    setSelectedCashier(cashier);
+    setIsOperatorsModalOpen(true);
+    await loadCashierOperators(cashier.id);
+    await loadAvailableProfiles();
+  };
+
+  // Função para carregar operadores de um caixa
+  const loadCashierOperators = async (cashierId: string) => {
+    setLoadingOperators(true);
+    try {
+      const data = await cashierOperators(cashierId);
+      setOperators(data);
+    } catch (error) {
+      console.error('Erro ao carregar operadores:', error);
+      toast.show({
+        title: t('error'),
+        description: t('errorLoadingOperators'),
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingOperators(false);
+    }
+  };
+
+  // Função para carregar perfis disponíveis
+  const loadAvailableProfiles = async () => {
+    try {
+      const profiles = await organizationProfiles();
+      setAvailableProfiles(profiles);
+    } catch (error) {
+      console.error('Erro ao carregar perfis:', error);
+      toast.show({
+        title: t('error'),
+        description: t('errorLoadingProfiles'),
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Função para adicionar um operador
+  const handleAddOperator = async () => {
+    if (!selectedCashier || !selectedProfileId) return;
+    
+    setAddingOperator(true);
+    try {
+      const result = await addCashierOperator(selectedCashier.id, selectedProfileId);
+      
+      if (!result.success) {
+        throw result.error;
+      }
+      
+      await loadCashierOperators(selectedCashier.id);
+      setSelectedProfileId('');
+      
+      toast.show({
+        title: t('success'),
+        description: t('operatorAdded'),
+        variant: 'success'
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar operador:', error);
+      toast.show({
+        title: t('error'),
+        description: t('errorAddingOperator'),
+        variant: 'destructive'
+      });
+    } finally {
+      setAddingOperator(false);
+    }
+  };
+
+  // Função para remover um operador
+  const handleRemoveOperator = async (operatorId: string) => {
+    if (!selectedCashier) return;
+    
+    try {
+      const result = await removeCashierOperator(operatorId);
+      
+      if (!result.success) {
+        throw result.error;
+      }
+      
+      await loadCashierOperators(selectedCashier.id);
+      
+      toast.show({
+        title: t('success'),
+        description: t('operatorRemoved'),
+        variant: 'success'
+      });
+    } catch (error) {
+      console.error('Erro ao remover operador:', error);
+      toast.show({
+        title: t('error'),
+        description: t('errorRemovingOperator'),
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Função para navegar para as transações do caixa
+  const handleViewTransactions = (cashierId: string) => {
+    navigate(`/app/financial/transactions?cashier=${cashierId}`);
+  };
+
   return (
     <div className="container mx-auto p-6">
       <Card className="border-border/40 dark:border-border/20 bg-card dark:bg-card/95">
@@ -306,11 +456,31 @@ export function FinancialCashiers() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleViewTransactions(cashier.id)}
+                            className="h-8 w-8 p-0 hover:bg-muted dark:hover:bg-muted/20"
+                            title={t('viewTransactions')}
+                          >
+                            <span className="sr-only">{t('viewTransactions')}</span>
+                            <Receipt className="h-4 w-4 text-primary dark:text-primary/80" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleEdit(cashier)}
                             className="h-8 w-8 p-0 hover:bg-muted dark:hover:bg-muted/20"
                           >
                             <span className="sr-only">{t('edit')}</span>
                             <Edit className="h-4 w-4 text-muted-foreground dark:text-muted-foreground/80" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleManageOperators(cashier)}
+                            className="h-8 w-8 p-0 hover:bg-muted dark:hover:bg-muted/20"
+                            title={t('manageOperators')}
+                          >
+                            <span className="sr-only">{t('manageOperators')}</span>
+                            <Users className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -333,8 +503,10 @@ export function FinancialCashiers() {
       </Card>
 
       {/* Modal para criar/editar caixa */}
-      <Dialog open={isCreateModalOpen || isEditModalOpen}>
-        <DialogContent className="max-w-lg bg-background dark:bg-gray-800 dark:border-border/20">
+      <Dialog open={isCreateModalOpen || isEditModalOpen} onOpenChange={(open) => {
+        if (!open) handleCloseModal();
+      }}>
+        <DialogContent className="max-w-lg bg-background dark:bg-gray-800 dark:border-border/20 p-6">
           <button 
             onClick={handleCloseModal} 
             className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
@@ -442,6 +614,145 @@ export function FinancialCashiers() {
               ) : (
                 <span>{t('delete')}</span>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de operadores */}
+      <Dialog open={isOperatorsModalOpen} onOpenChange={setIsOperatorsModalOpen}>
+        <DialogContent className="max-w-3xl bg-background dark:bg-gray-800 dark:border-border/20">
+          <DialogHeader>
+            <DialogTitle className="text-foreground dark:text-foreground/90">
+              {selectedCashier && `${t('cashierOperators')}: ${selectedCashier.name}`}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="mb-6 flex flex-col md:flex-row gap-2 justify-between items-start md:items-end">
+              <div className="w-full md:w-2/3 grid gap-1.5">
+                <Label htmlFor="profile-select" className="text-foreground dark:text-foreground/90">{t('selectOperator')}</Label>
+                <div className="flex gap-2">
+                  <select
+                    id="profile-select"
+                    className="w-full p-2 rounded-md border border-border/40 dark:border-border/20 bg-background dark:bg-gray-900 text-foreground dark:text-foreground/90"
+                    value={selectedProfileId}
+                    onChange={(e) => setSelectedProfileId(e.target.value)}
+                    disabled={addingOperator}
+                  >
+                    <option value="">{t('selectAnOperator')}</option>
+                    {availableProfiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.full_name} ({profile.email})
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={handleAddOperator}
+                    disabled={!selectedProfileId || addingOperator}
+                    className="bg-primary hover:bg-primary/90 dark:bg-primary/90 dark:hover:bg-primary/80"
+                  >
+                    {addingOperator ? (
+                      <div className="flex items-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-white/80" />
+                        <span>{t('adding')}</span>
+                      </div>
+                    ) : (
+                      <span>{t('add')}</span>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-md border dark:border-border/20">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-muted/50 dark:hover:bg-muted/20">
+                    <TableHead className="text-foreground dark:text-foreground/90 font-semibold">
+                      {t('name')}
+                    </TableHead>
+                    <TableHead className="text-foreground dark:text-foreground/90 font-semibold">
+                      {t('email')}
+                    </TableHead>
+                    <TableHead className="text-foreground dark:text-foreground/90 font-semibold">
+                      {t('status')}
+                    </TableHead>
+                    <TableHead className="text-foreground dark:text-foreground/90 font-semibold">
+                      {t('actions')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loadingOperators ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={4} className="text-center py-12">
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                          <div className="flex justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-white/80" />
+                          </div>
+                          <div className="text-foreground dark:text-foreground/90 font-medium text-sm">
+                            {t('loading')}
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : operators.length === 0 ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={4} className="text-center py-12 text-muted-foreground dark:text-muted-foreground/80">
+                        {t('noOperators')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    operators.map((operator) => (
+                      <TableRow key={operator.id} className="hover:bg-muted/50 dark:hover:bg-muted/20">
+                        <TableCell className="font-medium text-foreground dark:text-foreground/90">
+                          {operator.profile?.full_name || t('unknownUser')}
+                        </TableCell>
+                        <TableCell className="text-foreground/80 dark:text-foreground/70">
+                          {operator.profile?.email || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {operator.is_active ? (
+                            <div className="flex items-center text-green-600 dark:text-green-400">
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              <span>{t('active')}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center text-red-600 dark:text-red-400">
+                              <XCircle className="mr-2 h-4 w-4" />
+                              <span>{t('inactive')}</span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveOperator(operator.id)}
+                              className="h-8 w-8 p-0 hover:bg-muted dark:hover:bg-muted/20"
+                              title={t('remove')}
+                            >
+                              <span className="sr-only">{t('remove')}</span>
+                              <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              onClick={() => setIsOperatorsModalOpen(false)}
+              className="border-border/40 dark:border-border/20 hover:bg-muted dark:hover:bg-muted/20 text-foreground dark:text-foreground/90"
+            >
+              {t('close')}
             </Button>
           </DialogFooter>
         </DialogContent>
