@@ -236,6 +236,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [retryingMessages, setRetryingMessages] = useState<string[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
+  const [lastSubscriptionUpdate, setLastSubscriptionUpdate] = useState<Date | null>(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
     if (initialRenderRef.current) {
@@ -476,7 +480,54 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   }, []);
 
-  // Modificar o subscribeToMessages para usar o novo indicador
+  // Função para verificar se precisa recarregar mensagens
+  const checkAndReloadMessages = useCallback(async () => {
+    if (!lastSubscriptionUpdate || isReconnecting) return;
+
+    const now = new Date();
+    const timeSinceLastUpdate = now.getTime() - lastSubscriptionUpdate.getTime();
+    
+    // Se passou mais de 30 segundos desde a última atualização, recarregar mensagens
+    if (timeSinceLastUpdate > 30000) {
+      setIsReconnecting(true);
+      try {
+        await loadMessages(1, false);
+        setLastSubscriptionUpdate(new Date());
+      } catch (error) {
+        console.error('Erro ao recarregar mensagens:', error);
+      } finally {
+        setIsReconnecting(false);
+      }
+    }
+  }, [lastSubscriptionUpdate, isReconnecting]);
+
+  // Efeito para lidar com mudanças de visibilidade
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Limpar timeout anterior se existir
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+        }
+        
+        // Aguardar 2 segundos antes de verificar reconexão
+        reconnectTimeoutRef.current = setTimeout(() => {
+          checkAndReloadMessages();
+        }, 2000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, [checkAndReloadMessages]);
+
+  // Modificar o subscribeToMessages para atualizar o lastSubscriptionUpdate
   const subscribeToMessages = () => {
     const subscription = supabase
       .channel('messages')
@@ -486,6 +537,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         table: 'messages',
         filter: `chat_id=eq.${chatId}`
       }, async (payload) => {
+        setLastSubscriptionUpdate(new Date());
         if (payload.eventType === 'INSERT') {
           setNewMessagesCount(prev => prev + 1);
           // console.log('payload INSERT', payload);
@@ -882,6 +934,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       .subscribe((status) => {
         // console.log('Subscription status:', status);
         if(status === 'SUBSCRIBED') {
+          setLastSubscriptionUpdate(new Date());
           setTimeout(() => {
             setIsSubscriptionReady(true);
           }, 2000);
