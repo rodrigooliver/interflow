@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, Smile, Send, Mic, Loader2, Image, FileText, X, Sparkles, Plus } from 'lucide-react';
+import { Bold, Italic, Smile, Send, Mic, Loader2, Image, FileText, X, Sparkles, Plus, Play, Pause, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -112,6 +112,15 @@ export function MessageInput({
   const [filteredShortcuts, setFilteredShortcuts] = useState<ShortcutSuggestion[]>([]);
   const selectedItemRef = useRef<HTMLLIElement>(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  // Adicionando estado para controlar áudio temporário
+  const [temporaryAudio, setTemporaryAudio] = useState<Blob | null>(null);
+  // Adicionando estados para reprodução de áudio
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const playbackIntervalRef = useRef<NodeJS.Timeout>();
+  const [recordingStartDelay, setRecordingStartDelay] = useState(true);
   
   // Usar o hook de status de conexão
   const { isOnline } = useOnlineStatus();
@@ -130,9 +139,9 @@ export function MessageInput({
            (window.innerWidth <= 768);
   };
 
-  // Adicionar estilos CSS para a barra de formatação flutuante
+  // Adicionar estilos CSS para manter altura consistente
   useEffect(() => {
-    // Estilos CSS para a barra de formatação flutuante em dispositivos móveis
+    // Estilos CSS para garantir altura consistente
     const styles = `
       @media (max-width: 768px) {
         .mobile-formatting-toolbar {
@@ -165,16 +174,32 @@ export function MessageInput({
           opacity: 1;
           visibility: visible;
         }
-        
-        :root {
-          --bg-color: white;
-          --border-color: #e5e7eb;
-        }
-        
-        .dark {
-          --bg-color: #1f2937;
-          --border-color: #374151;
-        }
+      }
+      
+      /* Garantir altura consistente para o input */
+      .input-container {
+        min-height: 48px;
+        max-height: 48px;
+        display: flex;
+        align-items: center;
+      }
+      
+      /* Ajustar altura do input de gravação */
+      .recording-container {
+        min-height: 48px;
+        max-height: 48px;
+        display: flex;
+        align-items: center;
+      }
+      
+      :root {
+        --bg-color: white;
+        --border-color: #e5e7eb;
+      }
+      
+      .dark {
+        --bg-color: #1f2937;
+        --border-color: #374151;
       }
     `;
 
@@ -448,6 +473,13 @@ export function MessageInput({
       throw error;
     } finally {
       setSending(false);
+      
+      // Esconder a interface de gravação após enviar mensagem
+      if (isRecording || temporaryAudio) {
+        setTemporaryAudio(null);
+        setMediaRecorder(null);
+        setRecordingDuration(0);
+      }
     }
   };
 
@@ -614,6 +646,7 @@ export function MessageInput({
     setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Função principal para iniciar a gravação, atualizada
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -656,68 +689,47 @@ export function MessageInput({
           const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
           audioChunksRef.current = [];
           
-          // Converter o áudio gravado para OGG/Opus usando o formato intermediário
-          const targetFileName = `audio-${Date.now()}.ogg`;
-          
-          try {
-            // Tentar carregar o módulo de áudio
-            const audioConverter = await import('../../lib/audioConverter');
-            console.log('Convertendo áudio para OGG/Opus...');
-            
-            // Converter o blob para OGG/Opus
-            const convertedBlob = await audioConverter.convertToOggOpus(audioBlob);
-            const convertedFile = new File([convertedBlob], targetFileName, { type: 'audio/ogg;codecs=opus' });
-            
-            // Adicionar o arquivo ao estado de anexos pendentes em vez de fazer upload
-            handleFileUploadComplete(convertedFile, 'audio/ogg;codecs=opus', targetFileName);
-            
-          } catch (conversionError) {
-            console.error('Erro na conversão de áudio:', conversionError);
-            console.log('Usando formato original sem conversão');
-            
-            // Determinar a extensão baseada no tipo MIME
-            let extension = 'webm';
-            if (mimeType.includes('mp4')) {
-              extension = 'mp4';
-            } else if (mimeType.includes('ogg')) {
-              extension = 'ogg';
-            } else if (mimeType.includes('mpeg')) {
-              extension = 'mp3';
-            }
-            
-            const fileName = `audio-${Date.now()}.${extension}`;
-            const file = new File([audioBlob], fileName, { type: mimeType });
-            
-            // Adicionar o arquivo ao estado de anexos pendentes
-            handleFileUploadComplete(file, mimeType, fileName);
-          }
-          
-          // Opcional: Focar no campo de texto para que o usuário possa adicionar uma mensagem junto com o áudio
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-          }
+          // Salvamos o blob no estado temporário para permitir cancelamento
+          setTemporaryAudio(audioBlob);
           
         } catch (error) {
           setError(t('errors.audioProcessingFailed'));
           console.error('Erro ao processar áudio:', error);
+          // Em caso de erro, cancelamos a gravação para evitar estado inconsistente
+          cancelRecording();
         }
       };
 
-      setMediaRecorder(recorder);
-      recorder.start(1000); // Gravar em chunks de 1 segundo
+      // Indicar que estamos gravando antes mesmo de iniciar a contagem
       setIsRecording(true);
       setRecordingDuration(0);
+      setRecordingStartDelay(true);
       
-      timerIntervalRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
+      // Iniciar o gravador imediatamente para capturar o áudio
+      setMediaRecorder(recorder);
+      recorder.start(1000); // Gravar em chunks de 1 segundo
+      
+      // Atrasar a contagem em 500ms para dar tempo ao usuário
+      setTimeout(() => {
+        setRecordingStartDelay(false);
+        
+        // Iniciar a contagem apenas após o delay
+        timerIntervalRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
+      }, 500);
       
     } catch (error) {
       setError(t('errors.microphoneAccess'));
       console.error('Error accessing microphone:', error);
+      // Em caso de erro, garantir que os estados sejam limpos
+      setIsRecording(false);
+      setMediaRecorder(null);
+      setRecordingStartDelay(false);
     }
   };
 
+  // Função para parar a gravação
   const stopRecording = () => {
     if (mediaRecorder && isRecording) {
       // Limpar o intervalo do contador
@@ -725,11 +737,273 @@ export function MessageInput({
         clearInterval(timerIntervalRef.current);
       }
       
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      try {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      } catch (error) {
+        console.error('Erro ao parar gravação:', error);
+      }
       setIsRecording(false);
-      setMediaRecorder(null);
-      setRecordingDuration(0);
+    }
+  };
+
+  // Nova função para reproduzir o áudio temporário
+  const togglePlayAudio = () => {
+    if (!temporaryAudio) return;
+    
+    if (isPlaying && audioElementRef.current) {
+      // Pausar a reprodução
+      audioElementRef.current.pause();
+      setIsPlaying(false);
+      
+      // Limpar o intervalo de atualização
+      if (playbackIntervalRef.current) {
+        clearInterval(playbackIntervalRef.current);
+        playbackIntervalRef.current = undefined;
+      }
+      
+      return;
+    }
+    
+    // Se não temos um elemento de áudio ou está diferente do áudio atual, criar um novo
+    if (!audioElementRef.current || audioElementRef.current.src !== URL.createObjectURL(temporaryAudio)) {
+      // Liberar qualquer URL anterior
+      if (audioElementRef.current && audioElementRef.current.src) {
+        URL.revokeObjectURL(audioElementRef.current.src);
+      }
+      
+      // Criar elemento de áudio
+      const audioElement = new Audio(URL.createObjectURL(temporaryAudio));
+      
+      // Configurar eventos
+      audioElement.addEventListener('ended', () => {
+        setIsPlaying(false);
+        setAudioProgress(100); // Garantir que termine em 100%
+        
+        // Limpar o intervalo de atualização
+        if (playbackIntervalRef.current) {
+          clearInterval(playbackIntervalRef.current);
+          playbackIntervalRef.current = undefined;
+        }
+      });
+      
+      audioElement.addEventListener('error', (e) => {
+        console.error('Erro na reprodução do áudio:', e);
+        setIsPlaying(false);
+        
+        // Limpar o intervalo de atualização
+        if (playbackIntervalRef.current) {
+          clearInterval(playbackIntervalRef.current);
+          playbackIntervalRef.current = undefined;
+        }
+      });
+      
+      audioElement.addEventListener('timeupdate', () => {
+        if (audioElement.duration) {
+          // Atualizar o progresso (0-100)
+          const progress = (audioElement.currentTime / audioElement.duration) * 100;
+          setAudioProgress(progress);
+          setPlaybackTime(Math.floor(audioElement.currentTime));
+        }
+      });
+      
+      // Salvar referência
+      audioElementRef.current = audioElement;
+    }
+    
+    // Iniciar reprodução
+    audioElementRef.current.play()
+      .then(() => {
+        setIsPlaying(true);
+        
+        // Atualizar o progresso a cada 100ms
+        if (!playbackIntervalRef.current) {
+          playbackIntervalRef.current = setInterval(() => {
+            if (audioElementRef.current) {
+              // O evento timeupdate já cuida disso, isso é apenas um backup
+              const progress = (audioElementRef.current.currentTime / audioElementRef.current.duration) * 100;
+              setAudioProgress(progress);
+              setPlaybackTime(Math.floor(audioElementRef.current.currentTime));
+            }
+          }, 100);
+        }
+      })
+      .catch(error => {
+        console.error('Erro ao iniciar reprodução:', error);
+        setIsPlaying(false);
+      });
+  };
+  
+  // Nova função para reiniciar a reprodução do áudio
+  const restartAudio = () => {
+    if (!audioElementRef.current || !temporaryAudio) return;
+    
+    // Reiniciar a posição
+    audioElementRef.current.currentTime = 0;
+    setAudioProgress(0);
+    setPlaybackTime(0);
+    
+    // Se estava tocando, continuar a tocar
+    if (isPlaying) {
+      audioElementRef.current.play().catch(error => {
+        console.error('Erro ao reiniciar reprodução:', error);
+      });
+    }
+  };
+
+  // Nova função para cancelar a gravação
+  const cancelRecording = () => {
+    // Limpar o áudio e estados relacionados
+    if (mediaRecorder && isRecording) {
+      stopRecording();
+    }
+    
+    // Parar reprodução se estiver tocando
+    if (isPlaying && audioElementRef.current) {
+      audioElementRef.current.pause();
+      setIsPlaying(false);
+      
+      // Limpar o intervalo de atualização
+      if (playbackIntervalRef.current) {
+        clearInterval(playbackIntervalRef.current);
+        playbackIntervalRef.current = undefined;
+      }
+    }
+    
+    // Liberar URL do objeto
+    if (audioElementRef.current && audioElementRef.current.src) {
+      URL.revokeObjectURL(audioElementRef.current.src);
+      audioElementRef.current = null;
+    }
+    
+    setTemporaryAudio(null);
+    setMediaRecorder(null);
+    setRecordingDuration(0);
+    setAudioProgress(0);
+    setPlaybackTime(0);
+    setRecordingStartDelay(false);
+    
+    // Focar no textarea após cancelar, para melhor experiência do usuário
+    if (textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+    }
+  };
+
+  // Nova função para confirmar e processar o áudio gravado
+  const confirmRecording = async () => {
+    try {
+      if (!temporaryAudio) {
+        console.error('Não há áudio temporário para processar');
+        return;
+      }
+      
+      // Indicar que estamos processando
+      setSending(true);
+      const mimeType = temporaryAudio.type;
+      const tempId = generateTempId();
+      
+      try {
+        // Tentar carregar o módulo de áudio
+        const audioConverter = await import('../../lib/audioConverter');
+        console.log('Convertendo áudio para OGG/Opus...');
+        
+        // Converter o blob para OGG/Opus
+        const targetFileName = `audio-${Date.now()}.ogg`;
+        const convertedBlob = await audioConverter.convertToOggOpus(temporaryAudio);
+        const convertedFile = new File([convertedBlob], targetFileName, { type: 'audio/ogg;codecs=opus' });
+        
+        // Adicionar mensagem otimista se a função estiver disponível
+        if (addOptimisticMessage) {
+          addOptimisticMessage({
+            id: tempId,
+            content: null,
+            attachments: [{
+              file: convertedFile,
+              preview: URL.createObjectURL(convertedBlob),
+              type: 'audio/ogg;codecs=opus',
+              name: targetFileName
+            }],
+            replyToMessageId: replyTo?.message.id,
+            isPending: true
+          });
+          
+          // Limpar a referência de resposta se existir
+          if (replyTo?.onClose) {
+            replyTo.onClose();
+          }
+        }
+        
+        // Limpar interface de gravação imediatamente
+        setTemporaryAudio(null);
+        setMediaRecorder(null);
+        setRecordingDuration(0);
+        setSending(false);
+        
+        // Enviar em segundo plano
+        handleSendMessage(null, [convertedFile], tempId)
+          .catch(error => {
+            console.error('Erro ao enviar áudio:', error);
+            // O erro já será tratado em handleSendMessage
+          });
+        
+      } catch (conversionError) {
+        console.error('Erro na conversão de áudio:', conversionError);
+        console.log('Usando formato original sem conversão');
+        
+        // Determinar a extensão baseada no tipo MIME
+        let extension = 'webm';
+        if (mimeType.includes('mp4')) {
+          extension = 'mp4';
+        } else if (mimeType.includes('ogg')) {
+          extension = 'ogg';
+        } else if (mimeType.includes('mpeg')) {
+          extension = 'mp3';
+        }
+        
+        const fileName = `audio-${Date.now()}.${extension}`;
+        const file = new File([temporaryAudio], fileName, { type: mimeType });
+        
+        // Adicionar mensagem otimista se a função estiver disponível
+        if (addOptimisticMessage) {
+          addOptimisticMessage({
+            id: tempId,
+            content: null,
+            attachments: [{
+              file: file,
+              preview: URL.createObjectURL(temporaryAudio),
+              type: mimeType,
+              name: fileName
+            }],
+            replyToMessageId: replyTo?.message.id,
+            isPending: true
+          });
+          
+          // Limpar a referência de resposta se existir
+          if (replyTo?.onClose) {
+            replyTo.onClose();
+          }
+        }
+        
+        // Limpar interface de gravação imediatamente
+        setTemporaryAudio(null);
+        setMediaRecorder(null);
+        setRecordingDuration(0);
+        setSending(false);
+        
+        // Enviar em segundo plano
+        handleSendMessage(null, [file], tempId)
+          .catch(error => {
+            console.error('Erro ao enviar áudio:', error);
+            // O erro já será tratado em handleSendMessage
+          });
+      }
+      
+    } catch (error) {
+      setError(t('errors.audioProcessingFailed'));
+      console.error('Erro ao processar áudio:', error);
+      setSending(false);
     }
   };
 
@@ -1078,12 +1352,6 @@ export function MessageInput({
           aria-label={isRecording ? t('recording') : t('record')}
         >
           <Mic className="w-5 h-5" />
-          {isRecording && (
-            <span className="ml-2 text-sm">
-              {Math.floor(recordingDuration / 60)}:
-              {(recordingDuration % 60).toString().padStart(2, '0')}
-            </span>
-          )}
         </button>
       );
     } else {
@@ -1099,6 +1367,38 @@ export function MessageInput({
       );
     }
   };
+
+  // Liberar recursos de áudio ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      // Limpar o intervalo do contador
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+      
+      // Limpar o intervalo de reprodução
+      if (playbackIntervalRef.current) {
+        clearInterval(playbackIntervalRef.current);
+      }
+      
+      // Limpar o timeout de erro
+      if (errorTimeout) {
+        clearTimeout(errorTimeout);
+      }
+      
+      // Liberar URL do objeto de áudio
+      if (audioElementRef.current && audioElementRef.current.src) {
+        URL.revokeObjectURL(audioElementRef.current.src);
+      }
+      
+      // Limpar todas as URLs de objeto criadas
+      pendingAttachments.forEach(attachment => {
+        if (attachment.preview) {
+          URL.revokeObjectURL(attachment.preview);
+        }
+      });
+    };
+  }, [errorTimeout, pendingAttachments]);
 
   return (
     <div className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700">
@@ -1162,120 +1462,231 @@ export function MessageInput({
       {/* Container para a barra de formatação e o textarea */}
       <div className="relative">
         {/* Barra de formatação - visível sempre em desktop, e apenas quando em foco em mobile */}
-        <div 
-          className={`formatting-toolbar flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap
-            ${isMobileDevice() ? 'mobile-formatting-toolbar' : ''}
-            ${isMobileDevice() && isTextareaFocused ? 'visible' : ''}
-            ${isMobileDevice() && !isTextareaFocused ? 'hidden' : ''}
-          `}
-        >
-          <button
-            onMouseDown={handleBoldClick}
-            className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
-            title={t('formatting.bold')}
+        {!isRecording && !temporaryAudio && (
+          <div 
+            className={`formatting-toolbar flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap
+              ${isMobileDevice() ? 'mobile-formatting-toolbar' : ''}
+              ${isMobileDevice() && isTextareaFocused ? 'visible' : ''}
+              ${isMobileDevice() && !isTextareaFocused ? 'hidden' : ''}
+            `}
           >
-            <Bold className="w-5 h-5" />
-          </button>
-          <button
-            onMouseDown={handleItalicClick}
-            className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
-            title={t('formatting.italic')}
-          >
-            <Italic className="w-5 h-5" />
-          </button>
-          <button
-            onMouseDown={handleAIClick}
-            className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
-            title={t('ai.improve')}
-          >
-            <Sparkles className="w-5 h-5" />
-          </button>
-          {/* Botão de emoji - visível apenas em desktop */}
-          <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
             <button
-              onClick={() => {
-                setShowEmojiPicker(!showEmojiPicker);
-                setShowAttachmentMenu(false);
-              }}
-              className={`p-1 rounded-lg transition-colors ${
-                showEmojiPicker
-                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-              }`}
-              title={t('emoji.title')}
+              onMouseDown={handleBoldClick}
+              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+              title={t('formatting.bold')}
             >
-              <Smile className="w-5 h-5" />
+              <Bold className="w-5 h-5" />
             </button>
-            {showEmojiPicker && (
-              <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
-                <Picker
-                  data={data}
-                  onEmojiSelect={onEmojiSelect}
-                  locale={i18n.language}
-                  theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                  previewPosition="none"
-                  skinTonePosition="none"
-                  perLine={9}
-                />
-              </div>
-            )}
+            <button
+              onMouseDown={handleItalicClick}
+              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+              title={t('formatting.italic')}
+            >
+              <Italic className="w-5 h-5" />
+            </button>
+            <button
+              onMouseDown={handleAIClick}
+              className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
+              title={t('ai.improve')}
+            >
+              <Sparkles className="w-5 h-5" />
+            </button>
+            {/* Botão de emoji - visível apenas em desktop */}
+            <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
+              <button
+                onClick={() => {
+                  setShowEmojiPicker(!showEmojiPicker);
+                  setShowAttachmentMenu(false);
+                }}
+                className={`p-1 rounded-lg transition-colors ${
+                  showEmojiPicker
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                }`}
+                title={t('emoji.title')}
+              >
+                <Smile className="w-5 h-5" />
+              </button>
+              {showEmojiPicker && (
+                <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
+                  <Picker
+                    data={data}
+                    onEmojiSelect={onEmojiSelect}
+                    locale={i18n.language}
+                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                    previewPosition="none"
+                    skinTonePosition="none"
+                    perLine={9}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full p-1 border border-gray-200 dark:border-gray-600">
-          {/* Botão de anexo (Plus) no lado esquerdo */}
-          <div className="relative" ref={attachmentMenuRef}>
-            <button
-              onMouseDown={handleAttachmentClick}
-              className={`p-2 rounded-full transition-colors ${
-                showAttachmentMenu
-                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400'
-              }`}
-              title={t('attachments.title')}
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-            {showAttachmentMenu && (
-              <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px] z-50">
-                <button
-                  onClick={() => {
-                    setShowFileUpload('image');
-                    setShowAttachmentMenu(false);
-                  }}
-                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <Image className="w-4 h-4 mr-2" />
-                  <span>{t('attachments.image')}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowFileUpload('document');
-                    setShowAttachmentMenu(false);
-                  }}
-                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  <span>{t('attachments.document')}</span>
-                </button>
+        {/* Interface de gravação de áudio */}
+        {(isRecording || temporaryAudio) ? (
+          <div className="recording-container flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full p-1 border border-gray-200 dark:border-gray-600">
+            <div className="flex items-center space-x-4 flex-1 justify-between">
+              {/* Indicador de gravação ou reprodução */}
+              <div className="flex items-center px-3 flex-1">
+                {/* Indicador visual (ponto vermelho ou barra de progresso) */}
+                {isRecording ? (
+                  <div className="flex items-center">
+                    <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse mr-2"></div>
+                    <div className={`text-sm font-medium text-red-500 mr-2 ${recordingStartDelay ? 'animate-pulse' : ''}`}>
+                      {recordingStartDelay ? 'Preparando...' : 'Gravando...'}
+                    </div>
+                  </div>
+                ) : (
+                  temporaryAudio && (
+                    <div className="w-full max-w-[100px] h-2 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden mr-2">
+                      <div 
+                        className="h-full bg-blue-500 rounded-full"
+                        style={{ width: `${audioProgress}%` }}
+                      ></div>
+                    </div>
+                  )
+                )}
+                
+                {/* Contador de tempo */}
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  {isRecording ? (
+                    // Mostrar o tempo de gravação durante a gravação
+                    <>
+                      {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
+                    </>
+                  ) : (
+                    // Mostrar o tempo de reprodução após a gravação
+                    <>
+                      {Math.floor(playbackTime / 60)}:{(playbackTime % 60).toString().padStart(2, '0')}
+                    </>
+                  )}
+                </span>
               </div>
-            )}
+              
+              <div className="flex items-center space-x-2">
+                {/* Botão para cancelar gravação (apenas em modo preview) */}
+                {!isRecording && temporaryAudio && (
+                  <button 
+                    onClick={cancelRecording}
+                    className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 transition-colors"
+                    title={t('recording.cancel', 'Cancelar')}
+                    disabled={sending}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Botão para reiniciar a reprodução (apenas quando não está gravando) */}
+                {!isRecording && temporaryAudio && (
+                  <button 
+                    onClick={restartAudio}
+                    className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 transition-colors"
+                    title={t('recording.restart', 'Reiniciar')}
+                    disabled={sending}
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Botão para ouvir a gravação (apenas após parar de gravar) */}
+                {!isRecording && temporaryAudio && (
+                  <button 
+                    onClick={togglePlayAudio}
+                    className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 transition-colors"
+                    title={isPlaying ? t('recording.pause', 'Pausar') : t('recording.play', 'Ouvir')}
+                    disabled={sending}
+                  >
+                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  </button>
+                )}
+                
+                {/* Botão para enviar o áudio (após parar de gravar) */}
+                {!isRecording && temporaryAudio && (
+                  <button 
+                    onClick={confirmRecording}
+                    className={`p-2 rounded-full ${sending ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'} text-white transition-colors`}
+                    title={t('recording.confirm', 'Confirmar')}
+                    disabled={sending}
+                  >
+                    {sending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
+                
+                {/* Botão para parar a gravação (durante a gravação) */}
+                {isRecording && (
+                  <button 
+                    onClick={stopRecording}
+                    className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                    title={t('recording.stop', 'Parar')}
+                  >
+                    <span className="w-5 h-5 flex items-center justify-center">■</span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-          
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={handleMessageChange}
-            onKeyDown={handleKeyPress}
-            onFocus={handleTextareaFocus}
-            onBlur={handleTextareaBlur}
-            placeholder={t('input.placeholder')}
-            className="flex-1 max-h-[120px] px-4 py-2 bg-transparent border-0 rounded-lg focus:ring-0 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
-            // Em dispositivos móveis, Enter quebra linha; em desktop, envia a mensagem
-          />
-          
-          {renderSendButton()}
-        </div>
+        ) : (
+          <div className="input-container flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full p-1 border border-gray-200 dark:border-gray-600">
+            {/* Botão de anexo (Plus) no lado esquerdo */}
+            <div className="relative" ref={attachmentMenuRef}>
+              <button
+                onMouseDown={handleAttachmentClick}
+                className={`p-2 rounded-full transition-colors ${
+                  showAttachmentMenu
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                    : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400'
+                }`}
+                title={t('attachments.title')}
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              {showAttachmentMenu && (
+                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px] z-50">
+                  <button
+                    onClick={() => {
+                      setShowFileUpload('image');
+                      setShowAttachmentMenu(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <Image className="w-4 h-4 mr-2" />
+                    <span>{t('attachments.image')}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFileUpload('document');
+                      setShowAttachmentMenu(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    <span>{t('attachments.document')}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <textarea
+              ref={textareaRef}
+              value={message}
+              onChange={handleMessageChange}
+              onKeyDown={handleKeyPress}
+              onFocus={handleTextareaFocus}
+              onBlur={handleTextareaBlur}
+              placeholder={t('input.placeholder')}
+              className="flex-1 max-h-[40px] px-4 py-2 bg-transparent border-0 rounded-lg focus:ring-0 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+              style={{ height: '40px', overflowY: 'auto' }}
+            />
+            
+            {renderSendButton()}
+          </div>
+        )}
       </div>
 
       {showFileUpload && (
