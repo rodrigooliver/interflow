@@ -480,30 +480,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   }, []);
 
-  // Função para verificar se precisa recarregar mensagens
-  const checkAndReloadMessages = useCallback(async () => {
-    if (!lastSubscriptionUpdate || isReconnecting) return;
-
-    const now = new Date();
-    const timeSinceLastUpdate = now.getTime() - lastSubscriptionUpdate.getTime();
-    
-    // Se passou mais de 30 segundos desde a última atualização, recarregar mensagens
-    if (timeSinceLastUpdate > 30000) {
-      setIsReconnecting(true);
-      try {
-        // Resetar para a página 1, independente da página atual
-        setPage(1);
-        setHasMore(true);
-        await loadMessages(1, false);
-        setLastSubscriptionUpdate(new Date());
-      } catch (error) {
-        console.error('Erro ao recarregar mensagens:', error);
-      } finally {
-        setIsReconnecting(false);
-      }
-    }
-  }, [lastSubscriptionUpdate, isReconnecting]);
-
   // Efeito para lidar com mudanças de visibilidade
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -521,12 +497,14 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           const timeSinceLastUpdate = now.getTime() - lastUpdate.getTime();
           
           // Se passou mais de 30 segundos, recarregar completamente o chat
+          
           if (timeSinceLastUpdate > 30000) {
             // Ativar o loading inicial para mostrar o skeleton
             setInitialLoading(true);
             messagesLoadedRef.current = false;
             
             // Resetar todos os estados relevantes
+            setNewMessagesCount(0);
             setMessages([]);
             setOptimisticMessages([]);
             setFailedMessages([]);
@@ -534,7 +512,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             setHasMore(true);
             setUnreadMessagesCount(0);
             setShowNewMessagesIndicator(false);
-            setNewMessagesCount(0);
+            
             
             // Primeiro carregar o chat para obter informações atualizadas
             await loadChat();
@@ -544,27 +522,13 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             
             // Atualizar timestamp de última atualização
             setLastSubscriptionUpdate(new Date());
-            
-            // Rolar para o final após o carregamento
-            // setTimeout(() => {
-            //   // Desativar o loading inicial após carregar as mensagens
-            //   setInitialLoading(false);
-            //   messagesLoadedRef.current = true;
-            //   scrollToBottom();
-            // }, 1000);
-          } 
-          // Se estiver na página > 1, voltar para a página 1 para ver as mensagens mais recentes
-          else if (page > 1) {
-            setPage(1);
-            setHasMore(true);
-            await loadMessages(1, false);
+          } else {
             setLastSubscriptionUpdate(new Date());
-          } 
-          // Para atualizações menores que 30 segundos
-          else {
-            checkAndReloadMessages();
           }
-        }, 500);
+        }, 10);
+      } else if (document.visibilityState === 'hidden') {
+        // Atualizar o timestamp quando o usuário sai da aba
+        setLastSubscriptionUpdate(new Date());
       }
     };
 
@@ -576,7 +540,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, [checkAndReloadMessages, page]);
+  }, [page, lastSubscriptionUpdate]);
 
   // Modificar o subscribeToMessages para atualizar o lastSubscriptionUpdate
   const subscribeToMessages = () => {
