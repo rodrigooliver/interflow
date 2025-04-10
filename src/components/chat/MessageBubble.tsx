@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Clock } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -144,7 +144,7 @@ export function MessageBubble({
     }
   };
 
-  // Verificar se a mensagem tem menos de 48 horas
+  // Função para verificar se a mensagem tem menos de 48 horas
   const canDeleteMessage = () => {
     if (!created_at) return false;
     
@@ -159,15 +159,8 @@ export function MessageBubble({
   };
   
   // Verificação combinada para habilitar exclusão
-  const isDeletionAllowed = channelFeatures.canDeleteMessages && onDeleteMessage && canDeleteMessage();
+  const isDeletionAllowed = channelFeatures.canDeleteMessages && onDeleteMessage && canDeleteMessage() && isAgent;
   
-  // Motivo pelo qual não pode excluir (para exibição de tooltip)
-  const getDeletionDisabledReason = () => {
-    if (!channelFeatures.canDeleteMessages) return t('deleteRestriction.featureDisabled');
-    if (!canDeleteMessage()) return t('deleteRestriction.timeExpired');
-    return '';
-  };
-
   const handleDelete = async () => {
     if (!onDeleteMessage || !canDeleteMessage()) return;
     
@@ -464,7 +457,7 @@ export function MessageBubble({
                     {t('actions.reply')}
                   </DropdownMenuItem>
                 )}
-                {isDeletionAllowed ? (
+                {isDeletionAllowed && (
                   <DropdownMenuItem 
                     onClick={() => setShowDeleteModal(true)}
                     className="text-destructive focus:text-destructive"
@@ -472,17 +465,6 @@ export function MessageBubble({
                     <Trash2 className="mr-2 h-4 w-4" />
                     {t('actions.delete')}
                   </DropdownMenuItem>
-                ) : (
-                  channelFeatures.canDeleteMessages && onDeleteMessage && (
-                    <DropdownMenuItem 
-                      disabled
-                      className="opacity-50 cursor-not-allowed"
-                      title={getDeletionDisabledReason()}
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      {t('actions.deleteUnavailable')}
-                    </DropdownMenuItem>
-                  )
                 )}
                 <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
                   <Info className="w-4 h-4 mr-2" />
@@ -580,7 +562,7 @@ export function MessageBubble({
                   <Info className="w-4 h-4 mr-2" />
                   {t('actions.details')}
                 </DropdownMenuItem>
-                {isDeletionAllowed ? (
+                {isDeletionAllowed && (
                   <DropdownMenuItem 
                     onClick={() => setShowDeleteModal(true)}
                     className="text-destructive focus:text-destructive"
@@ -588,17 +570,6 @@ export function MessageBubble({
                     <Trash2 className="mr-2 h-4 w-4" />
                     {t('actions.delete')}
                   </DropdownMenuItem>
-                ) : (
-                  channelFeatures.canDeleteMessages && onDeleteMessage && (
-                    <DropdownMenuItem 
-                      disabled
-                      className="opacity-50 cursor-not-allowed"
-                      title={getDeletionDisabledReason()}
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      {t('actions.deleteUnavailable')}
-                    </DropdownMenuItem>
-                  )
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
