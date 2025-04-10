@@ -761,10 +761,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           const updatedMessage = payload.new as Message;
           
           // Se a mensagem foi deletada, removê-la da lista
-          if (updatedMessage.status === 'deleted') {
-            setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
-            return;
-          }
+          // if (updatedMessage.status === 'deleted') {
+          //   setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
+          //   return;
+          // }
           
           // Se a mensagem falhou, adicioná-la à lista de mensagens falhas
           if (updatedMessage.status === 'failed') {
@@ -986,7 +986,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           )
         `)
         .eq('chat_id', chatId)
-        .neq('status', 'deleted')
+        // .neq('status', 'deleted')
         .order('created_at', { ascending: false })
         .range(offset, offset + MESSAGES_PER_PAGE - 1);
         

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -100,9 +100,32 @@ export function MessageBubble({
   // Verificar se existe uma lista no metadata
   const whatsappList = metadata?.list as WhatsAppList | undefined;
   
-  // Se a mensagem estiver com status deletado, não renderiza nada
+  // Se a mensagem tiver status 'deleted', mostrar um formato especial
   if (status === 'deleted') {
-    return null;
+    const isAgent = sender_type === 'agent';
+    return (
+      <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}>
+        <div 
+          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-3 relative ${
+            isAgent
+              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+              : 'bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400'
+          } italic`}
+        >
+          <div className="flex items-center gap-2">
+            <Ban className="w-4 h-4" />
+            <span>{t('messageStatus.deleted')}</span>
+          </div>
+          <div className={`flex items-center justify-end space-x-1 text-xs mt-1 ${
+            isAgent
+              ? 'text-blue-500 dark:text-blue-400'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   // Se a mensagem for uma resposta a uma mensagem que foi apagada, precisamos verificar

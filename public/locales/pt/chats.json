@@ -119,7 +119,8 @@
     "delivered": "Mensagem entregue",
     "read": "Mensagem lida",
     "failed": "Falha ao enviar",
-    "edited": "Editada"
+    "edited": "Editada",
+    "deleted": "Mensagem apagada"
   },
   "time": {
     "start": "Início",
