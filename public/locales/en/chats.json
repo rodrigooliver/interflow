@@ -72,6 +72,7 @@
     "reply": "Reply",
     "details": "Details",
     "delete": "Delete message",
+    "deleteUnavailable": "Delete unavailable",
     "deleting": "Deleting...",
     "pin": "Pin",
     "unpin": "Unpin",
@@ -342,11 +343,15 @@
   },
   "messageDeleted": "Message deleted successfully",
   "deleteConfirmation": {
-    "title": "Delete message",
+    "title": "Delete Message",
     "message": "Are you sure you want to delete this message? This action cannot be undone.",
-    "warning": "This action cannot be undone. The message will be permanently deleted.",
+    "warning": "Message deletion is permanent and irreversible. The message will be removed for all participants in this conversation.",
     "confirm": "Delete",
     "cancel": "Cancel"
+  },
+  "deleteRestriction": {
+    "featureDisabled": "Deletion not allowed in this channel",
+    "timeExpired": "Deletion only available within the first 48 hours"
   },
   "teamTransfer": {
     "title": "Transfer to Another Team",

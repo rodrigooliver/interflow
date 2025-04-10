@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Clock } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -144,8 +144,32 @@ export function MessageBubble({
     }
   };
 
+  // Verificar se a mensagem tem menos de 48 horas
+  const canDeleteMessage = () => {
+    if (!created_at) return false;
+    
+    // Mensagens pendentes podem ser excluídas a qualquer momento
+    if (isPending) return true;
+    
+    const messageDate = new Date(created_at);
+    const now = new Date();
+    const diffHours = (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
+    
+    return diffHours <= 48;
+  };
+  
+  // Verificação combinada para habilitar exclusão
+  const isDeletionAllowed = channelFeatures.canDeleteMessages && onDeleteMessage && canDeleteMessage();
+  
+  // Motivo pelo qual não pode excluir (para exibição de tooltip)
+  const getDeletionDisabledReason = () => {
+    if (!channelFeatures.canDeleteMessages) return t('deleteRestriction.featureDisabled');
+    if (!canDeleteMessage()) return t('deleteRestriction.timeExpired');
+    return '';
+  };
+
   const handleDelete = async () => {
-    if (!onDeleteMessage) return;
+    if (!onDeleteMessage || !canDeleteMessage()) return;
     
     setIsDeleting(true);
     setError(null);
@@ -412,6 +436,18 @@ export function MessageBubble({
             <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
               <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
               <span className="font-medium">{t('messageStatus.sending')}</span>
+              {isDeletionAllowed && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteModal(true);
+                  }}
+                  className="ml-2 px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  {t('actions.delete')}
+                </button>
+              )}
             </div>
           )}
           <div className="absolute right-0 top-0 mr-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -428,7 +464,7 @@ export function MessageBubble({
                     {t('actions.reply')}
                   </DropdownMenuItem>
                 )}
-                {channelFeatures.canDeleteMessages && onDeleteMessage && (
+                {isDeletionAllowed ? (
                   <DropdownMenuItem 
                     onClick={() => setShowDeleteModal(true)}
                     className="text-destructive focus:text-destructive"
@@ -436,6 +472,17 @@ export function MessageBubble({
                     <Trash2 className="mr-2 h-4 w-4" />
                     {t('actions.delete')}
                   </DropdownMenuItem>
+                ) : (
+                  channelFeatures.canDeleteMessages && onDeleteMessage && (
+                    <DropdownMenuItem 
+                      disabled
+                      className="opacity-50 cursor-not-allowed"
+                      title={getDeletionDisabledReason()}
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      {t('actions.deleteUnavailable')}
+                    </DropdownMenuItem>
+                  )
                 )}
                 <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
                   <Info className="w-4 h-4 mr-2" />
@@ -465,7 +512,7 @@ export function MessageBubble({
             <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
               <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
               <span className="font-medium">{t('messageStatus.sending')}</span>
-              {onDeleteMessage && (
+              {isDeletionAllowed && (
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -533,7 +580,7 @@ export function MessageBubble({
                   <Info className="w-4 h-4 mr-2" />
                   {t('actions.details')}
                 </DropdownMenuItem>
-                {channelFeatures.canDeleteMessages && onDeleteMessage && (
+                {isDeletionAllowed ? (
                   <DropdownMenuItem 
                     onClick={() => setShowDeleteModal(true)}
                     className="text-destructive focus:text-destructive"
@@ -541,8 +588,18 @@ export function MessageBubble({
                     <Trash2 className="mr-2 h-4 w-4" />
                     {t('actions.delete')}
                   </DropdownMenuItem>
+                ) : (
+                  channelFeatures.canDeleteMessages && onDeleteMessage && (
+                    <DropdownMenuItem 
+                      disabled
+                      className="opacity-50 cursor-not-allowed"
+                      title={getDeletionDisabledReason()}
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      {t('actions.deleteUnavailable')}
+                    </DropdownMenuItem>
+                  )
                 )}
-                
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -594,7 +651,7 @@ export function MessageBubble({
                       <RefreshCw className="w-3 h-3 mr-1" />
                       {t('actions.retry')}
                     </button>
-                    {onDeleteMessage && (
+                    {isDeletionAllowed && (
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();

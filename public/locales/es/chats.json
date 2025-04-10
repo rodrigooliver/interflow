@@ -72,6 +72,7 @@
     "reply": "Responder",
     "details": "Detalles",
     "delete": "Eliminar mensaje",
+    "deleteUnavailable": "Eliminación no disponible",
     "deleting": "Eliminando...",
     "pin": "Fijar",
     "unpin": "Desfijar",
@@ -342,11 +343,15 @@
   },
   "messageDeleted": "Mensaje eliminado con éxito",
   "deleteConfirmation": {
-    "title": "Eliminar mensaje",
-    "message": "¿Estás seguro que deseas eliminar este mensaje? Esta acción no se puede deshacer.",
-    "warning": "Esta acción no se puede deshacer. El mensaje será eliminado permanentemente.",
+    "title": "Eliminar Mensaje",
+    "message": "¿Estás seguro de que deseas eliminar este mensaje? Esta acción no se puede deshacer.",
+    "warning": "La eliminación de mensajes es permanente e irreversible. El mensaje se eliminará para todos los participantes de esta conversación.",
     "confirm": "Eliminar",
     "cancel": "Cancelar"
+  },
+  "deleteRestriction": {
+    "featureDisabled": "Eliminación no permitida en este canal",
+    "timeExpired": "Eliminación solo disponible durante las primeras 48 horas"
   },
   "teamTransfer": {
     "title": "Transferir a Otro Equipo",

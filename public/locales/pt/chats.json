@@ -76,6 +76,7 @@
     "reply": "Responder",
     "details": "Detalhes",
     "delete": "Excluir mensagem",
+    "deleteUnavailable": "Exclusão indisponível",
     "deleting": "Excluindo...",
     "pin": "Fixar",
     "unpin": "Desfixar",
@@ -348,11 +349,15 @@
   },
   "messageDeleted": "Mensagem excluída com sucesso",
   "deleteConfirmation": {
-    "title": "Excluir mensagem",
+    "title": "Excluir Mensagem",
     "message": "Tem certeza que deseja excluir esta mensagem? Esta ação não pode ser desfeita.",
-    "warning": "Esta ação não pode ser desfeita. A mensagem será excluída permanentemente.",
+    "warning": "A exclusão de mensagens é permanente e irreversível. A mensagem será removida para todos os participantes deste atendimento.",
     "confirm": "Excluir",
     "cancel": "Cancelar"
+  },
+  "deleteRestriction": {
+    "featureDisabled": "Exclusão não permitida neste canal",
+    "timeExpired": "Exclusão disponível apenas nas primeiras 48 horas"
   },
   "leaveAttendance": {
     "title": "Sair do Atendimento",
