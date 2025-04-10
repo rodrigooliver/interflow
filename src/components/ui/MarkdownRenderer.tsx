@@ -115,7 +115,7 @@ export function MarkdownRenderer({ content, className = '', variant = 'default' 
             />
           ),
           p: (props) => (
-            <p {...props} className={variant === 'compact' ? 'm-0 inline' : 'm-0 mb-3 leading-tight'} />
+            <p {...props} className={variant === 'compact' ? 'm-0 inline' : 'm-0 mb-1 leading-tight'} />
           ),
           ul: (props) => (
             <ul {...props} className={variant === 'compact' ? 'm-0 list-none inline' : 'list-disc list-inside m-0 leading-none space-y-0 min-h-0 p-0 h-auto'} />

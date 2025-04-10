@@ -114,7 +114,8 @@
     "sent": "Message sent",
     "delivered": "Message delivered", 
     "read": "Message read",
-    "failed": "Failed to send"
+    "failed": "Failed to send",
+    "edited": "Edited"
   },
   "time": {
     "start": "Start",

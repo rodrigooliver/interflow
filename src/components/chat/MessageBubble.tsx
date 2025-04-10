@@ -549,6 +549,9 @@ export function MessageBubble({
               ? 'text-blue-100'
               : 'text-gray-500 dark:text-gray-400'
           }`}>
+            {metadata?.edited === true && (
+              <span className="italic">{t('messageStatus.edited')}</span>
+            )}
             <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             {isAgent && status && (
               <>

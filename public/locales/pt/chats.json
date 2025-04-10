@@ -118,7 +118,8 @@
     "sent": "Mensagem enviada",
     "delivered": "Mensagem entregue",
     "read": "Mensagem lida",
-    "failed": "Falha ao enviar"
+    "failed": "Falha ao enviar",
+    "edited": "Editada"
   },
   "time": {
     "start": "Início",
