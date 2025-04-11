@@ -27,22 +27,21 @@ const QuickSetupGuide: React.FC = () => {
   const [setupProgress, setSetupProgress] = useState(0);
   const [showOpenAIModal, setShowOpenAIModal] = useState(false);
   const [showFlowCreateModal, setShowFlowCreateModal] = useState(false);
-  const [setupChecked, setSetupChecked] = useState(false);
   
   // Usar o hook useClosureTypes para buscar os tipos de encerramento
   const { isLoading: isLoadingClosureTypes } = useClosureTypes(currentOrganizationMember?.organization.id);
   
   // Usar o hook usePrompts para buscar os prompts
-  const { data: promptsData, isLoading: promptsLoading } = usePrompts();
+  const { data: promptsData, isLoading: promptsLoading } = usePrompts(currentOrganizationMember?.organization.id);
   
   // Usar o hook useFlows para buscar os fluxos
-  const { data: flowsData, isLoading: flowsLoading } = useFlows();
+  const { data: flowsData, isLoading: flowsLoading } = useFlows(currentOrganizationMember?.organization.id);
   
   // Usar o hook useOpenAIIntegrations para buscar as integrações OpenAI
-  const { data: openAIIntegrationsData, isLoading: openAIIntegrationsLoading } = useOpenAIIntegrations();
+  const { data: openAIIntegrationsData, isLoading: openAIIntegrationsLoading } = useOpenAIIntegrations(currentOrganizationMember?.organization.id);
   
   // Usar o hook useChannels para buscar os canais de chat
-  const { data: channelsData, isLoading: channelsLoading } = useChannels();
+  const { data: channelsData, isLoading: channelsLoading } = useChannels(currentOrganizationMember?.organization.id);
   
   // Obter o queryClient para invalidar consultas
   const queryClient = useQueryClient();
@@ -55,8 +54,6 @@ const QuickSetupGuide: React.FC = () => {
   useEffect(() => {
     // Resetar o setupChecked quando currentOrganizationMember mudar
     if (currentOrganizationMember) {
-      // Resetar todos os estados relevantes
-      setSetupChecked(false);
       setLoading(true);
       setShowGuide(true);
       setSteps([]);
@@ -65,18 +62,10 @@ const QuickSetupGuide: React.FC = () => {
   }, [currentOrganizationMember]);
 
   useEffect(() => {
-    if (currentOrganizationMember && !setupChecked && allHooksLoaded) {
-      setSetupChecked(true);
+    if (currentOrganizationMember && allHooksLoaded) {
       checkSetupStatus();
     }
-  }, [currentOrganizationMember, setupChecked, allHooksLoaded]);
-
-  useEffect(() => {
-    // Verificar o status quando os dados dos hooks são carregados ou quando o setupChecked muda
-    if (allHooksLoaded && currentOrganizationMember && setupChecked) {
-      checkSetupStatus();
-    }
-  }, [allHooksLoaded, currentOrganizationMember, setupChecked]);
+  }, [currentOrganizationMember, allHooksLoaded, channelsData, openAIIntegrationsData, promptsData, flowsData]);
 
   const checkSetupStatus = async () => {
     if (!currentOrganizationMember) {
@@ -156,20 +145,26 @@ const QuickSetupGuide: React.FC = () => {
 
   const handleCloseOpenAIModal = () => {
     setShowOpenAIModal(false);
+    // Invalidar o cache das integrações OpenAI
+    if (currentOrganizationMember?.organization.id) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['openai-integrations', currentOrganizationMember.organization.id] 
+      });
+    }
     // Recarregar apenas os passos sem criar novos recursos
     loadStepsStatus();
   };
 
   const handleFlowCreated = () => {
     setShowFlowCreateModal(false);
-    // Recarregar apenas os passos sem criar novos recursos
-    loadStepsStatus();
     // Invalidar o cache dos flows incluindo o organizationId
     if (currentOrganizationMember?.organization.id) {
       queryClient.invalidateQueries({ 
         queryKey: ['flows', currentOrganizationMember.organization.id] 
       });
     }
+    // Recarregar apenas os passos sem criar novos recursos
+    loadStepsStatus();
   };
 
   // Função para carregar apenas o status dos passos sem criar recursos
