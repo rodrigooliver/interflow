@@ -437,9 +437,6 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
                     </span>
                   </button>
                 </label>
-                <div className="p-2 mb-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm rounded-md">
-                  {t('ai.generateSuccess')}
-                </div>
                 <textarea
                   ref={textareaRef}
                   value={improvedText}

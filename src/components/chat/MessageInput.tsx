@@ -144,7 +144,6 @@ export function MessageInput({
   const [playbackTime, setPlaybackTime] = useState(0);
   const playbackIntervalRef = useRef<NodeJS.Timeout>();
   const [recordingStartDelay, setRecordingStartDelay] = useState(true);
-  const [showShortcutHints, setShowShortcutHints] = useState(false);
   const isMac = getOS() === 'MacOS';
   
   // Usar o hook de status de conexão
@@ -1173,7 +1172,6 @@ export function MessageInput({
     // Pequeno atraso para garantir que o teclado tenha tempo de sumir antes de abrir o modal
     setTimeout(() => {
       setShowAIModal(true);
-      setShowShortcutHints(false); // Fechar instruções de atalho
       
       // Não restauramos o foco imediatamente para manter o teclado escondido
       // O foco será restaurado quando o modal for fechado, se necessário
@@ -1183,7 +1181,6 @@ export function MessageInput({
   // Handler para o fechamento do modal de IA
   const handleAIModalClose = () => {
     setShowAIModal(false);
-    setShowShortcutHints(false); // Fechar instruções de atalho
     
     // Em dispositivos desktop, restaurar o foco no textarea
     if (!isMobileDevice()) {
@@ -1345,8 +1342,6 @@ export function MessageInput({
     const isCtrlPressed = isMac ? e.metaKey : e.ctrlKey;
     
     if (isCtrlPressed) {
-      setShowShortcutHints(true);
-      
       switch (e.key.toLowerCase()) {
         case 'b':
           e.preventDefault();
@@ -1392,13 +1387,8 @@ export function MessageInput({
     }
   };
 
-  const handleKeyUp = (e: React.KeyboardEvent) => {
-    const isMac = getOS() === 'MacOS';
-    const isCtrlPressed = isMac ? e.metaKey : e.ctrlKey;
-    
-    if (!isCtrlPressed) {
-      setShowShortcutHints(false);
-    }
+  const handleKeyUp = () => {
+    // Função vazia já que removemos toda a funcionalidade
   };
 
   // Adicionar efeito para escutar eventos de teclado no documento
@@ -1648,24 +1638,39 @@ export function MessageInput({
           >
             <button
               onMouseDown={handleBoldClick}
-              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
               title={t('formatting.bold')}
             >
               <Bold className="w-5 h-5" />
+              {!isMobileDevice() && (
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                  {isMac ? '⌘' : 'Ctrl'} B
+                </span>
+              )}
             </button>
             <button
               onMouseDown={handleItalicClick}
-              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400`}
+              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
               title={t('formatting.italic')}
             >
               <Italic className="w-5 h-5" />
+              {!isMobileDevice() && (
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                  {isMac ? '⌘' : 'Ctrl'} I
+                </span>
+              )}
             </button>
             <button
               onMouseDown={handleAIClick}
-              className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400"
+              className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
               title={t('ai.improve')}
             >
               <Sparkles className="w-5 h-5" />
+              {!isMobileDevice() && (
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                  {isMac ? '⌘' : 'Ctrl'} J
+                </span>
+              )}
             </button>
             {/* Botão de emoji - visível apenas em desktop */}
             <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
@@ -1675,10 +1680,13 @@ export function MessageInput({
                   showEmojiPicker
                     ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-                }`}
+                } flex items-center`}
                 title={t('emoji.title')}
               >
                 <Smile className="w-5 h-5" />
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                  {isMac ? '⌘' : 'Ctrl'} E
+                </span>
               </button>
               {showEmojiPicker && (
                 <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
@@ -1929,18 +1937,6 @@ export function MessageInput({
                 {t('shortcuts.empty', 'Nenhum atalho encontrado')}
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Dicas de atalhos */}
-      {showShortcutHints && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
-          <div className="flex justify-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-            <span>Bold: {isMac ? '⌘' : 'Ctrl'} + B</span>
-            <span>Italic: {isMac ? '⌘' : 'Ctrl'} + I</span>
-            <span>IA: {isMac ? '⌘' : 'Ctrl'} + J</span>
-            <span>Emoji: {isMac ? '⌘' : 'Ctrl'} + E</span>
           </div>
         </div>
       )}
