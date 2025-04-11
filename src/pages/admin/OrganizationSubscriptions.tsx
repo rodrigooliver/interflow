@@ -212,13 +212,20 @@ export default function OrganizationSubscriptions() {
     setSuccess('');
 
     try {
+      // Converte as datas para UTC apenas no momento de salvar
+      const dataToSave = {
+        ...formData,
+        current_period_start: new Date(formData.current_period_start).toISOString(),
+        current_period_end: new Date(formData.current_period_end).toISOString()
+      };
+
       if (modalMode === 'add') {
         // Adicionar nova assinatura
         const { error } = await supabase
           .from('subscriptions')
           .insert({
             organization_id: organizationId,
-            ...formData,
+            ...dataToSave,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });
@@ -232,7 +239,7 @@ export default function OrganizationSubscriptions() {
         const { error } = await supabase
           .from('subscriptions')
           .update({
-            ...formData,
+            ...dataToSave,
             updated_at: new Date().toISOString(),
           })
           .eq('id', selectedSubscription.id);
@@ -285,8 +292,73 @@ export default function OrganizationSubscriptions() {
     }
   }
 
+  // Função para converter data UTC para o formato do input datetime-local
+  function formatDateForInput(dateString: string): string {
+    // Cria uma nova data a partir da string UTC
+    const date = new Date(dateString);
+    
+    // Formata a data para o input datetime-local sem ajustar o fuso horário
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  // Função para exibir data na listagem
   function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // Função para converter data local para UTC
+  function localToUTC(date: Date): string {
+    const offset = date.getTimezoneOffset();
+    return new Date(date.getTime() - (offset * 60000)).toISOString();
+  }
+
+  // Função para atualizar a data de fim do período com base no período de cobrança
+  function updatePeriodEndDate(startDate: string, billingPeriod: 'monthly' | 'yearly') {
+    const start = new Date(startDate);
+    const end = new Date(start);
+    
+    if (billingPeriod === 'monthly') {
+      end.setMonth(start.getMonth() + 1);
+    } else {
+      end.setFullYear(start.getFullYear() + 1);
+    }
+    
+    return end.toISOString();
+  }
+
+  // Função para lidar com a mudança da data de início
+  function handleStartDateChange(value: string) {
+    // Mantém a data como está, sem conversão
+    const newStartDate = value;
+    const newEndDate = updatePeriodEndDate(newStartDate, formData.billing_period);
+    
+    setFormData({
+      ...formData,
+      current_period_start: newStartDate,
+      current_period_end: newEndDate
+    });
+  }
+
+  // Função para lidar com a mudança da data de fim
+  function handleEndDateChange(value: string) {
+    // Mantém a data como está, sem conversão
+    setFormData({
+      ...formData,
+      current_period_end: value
+    });
   }
 
   // Função para formatar preço
@@ -318,20 +390,6 @@ export default function OrganizationSubscriptions() {
     return { activeCount, trialCount, canceledCount, pendingCount, scheduledForCancellation };
   }
 
-  // Função para atualizar a data de fim do período com base no período de cobrança
-  function updatePeriodEndDate(startDate: string, billingPeriod: 'monthly' | 'yearly') {
-    const start = new Date(startDate);
-    const end = new Date(start);
-    
-    if (billingPeriod === 'monthly') {
-      end.setMonth(start.getMonth() + 1);
-    } else {
-      end.setFullYear(start.getFullYear() + 1);
-    }
-    
-    return end.toISOString();
-  }
-
   // Função para lidar com a mudança do período de cobrança
   function handleBillingPeriodChange(value: string) {
     const billingPeriod = value as 'monthly' | 'yearly';
@@ -340,18 +398,6 @@ export default function OrganizationSubscriptions() {
     setFormData({
       ...formData,
       billing_period: billingPeriod,
-      current_period_end: newEndDate
-    });
-  }
-
-  // Função para lidar com a mudança da data de início
-  function handleStartDateChange(value: string) {
-    const newStartDate = new Date(value).toISOString();
-    const newEndDate = updatePeriodEndDate(newStartDate, formData.billing_period);
-    
-    setFormData({
-      ...formData,
-      current_period_start: newStartDate,
       current_period_end: newEndDate
     });
   }
@@ -696,11 +742,11 @@ export default function OrganizationSubscriptions() {
                     Início do Período Atual
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     id="current_period_start"
                     required
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={formData.current_period_start.split('T')[0]}
+                    value={formatDateForInput(formData.current_period_start)}
                     onChange={(e) => handleStartDateChange(e.target.value)}
                   />
                 </div>
@@ -710,12 +756,12 @@ export default function OrganizationSubscriptions() {
                     Fim do Período Atual
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     id="current_period_end"
                     required
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={formData.current_period_end.split('T')[0]}
-                    onChange={(e) => setFormData({ ...formData, current_period_end: new Date(e.target.value).toISOString() })}
+                    value={formatDateForInput(formData.current_period_end)}
+                    onChange={(e) => handleEndDateChange(e.target.value)}
                   />
                 </div>
 
