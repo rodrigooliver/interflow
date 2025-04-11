@@ -5,9 +5,10 @@ import { Loader2, User, Building, Mail, Lock, Search, ChevronDown } from 'lucide
 import { supabase } from '../../../../lib/supabase';
 import { useReferral } from '../../../../hooks/useReferral';
 import { useTrackingPixel } from '../../../../hooks/useTrackingPixel';
-import { generateSlug } from '../../../../utils/string';
 import { countryCodes } from '../../../../utils/countryCodes';
 import OneSignal from 'react-onesignal';
+import api from '../../../../lib/api';
+import axios from 'axios';
 
 interface SignupFormData {
   fullName: string;
@@ -19,12 +20,12 @@ interface SignupFormData {
 }
 
 export default function SignupForm() {
-  const { t } = useTranslation(['auth', 'common']);
+  const { t, i18n } = useTranslation(['auth', 'common']);
   const { referral } = useReferral();
   const { trackEvent } = useTrackingPixel();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const planId = queryParams.get('planId') || '2dca5696-fab0-4cea-8db6-9d53c22b3c5a';
+  const planId = queryParams.get('planId') || undefined;
   const billingPeriod = queryParams.get('billingPeriod') || 'monthly';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,6 +44,8 @@ export default function SignupForm() {
   const [countrySearch, setCountrySearch] = useState('');
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const dropdownContentRef = useRef<HTMLDivElement>(null);
+
+  const currentLanguage = i18n.language || 'pt';
 
   // Efeito para fechar dropdown quando clicar fora dele
   useEffect(() => {
@@ -113,8 +116,8 @@ export default function SignupForm() {
     setSuccess(false);
 
     // Função para exibir erro e garantir que o usuário o veja
-    const showError = (message: string) => {
-      setError(message);
+    const showError = (errorKey: string, defaultMessage: string) => {
+      setError(t(`auth:signup.errors.${errorKey}`, defaultMessage));
       setLoading(false);
       // Scroll para o topo do formulário para garantir que o erro seja visto
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -125,199 +128,61 @@ export default function SignupForm() {
 
     // Validação de nome completo
     if (formData.fullName.trim().length < 3 || !formData.fullName.includes(' ')) {
-      showError(t('auth:signup.errors.invalidName', 'Por favor, informe seu nome completo.'));
+      showError('invalidName', 'Por favor, informe seu nome completo.');
       return;
     }
 
     // Validação de nome da organização
     if (formData.organizationName.trim().length < 2) {
-      showError(t('auth:signup.errors.invalidOrgName', 'O nome da organização deve ter pelo menos 2 caracteres.'));
+      showError('invalidOrgName', 'O nome da organização deve ter pelo menos 2 caracteres.');
       return;
     }
 
     // Validação de e-mail
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      showError(t('auth:signup.errors.invalidEmail', 'O e-mail informado parece ser inválido. Verifique e tente novamente.'));
+      showError('invalidEmail', 'O e-mail informado parece ser inválido. Verifique e tente novamente.');
       return;
     }
 
     // Validação de senha
     if (formData.password.length < 6) {
-      showError(t('auth:signup.errors.weakPassword', 'A senha deve ter pelo menos 6 caracteres.'));
+      showError('weakPassword', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
     // Validação básica do WhatsApp
     if (formData.whatsapp && formData.whatsapp.length < 8) {
-      showError(t('auth:signup.errors.invalidWhatsapp', 'O número de WhatsApp parece ser inválido. Verifique e tente novamente.'));
+      showError('invalidWhatsapp', 'O número de WhatsApp parece ser inválido. Verifique e tente novamente.');
       return;
     }
 
     try {
-      // 1. Criar usuário no Auth
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      // Enviar dados para o backend que vai fazer todo o processo de cadastro
+      const response = await api.post('/api/user/signup', {
+        fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName
-          }
-        }
+        organizationName: formData.organizationName,
+        whatsapp: formData.whatsapp,
+        countryCode: countryCodes.find(c => c.code === formData.countryCode)?.dial_code || '55',
+        planId,
+        billingPeriod,
+        referral: referral,
+        language: currentLanguage
       });
 
-      if (signUpError) {
-        // Verificar mensagens específicas de erro
-        if (signUpError.message.includes('email') || signUpError.message.includes('already registered')) {
-          throw new Error(t('auth:signup.errors.emailInUse', 'Este e-mail já está em uso. Tente outro ou faça login.'));
-        } else if (signUpError.message.includes('password')) {
-          throw new Error(t('auth:signup.errors.weakPassword', 'A senha não atende aos requisitos mínimos de segurança.'));
-        } else if (signUpError.message.includes('rate limit')) {
-          throw new Error(t('auth:signup.errors.rateLimit', 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'));
-        } else {
-          throw new Error(t('auth:signup.errors.authError', 'Erro na autenticação: ') + signUpError.message);
-        }
+      if (response.data.error) {
+        // Usar o código de erro recebido diretamente do backend, ou fallback para o mapeamento
+        const errorCode = response.data.errorCode || 'generic';
+        showError(errorCode, response.data.error);
+        return;
       }
+
+      // Mostrar mensagem de sucesso
+      setSuccess(true);
       
-      if (!authData.user) throw new Error(t('auth:signup.errors.noUserData', 'Não foi possível criar o usuário. Tente novamente.'));
-
-      // 2. Criar profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: formData.email,
-          full_name: formData.fullName,
-          role: 'admin',
-          whatsapp: formData.whatsapp ? `+${countryCodes.find(c => c.code === formData.countryCode)?.dial_code}${formData.whatsapp.replace(/\D/g, '')}` : null
-        });
-
-      if (profileError) {
-        // Tentar excluir o usuário criado para evitar inconsistências
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id);
-        } catch (e) {
-          console.error('Erro ao limpar usuário após falha:', e);
-        }
-        throw new Error(t('auth:signup.errors.profileCreation', 'Erro ao criar perfil. Tente novamente.'));
-      }
-
-      // 3. Criar organização
-      const organizationSlug = generateSlug(formData.organizationName);
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          name: formData.organizationName,
-          slug: organizationSlug,
-          email: formData.email,
-          whatsapp: formData.whatsapp ? `${countryCodes.find(c => c.code === formData.countryCode)?.dial_code}${formData.whatsapp.replace(/\D/g, '')}` : null,
-          referrer_id: referral?.id || null,
-          indication_id: referral?.user_id || null
-        })
-        .select()
-        .single();
-
-      if (orgError) {
-        // Tentar excluir o usuário criado para evitar inconsistências
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id);
-        } catch (e) {
-          console.error('Erro ao limpar usuário após falha:', e);
-        }
-        throw new Error(t('auth:signup.errors.organizationCreation', 'Erro ao criar organização. Tente novamente.'));
-      }
-
-      // 4. Adicionar usuário como membro da organização
-      const { error: memberError } = await supabase
-        .from('organization_members')
-        .insert({
-          organization_id: orgData.id,
-          user_id: authData.user.id,
-          profile_id: authData.user.id,
-          role: 'owner'
-        });
-
-      if (memberError) {
-        // Tentar excluir a organização e o usuário criados para evitar inconsistências
-        try {
-          await supabase.from('organizations').delete().eq('id', orgData.id);
-          await supabase.auth.admin.deleteUser(authData.user.id);
-        } catch (e) {
-          console.error('Erro ao limpar dados após falha:', e);
-        }
-        throw new Error(t('auth:signup.errors.memberCreation', 'Erro ao adicionar usuário à organização. Tente novamente.'));
-      }
-
-      // 5. Criar subscription trial
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .insert({
-          organization_id: orgData.id,
-          plan_id: planId,
-          status: 'trialing',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias de trial
-          cancel_at_period_end: false,
-          billing_period: billingPeriod
-        });
-
-      if (subscriptionError) {
-        // Tentar limpar dados criados para evitar inconsistências
-        try {
-          await supabase.from('organization_members').delete().eq('organization_id', orgData.id);
-          await supabase.from('organizations').delete().eq('id', orgData.id);
-          await supabase.auth.admin.deleteUser(authData.user.id);
-        } catch (e) {
-          console.error('Erro ao limpar dados após falha:', e);
-        }
-        throw new Error(t('auth:signup.errors.subscriptionCreation', 'Erro ao criar assinatura. Tente novamente.'));
-      }
-
-      // 6. Criar customer para iniciar chat
-      const { data: customerData, error: customerError } = await supabase
-        .from('customers')
-        .insert({
-          name: formData.fullName,
-          email: formData.email,
-          organization_id: referral?.organization_id || 'eec1bc30-559e-43ba-a95a-5520a6b3109f',
-          referrer_id: referral?.id || null,
-          indication_id: referral?.user_id || null,
-          whatsapp: formData.whatsapp ? `${countryCodes.find(c => c.code === formData.countryCode)?.dial_code}${formData.whatsapp.replace(/\D/g, '')}` : null
-        })
-        .select()
-        .single();
-
-      if (customerError) {
-        throw new Error(t('auth:signup.errors.customerCreation', 'Erro ao criar cliente. O cadastro foi realizado, mas algumas funcionalidades podem estar limitadas.'));
-      }
-
-      // Inserir contatos na tabela customer_contacts
-      const { error: contactError } = await supabase
-        .from('customer_contacts')
-        .insert([
-          {
-            customer_id: customerData.id,
-            type: 'email',
-            value: formData.email,
-            label: 'Email Principal',
-            created_at: new Date().toISOString()
-          },
-          {
-            customer_id: customerData.id,
-            type: 'whatsapp',
-            value: formData.whatsapp ? `${countryCodes.find(c => c.code === formData.countryCode)?.dial_code}${formData.whatsapp.replace(/\D/g, '')}` : null,
-            label: 'WhatsApp',
-            created_at: new Date().toISOString()
-          }
-        ]);
-
-      if (contactError) {
-        console.error('Erro ao criar contatos:', contactError);
-        // Não impede o fluxo, apenas loga o erro
-        throw new Error(t('auth:signup.errors.customerCreation', 'Erro ao criar contatos. Tente novamente.'));
-      }
-
-      // 7. Disparar evento de tracking
+      // Registrar evento de tracking
       try {
         await trackEvent('SignUp', {
           method: 'email',
@@ -327,124 +192,62 @@ export default function SignupForm() {
         console.error('Erro ao registrar evento de tracking:', trackError);
         // Não impede o fluxo, apenas loga o erro
       }
-
-      // Mostrar mensagem de sucesso
-      setSuccess(true);
-      setLoading(false);
-
-      // 8. Fazer login explícito para garantir que a sessão seja estabelecida
+      
+      // Fazer login diretamente no Supabase com as credenciais fornecidas
       try {
-        // Aguardar um momento para garantir que todos os dados foram salvos
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Fazer login explícito com as credenciais fornecidas
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password
         });
-        
-        if (signInError) {
-          console.error('Erro ao fazer login após cadastro:', signInError);
-        }
-        
-        // Verificar se a sessão foi estabelecida
-        const { data: sessionData } = await supabase.auth.getSession();
-        
-        if (sessionData.session) {
-          console.log('Sessão estabelecida com sucesso após cadastro');
+
+        if (loginError) {
+          console.error('Erro ao fazer login após cadastro:', loginError);
+          // Mesmo com erro no login, continuamos com sucesso no cadastro
+        } else if (loginData.session) {
+          console.log('Login realizado com sucesso após cadastro');
           
-          // Verificar se o perfil está disponível
-          try {
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', sessionData.session.user.id)
-              .single();
-              
-            if (profileData) {
-              console.log('Perfil carregado com sucesso após cadastro');
-              
-              // Verificar se a organização está disponível
-              try {
-                const { data: orgMemberData, error: orgMemberError } = await supabase
-                  .from('organization_members')
-                  .select(`
-                    organization:organizations (
-                      id,
-                      name,
-                      slug
-                    )
-                  `)
-                  .eq('user_id', sessionData.session.user.id)
-                  .limit(1)
-                  .single();
-                  
-                if (orgMemberData?.organization) {
-                  console.log('Organização carregada com sucesso após cadastro:', orgMemberData.organization);
-                } else {
-                  console.error('Organização não encontrada após cadastro:', orgMemberError);
-                }
-              } catch (orgCheckError) {
-                console.error('Erro ao verificar organização após cadastro:', orgCheckError);
-              }
-            } else {
-              console.error('Perfil não encontrado após cadastro:', profileError);
-            }
-          } catch (profileCheckError) {
-            console.error('Erro ao verificar perfil após cadastro:', profileCheckError);
-          }
-        } else {
-          console.error('Sessão não estabelecida após cadastro e login explícito');
-        }
-        
-        // Forçar recarregamento completo da página para garantir que a sessão seja estabelecida
-        setTimeout(() => {
-          // Obter o ID do projeto Supabase para limpar o token correto
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const projectId = supabaseUrl.match(/(?:\/\/|^)(.*?)\.supabase/)?.[1];
-          
-          if (projectId) {
-            // Limpar qualquer cache de sessão local
-            localStorage.removeItem(`sb-${projectId}-auth-token`);
+          // Salvar o ID da organização no localStorage
+          if (response.data.organization?.id) {
+            localStorage.setItem('selectedOrganizationId', response.data.organization.id);
+            console.log('ID da organização salvo no localStorage:', response.data.organization.id);
           }
           
           // Registrar no OneSignal se estiver em ambiente mobile
-          if (window.isNativeApp && window.nativeApp?.registerForNotifications && sessionData.session?.user?.id) {
-            console.log('Registrando usuário no OneSignal após signup:', sessionData.session.user.id);
-            window.nativeApp.registerForNotifications(sessionData.session.user.id);
+          if (window.isNativeApp && window.nativeApp?.registerForNotifications && loginData.user?.id) {
+            console.log('Registrando usuário no OneSignal após signup:', loginData.user.id);
+            window.nativeApp.registerForNotifications(loginData.user.id);
           }
           
           // Fazer login no OneSignal com o ID do usuário como externalId
-          if (sessionData.session?.user?.id) {
+          if (loginData.user?.id) {
             try {
-              console.log('Registrando externalId no OneSignal após signup:', sessionData.session.user.id);
-              OneSignal.login(sessionData.session.user.id)
+              console.log('Registrando externalId no OneSignal após signup:', loginData.user.id);
+              OneSignal.login(loginData.user.id)
                 .then(() => console.log('OneSignal login bem-sucedido'))
                 .catch(error => console.error('Erro no OneSignal login:', error));
             } catch (oneSignalError) {
               console.error('Erro ao registrar usuário no OneSignal após signup:', oneSignalError);
             }
           }
-          
-          // Armazenar credenciais temporariamente para login automático na página de destino
-          localStorage.setItem('temp_auth_email', formData.email);
-          localStorage.setItem('temp_auth_password', formData.password);
-          localStorage.setItem('temp_auth_redirect', 'true');
-          
-          // Redirecionar para a página inicial do app
-          window.location.href = '/app';
-        }, 2000);
-      } catch (authError) {
-        console.error('Erro ao estabelecer sessão após cadastro:', authError);
-        // Mesmo com erro, tentamos redirecionar
-        setTimeout(() => {
-          window.location.href = '/app';
-        }, 2000);
+        }
+      } catch (loginError) {
+        console.error('Erro ao fazer login após cadastro:', loginError);
+        // Mesmo com erro no login, continuamos com o fluxo de sucesso
       }
+
+
     } catch (err: unknown) {
       console.error('Erro no cadastro:', err);
-      // Exibir mensagem de erro específica ou genérica
-      showError(err instanceof Error ? err.message : t('auth:signup.errors.generic', 'Ocorreu um erro durante o cadastro. Tente novamente.'));
+      
+      // Verificar se é um erro do Axios com resposta do servidor
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        // Usar o código de erro recebido diretamente do backend, ou fallback para 'generic'
+        const errorCode = err.response.data.errorCode || 'generic';
+        showError(errorCode, err.response.data.error);
+      } else {
+        // Exibir mensagem de erro genérica
+        showError('generic', err instanceof Error ? err.message : 'Ocorreu um erro durante o cadastro. Tente novamente.');
+      }
     } finally {
       if (!success) {
         setLoading(false);

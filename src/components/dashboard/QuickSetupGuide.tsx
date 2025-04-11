@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Circle, ArrowRight, Settings, MessageSquare, Zap, GitBranch, Key } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
 import { IntegrationFormOpenAI } from '../settings/IntegrationFormOpenAI';
 import FlowCreateModal from '../flow/FlowCreateModal';
 import { useClosureTypes, usePrompts, useFlows, useOpenAIIntegrations, useChannels } from '../../hooks/useQueryes';
@@ -29,30 +28,29 @@ const QuickSetupGuide: React.FC = () => {
   const [showOpenAIModal, setShowOpenAIModal] = useState(false);
   const [showFlowCreateModal, setShowFlowCreateModal] = useState(false);
   const [setupChecked, setSetupChecked] = useState(false);
-  const [isCreatingFunnel, setIsCreatingFunnel] = useState(false);
   
   // Usar o hook useClosureTypes para buscar os tipos de encerramento
-  const { data: closureTypesData, isLoading: isLoadingClosureTypes } = useClosureTypes(currentOrganizationMember?.organization.id);
+  const { isLoading: isLoadingClosureTypes } = useClosureTypes(currentOrganizationMember?.organization.id);
   
   // Usar o hook usePrompts para buscar os prompts
-  const { data: promptsData, isLoading: isLoadingPrompts } = usePrompts(currentOrganizationMember?.organization.id);
+  const { data: promptsData, isLoading: promptsLoading } = usePrompts();
   
   // Usar o hook useFlows para buscar os fluxos
-  const { data: flowsData, isLoading: isLoadingFlows } = useFlows(currentOrganizationMember?.organization.id);
+  const { data: flowsData, isLoading: flowsLoading } = useFlows();
   
   // Usar o hook useOpenAIIntegrations para buscar as integrações OpenAI
-  const { data: openAIIntegrationsData, isLoading: isLoadingOpenAIIntegrations } = useOpenAIIntegrations(currentOrganizationMember?.organization.id);
+  const { data: openAIIntegrationsData, isLoading: openAIIntegrationsLoading } = useOpenAIIntegrations();
   
   // Usar o hook useChannels para buscar os canais de chat
-  const { data: channelsData, isLoading: isLoadingChannels } = useChannels(currentOrganizationMember?.organization.id);
+  const { data: channelsData, isLoading: channelsLoading } = useChannels();
   
   // Obter o queryClient para invalidar consultas
   const queryClient = useQueryClient();
 
   // Verificar se todos os hooks terminaram de carregar
-  const allHooksLoaded = !isLoadingClosureTypes && !isLoadingPrompts && 
-                          !isLoadingFlows && !isLoadingOpenAIIntegrations && 
-                          !isLoadingChannels;
+  const allHooksLoaded = !isLoadingClosureTypes && !promptsLoading && 
+                          !flowsLoading && !openAIIntegrationsLoading && 
+                          !channelsLoading;
 
   useEffect(() => {
     // Resetar o setupChecked quando currentOrganizationMember mudar
@@ -63,45 +61,11 @@ const QuickSetupGuide: React.FC = () => {
       setShowGuide(true);
       setSteps([]);
       setSetupProgress(0);
-      setIsCreatingFunnel(false);
     }
-    
-    // Limpar bloqueios quando o componente for desmontado ou quando currentOrganizationMember mudar
-    return () => {
-      if (currentOrganizationMember) {
-        const lockKey = `funnel_creation_lock_${currentOrganizationMember.organization.id}`;
-        localStorage.removeItem(lockKey);
-      }
-    };
   }, [currentOrganizationMember]);
 
   useEffect(() => {
     if (currentOrganizationMember && !setupChecked && allHooksLoaded) {
-      // Verificar se já existe um bloqueio global
-      const lockKey = `funnel_creation_lock_${currentOrganizationMember?.organization.id}`;
-      const existingLock = localStorage.getItem(lockKey);
-      
-      if (existingLock) {
-        const lockData = JSON.parse(existingLock);
-        const lockTime = new Date(lockData.timestamp);
-        const now = new Date();
-        
-        // Se o bloqueio tiver menos de 30 segundos, aguardar e verificar novamente
-        if ((now.getTime() - lockTime.getTime()) < 30000) {
-          console.log('Outra instância está criando um funil, aguardando...');
-          
-          // Aguardar 5 segundos e verificar novamente
-          const timeoutId = setTimeout(() => {
-            setSetupChecked(false); // Forçar nova verificação
-          }, 5000);
-          
-          return () => clearTimeout(timeoutId);
-        } else {
-          // Se o bloqueio for antigo, removê-lo
-          localStorage.removeItem(lockKey);
-        }
-      }
-      
       setSetupChecked(true);
       checkSetupStatus();
     }
@@ -122,43 +86,9 @@ const QuickSetupGuide: React.FC = () => {
     
     setLoading(true);
     try {
-      // Limpar funis incompletos que possam ter sido criados em tentativas anteriores
-      await cleanupIncompleteFunnels();
-      
-      // Verificar se já tem funil CRM
-      const { data: funnels, error: funnelsError } = await supabase
-        .from('crm_funnels')
-        .select('id, is_active')
-        .eq('organization_id', currentOrganizationMember?.organization.id);
-
-      if (funnelsError) throw funnelsError;
-      
-      // Verificar se existe algum funil ativo
-      const activeFunnels = funnels?.filter(f => f.is_active === true) || [];
-      const hasFunnel = activeFunnels.length > 0;
-      
-      // Verificar se existe algum funil em processo de criação
-      const inProgressFunnels = funnels?.filter(f => f.is_active === false) || [];
-      const hasInProgressFunnel = inProgressFunnels.length > 0;
-
-      // Se não tiver funil e não estiver criando um, criar automaticamente
-      if (!hasFunnel && !hasInProgressFunnel && !isCreatingFunnel) {
-        setIsCreatingFunnel(true);
-        await createDefaultFunnel();
-        setIsCreatingFunnel(false);
-      }
-
-      // Verificar se já tem tipos de encerramento usando os dados do hook
-      const hasClosureTypes = closureTypesData && closureTypesData.length > 0;
-
-      // Se não tiver tipos de encerramento, criar automaticamente
-      if (!hasClosureTypes && !isLoadingClosureTypes) {
-        await createDefaultClosureTypes();
-      }
-
       // Verificar se já tem canais usando o hook
       const hasChannels = Boolean(channelsData && channelsData.length > 0);
-
+      
       // Verificar se já tem integração com OpenAI usando o hook
       const hasOpenAI = Boolean(openAIIntegrationsData && openAIIntegrationsData.length > 0);
 
@@ -221,189 +151,6 @@ const QuickSetupGuide: React.FC = () => {
       console.error('Erro ao verificar status de configuração:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const createDefaultFunnel = async () => {
-    if (!currentOrganizationMember) {
-      return;
-    }
-    
-    try {
-      // Verificar se já existe um bloqueio global
-      const lockKey = `funnel_creation_lock_${currentOrganizationMember?.organization.id}`;
-      const existingLock = localStorage.getItem(lockKey);
-      
-      if (existingLock) {
-        const lockData = JSON.parse(existingLock);
-        const lockTime = new Date(lockData.timestamp);
-        const now = new Date();
-        
-        // Se o bloqueio tiver menos de 30 segundos, não prosseguir
-        if ((now.getTime() - lockTime.getTime()) < 30000) {
-          console.log('Outra instância está criando um funil, aguardando...');
-          return;
-        } else {
-          // Se o bloqueio for antigo, removê-lo
-          localStorage.removeItem(lockKey);
-        }
-      }
-      
-      // Criar um bloqueio global
-      localStorage.setItem(lockKey, JSON.stringify({
-        timestamp: new Date().toISOString(),
-        instanceId: Math.random().toString(36).substring(2, 9)
-      }));
-      
-      // Usar uma abordagem com transação para evitar duplicação
-      // Primeiro, verificamos se já existe um funil
-      const { data: existingFunnels, error: checkError } = await supabase
-        .from('crm_funnels')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .limit(1);
-      
-      if (checkError) throw checkError;
-      
-      // Se já existir um funil, não criar novamente
-      if (existingFunnels && existingFunnels.length > 0) {
-        console.log('Funil já existe, não criando novamente:', existingFunnels[0].id);
-        localStorage.removeItem(lockKey);
-        return;
-      }
-      
-      // Adicionar um identificador único para esta operação
-      const operationId = `create_funnel_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      
-      // Criar um registro temporário para "bloquear" a criação
-      const { data: lockRecord, error: lockError } = await supabase
-        .from('crm_funnels')
-        .insert({
-          organization_id: currentOrganizationMember?.organization.id,
-          name: `${t('quickSetup.defaultFunnelName')} (criando...)`,
-          description: `Operação: ${operationId}`,
-          is_active: false
-        })
-        .select('id')
-        .single();
-      
-      if (lockError) {
-        console.error('Erro ao criar registro de bloqueio:', lockError);
-        localStorage.removeItem(lockKey);
-        return;
-      }
-      
-      // Agora atualizamos o registro com os dados corretos
-      const { data: funnel, error: updateError } = await supabase
-        .from('crm_funnels')
-        .update({
-          name: t('quickSetup.defaultFunnelName'),
-          description: t('quickSetup.defaultFunnelDesc'),
-          is_active: true
-        })
-        .eq('id', lockRecord.id)
-        .select('id')
-        .single();
-      
-      if (updateError) throw updateError;
-      
-      if (funnel) {
-        console.log('Funil criado com sucesso:', funnel.id);
-        
-        // Criar estágios padrão
-        const stages = [
-          {
-            funnel_id: funnel.id,
-            name: t('quickSetup.leadStage'),
-            description: t('quickSetup.leadStageDesc'),
-            color: '#3B82F6',
-            position: 1
-          },
-          {
-            funnel_id: funnel.id,
-            name: t('quickSetup.contactStage'),
-            description: t('quickSetup.contactStageDesc'),
-            color: '#8B5CF6',
-            position: 2
-          },
-          {
-            funnel_id: funnel.id,
-            name: t('quickSetup.proposalStage'),
-            description: t('quickSetup.proposalStageDesc'),
-            color: '#EC4899',
-            position: 3
-          },
-          {
-            funnel_id: funnel.id,
-            name: t('quickSetup.negotiationStage'),
-            description: t('quickSetup.negotiationStageDesc'),
-            color: '#F59E0B',
-            position: 4
-          },
-          {
-            funnel_id: funnel.id,
-            name: t('quickSetup.closedWonStage'),
-            description: t('quickSetup.closedWonStageDesc'),
-            color: '#10B981',
-            position: 5
-          },
-          {
-            funnel_id: funnel.id,
-            name: t('quickSetup.closedLostStage'),
-            description: t('quickSetup.closedLostStageDesc'),
-            color: '#EF4444',
-            position: 6
-          }
-        ];
-
-        const { error: stagesError } = await supabase
-          .from('crm_stages')
-          .insert(stages);
-
-        if (stagesError) throw stagesError;
-      }
-      
-      // Remover o bloqueio global
-      localStorage.removeItem(lockKey);
-    } catch (error) {
-      console.error('Erro ao criar funil padrão:', error);
-      
-      // Remover o bloqueio global em caso de erro
-      const lockKey = `funnel_creation_lock_${currentOrganizationMember?.organization.id}`;
-      localStorage.removeItem(lockKey);
-    }
-  };
-
-  const createDefaultClosureTypes = async () => {
-    if (!currentOrganizationMember) {
-      return;
-    }
-    
-    try {
-      // Definir os tipos de encerramento padrão
-      const closureTypes = [
-        {
-          organization_id: currentOrganizationMember?.organization.id,
-          title: t('quickSetup.resolvedClosureType'),
-          color: '#10B981'
-        },
-        {
-          organization_id: currentOrganizationMember?.organization.id,
-          title: t('quickSetup.unresolvedClosureType'),
-          color: '#EF4444'
-        }
-      ];
-
-      const { error } = await supabase
-        .from('closure_types')
-        .insert(closureTypes);
-
-      if (error) throw error;
-      
-      // Invalidar a consulta de tipos de encerramento para forçar uma nova busca
-      queryClient.invalidateQueries({ queryKey: ['closure_types', currentOrganizationMember.organization.id] });
-    } catch (error) {
-      console.error('Erro ao criar tipos de encerramento padrão:', error);
     }
   };
 
@@ -498,67 +245,8 @@ const QuickSetupGuide: React.FC = () => {
     }
   };
 
-  // Função para limpar funis incompletos
-  const cleanupIncompleteFunnels = async () => {
-    if (!currentOrganizationMember) {
-      return;
-    }
-    
-    try {
-      // Buscar funis inativos ou com descrição contendo "Operação:"
-      const { data: incompleteFunnels, error } = await supabase
-        .from('crm_funnels')
-        .select('id')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .eq('is_active', false);
-      
-      if (error) {
-        console.error('Erro ao buscar funis incompletos:', error);
-        return;
-      }
-      
-      // Se encontrar funis incompletos, excluí-los
-      if (incompleteFunnels && incompleteFunnels.length > 0) {
-        console.log('Removendo funis incompletos:', incompleteFunnels.map(f => f.id));
-        
-        // Primeiro excluir os estágios associados
-        for (const funnel of incompleteFunnels) {
-          await supabase
-            .from('crm_stages')
-            .delete()
-            .eq('funnel_id', funnel.id);
-        }
-        
-        // Depois excluir os funis
-        await supabase
-          .from('crm_funnels')
-          .delete()
-          .in('id', incompleteFunnels.map(f => f.id));
-      }
-    } catch (error) {
-      console.error('Erro ao limpar funis incompletos:', error);
-    }
-  };
-
   if (loading) {
     return null;
-    // return (
-    //   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8 animate-pulse">
-    //     <div className="h-7 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3 sm:w-1/3 mb-3 sm:mb-4"></div>
-    //     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full sm:w-2/3 mb-5 sm:mb-6"></div>
-    //     <div className="space-y-3 sm:space-y-4">
-    //       {[1, 2, 3, 4].map((i) => (
-    //         <div key={i} className="flex items-start">
-    //           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-200 dark:bg-gray-700 mr-3 sm:mr-4"></div>
-    //           <div className="flex-1">
-    //             <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-    //             <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-    //           </div>
-    //         </div>
-    //       ))}
-    //     </div>
-    //   </div>
-    // );
   }
 
   if (!showGuide) {
