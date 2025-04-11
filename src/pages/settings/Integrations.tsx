@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { Integration } from '../../types/database';
 import { IntegrationFormOpenAI } from '../../components/settings/IntegrationFormOpenAI';
 import { IntegrationFormS3 } from '../../components/settings/IntegrationFormS3';
+import { useQueryClient } from '@tanstack/react-query';
 
   
 interface IntegrationConfig {
@@ -37,6 +38,7 @@ const integrationConfigs: IntegrationConfig[] = [
 export default function IntegrationsPage() {
   const { t } = useTranslation(['settings', 'common']);
   const { currentOrganizationMember } = useAuthContext();
+  const queryClient = useQueryClient();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddOpenAIModal, setShowAddOpenAIModal] = useState(false);
@@ -97,6 +99,10 @@ export default function IntegrationsPage() {
         .eq('id', integration.id);
 
       if (error) throw error;
+
+      await queryClient.invalidateQueries({
+        queryKey: ['openai-integrations', currentOrganizationMember?.organization.id]
+      });
 
       await loadIntegrations();
       setShowDeleteModal(false);
