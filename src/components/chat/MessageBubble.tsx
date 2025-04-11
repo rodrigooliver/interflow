@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,6 @@ import {
   DialogDescription
 } from "../../components/ui/Dialog";
 import { Button } from "../../components/ui/Button";
-
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
   canReplyToMessages: boolean;
@@ -313,6 +312,8 @@ export function MessageBubble({
       case 'user_transferred':
       case 'user_transferred_himself':
         return <UserCog className="w-4 h-4" />;
+      case 'team_transferred':
+        return <Users className="w-4 h-4" />;
       case 'user_join':
         return <UserPlus className="w-4 h-4" />;
       case 'user_closed':
@@ -337,6 +338,8 @@ export function MessageBubble({
         return t('systemMessages.userTransfer', { name: agentName });
       case 'user_transferred_himself':
         return t('systemMessages.userTransferredHimself', { name: agentName });
+      case 'team_transferred':
+        return t('systemMessages.teamTransferred', { name: content });
       case 'user_join':
         return t('systemMessages.userJoin', { name: agentName });
       case 'user_closed':

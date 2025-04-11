@@ -225,7 +225,8 @@
     "userClosed": "Chat cerrado por {{name}}",
     "userJoin": "{{name}} se unió como colaborador",
     "userLeftAttendance": "{{name}} salió de la atención",
-    "userTransferredHimself": "{{name}} transfirió el chat a sí mismo"
+    "userTransferredHimself": "{{name}} transfirió el chat a sí mismo",
+    "teamTransferred": "Chat transferido a la equidad {{name}}"
   },
   "noChatsFound": "No se encontraron chats",
   "resolution": {
@@ -361,6 +362,21 @@
     "transferButton": "Transferir",
     "noTeams": "No hay equipos disponibles",
     "success": "Chat transferido con éxito a otro equipo",
-    "selectTeamError": "Por favor, seleccione un equipo"
+    "selectTeamError": "Por favor, seleccione un equipo",
+    "chatTitle": "Título del Chat",
+    "generating": "Generando...",
+    "generateNew": "Generar Nuevo",
+    "generatingTitle": "Generando título...",
+    "titlePlaceholder": "Ingrese o genere un título para el chat"
+  },
+  "leaveAttendance": {
+    "title": "Salir de la Atención",
+    "description": "Seleccione el equipo para transferir el chat:",
+    "selectTeam": "Seleccione un equipo",
+    "selectAgent": "Seleccione un agente (opcional)",
+    "pendingOption": "Dejar pendiente esperando atención",
+    "assignmentInfo": "El chat será transferido directamente a este agente",
+    "keepInTeam": "Mantener en equipo",
+    "transferToTeam": "Transferir a equipo"
   }
 }

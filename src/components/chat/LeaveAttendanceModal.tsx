@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, RefreshCw } from 'lucide-react';
 import { useTeams } from '../../hooks/useQueryes';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useAuthContext } from '../../contexts/AuthContext';
+import api from '../../lib/api';
 
 interface LeaveAttendanceModalProps {
   isOpen: boolean;
@@ -27,6 +28,9 @@ export function LeaveAttendanceModal({
   const [selectedTeamId, setSelectedTeamId] = useState(currentTeamId || '');
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [isLeaving, setIsLeaving] = useState(false);
+  const [title, setTitle] = useState('');
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const hasGeneratedTitleRef = useRef(false);
   const { currentOrganizationMember } = useAuthContext();
   
   const { data: teams, isLoading: isLoadingTeams } = useTeams(organizationId);
@@ -35,6 +39,9 @@ export function LeaveAttendanceModal({
   useEffect(() => {
     if (isOpen) {
       setSelectedAgentId('');
+      if (!hasGeneratedTitleRef.current) {
+        generateTitle();
+      }
     }
   }, [isOpen]);
 
@@ -44,53 +51,78 @@ export function LeaveAttendanceModal({
     setSelectedAgentId(''); // Resetar o agente selecionado quando a equipe mudar
   }, [currentTeamId]);
 
+  const generateTitle = async (force = false) => {
+    if (!currentOrganizationMember) return;
+    
+    if (!force && hasGeneratedTitleRef.current) return;
+    
+    setIsGeneratingTitle(true);
+    hasGeneratedTitleRef.current = true;
+    
+    try {
+      const response = await api.post(
+        `/api/${currentOrganizationMember.organization.id}/chat/${chatId}/generate-summary`
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || t('common:error'));
+      }
+
+      setTitle(response.data.data.summary);
+    } catch (error: unknown) {
+      console.error('Erro ao gerar título:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'object' && error !== null && 'response' in error
+          ? (error.response as { data?: { error?: string } })?.data?.error || t('common:error')
+          : t('common:error');
+      toast.error(errorMessage);
+      hasGeneratedTitleRef.current = false;
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
   const handleLeave = async () => {
     if (!chatId || !selectedTeamId) return;
     
     setIsLeaving(true);
     
     try {
-      // Atualizar o chat para a nova equipe
-      const { error: chatError } = await supabase
-        .from('chats')
-        .update({
-          team_id: selectedTeamId,
-          assigned_to: selectedAgentId || null,
-          status: selectedAgentId ? 'in_progress' : 'pending',
-          arrival_time: selectedAgentId ? new Date().toISOString() : null
-        })
-        .eq('id', chatId);
-        
-      if (chatError) throw chatError;
+      // Se apenas a equipe está sendo alterada e é diferente da atual
+      if (selectedTeamId !== currentTeamId && !selectedAgentId) {
+        const response = await api.post(`/api/${organizationId}/chat/${chatId}/transfer-to-team`, {
+          oldTeamId: currentTeamId,
+          newTeamId: selectedTeamId,
+          title: title.trim()
+        });
 
-      // Se um agente foi selecionado, criar mensagem de transferência
-      if (selectedAgentId) {
-        const { error: messageError } = await supabase
-          .from('messages')
-          .insert({
-            chat_id: chatId,
-            type: 'user_transferred',
-            sender_type: 'system',
-            sender_agent_id: selectedAgentId,
-            organization_id: organizationId,
-            created_at: new Date().toISOString()
-          });
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Erro ao transferir chat');
+        }
+      } else if (selectedTeamId === currentTeamId && !selectedAgentId) {
+        //Apenas saindo do atendimento
+        const response = await api.post(`/api/${organizationId}/chat/${chatId}/leave-attendance`, {
+          title: title.trim()
+        });
 
-        if (messageError) throw messageError;
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Erro ao sair do atendimento');
+        }
+      } else if (selectedAgentId) {
+        //Transferir para pessoas específicas
+        const response = await api.post(`/api/${organizationId}/chat/${chatId}/transfer-to-agent`, {
+          oldTeamId: currentTeamId,
+          newTeamId: selectedTeamId,
+          title: title.trim(),
+          agentId: selectedAgentId
+        });
+
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Erro ao transferir para pessoas específicas');
+        }
       } else {
-        // Se apenas a equipe foi selecionada, criar mensagem de saída
-        const { error: messageError } = await supabase
-          .from('messages')
-          .insert({
-            chat_id: chatId,
-            type: 'user_left',
-            sender_type: 'system',
-            sender_agent_id: currentOrganizationMember?.profile_id,
-            organization_id: organizationId,
-            created_at: new Date().toISOString()
-          });
-
-        if (messageError) throw messageError;
+        throw new Error('Erro ao sair do atendimento');
       }
       
       toast.success(t('chats:collaborator.leaveAttendanceSuccess'));
@@ -127,9 +159,47 @@ export function LeaveAttendanceModal({
         <div className="p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('chats:leaveAttendance.selectTeam', 'Selecione uma equipe')}
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('chats:teamTransfer.chatTitle')}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => generateTitle(true)}
+                  disabled={isGeneratingTitle}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 disabled:opacity-50"
+                >
+                  {isGeneratingTitle ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {t('chats:teamTransfer.generating')}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      {t('chats:teamTransfer.generateNew')}
+                    </>
+                  )}
+                </button>
+              </div>
+              <textarea
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full p-2 border rounded-md 
+                  bg-white dark:bg-gray-700 
+                  border-gray-300 dark:border-gray-600
+                  text-gray-900 dark:text-gray-100
+                  placeholder-gray-400 dark:placeholder-gray-500
+                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 
+                  focus:border-transparent
+                  transition-colors"
+                rows={3}
+                placeholder={isGeneratingTitle ? t('chats:teamTransfer.generatingTitle') : t('chats:teamTransfer.titlePlaceholder')}
+                disabled={isGeneratingTitle}
+              />
+            </div>
+
+            <div>
               <select
                 value={selectedTeamId}
                 onChange={(e) => {
@@ -142,7 +212,10 @@ export function LeaveAttendanceModal({
                 <option value="">{t('chats:leaveAttendance.selectTeam', 'Selecione uma equipe')}</option>
                 {teams?.map((team) => (
                   <option key={team.id} value={team.id}>
-                    {team.name}
+                    {team.id === currentTeamId 
+                      ? `${t('chats:leaveAttendance.keepInTeam', 'Manter na equipe')} ${team.name}`
+                      : `${t('chats:leaveAttendance.transferToTeam', 'Transferir para equipe')} ${team.name}`
+                    }
                   </option>
                 ))}
               </select>

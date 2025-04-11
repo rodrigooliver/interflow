@@ -225,7 +225,8 @@
     "userClosed": "Chat closed by {{name}}",
     "userJoin": "{{name}} joined as collaborator",
     "userLeftAttendance": "{{name}} left the attendance",
-    "userTransferredHimself": "{{name}} transferred the chat to themselves"
+    "userTransferredHimself": "{{name}} transferred the chat to themselves",
+    "teamTransferred": "Chat transferred to team {{name}}"
   },
   "noChatsFound": "No chats found",
   "resolution": {
@@ -361,6 +362,21 @@
     "transferButton": "Transfer",
     "noTeams": "No teams available",
     "success": "Chat successfully transferred to another team",
-    "selectTeamError": "Please select a team"
+    "selectTeamError": "Please select a team",
+    "chatTitle": "Chat Title",
+    "generating": "Generating...",
+    "generateNew": "Generate New",
+    "generatingTitle": "Generating title...",
+    "titlePlaceholder": "Enter or generate a title for the chat"
+  },
+  "leaveAttendance": {
+    "title": "Leave Attendance",
+    "description": "Select the team to transfer the chat to:",
+    "selectTeam": "Select a team",
+    "selectAgent": "Select an agent (optional)",
+    "pendingOption": "Leave pending awaiting attendance",
+    "assignmentInfo": "The chat will be transferred directly to this agent",
+    "keepInTeam": "Keep in team",
+    "transferToTeam": "Transfer to team"
   }
 }

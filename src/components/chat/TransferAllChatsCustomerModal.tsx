@@ -6,13 +6,13 @@ import { Customer, Chat } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 
-interface TransferChatModalProps {
+interface TransferAllChatsCustomerModalProps {
   chat: Chat;
   onClose: () => void;
   onTransfer: (newCustomerId: string) => void;
 }
 
-export function TransferChatModal({ chat, onClose, onTransfer }: TransferChatModalProps) {
+export function TransferAllChatsCustomerModal({ chat, onClose, onTransfer }: TransferAllChatsCustomerModalProps) {
   const { t } = useTranslation(['chats', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,7 +75,7 @@ export function TransferChatModal({ chat, onClose, onTransfer }: TransferChatMod
     setError('');
 
     try {
-      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/chat/transfer`, {
+      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/chat/transfer-all-chats-customer`, {
         oldCustomerId: chat.customer_id,
         newCustomerId: selectedCustomer.id
       });

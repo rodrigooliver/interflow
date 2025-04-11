@@ -10,7 +10,7 @@ import { Chat } from '../../types/database';
 import { Customer } from '../../types/database';
 import { getChannelIcon } from '../../utils/channel';
 import { ChatMessages } from '../../components/chat/ChatMessages';
-import { TransferChatModal } from '../../components/chat/TransferChatModal';
+import { TransferAllChatsCustomerModal } from '../../components/chat/TransferAllChatsCustomerModal';
 import { toast } from 'react-hot-toast';
 
 const locales = {
@@ -407,7 +407,7 @@ export default function CustomerChats() {
 
       {/* Modal de transferência */}
       {showTransferModal && selectedChat && (
-        <TransferChatModal
+        <TransferAllChatsCustomerModal
           chat={selectedChat}
           onClose={() => {
             setShowTransferModal(false);

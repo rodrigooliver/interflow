@@ -65,6 +65,7 @@ alter table public.chats
 
 
   -- Adiciona novos valores ao enum existente
+ALTER TYPE message_type ADD VALUE 'location';
 ALTER TYPE message_type ADD VALUE 'user_entered';
 ALTER TYPE message_type ADD VALUE 'user_left';
 ALTER TYPE message_type ADD VALUE 'user_transferred';
@@ -73,6 +74,8 @@ ALTER TYPE message_type ADD VALUE 'user_closed';
 ALTER TYPE message_type ADD VALUE 'user_start';
 ALTER TYPE message_type ADD VALUE 'user_join';
 ALTER TYPE message_type ADD VALUE 'template';
+ALTER TYPE message_type ADD VALUE 'team_transferred';
+ALTER TYPE message_type ADD VALUE 'instructions_model';
 
 -- Atualiza o comentário da coluna type
 COMMENT ON COLUMN messages.type IS 'Tipo da mensagem (text, image, video, audio, document, sticker, email, user_entered, user_left, user_transferred, user_closed, user_start)'; 
