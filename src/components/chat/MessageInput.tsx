@@ -60,6 +60,29 @@ interface ShortcutSuggestion {
   }[];
 }
 
+// Função para detectar o sistema operacional
+const getOS = () => {
+  const userAgent = window.navigator.userAgent;
+  const platform = window.navigator.platform;
+  const macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'];
+  const windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'];
+  const iosPlatforms = ['iPhone', 'iPad', 'iPod'];
+
+  if (macosPlatforms.indexOf(platform) !== -1) {
+    return 'MacOS';
+  } else if (windowsPlatforms.indexOf(platform) !== -1) {
+    return 'Windows';
+  } else if (/Android/.test(userAgent)) {
+    return 'Android';
+  } else if (/Linux/.test(platform)) {
+    return 'Linux';
+  } else if (iosPlatforms.indexOf(platform) !== -1) {
+    return 'iOS';
+  }
+
+  return 'Unknown';
+};
+
 export function MessageInput({ 
   chatId, 
   organizationId,
@@ -121,6 +144,8 @@ export function MessageInput({
   const [playbackTime, setPlaybackTime] = useState(0);
   const playbackIntervalRef = useRef<NodeJS.Timeout>();
   const [recordingStartDelay, setRecordingStartDelay] = useState(true);
+  const [showShortcutHints, setShowShortcutHints] = useState(false);
+  const isMac = getOS() === 'MacOS';
   
   // Usar o hook de status de conexão
   const { isOnline } = useOnlineStatus();
@@ -131,6 +156,8 @@ export function MessageInput({
     attachments: File[];
     tempId?: string;
   }[]>([]);
+  
+  const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   
   // Função para detectar se o dispositivo é móvel
   // Usada para alterar o comportamento da tecla Enter (quebra de linha em vez de enviar)
@@ -179,7 +206,6 @@ export function MessageInput({
       /* Garantir altura consistente para o input */
       .input-container {
         min-height: 48px;
-        max-height: 48px;
         display: flex;
         align-items: center;
       }
@@ -187,7 +213,6 @@ export function MessageInput({
       /* Ajustar altura do input de gravação */
       .recording-container {
         min-height: 48px;
-        max-height: 48px;
         display: flex;
         align-items: center;
       }
@@ -1148,6 +1173,7 @@ export function MessageInput({
     // Pequeno atraso para garantir que o teclado tenha tempo de sumir antes de abrir o modal
     setTimeout(() => {
       setShowAIModal(true);
+      setShowShortcutHints(false); // Fechar instruções de atalho
       
       // Não restauramos o foco imediatamente para manter o teclado escondido
       // O foco será restaurado quando o modal for fechado, se necessário
@@ -1157,6 +1183,7 @@ export function MessageInput({
   // Handler para o fechamento do modal de IA
   const handleAIModalClose = () => {
     setShowAIModal(false);
+    setShowShortcutHints(false); // Fechar instruções de atalho
     
     // Em dispositivos desktop, restaurar o foco no textarea
     if (!isMobileDevice()) {
@@ -1310,6 +1337,155 @@ export function MessageInput({
     e.preventDefault();
     setShowAttachmentMenu(!showAttachmentMenu);
     setShowEmojiPicker(false);
+  };
+
+  // Adicionar handler para atalhos de teclado
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const isMac = getOS() === 'MacOS';
+    const isCtrlPressed = isMac ? e.metaKey : e.ctrlKey;
+    
+    if (isCtrlPressed) {
+      setShowShortcutHints(true);
+      
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault();
+          applyFormatting('bold');
+          break;
+        case 'i':
+          e.preventDefault();
+          applyFormatting('italic');
+          break;
+        case 'j':
+          e.preventDefault();
+          handleAIClick(e as unknown as React.MouseEvent);
+          break;
+        case 'e':
+          e.preventDefault();
+          toggleEmojiPicker();
+          break;
+      }
+    }
+
+    // Fechar modais com ESC
+    if (e.key === 'Escape') {
+      if (showAIModal) {
+        e.preventDefault();
+        setShowAIModal(false);
+        // Focar no textarea após fechar o modal
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+          }
+        }, 0);
+      }
+      if (showEmojiPicker) {
+        e.preventDefault();
+        setShowEmojiPicker(false);
+        // Focar no textarea após fechar o seletor de emojis
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+          }
+        }, 0);
+      }
+    }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    const isMac = getOS() === 'MacOS';
+    const isCtrlPressed = isMac ? e.metaKey : e.ctrlKey;
+    
+    if (!isCtrlPressed) {
+      setShowShortcutHints(false);
+    }
+  };
+
+  // Adicionar efeito para escutar eventos de teclado no documento
+  useEffect(() => {
+    const handleDocumentKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showAIModal) {
+          e.preventDefault();
+          setShowAIModal(false);
+          // Focar no textarea após fechar o modal
+          setTimeout(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+            }
+          }, 0);
+        }
+        if (showEmojiPicker) {
+          e.preventDefault();
+          setShowEmojiPicker(false);
+          // Focar no textarea após fechar o seletor de emojis
+          setTimeout(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+            }
+          }, 0);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleDocumentKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleDocumentKeyDown);
+    };
+  }, [showAIModal, showEmojiPicker]);
+
+  // Handler para quando o emoji picker for montado
+  const handleEmojiPickerMount = () => {
+    // Usar setTimeout para garantir que o componente esteja completamente montado
+    setTimeout(() => {
+      // Tentar encontrar o input de pesquisa de diferentes maneiras
+      const searchInput = document.querySelector('.emoji-mart-search input') as HTMLInputElement;
+      if (searchInput) {
+        searchInput.focus();
+      } else {
+        // Tentar alternativa se o seletor padrão não funcionar
+        const emojiSearch = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+        if (emojiSearch) {
+          emojiSearch.focus();
+        }
+      }
+    }, 100);
+  };
+
+  // Handler para abrir/fechar emoji picker
+  const toggleEmojiPicker = () => {
+    if (!showEmojiPicker) {
+      // Salvar posição do cursor antes de abrir
+      if (textareaRef.current) {
+        setCursorPosition(textareaRef.current.selectionStart);
+      }
+      setShowEmojiPicker(true);
+      
+      // Focar no input de pesquisa após um pequeno delay
+      setTimeout(() => {
+        const searchInput = document.querySelector('.emoji-mart-search input') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+        } else {
+          const emojiSearch = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+          if (emojiSearch) {
+            emojiSearch.focus();
+          }
+        }
+      }, 100);
+    } else {
+      setShowEmojiPicker(false);
+    }
+  };
+
+  // Handler para quando o emoji picker for desmontado
+  const handleEmojiPickerUnmount = () => {
+    // Restaurar posição do cursor
+    if (textareaRef.current && cursorPosition !== null) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      setCursorPosition(null);
+    }
   };
 
   // Renderizar o botão de enviar ou gravar áudio
@@ -1494,10 +1670,7 @@ export function MessageInput({
             {/* Botão de emoji - visível apenas em desktop */}
             <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
               <button
-                onClick={() => {
-                  setShowEmojiPicker(!showEmojiPicker);
-                  setShowAttachmentMenu(false);
-                }}
+                onClick={toggleEmojiPicker}
                 className={`p-1 rounded-lg transition-colors ${
                   showEmojiPicker
                     ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
@@ -1517,6 +1690,10 @@ export function MessageInput({
                     previewPosition="none"
                     skinTonePosition="none"
                     perLine={9}
+                    onMount={handleEmojiPickerMount}
+                    onUnmount={handleEmojiPickerUnmount}
+                    searchPosition="top"
+                    autoFocus={true}
                   />
                 </div>
               )}
@@ -1676,12 +1853,16 @@ export function MessageInput({
               ref={textareaRef}
               value={message}
               onChange={handleMessageChange}
-              onKeyDown={handleKeyPress}
+              onKeyDown={(e) => {
+                handleKeyPress(e);
+                handleKeyDown(e);
+              }}
+              onKeyUp={handleKeyUp}
               onFocus={handleTextareaFocus}
               onBlur={handleTextareaBlur}
               placeholder={t('input.placeholder')}
-              className="flex-1 max-h-[40px] px-4 py-2 bg-transparent border-0 rounded-lg focus:ring-0 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
-              style={{ height: '40px', overflowY: 'auto' }}
+              className="flex-1 px-4 py-2 bg-transparent border-0 rounded-lg focus:ring-0 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+              style={{ height: '40px', maxHeight: '120px', overflowY: 'auto' }}
             />
             
             {renderSendButton()}
@@ -1748,6 +1929,18 @@ export function MessageInput({
                 {t('shortcuts.empty', 'Nenhum atalho encontrado')}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Dicas de atalhos */}
+      {showShortcutHints && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
+          <div className="flex justify-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+            <span>Bold: {isMac ? '⌘' : 'Ctrl'} + B</span>
+            <span>Italic: {isMac ? '⌘' : 'Ctrl'} + I</span>
+            <span>IA: {isMac ? '⌘' : 'Ctrl'} + J</span>
+            <span>Emoji: {isMac ? '⌘' : 'Ctrl'} + E</span>
           </div>
         </div>
       )}

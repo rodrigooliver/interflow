@@ -196,6 +196,7 @@
     "result": "Resultado",
     "cancel": "Cancelar",
     "apply": "Aplicar",
+    "generating": "Generando texto...",
     "options": {
       "generate": "Generar respuesta",
       "expand": "Expandir",
