@@ -18,7 +18,7 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
   const { currentOrganizationMember } = useAuthContext();
   const organizationId = currentOrganizationMember?.organization.id || '';
   const [improvedText, setImprovedText] = useState(text);
-  const [selectedOption, setSelectedOption] = useState('');
+  const [selectedOption, setSelectedOption] = useState(text.trim() ? 'improve' : 'generate');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState('');
   const { data: prompts = [], isLoading: loadingPrompts } = usePrompts(organizationId);
