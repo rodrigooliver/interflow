@@ -1,1 +1,6 @@
+# Garantir que robots.txt e sitemap.xml sejam acessíveis diretamente
+/robots.txt /robots.txt 200
+/sitemap.xml /sitemap.xml 200
+
+# Redirecionar todas as outras rotas para o index.html (SPA)
 /* /index.html 200 
