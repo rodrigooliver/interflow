@@ -110,7 +110,12 @@
     "login": "Entrar",
     "pricing": "Preços",
     "register": "Registrar",
-    "startFree": "Começar Grátis"
+    "startFree": "Começar Grátis",
+    "features": "Funcionalidades",
+    "resources": "Recursos",
+    "blog": "Blog",
+    "about": "Sobre",
+    "contact": "Contato"
   },
   "pricing": {
     "title": "Planos",

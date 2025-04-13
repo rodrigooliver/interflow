@@ -1,0 +1,48 @@
+{
+  "heroTitle": "Plans and Pricing",
+  "heroSubtitle": "Choose the ideal plan for your business growth",
+  "faqTitle": "Frequently Asked Questions",
+  "supportTitle": "Exclusive Customer Support",
+  "supportDescription": "We offer various support channels to ensure you have the best experience with Interflow",
+  "contactSales": "Talk to a Consultant",
+  "faqs": {
+    "trial": {
+      "question": "Does Interflow offer a free trial period?",
+      "answer": "Yes! We offer a 7-day free trial on all our plans, with full access to all features. No credit card required to start."
+    },
+    "users": {
+      "question": "Can I add more users later?",
+      "answer": "Yes, you can add additional users at any time. Each additional user is charged according to your plan's rate, proportionally to the remaining period of your subscription."
+    },
+    "payment": {
+      "question": "What payment methods are accepted?",
+      "answer": "We accept credit cards (Visa, Mastercard, American Express)"
+    },
+    "cancel": {
+      "question": "Can I cancel my subscription at any time?",
+      "answer": "Yes, you can cancel your subscription at any time without fees or penalties. Access remains until the end of the paid period."
+    },
+    "refund": {
+      "question": "What is the refund policy?",
+      "answer": "We offer a full refund for cancellations made within the first 30 days of subscription. After that period, we do not offer refunds for unused periods."
+    },
+    "upgrade": {
+      "question": "Is it possible to change plans?",
+      "answer": "Yes, you can upgrade or downgrade your plan at any time. For upgrades, we only charge the proportional difference for the remaining period. For downgrades, the change takes effect in the next billing cycle."
+    }
+  },
+  "supportChannels": {
+    "email": {
+      "title": "Email Support",
+      "description": "Our team of specialists responds to all emails within 24 hours on business days."
+    },
+    "chat": {
+      "title": "Live Chat",
+      "description": "Instant chat support available for all customers during business hours."
+    },
+    "phone": {
+      "title": "Phone Support",
+      "description": "For Professional and Enterprise plan subscribers, we offer exclusive phone support."
+    }
+  }
+} 

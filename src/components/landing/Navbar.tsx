@@ -117,12 +117,42 @@ export const Navbar = () => {
                 >
                   {t('nav.home')}
                 </button>
-                <button 
-                  onClick={() => scrollToSection('pricing')} 
-                  className="nav-link text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+                <Link 
+                  to="/features" 
+                  className="nav-link text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  {t('nav.features')}
+                </Link>
+                <Link 
+                  to="/pricing" 
+                  className="nav-link text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   {t('nav.pricing')}
-                </button>
+                </Link>
+                <Link 
+                  to="/resources" 
+                  className="nav-link text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  {t('nav.resources')}
+                </Link>
+                <Link 
+                  to="/blog" 
+                  className="nav-link text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  {t('nav.blog')}
+                </Link>
+                <Link 
+                  to="/about" 
+                  className="nav-link text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  {t('nav.about')}
+                </Link>
+                <Link 
+                  to="/contact" 
+                  className="nav-link text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  {t('nav.contact')}
+                </Link>
                 
                 <div className="flex items-center space-x-4 ml-4">
                   <button 
@@ -180,12 +210,42 @@ export const Navbar = () => {
                 >
                   {t('nav.home')}
                 </button>
-                <button
-                  onClick={() => scrollToSection('pricing')}
-                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 bg-transparent border-none cursor-pointer"
+                <Link
+                  to="/features"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  {t('nav.features')}
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   {t('nav.pricing')}
-                </button>
+                </Link>
+                <Link
+                  to="/resources"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  {t('nav.resources')}
+                </Link>
+                <Link
+                  to="/blog"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  {t('nav.blog')}
+                </Link>
+                <Link
+                  to="/about"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  {t('nav.about')}
+                </Link>
+                <Link
+                  to="/contact"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  {t('nav.contact')}
+                </Link>
               </div>
               <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="px-2 space-y-1">

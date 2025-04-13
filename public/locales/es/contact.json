@@ -1,0 +1,32 @@
+{
+  "title": "Contáctenos",
+  "intro": "Estamos aquí para ayudar. Complete el formulario a continuación y nos pondremos en contacto con usted lo antes posible.",
+  "formTitle": "Enviar un Mensaje",
+  "contactInfo": "Información de Contacto",
+  "businessHours": "Horario de Atención",
+  "workdays": "Lunes a Viernes: 9h a 18h",
+  "saturday": "Sábado: 9h a 13h",
+  "sunday": "Domingo: Cerrado",
+  "email": "Correo Electrónico",
+  "phone": "Teléfono",
+  "address": "Dirección",
+  "errorSubmitting": "Ocurrió un error al enviar su mensaje. Por favor, inténtelo de nuevo.",
+  "successMessage": "¡Su mensaje ha sido enviado con éxito! Nos pondremos en contacto pronto.",
+  "form": {
+    "name": "Nombre",
+    "email": "Correo Electrónico",
+    "company": "Empresa",
+    "phone": "Teléfono",
+    "subject": "Asunto",
+    "selectSubject": "Seleccione un asunto",
+    "message": "Mensaje",
+    "submit": "Enviar Mensaje",
+    "submitting": "Enviando...",
+    "subjects": {
+      "sales": "Ventas y Planes",
+      "support": "Soporte Técnico",
+      "partnership": "Asociaciones",
+      "other": "Otros Asuntos"
+    }
+  }
+} 

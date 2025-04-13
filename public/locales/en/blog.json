@@ -1,0 +1,115 @@
+{
+  "title": "Interflow Blog",
+  "intro": "Tips, strategies and news about customer service, CRM and sales",
+  "readMore": "Read more",
+  "searchPlaceholder": "Search articles...",
+  "featuredPostsTitle": "Featured Articles",
+  "latestPosts": "Recent Articles",
+  "searchResults": "Search results: {{count}} articles found",
+  "filterByCategory": "Filtered by category",
+  "noPostsFound": "No articles found with current filters.",
+  "clearFilters": "Clear filters",
+  "categoriesTitle": "Categories",
+  "popularTags": "Popular Tags",
+  "featuredPosts": ["post1", "post4"],
+  "categories": [
+    {
+      "id": "atendimento",
+      "name": "Customer Service",
+      "count": 5
+    },
+    {
+      "id": "vendas",
+      "name": "Sales and Conversion",
+      "count": 3
+    },
+    {
+      "id": "marketing",
+      "name": "Digital Marketing",
+      "count": 2
+    },
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp Business",
+      "count": 4
+    },
+    {
+      "id": "automacao",
+      "name": "Automation",
+      "count": 3
+    }
+  ],
+  "tags": [
+    { "name": "Chatbot" },
+    { "name": "WhatsApp" },
+    { "name": "Automation" },
+    { "name": "CRM" },
+    { "name": "Sales" },
+    { "name": "Social Media" },
+    { "name": "Customer Service" },
+    { "name": "Omnichannel" },
+    { "name": "Success Stories" }
+  ],
+  "posts": [
+    {
+      "id": "post1",
+      "title": "How to Increase Your Sales with WhatsApp Business API",
+      "excerpt": "Discover effective strategies to transform WhatsApp into a powerful sales channel for your company, using automation and personalization to increase conversions.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/whatsapp-sales.jpg",
+      "date": "Oct 20, 2024",
+      "author": "Rodrigo Oliveira",
+      "category": "vendas",
+      "tags": ["WhatsApp", "Sales", "Automation"]
+    },
+    {
+      "id": "post2",
+      "title": "5 Omnichannel Customer Service Strategies That Actually Work",
+      "excerpt": "Check out the best practices for integrating your service channels and offering a consistent experience for your customers, regardless of which channel they choose.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/omnichannel.jpg",
+      "date": "Oct 15, 2024",
+      "author": "Ana Silva",
+      "category": "atendimento",
+      "tags": ["Omnichannel", "Customer Service", "Strategy"]
+    },
+    {
+      "id": "post3",
+      "title": "AI Chatbots: The Future of Customer Service",
+      "excerpt": "Understand how artificial intelligence is revolutionizing customer service and how to implement intelligent chatbots that actually solve problems.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/chatbot-ai.jpg",
+      "date": "Oct 10, 2024",
+      "author": "Lucas Mendes",
+      "category": "automacao",
+      "tags": ["Chatbot", "AI", "Automation", "Customer Service"]
+    },
+    {
+      "id": "post4",
+      "title": "How to Integrate WhatsApp and CRM to Boost Results",
+      "excerpt": "Learn how to connect your WhatsApp with your CRM system to get a complete view of the customer and significantly improve your conversion and retention rates.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/whatsapp-crm.jpg",
+      "date": "Oct 5, 2024",
+      "author": "Camila Costa",
+      "category": "whatsapp",
+      "tags": ["WhatsApp", "CRM", "Integration"]
+    },
+    {
+      "id": "post5",
+      "title": "How to Create Efficient Automated Service Flows",
+      "excerpt": "Step-by-step guide to developing automated service flows that help qualify leads, answer frequent questions, and save your team time.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/flow-automation.jpg",
+      "date": "Oct 1, 2024",
+      "author": "Pedro Santos",
+      "category": "automacao",
+      "tags": ["Automation", "Flows", "Productivity"]
+    },
+    {
+      "id": "post6",
+      "title": "Instagram as a Customer Service Channel: Complete Guide",
+      "excerpt": "Discover how to transform Instagram into a powerful customer service and sales channel, leveraging features like Direct, comments, and Stories.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/instagram-support.jpg",
+      "date": "Sep 25, 2024",
+      "author": "Juliana Alves",
+      "category": "marketing",
+      "tags": ["Instagram", "Social Media", "Customer Service"]
+    }
+  ]
+} 

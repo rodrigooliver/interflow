@@ -1,0 +1,43 @@
+{
+  "title": "About Interflow",
+  "intro": "Interflow is a complete customer service and CRM platform designed for businesses of all sizes. Our mission is to simplify customer communication and boost sales through an integrated and intuitive solution.",
+  "sections": {
+    "mission": {
+      "title": "Our Mission",
+      "content": "To transform the way companies communicate with their customers, offering a platform that unifies all communication channels and simplifies relationship management."
+    },
+    "story": {
+      "title": "Our Story",
+      "content": "Founded in 2022, Interflow was born from the realization that companies faced major challenges when trying to manage multiple communication channels and centralize customer information. Our journey began with the development of a solution that easily integrates various channels such as WhatsApp, email, social media, and web chat into a single platform."
+    },
+    "values": {
+      "title": "Our Values",
+      "items": [
+        "Simplicity: We believe complex technology should be presented simply",
+        "Innovation: We are constantly evolving our platform with new features",
+        "Security: Privacy and data protection are absolute priorities",
+        "Support: We offer exceptional support because we understand the importance of communication",
+        "Integration: We develop solutions that connect easily to other systems"
+      ]
+    },
+    "team": {
+      "title": "Our Team",
+      "content": "We have a diverse team of professionals passionate about technology and communication. Our developers, designers, UX specialists, and business consultants work together to create a platform that truly meets the needs of modern businesses."
+    },
+    "difference": {
+      "title": "Our Advantage",
+      "items": [
+        "Fully integrated chat and CRM platform",
+        "Intelligent automations with customizable flows",
+        "Support for multiple communication channels",
+        "Intuitive interface that requires no technical knowledge",
+        "Scalability to grow with your business",
+        "Security and compliance with data protection regulations"
+      ]
+    },
+    "future": {
+      "title": "Our Vision for the Future",
+      "content": "We are committed to continuing to evolve Interflow as a leading customer service and CRM platform. Our roadmap includes new integrations, AI-powered features, and even more powerful tools for automation and data analysis."
+    }
+  }
+} 

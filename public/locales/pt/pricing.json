@@ -1,0 +1,48 @@
+{
+  "heroTitle": "Planos e Preços",
+  "heroSubtitle": "Escolha o plano ideal para o crescimento do seu negócio",
+  "faqTitle": "Perguntas Frequentes",
+  "supportTitle": "Suporte ao Cliente Exclusivo",
+  "supportDescription": "Oferecemos diversos canais de suporte para garantir que você tenha a melhor experiência com o Interflow",
+  "contactSales": "Falar com um Consultor",
+  "faqs": {
+    "trial": {
+      "question": "O Interflow oferece período de teste gratuito?",
+      "answer": "Sim! Oferecemos um período de teste gratuito de 7 dias em todos os nossos planos, com acesso completo a todas as funcionalidades. Não é necessário cartão de crédito para começar."
+    },
+    "users": {
+      "question": "Posso adicionar mais usuários depois?",
+      "answer": "Sim, você pode adicionar usuários adicionais a qualquer momento. Cada usuário adicional é cobrado conforme a tarifa do seu plano, de forma proporcional ao período restante da sua assinatura."
+    },
+    "payment": {
+      "question": "Quais formas de pagamento são aceitas?",
+      "answer": "Aceitamos cartões de crédito (Visa, Mastercard, American Express)"
+    },
+    "cancel": {
+      "question": "Posso cancelar minha assinatura a qualquer momento?",
+      "answer": "Sim, você pode cancelar sua assinatura a qualquer momento sem taxas ou multas. O acesso permanece até o final do período pago."
+    },
+    "refund": {
+      "question": "Qual é a política de reembolso?",
+      "answer": "Oferecemos reembolso integral para cancelamentos feitos nos primeiros 30 dias de assinatura. Após esse período, não oferecemos reembolsos para períodos não utilizados."
+    },
+    "upgrade": {
+      "question": "É possível mudar de plano?",
+      "answer": "Sim, você pode fazer upgrade ou downgrade do seu plano a qualquer momento. No caso de upgrade, cobramos apenas a diferença proporcional ao período restante. Para downgrades, a mudança entra em vigor no próximo ciclo de cobrança."
+    }
+  },
+  "supportChannels": {
+    "email": {
+      "title": "Suporte por Email",
+      "description": "Nosso time de especialistas responde todos os emails em até 24 horas nos dias úteis."
+    },
+    "chat": {
+      "title": "Chat ao Vivo",
+      "description": "Atendimento instantâneo via chat disponível para todos os clientes em horário comercial."
+    },
+    "phone": {
+      "title": "Suporte Telefônico",
+      "description": "Para assinantes dos planos Profissional e Empresarial, oferecemos suporte telefônico exclusivo."
+    }
+  }
+} 

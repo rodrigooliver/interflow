@@ -1,0 +1,32 @@
+{
+  "title": "Contact Us",
+  "intro": "We are here to help. Fill out the form below and we will get back to you as soon as possible.",
+  "formTitle": "Send a Message",
+  "contactInfo": "Contact Information",
+  "businessHours": "Business Hours",
+  "workdays": "Monday to Friday: 9am to 6pm",
+  "saturday": "Saturday: 9am to 1pm",
+  "sunday": "Sunday: Closed",
+  "email": "Email",
+  "phone": "Phone",
+  "address": "Address",
+  "errorSubmitting": "An error occurred while submitting your message. Please try again.",
+  "successMessage": "Your message has been sent successfully! We will contact you soon.",
+  "form": {
+    "name": "Name",
+    "email": "Email",
+    "company": "Company",
+    "phone": "Phone",
+    "subject": "Subject",
+    "selectSubject": "Select a subject",
+    "message": "Message",
+    "submit": "Send Message",
+    "submitting": "Sending...",
+    "subjects": {
+      "sales": "Sales and Plans",
+      "support": "Technical Support",
+      "partnership": "Partnerships",
+      "other": "Other Matters"
+    }
+  }
+}

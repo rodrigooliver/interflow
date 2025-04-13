@@ -1,0 +1,115 @@
+{
+  "title": "Blog do Interflow",
+  "intro": "Dicas, estratégias e novidades sobre atendimento ao cliente, CRM e vendas",
+  "readMore": "Ler mais",
+  "searchPlaceholder": "Pesquisar artigos...",
+  "featuredPostsTitle": "Artigos em Destaque",
+  "latestPosts": "Artigos Recentes",
+  "searchResults": "Resultados da pesquisa: {{count}} artigos encontrados",
+  "filterByCategory": "Filtrado por categoria",
+  "noPostsFound": "Nenhum artigo encontrado com os filtros atuais.",
+  "clearFilters": "Limpar filtros",
+  "categoriesTitle": "Categorias",
+  "popularTags": "Tags Populares",
+  "featuredPosts": ["post1", "post4"],
+  "categories": [
+    {
+      "id": "atendimento",
+      "name": "Atendimento ao Cliente",
+      "count": 5
+    },
+    {
+      "id": "vendas",
+      "name": "Vendas e Conversão",
+      "count": 3
+    },
+    {
+      "id": "marketing",
+      "name": "Marketing Digital",
+      "count": 2
+    },
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp Business",
+      "count": 4
+    },
+    {
+      "id": "automacao",
+      "name": "Automação",
+      "count": 3
+    }
+  ],
+  "tags": [
+    { "name": "Chatbot" },
+    { "name": "WhatsApp" },
+    { "name": "Automação" },
+    { "name": "CRM" },
+    { "name": "Vendas" },
+    { "name": "Redes Sociais" },
+    { "name": "Atendimento" },
+    { "name": "Omnichannel" },
+    { "name": "Casos de Sucesso" }
+  ],
+  "posts": [
+    {
+      "id": "post1",
+      "title": "Como Aumentar suas Vendas com WhatsApp Business API",
+      "excerpt": "Descubra estratégias eficazes para transformar o WhatsApp em um canal de vendas poderoso para sua empresa, utilizando automação e personalização para aumentar as conversões.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/whatsapp-sales.jpg",
+      "date": "20 Out 2024",
+      "author": "Rodrigo Oliveira",
+      "category": "vendas",
+      "tags": ["WhatsApp", "Vendas", "Automação"]
+    },
+    {
+      "id": "post2",
+      "title": "5 Estratégias de Atendimento Omnichannel que Realmente Funcionam",
+      "excerpt": "Confira as melhores práticas para integrar seus canais de atendimento e oferecer uma experiência consistente para seus clientes, independente do canal que eles escolham.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/omnichannel.jpg",
+      "date": "15 Out 2024",
+      "author": "Ana Silva",
+      "category": "atendimento",
+      "tags": ["Omnichannel", "Atendimento", "Estratégia"]
+    },
+    {
+      "id": "post3",
+      "title": "Chatbots com IA: O Futuro do Atendimento ao Cliente",
+      "excerpt": "Entenda como a inteligência artificial está revolucionando o atendimento ao cliente e como implementar chatbots inteligentes que realmente resolvem problemas.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/chatbot-ai.jpg",
+      "date": "10 Out 2024",
+      "author": "Lucas Mendes",
+      "category": "automacao",
+      "tags": ["Chatbot", "IA", "Automação", "Atendimento"]
+    },
+    {
+      "id": "post4",
+      "title": "Como Integrar WhatsApp e CRM para Impulsionar Resultados",
+      "excerpt": "Aprenda a conectar seu WhatsApp com seu sistema de CRM para ter uma visão completa do cliente e melhorar significativamente suas taxas de conversão e retenção.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/whatsapp-crm.jpg",
+      "date": "5 Out 2024",
+      "author": "Camila Costa",
+      "category": "whatsapp",
+      "tags": ["WhatsApp", "CRM", "Integração"]
+    },
+    {
+      "id": "post5",
+      "title": "Como Criar Fluxos de Atendimento Automatizados Eficientes",
+      "excerpt": "Guia passo a passo para desenvolver fluxos de atendimento automatizados que ajudam a qualificar leads, responder perguntas frequentes e economizar tempo da sua equipe.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/flow-automation.jpg",
+      "date": "1 Out 2024",
+      "author": "Pedro Santos",
+      "category": "automacao",
+      "tags": ["Automação", "Fluxos", "Produtividade"]
+    },
+    {
+      "id": "post6",
+      "title": "Instagram como Canal de Atendimento: Guia Completo",
+      "excerpt": "Descubra como transformar o Instagram em um poderoso canal de atendimento ao cliente e vendas, aproveitando recursos como Direct, comentários e Stories.",
+      "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/blog/instagram-support.jpg",
+      "date": "25 Set 2024",
+      "author": "Juliana Alves",
+      "category": "marketing",
+      "tags": ["Instagram", "Redes Sociais", "Atendimento"]
+    }
+  ]
+} 

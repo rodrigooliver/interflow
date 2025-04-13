@@ -5,7 +5,12 @@
     "login": "Acceder",
     "register": "Registrarse",
     "goToDashboard": "Ir al Panel",
-    "startFree": "Comenzar Gratis"
+    "startFree": "Comenzar Gratis",
+    "features": "Funcionalidades",
+    "resources": "Recursos",
+    "blog": "Blog",
+    "about": "Sobre Nosotros",
+    "contact": "Contacto"
   },
   "hero": {
     "title": "Atención al cliente simplificada",

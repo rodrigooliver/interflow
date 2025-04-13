@@ -1,0 +1,179 @@
+{
+  "heroTitle": "Complete Features for Customer Service and CRM",
+  "heroSubtitle": "Discover the tools that will transform your customer relationships",
+  "startFree": "Start Free",
+  "ctaTitle": "Ready to transform your customer service?",
+  "ctaDescription": "Try Interflow today and see the difference in your customer relationships.",
+  "ctaButton": "Create Free Account",
+  "contactSales": "Talk to Sales",
+  "sections": {
+    "communication": {
+      "title": "Omnichannel Communication",
+      "description": "Centralize all your communication channels in a single platform.",
+      "features": [
+        {
+          "title": "WhatsApp Customer Service",
+          "description": "Connect your WhatsApp Business account and serve your customers in the channel they use most. Our official integration allows you to use all WhatsApp API features.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/whatsapp-feature.jpg",
+          "benefits": [
+            "Service with multiple agents on the same number",
+            "Sending multimedia messages (images, audio, documents)",
+            "Pre-approved message templates for campaigns",
+            "Complete conversation history",
+            "Transfer of service between agents"
+          ]
+        },
+        {
+          "title": "Integrated Social Networks",
+          "description": "Manage your Facebook Messenger and Instagram Direct conversations on the same platform, without having to switch between applications.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/social-media-feature.jpg",
+          "benefits": [
+            "Integration with Facebook and Instagram Messenger",
+            "Comments and profile mentions automatically captured",
+            "Unified history of interactions per customer",
+            "Quick response to comments and messages",
+            "Performance reports by channel"
+          ]
+        },
+        {
+          "title": "Website Chat and Email",
+          "description": "Offer real-time support through chat on your website and keep email communication centralized.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/chat-email-feature.jpg",
+          "benefits": [
+            "Customizable chat widget for your website",
+            "Connection with your corporate email domain",
+            "Simultaneous service on multiple channels",
+            "Automatic responses for frequently asked questions",
+            "Notifications of new contacts"
+          ]
+        }
+      ]
+    },
+    "automation": {
+      "title": "Intelligent Automation",
+      "description": "Save time and resources with our automation tools.",
+      "features": [
+        {
+          "title": "Service Flows",
+          "description": "Create automated journeys to qualify customers, answer frequently asked questions, and direct to the correct department without human intervention.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/flows-feature.jpg",
+          "benefits": [
+            "Visual flow editor with no coding required",
+            "Customizable conditions based on responses",
+            "Scheduling of automatic messages",
+            "Transfer to human agent when necessary",
+            "Automatic data collection for CRM"
+          ]
+        },
+        {
+          "title": "AI Chatbot",
+          "description": "Implement a virtual assistant with artificial intelligence to serve your customers 24 hours a day, 7 days a week.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/chatbot-feature.jpg",
+          "benefits": [
+            "Artificial intelligence that understands natural language",
+            "Customized training with your company's knowledge base",
+            "Accurate answers to complex questions",
+            "Integration with your database for contextualized answers",
+            "Intelligent escalation to humans when necessary"
+          ]
+        },
+        {
+          "title": "Scheduled Messages",
+          "description": "Schedule campaigns, reminders, and follow-ups to be sent automatically at the right time.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/scheduled-feature.jpg",
+          "benefits": [
+            "Scheduling of individual or mass messages",
+            "Message sequences with customized intervals",
+            "Campaigns segmented by customer data",
+            "Content personalization with dynamic variables",
+            "Delivery, opening, and response metrics"
+          ]
+        }
+      ]
+    },
+    "crm": {
+      "title": "Integrated CRM",
+      "description": "Manage all customer relationships in one place.",
+      "features": [
+        {
+          "title": "Contact Management",
+          "description": "Keep all your customers' data and interactions organized and accessible to the entire team.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/contacts-feature.jpg",
+          "benefits": [
+            "Complete customer profiles with customizable data",
+            "Unified history of interactions across all channels",
+            "Advanced tags and segmentation",
+            "Internal notes and team comments",
+            "Metrics visualization by customer"
+          ]
+        },
+        {
+          "title": "Sales Funnel",
+          "description": "Track opportunities from first contact to closing, with customizable stages for your sales process.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/sales-funnel-feature.jpg",
+          "benefits": [
+            "Customizable funnel visualization",
+            "Kanban for opportunity management",
+            "Revenue forecast and conversion analysis",
+            "Stagnant opportunity alerts",
+            "Automation of follow-up tasks"
+          ]
+        },
+        {
+          "title": "Integrated Scheduling",
+          "description": "Allow your customers to schedule meetings directly on your team's calendar, eliminating back-and-forth emails.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/calendar-feature.jpg",
+          "benefits": [
+            "Synchronization with Google Calendar and Outlook",
+            "Customizable scheduling pages",
+            "Automatic confirmations and reminders",
+            "Pre-service form completion",
+            "Scheduling directly through WhatsApp or chat"
+          ]
+        }
+      ]
+    },
+    "management": {
+      "title": "Team Management",
+      "description": "Increase your team's productivity with collaboration and control tools.",
+      "features": [
+        {
+          "title": "Service Teams",
+          "description": "Organize your team into departments or specialties, with specific permissions and work distribution settings.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/teams-feature.jpg",
+          "benefits": [
+            "Unlimited creation of teams and departments",
+            "Definition of service hours by team",
+            "Automated on-call schedules",
+            "Transfer of conversations between teams",
+            "Performance metrics by team"
+          ]
+        },
+        {
+          "title": "Real-Time Monitoring",
+          "description": "Monitor your operation's performance in real-time, identifying bottlenecks and opportunities for improvement.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/monitoring-feature.jpg",
+          "benefits": [
+            "Real-time service dashboard",
+            "Average response and resolution time",
+            "Waiting queue alerts",
+            "Visualization of available and busy agents",
+            "Exportable performance reports"
+          ]
+        },
+        {
+          "title": "Financial Management",
+          "description": "Manage payments, subscriptions, and billing directly on the platform, integrating your sales with financial flow.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/financial-feature.jpg",
+          "benefits": [
+            "Generation of invoices and payment links",
+            "Control of recurring subscriptions",
+            "Integration with major payment gateways",
+            "Detailed financial reports",
+            "Cash flow management"
+          ]
+        }
+      ]
+    }
+  }
+} 

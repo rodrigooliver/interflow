@@ -1,0 +1,43 @@
+{
+  "title": "Sobre o Interflow",
+  "intro": "O Interflow é uma plataforma completa de atendimento ao cliente e CRM projetada para empresas de todos os tamanhos. Nossa missão é simplificar a comunicação com clientes e potencializar as vendas através de uma solução integrada e intuitiva.",
+  "sections": {
+    "mission": {
+      "title": "Nossa Missão",
+      "content": "Transformar a maneira como as empresas se comunicam com seus clientes, oferecendo uma plataforma que unifica todos os canais de comunicação e simplifica o gerenciamento de relacionamentos."
+    },
+    "story": {
+      "title": "Nossa História",
+      "content": "Fundada em 2022, a Interflow nasceu da percepção de que as empresas enfrentavam grandes desafios ao tentar gerenciar múltiplos canais de comunicação e centralizar informações de clientes. Nossa jornada começou com o desenvolvimento de uma solução que integrasse facilmente diversos canais como WhatsApp, e-mail, redes sociais e chat web em uma única plataforma."
+    },
+    "values": {
+      "title": "Nossos Valores",
+      "items": [
+        "Simplicidade: Acreditamos que tecnologia complexa deve ser apresentada de forma simples",
+        "Inovação: Estamos constantemente evoluindo nossa plataforma com novas funcionalidades",
+        "Segurança: A privacidade e proteção dos dados são prioridades absolutas",
+        "Atendimento: Oferecemos suporte excepcional porque entendemos a importância da comunicação",
+        "Integração: Desenvolvemos soluções que se conectam facilmente a outros sistemas"
+      ]
+    },
+    "team": {
+      "title": "Nossa Equipe",
+      "content": "Contamos com uma equipe diversa de profissionais apaixonados por tecnologia e comunicação. Nossos desenvolvedores, designers, especialistas em UX e consultores de negócios trabalham juntos para criar uma plataforma que realmente atenda às necessidades das empresas modernas."
+    },
+    "difference": {
+      "title": "Nosso Diferencial",
+      "items": [
+        "Plataforma totalmente integrada de chat e CRM",
+        "Automações inteligentes com fluxos personalizáveis",
+        "Suporte a múltiplos canais de comunicação",
+        "Interface intuitiva que não exige conhecimento técnico",
+        "Escalabilidade para crescer com seu negócio",
+        "Segurança e conformidade com regulamentações de proteção de dados"
+      ]
+    },
+    "future": {
+      "title": "Nossa Visão de Futuro",
+      "content": "Estamos comprometidos em continuar evoluindo o Interflow como uma plataforma líder de atendimento e CRM. Nosso roadmap inclui novas integrações, funcionalidades alimentadas por inteligência artificial e ferramentas ainda mais poderosas para automação e análise de dados."
+    }
+  }
+} 

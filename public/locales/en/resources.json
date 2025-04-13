@@ -1,0 +1,115 @@
+{
+  "title": "Resources and Materials",
+  "intro": "Explore our free resources to help your business make the most of Interflow and improve your customer service.",
+  "viewResource": "View Resource",
+  "sections": {
+    "guides": {
+      "title": "Guides and Tutorials",
+      "description": "Learn how to use Interflow with our step-by-step guides and detailed tutorials.",
+      "resources": [
+        {
+          "title": "Interflow Getting Started Guide",
+          "description": "Learn the fundamentals of Interflow and how to set up your account in less than an hour.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/getting-started.jpg",
+          "link": "/resources/getting-started",
+          "type": "Guide"
+        },
+        {
+          "title": "Setting Up Service Channels",
+          "description": "Complete tutorial on how to integrate WhatsApp, Facebook, Instagram and other channels.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/channels-setup.jpg",
+          "link": "/resources/channels-setup",
+          "type": "Tutorial"
+        },
+        {
+          "title": "Creating Automated Flows",
+          "description": "Learn how to create automated conversation flows to serve your customers 24/7.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/automation-flows.jpg",
+          "link": "/resources/automation-flows",
+          "type": "Tutorial"
+        }
+      ]
+    },
+    "templates": {
+      "title": "Templates and Scripts",
+      "description": "Save time with our ready-to-use templates for different service scenarios.",
+      "resources": [
+        {
+          "title": "WhatsApp Message Templates",
+          "description": "20 WhatsApp-approved templates for different industries and situations.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/whatsapp-templates.jpg",
+          "link": "/resources/whatsapp-templates",
+          "type": "Template"
+        },
+        {
+          "title": "Customer Service Scripts",
+          "description": "Professional scripts to handle inquiries, complaints, and common situations.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/customer-scripts.jpg",
+          "link": "/resources/customer-scripts",
+          "type": "Script"
+        },
+        {
+          "title": "Pre-configured Sales Flows",
+          "description": "Accelerate your sales process with ready-made flows for qualification and negotiation.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/sales-flows.jpg",
+          "link": "/resources/sales-flows",
+          "type": "Template"
+        }
+      ]
+    },
+    "webinars": {
+      "title": "Webinars and Videos",
+      "description": "Watch our webinars and instructional videos to enhance your skills.",
+      "resources": [
+        {
+          "title": "How to Increase Sales with Automation",
+          "description": "Webinar with experts on how to use automation to boost conversions.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/sales-webinar.jpg",
+          "link": "/resources/sales-automation-webinar",
+          "type": "Webinar"
+        },
+        {
+          "title": "Best Practices in Omnichannel Service",
+          "description": "Learn strategies to provide a consistent experience across all channels.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/omnichannel-webinar.jpg",
+          "link": "/resources/omnichannel-best-practices",
+          "type": "Webinar"
+        },
+        {
+          "title": "Interflow in Practice: Complete Demo",
+          "description": "Complete demonstration of all Interflow features in a real case.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/demo-video.jpg",
+          "link": "/resources/complete-demo",
+          "type": "Video"
+        }
+      ]
+    },
+    "ebooks": {
+      "title": "E-books and PDF Guides",
+      "description": "Complete materials for download and offline reference.",
+      "resources": [
+        {
+          "title": "The Definitive Guide to Digital Customer Service",
+          "description": "Complete e-book with strategies, techniques, and metrics for excellent digital service.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/ebook-customer-service.jpg",
+          "link": "/resources/ebook-customer-service",
+          "type": "E-book"
+        },
+        {
+          "title": "CRM in the Digital Age: Strategies That Work",
+          "description": "Practical guide on how to implement modern and effective CRM strategies.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/crm-guide.jpg",
+          "link": "/resources/crm-guide",
+          "type": "PDF Guide"
+        },
+        {
+          "title": "Customer Service ROI: How to Measure and Improve",
+          "description": "Learn how to calculate the return on investment of your service and optimize results.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/roi-guide.jpg",
+          "link": "/resources/roi-guide",
+          "type": "E-book"
+        }
+      ]
+    }
+  }
+} 

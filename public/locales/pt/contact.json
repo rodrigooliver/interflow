@@ -1,0 +1,32 @@
+{
+  "title": "Fale Conosco",
+  "intro": "Estamos aqui para ajudar. Preencha o formulário abaixo e entraremos em contato com você o mais breve possível.",
+  "formTitle": "Envie uma Mensagem",
+  "contactInfo": "Informações de Contato",
+  "businessHours": "Horário de Atendimento",
+  "workdays": "Segunda a Sexta: 9h às 18h",
+  "saturday": "Sábado: 9h às 13h",
+  "sunday": "Domingo: Fechado",
+  "email": "E-mail",
+  "phone": "Telefone",
+  "address": "Endereço",
+  "errorSubmitting": "Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.",
+  "successMessage": "Sua mensagem foi enviada com sucesso! Entraremos em contato em breve.",
+  "form": {
+    "name": "Nome",
+    "email": "E-mail",
+    "company": "Empresa",
+    "phone": "Telefone",
+    "subject": "Assunto",
+    "selectSubject": "Selecione um assunto",
+    "message": "Mensagem",
+    "submit": "Enviar Mensagem",
+    "submitting": "Enviando...",
+    "subjects": {
+      "sales": "Vendas e Planos",
+      "support": "Suporte Técnico",
+      "partnership": "Parcerias",
+      "other": "Outros Assuntos"
+    }
+  }
+} 

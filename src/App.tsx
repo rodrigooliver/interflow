@@ -54,6 +54,12 @@ import { ToastProvider } from './hooks/useToast';
 
 import PrivacyPolicy from './pages/public/privacy-policy';
 import TermsOfService from './pages/public/terms-of-service';
+import About from './pages/public/about';
+import Blog from './pages/public/blog';
+import Resources from './pages/public/resources';
+import PricingPage from './pages/public/pricing';
+import Contact from './pages/public/contact';
+import Features from './pages/public/features';
 import SubscriptionPlans from './pages/admin/SubscriptionPlans';
 import SubscriptionPlanForm from './pages/admin/SubscriptionPlanForm';
 import Referrals from './pages/organization/Referrals';
@@ -505,6 +511,12 @@ function AppContent() {
           <Route path="/join" element={<JoinPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/features" element={<Features />} />
           {/* Redireciona qualquer outra rota para a home */}
           <Route path="*" element={<Navigate to="/" replace state={{ from: location }} />} />
         </Routes>
@@ -558,6 +570,12 @@ function AppContent() {
             <Route path="/" element={<Home />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/features" element={<Features />} />
           </>
         ) : (
           // Se estiver no app nativo, redireciona a rota raiz para /app

@@ -105,4 +105,68 @@
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+  
+  <!-- Artigos do Blog -->
+  <url>
+    <loc>https://interflow.chat/blog/post1</loc>
+    <lastmod>2024-10-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/post2</loc>
+    <lastmod>2024-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/post3</loc>
+    <lastmod>2024-10-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/post4</loc>
+    <lastmod>2024-10-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/post5</loc>
+    <lastmod>2024-10-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/post6</loc>
+    <lastmod>2024-09-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Páginas de Recursos -->
+  <url>
+    <loc>https://interflow.chat/resources/getting-started</loc>
+    <lastmod>2024-10-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/resources/channels-setup</loc>
+    <lastmod>2024-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/resources/automation-flows</loc>
+    <lastmod>2024-10-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/resources/whatsapp-templates</loc>
+    <lastmod>2024-10-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset> 

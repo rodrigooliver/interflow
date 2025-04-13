@@ -5,7 +5,12 @@
     "login": "Login",
     "register": "Sign Up",
     "goToDashboard": "Go to Dashboard",
-    "startFree": "Start Free"
+    "startFree": "Start Free",
+    "features": "Features",
+    "resources": "Resources",
+    "blog": "Blog",
+    "about": "About",
+    "contact": "Contact"
   },
   "hero": {
     "title": "Customer service simplified",

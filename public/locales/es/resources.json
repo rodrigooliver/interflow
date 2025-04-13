@@ -1,0 +1,115 @@
+{
+  "title": "Recursos y Materiales",
+  "intro": "Explora nuestros recursos gratuitos para ayudar a tu empresa a aprovechar al máximo Interflow y mejorar tu servicio al cliente.",
+  "viewResource": "Ver Recurso",
+  "sections": {
+    "guides": {
+      "title": "Guías y Tutoriales",
+      "description": "Aprende a usar Interflow con nuestras guías paso a paso y tutoriales detallados.",
+      "resources": [
+        {
+          "title": "Guía de Introducción a Interflow",
+          "description": "Aprende los fundamentos de Interflow y cómo configurar tu cuenta en menos de una hora.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/getting-started.jpg",
+          "link": "/resources/getting-started",
+          "type": "Guía"
+        },
+        {
+          "title": "Configurando Canales de Atención",
+          "description": "Tutorial completo sobre cómo integrar WhatsApp, Facebook, Instagram y otros canales.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/channels-setup.jpg",
+          "link": "/resources/channels-setup",
+          "type": "Tutorial"
+        },
+        {
+          "title": "Creando Flujos Automatizados",
+          "description": "Aprende a crear flujos de conversación automáticos para atender a tus clientes 24/7.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/automation-flows.jpg",
+          "link": "/resources/automation-flows",
+          "type": "Tutorial"
+        }
+      ]
+    },
+    "templates": {
+      "title": "Plantillas y Scripts",
+      "description": "Ahorra tiempo con nuestras plantillas listas para usar en diferentes escenarios de atención.",
+      "resources": [
+        {
+          "title": "Plantillas de Mensajes para WhatsApp",
+          "description": "20 plantillas aprobadas por WhatsApp para diferentes sectores y situaciones.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/whatsapp-templates.jpg",
+          "link": "/resources/whatsapp-templates",
+          "type": "Plantilla"
+        },
+        {
+          "title": "Scripts de Atención al Cliente",
+          "description": "Scripts profesionales para manejar dudas, quejas y situaciones comunes.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/customer-scripts.jpg",
+          "link": "/resources/customer-scripts",
+          "type": "Script"
+        },
+        {
+          "title": "Flujos de Ventas Preconfigurados",
+          "description": "Acelera tu proceso de ventas con flujos listos para calificación y negociación.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/sales-flows.jpg",
+          "link": "/resources/sales-flows",
+          "type": "Plantilla"
+        }
+      ]
+    },
+    "webinars": {
+      "title": "Webinars y Videos",
+      "description": "Mira nuestros webinars y videos instructivos para mejorar tus habilidades.",
+      "resources": [
+        {
+          "title": "Cómo Aumentar Ventas con Automatización",
+          "description": "Webinar con expertos sobre cómo usar la automatización para impulsar conversiones.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/sales-webinar.jpg",
+          "link": "/resources/sales-automation-webinar",
+          "type": "Webinar"
+        },
+        {
+          "title": "Mejores Prácticas en Atención Omnicanal",
+          "description": "Aprende estrategias para ofrecer una experiencia consistente en todos los canales.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/omnichannel-webinar.jpg",
+          "link": "/resources/omnichannel-best-practices",
+          "type": "Webinar"
+        },
+        {
+          "title": "Interflow en Práctica: Demo Completa",
+          "description": "Demostración completa de todas las funcionalidades de Interflow en un caso real.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/demo-video.jpg",
+          "link": "/resources/complete-demo",
+          "type": "Video"
+        }
+      ]
+    },
+    "ebooks": {
+      "title": "E-books y Guías en PDF",
+      "description": "Materiales completos para descargar y consultar offline.",
+      "resources": [
+        {
+          "title": "Guía Definitiva de Atención al Cliente Digital",
+          "description": "E-book completo con estrategias, técnicas y métricas para atención digital de excelencia.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/ebook-customer-service.jpg",
+          "link": "/resources/ebook-customer-service",
+          "type": "E-book"
+        },
+        {
+          "title": "CRM en la Era Digital: Estrategias que Funcionan",
+          "description": "Guía práctica sobre cómo implementar estrategias de CRM modernas y eficaces.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/crm-guide.jpg",
+          "link": "/resources/crm-guide",
+          "type": "Guía PDF"
+        },
+        {
+          "title": "ROI de la Atención: Cómo Medir y Mejorar",
+          "description": "Aprende a calcular el retorno sobre la inversión de tu atención y optimizar resultados.",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/roi-guide.jpg",
+          "link": "/resources/roi-guide",
+          "type": "E-book"
+        }
+      ]
+    }
+  }
+} 
