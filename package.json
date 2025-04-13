@@ -8,8 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "update-sitemap": "vite-node src/scripts/updateSitemap.ts",
-    "prebuild": "node --loader tsx/esm src/scripts/updateSitemap.ts || echo 'Sitemap update failed, continuing build'"
+    "update-sitemap": "vite-node src/scripts/updateSitemap.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
