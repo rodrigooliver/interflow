@@ -118,5 +118,18 @@
   "filters": "Filtros",
   "clearAll": "Limpar todos",
   "disabled": "Desativado",
-  "leaving": "Saindo..."
+  "leaving": "Saindo...",
+  "accessDenied": "Acesso negado",
+  "noPermission": "Você não tem permissão para acessar esta página",
+  "errorFetchingData": "Erro ao buscar dados. Por favor, tente novamente mais tarde.",
+  "language": "Idioma",
+  "languages": {
+    "pt": "Português",
+    "en": "Inglês",
+    "es": "Espanhol"
+  },
+  "clearFilters": "Limpar filtros",
+  "view": "Visualizar",
+  "pageInfo": "Página {{current}} de {{total}}",
+  "comingSoon": "Em breve"
 }

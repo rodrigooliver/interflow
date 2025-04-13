@@ -196,9 +196,6 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
         )}
       </div>
       <div className="flex-col space-y-1 mt-1 mb-4 hidden sm:flex">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          {t('prompts:form.contentHelp', 'Este é o prompt de sistema que define o comportamento da IA.')}
-        </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 italic">
           <span className="font-medium">{t('prompts:form.tip', 'Dica')}:</span> {t('prompts:form.markdownTip', 'Você pode usar formatação Markdown como')} <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">**{t('prompts:form.bold', 'negrito')}**</code>, <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">*{t('prompts:form.italic', 'itálico')}*</code>, <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">`{t('prompts:form.code', 'código')}`</code>, {t('prompts:form.andMore', 'listas e muito mais')}.
         </p>

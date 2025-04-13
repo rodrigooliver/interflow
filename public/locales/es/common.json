@@ -117,5 +117,19 @@
   "today": "Hoy",
   "filters": "Filtros",
   "clearAll": "Limpiar todos",
-  "disabled": "Desactivado"
+  "disabled": "Desactivado",
+  "leaving": "Saliendo...",
+  "accessDenied": "Acceso denegado",
+  "noPermission": "No tienes permiso para acceder a esta página",
+  "errorFetchingData": "Error al obtener datos. Por favor, intente nuevamente más tarde.",
+  "language": "Idioma",
+  "languages": {
+    "pt": "Portugués",
+    "en": "Inglés",
+    "es": "Español"
+  },
+  "clearFilters": "Limpiar filtros",
+  "view": "Ver",
+  "pageInfo": "Página {{current}} de {{total}}",
+  "comingSoon": "Próximamente"
 }

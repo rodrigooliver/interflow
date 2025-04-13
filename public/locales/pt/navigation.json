@@ -19,5 +19,7 @@
   "subscriptionPlans": "Planos de Assinatura",
   "prompts": "Agente IA",
   "tasks": "Tarefas",
-  "financial": "Financeiro"
+  "financial": "Financeiro",
+  "blogAdmin": "Gerenciar Blog",
+  "sitemapManager": "Gerenciador de Sitemap"
 }

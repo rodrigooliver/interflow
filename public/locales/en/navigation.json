@@ -19,5 +19,7 @@
   "profile": "Profile",
   "subscriptionPlans": "Subscription Plans",
   "tasks": "Tasks",
-  "financial": "Financial"
+  "financial": "Financial",
+  "blogAdmin": "Manage Blog",
+  "sitemapManager": "Sitemap Manager"
 }

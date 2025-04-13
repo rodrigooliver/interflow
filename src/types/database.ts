@@ -856,4 +856,229 @@ export interface Task {
   };
 }
 
+// Vamos renomear a interface existente para evitar conflito
+export interface ExistingTables {
+  // Definindo uma interface específica para tabelas já existentes
+  // para evitar erro de interfaces vazias
+  [key: string]: {
+    Row: Record<string, unknown>;
+    Insert: Record<string, unknown>;
+    Update: Record<string, unknown>;
+  };
+}
+
+// Adicionar as tabelas relacionadas ao blog
+export interface BlogTables {
+  blog_posts: {
+    Row: {
+      id: string;
+      slug: string;
+      author_id: string | null;
+      featured: boolean;
+      status: 'draft' | 'published' | 'archived';
+      published_at: string | null;
+      metadata: Record<string, unknown> | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      slug: string;
+      author_id?: string | null;
+      featured?: boolean;
+      status?: 'draft' | 'published' | 'archived';
+      published_at?: string | null;
+      metadata?: Record<string, unknown> | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      slug?: string;
+      author_id?: string | null;
+      featured?: boolean;
+      status?: 'draft' | 'published' | 'archived';
+      published_at?: string | null;
+      metadata?: Record<string, unknown> | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  blog_post_translations: {
+    Row: {
+      id: string;
+      post_id: string;
+      language: string;
+      title: string;
+      excerpt: string;
+      content: string;
+      image_url: string | null;
+      seo_title: string | null;
+      seo_description: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      post_id: string;
+      language: string;
+      title: string;
+      excerpt: string;
+      content: string;
+      image_url?: string | null;
+      seo_title?: string | null;
+      seo_description?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      post_id?: string;
+      language?: string;
+      title?: string;
+      excerpt?: string;
+      content?: string;
+      image_url?: string | null;
+      seo_title?: string | null;
+      seo_description?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  blog_categories: {
+    Row: {
+      id: string;
+      slug: string;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      slug: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      slug?: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  blog_category_translations: {
+    Row: {
+      id: string;
+      category_id: string;
+      language: string;
+      name: string;
+      description: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      category_id: string;
+      language: string;
+      name: string;
+      description?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      category_id?: string;
+      language?: string;
+      name?: string;
+      description?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  blog_tags: {
+    Row: {
+      id: string;
+      slug: string;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      slug: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      slug?: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  blog_tag_translations: {
+    Row: {
+      id: string;
+      tag_id: string;
+      language: string;
+      name: string;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      tag_id: string;
+      language: string;
+      name: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      tag_id?: string;
+      language?: string;
+      name?: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  blog_post_categories: {
+    Row: {
+      post_id: string;
+      category_id: string;
+      created_at: string;
+    };
+    Insert: {
+      post_id: string;
+      category_id: string;
+      created_at?: string;
+    };
+    Update: {
+      post_id?: string;
+      category_id?: string;
+      created_at?: string;
+    };
+  };
+  blog_post_tags: {
+    Row: {
+      post_id: string;
+      tag_id: string;
+      created_at: string;
+    };
+    Insert: {
+      post_id: string;
+      tag_id: string;
+      created_at?: string;
+    };
+    Update: {
+      post_id?: string;
+      tag_id?: string;
+      created_at?: string;
+    };
+  };
+}
+
+// Interface simplificada para o Database
+export interface Database {
+  public: ExistingTables & BlogTables;
+}
+
 

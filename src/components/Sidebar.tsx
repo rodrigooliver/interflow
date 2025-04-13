@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Location } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown, ListTodo, DollarSign } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown, ListTodo, DollarSign, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -102,6 +102,8 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   const superAdminLinks = [
     { to: '/app/admin/organizations', icon: Building2, label: t('navigation:organizations') },
     { to: '/app/admin/subscription-plans', icon: CreditCard, label: t('navigation:subscriptionPlans') },
+    { to: '/app/admin/blog', icon: FileText, label: t('navigation:blogAdmin') },
+    // { to: '/app/admin/sitemap', icon: AlertTriangle, label: t('navigation:sitemapManager') },
   ];
 
   // Combine links based on user role

@@ -56,6 +56,7 @@ import PrivacyPolicy from './pages/public/privacy-policy';
 import TermsOfService from './pages/public/terms-of-service';
 import About from './pages/public/about';
 import Blog from './pages/public/blog';
+import BlogPost from './pages/public/blogPost';
 import Resources from './pages/public/resources';
 import PricingPage from './pages/public/pricing';
 import Contact from './pages/public/contact';
@@ -83,6 +84,8 @@ import FinancialCashierOperations from './pages/financial/FinancialCashierOperat
 import FinancialCategories from './pages/financial/FinancialCategories';
 import FinancialPaymentMethods from './pages/financial/FinancialPaymentMethods';
 import FinancialReports from './pages/financial/FinancialReports';
+import BlogPosts from './pages/admin/BlogPosts';
+import BlogPostForm from './pages/admin/BlogPostForm';
 
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
@@ -513,6 +516,7 @@ function AppContent() {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/about" element={<About />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/contact" element={<Contact />} />
@@ -572,6 +576,7 @@ function AppContent() {
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/about" element={<About />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/contact" element={<Contact />} />
@@ -694,6 +699,9 @@ function AppContent() {
                             <Route path="admin/subscription-plans" element={<SubscriptionPlans />} />
                             <Route path="admin/subscription-plans/new" element={<SubscriptionPlanForm />} />
                             <Route path="admin/subscription-plans/:id" element={<SubscriptionPlanForm />} />
+                            <Route path="admin/blog" element={<BlogPosts />} />
+                            <Route path="admin/blog/new" element={<BlogPostForm />} />
+                            <Route path="admin/blog/edit/:id" element={<BlogPostForm />} />
                           </>
                         )}
                       </Routes>

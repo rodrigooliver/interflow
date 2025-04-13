@@ -1,18 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-  xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 
-  http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <!-- Página inicial -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 &#xA;  http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <url>
     <loc>https://interflow.chat/</loc>
     <lastmod>2024-10-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  
-  <!-- Páginas principais -->
   <url>
     <loc>https://interflow.chat/login</loc>
     <lastmod>2024-10-20</lastmod>
@@ -31,8 +24,6 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  
-  <!-- Páginas Legais -->
   <url>
     <loc>https://interflow.chat/privacy-policy</loc>
     <lastmod>2024-10-20</lastmod>
@@ -45,8 +36,6 @@
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
-  
-  <!-- Páginas de Features -->
   <url>
     <loc>https://interflow.chat/features</loc>
     <lastmod>2024-10-20</lastmod>
@@ -71,8 +60,6 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  
-  <!-- Páginas de Preços e Contato -->
   <url>
     <loc>https://interflow.chat/pricing</loc>
     <lastmod>2024-10-20</lastmod>
@@ -91,8 +78,6 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-  
-  <!-- Blog e recursos -->
   <url>
     <loc>https://interflow.chat/blog</loc>
     <lastmod>2024-10-20</lastmod>
@@ -105,46 +90,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
-  
-  <!-- Artigos do Blog -->
-  <url>
-    <loc>https://interflow.chat/blog/post1</loc>
-    <lastmod>2024-10-20</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://interflow.chat/blog/post2</loc>
-    <lastmod>2024-10-15</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://interflow.chat/blog/post3</loc>
-    <lastmod>2024-10-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://interflow.chat/blog/post4</loc>
-    <lastmod>2024-10-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://interflow.chat/blog/post5</loc>
-    <lastmod>2024-10-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://interflow.chat/blog/post6</loc>
-    <lastmod>2024-09-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <!-- Páginas de Recursos -->
   <url>
     <loc>https://interflow.chat/resources/getting-started</loc>
     <lastmod>2024-10-20</lastmod>
@@ -169,4 +114,40 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-</urlset> 
+  <url>
+    <loc>https://interflow.chat/blog/como-aumentar-vendas-whatsapp-business-api</loc>
+    <lastmod>2025-04-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/5-estrategias-atendimento-omnichannel</loc>
+    <lastmod>2025-04-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/chatbots-com-ia-futuro-atendimento</loc>
+    <lastmod>2025-04-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/como-integrar-whatsapp-crm</loc>
+    <lastmod>2025-04-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/como-criar-fluxos-atendimento-automatizados</loc>
+    <lastmod>2025-04-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interflow.chat/blog/instagram-canal-atendimento</loc>
+    <lastmod>2025-04-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>

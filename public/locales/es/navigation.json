@@ -19,5 +19,7 @@
   "profile": "Perfil",
   "subscriptionPlans": "Planes de Suscripción",
   "tasks": "Tareas",
-  "financial": "Financiero"
+  "financial": "Financiero",
+  "blogAdmin": "Gestionar Blog",
+  "sitemapManager": "Gestor de Sitemap"
 }

@@ -36,6 +36,37 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ show, dismiss, toasts }}>
       {children}
+      <style>{`
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeOutUp {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+        }
+
+        .animate-fade-in-down {
+          animation: fadeInDown 0.3s ease-out forwards;
+        }
+
+        .animate-fade-out-up {
+          animation: fadeOutUp 0.3s ease-in forwards;
+        }
+      `}</style>
       <ToastContainer />
     </ToastContext.Provider>
   );
@@ -55,7 +86,7 @@ const ToastContainer: React.FC = () => {
   const { toasts, dismiss } = useToast();
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-end justify-start p-4 pointer-events-none space-y-4 max-h-screen overflow-hidden">
+    <div className="fixed top-4 right-4 z-50 flex flex-col items-end space-y-2 max-w-md">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={() => dismiss(toast.id)} />
       ))}
@@ -66,42 +97,50 @@ const ToastContainer: React.FC = () => {
 // Componente Item
 const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, onDismiss }) => {
   const { title, description, variant = 'default', duration = 5000 } = toast;
+  const [isExiting, setIsExiting] = useState(false);
+
+  const handleDismiss = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onDismiss();
+    }, 300); // Duração da animação
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      onDismiss();
+      handleDismiss();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onDismiss]);
+  }, [duration]);
 
   const getVariantClasses = () => {
     switch (variant) {
       case 'destructive':
-        return 'bg-red-500 text-white';
+        return 'bg-red-500 text-white border-red-400';
       case 'success':
-        return 'bg-green-500 text-white';
+        return 'bg-green-500 text-white border-green-400';
       default:
-        return 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100';
+        return 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700';
     }
   };
 
   return (
     <div
-      className={`pointer-events-auto w-full max-w-sm rounded-lg shadow-lg ${getVariantClasses()} border border-gray-200 dark:border-gray-700 p-4 transform transition-all duration-300 ease-in-out`}
+      className={`pointer-events-auto w-full max-w-sm rounded-lg shadow-md ${getVariantClasses()} border p-3 transform transition-all duration-300 ease-in-out ${isExiting ? 'animate-fade-out-up' : 'animate-fade-in-down'}`}
       role="alert"
     >
       <div className="flex items-start">
         <div className="flex-1">
-          {title && <div className="font-semibold">{title}</div>}
-          {description && <div className="mt-1 text-sm">{description}</div>}
+          {title && <div className="font-medium text-sm">{title}</div>}
+          {description && <div className="text-xs opacity-90">{description}</div>}
         </div>
         <button
-          onClick={onDismiss}
-          className="ml-4 inline-flex shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+          onClick={handleDismiss}
+          className="ml-2 inline-flex shrink-0 rounded-md text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 h-5 w-5 items-center justify-center"
         >
           <span className="sr-only">Close</span>
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
