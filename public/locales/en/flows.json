@@ -270,6 +270,8 @@
         "funnel": "Sales Funnel",
         "team": "Support Team",
         "user": "Support User",
+        "rating": "Rating",
+        "feedback": "Feedback",
         "email": "Email",
         "phone": "Phone",
         "facebook": "Facebook",

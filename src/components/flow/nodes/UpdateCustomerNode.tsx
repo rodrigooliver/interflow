@@ -68,10 +68,12 @@ export function UpdateCustomerNode({ data, id, isConnectable }: UpdateCustomerNo
     { value: 'funnel', label: t('nodes.updateCustomer.fields.funnel') },
     { value: 'team', label: t('nodes.updateCustomer.fields.team') },
     { value: 'user', label: t('nodes.updateCustomer.fields.user') },
-    { value: 'email', label: t('nodes.updateCustomer.fields.email') },
-    { value: 'phone', label: t('nodes.updateCustomer.fields.phone') },
-    { value: 'facebook', label: t('nodes.updateCustomer.fields.facebook') },
-    { value: 'instagram', label: t('nodes.updateCustomer.fields.instagram') }
+    { value: 'rating', label: t('nodes.updateCustomer.fields.rating') },
+    { value: 'feedback', label: t('nodes.updateCustomer.fields.feedback') },
+    // { value: 'email', label: t('nodes.updateCustomer.fields.email') },
+    // { value: 'phone', label: t('nodes.updateCustomer.fields.phone') },
+    // { value: 'facebook', label: t('nodes.updateCustomer.fields.facebook') },
+    // { value: 'instagram', label: t('nodes.updateCustomer.fields.instagram') }
   ];
 
   return (
@@ -200,14 +202,14 @@ export function UpdateCustomerNode({ data, id, isConnectable }: UpdateCustomerNo
               <option value="">{t('nodes.updateCustomer.selectUser')}</option>
               {users.map(user => (
                 <option key={user.id} value={user.id}>
-                  {user.full_name}
+                  {user.profile?.full_name}
                 </option>
               ))}
             </select>
           </div>
         )}
 
-        {['email', 'phone', 'facebook', 'instagram'].includes(localConfig.field) && (
+        {['email', 'phone', 'facebook', 'instagram', 'rating', 'feedback'].includes(localConfig.field) && (
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {t('nodes.updateCustomer.value')}

@@ -260,7 +260,9 @@
         "instagram": "Instagram",
         "phone": "Telefone",
         "team": "Equipe de Atendimento",
-        "user": "Usuário Atendente"
+        "user": "Usuário Atendente",
+        "rating": "Avaliação",
+        "feedback": "Feedback"
       },
       "funnel": "Funil",
       "selectField": "Selecione o campo",
