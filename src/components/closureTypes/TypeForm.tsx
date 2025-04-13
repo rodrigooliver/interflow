@@ -7,9 +7,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ColorPicker } from '../ui/ColorPicker';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
-import { type Flow } from '../../types/database';
-import { Select } from '../ui/Select';
+import { useFlows } from '../../hooks/useQueryes';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/Select';
 
 const schema = z.object({
 //   id: z.number().optional(),
@@ -31,47 +30,43 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       ...initialValues,
-      color: initialValues?.color || '#60A5FA'
+      color: initialValues?.color || '#60A5FA',
+      flow_id: initialValues?.flow_id || ''
     }
   });
   const { currentOrganizationMember } = useAuthContext();
-  const [flows, setFlows] = useState<Flow[]>([]);
-  const [loadingFlows, setLoadingFlows] = useState(true);
-  const [flowsError, setFlowsError] = useState<string | null>(null);
+  
+  // Interface simplificada para o Flow retornado da query
+  interface FlowListItem {
+    id: string;
+    name: string;
+  }
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Usando o hook useFlows para buscar os fluxos
+  const { data: flowsData = [], isLoading: loadingFlows, error } = useFlows(currentOrganizationMember?.organization.id);
+  
+  // Simplificar os dados dos fluxos para usar no Select
+  const flows: FlowListItem[] = flowsData.map(flow => ({
+    id: flow.id,
+    name: flow.name
+  }));
+  
+  // Mensagem de erro se houver problema ao carregar os fluxos
+  const flowsError = error ? t('errors.load_flows') : null;
+
+  // Registrar o campo flow_id e observar seu valor para o select
+  register('flow_id');
+  const selectedFlow = watch('flow_id') || '';
+
+  // Função para lidar com a mudança no select
+  const handleFlowChange = (value: string) => {
+    setValue('flow_id', value, { shouldDirty: true, shouldValidate: true });
+  };
 
   useEffect(() => {
-    const fetchFlows = async () => {
-      if (!currentOrganizationMember) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('flows')
-          .select('id, name')
-          .eq('organization_id', currentOrganizationMember.organization.id)
-          .order('name');
-
-        if (error) throw error;
-        setFlows(data || []);
-      } catch (error) {
-        console.error('Error fetching flows:', error);
-        setFlowsError(t('errors.load_flows'));
-      } finally {
-        setLoadingFlows(false);
-      }
-    };
-
-    fetchFlows();
-  }, [currentOrganizationMember, t]);
-
-  useEffect(() => {
-    if (initialValues?.flow_id && flows.length > 0) {
-      setValue('flow_id', initialValues.flow_id.toString());
-    }
-  }, [flows, initialValues?.flow_id, setValue]);
-
-  useEffect(() => {
-    if (!initialValues?.id && !initialValues?.color) {
+    if (!initialValues?.color) {
       const colors = [
         '#60A5FA', // Azul
         '#34D399', // Verde
@@ -88,7 +83,7 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
       const randomColor = colors[randomIndex];
       setValue('color', randomColor, { shouldDirty: true, shouldValidate: true });
     }
-  }, [initialValues?.id, initialValues?.color, setValue]);
+  }, [initialValues?.color, setValue]);
 
   const onSubmitHandler = async (values: FormValues) => {
     try {
@@ -122,8 +117,12 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
             className="dark:bg-gray-800 dark:border-gray-700 dark:text-white w-full pl-10"
             placeholder={t('form.title_placeholder')}
             {...register('title')}
-            error={errors.title?.message}
           />
+          {errors.title && (
+            <p className="text-red-500 dark:text-red-400 text-sm mt-1">
+              {errors.title.message}
+            </p>
+          )}
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5a1.99 1.99 0 011.75 1.03l3.5 6.06a2.01 2.01 0 010 1.82l-3.5 6.06A1.99 1.99 0 0112 21H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
@@ -149,35 +148,41 @@ export function TypeForm({ initialValues, onSubmit }: TypeFormProps) {
       </div>
 
       <div>
-        <Select
-          {...register('flow_id')}
-          className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-          disabled={loadingFlows}
-          error={errors.flow_id?.message || flowsError}
-          defaultValue={initialValues?.flow_id?.toString() ?? ''}
-          placeholder={t('form.select_flow')}
+        <Select 
+          value={selectedFlow}
+          onValueChange={handleFlowChange}
+          className={errors.flow_id || flowsError ? "border-red-500" : ""}
         >
-          <option value="">{t('form.no_flow')}</option>
-          {loadingFlows ? (
-            <option value="" disabled>
-              {t('loading')}...
-            </option>
-          ) : flows.length === 0 ? (
-            <option value="" disabled>
-              {t('no_flows_available')}
-            </option>
-          ) : (
-            flows.map((flow) => (
-              <option
-                key={flow.id}
-                value={flow.id.toString()}
-                className="dark:bg-gray-800 dark:text-white"
-              >
-                {flow.name}
-              </option>
-            ))
-          )}
+          <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+            <SelectValue placeholder={t('form.select_flow')} options={flows.map(flow => ({ value: flow.id.toString(), name: flow.name }))} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">{t('form.no_flow')}</SelectItem>
+            {loadingFlows ? (
+              <SelectItem value="" disabled>
+                {t('loading')}...
+              </SelectItem>
+            ) : flows.length === 0 ? (
+              <SelectItem value="" disabled>
+                {t('no_flows_available')}
+              </SelectItem>
+            ) : (
+              flows.map((flow) => (
+                <SelectItem
+                  key={flow.id}
+                  value={flow.id.toString()}
+                >
+                  {flow.name}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
         </Select>
+        {(errors.flow_id || flowsError) && (
+          <p className="text-red-500 dark:text-red-400 text-sm mt-1">
+            {errors.flow_id?.message || flowsError}
+          </p>
+        )}
       </div>
 
       <Button 

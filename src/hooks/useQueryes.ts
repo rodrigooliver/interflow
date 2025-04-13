@@ -755,7 +755,7 @@ export function useClosureTypes(organizationId?: string) {
 
       const { data, error } = await supabase
         .from('closure_types')
-        .select('*')
+        .select('*, flow:flows(*)')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 

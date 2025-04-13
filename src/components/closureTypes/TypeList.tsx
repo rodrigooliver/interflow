@@ -78,7 +78,7 @@ export function TypeList({ types, onEdit, onDelete }: TypeListProps) {
                 <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                   {type.flow?.name || '-'}
                 </td>
-                <td className="px-4 py-3 text-right space-x-2">
+                <td className="flex justify-end px-4 py-3 text-right space-x-2">
                   <Button 
                     variant="ghost" 
                     size="sm"

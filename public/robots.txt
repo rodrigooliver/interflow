@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /settings/
+Disallow: /admin/
+Disallow: /api/
+
+# Permitir acesso às páginas públicas
+Allow: /login
+Allow: /signup
+Allow: /join
+Allow: /privacy-policy
+Allow: /terms-of-service
+
+# Sitemap
+Sitemap: https://interflow.chat/sitemap.xml 

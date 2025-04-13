@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { twMerge } from 'tailwind-merge';
 import { ChevronDown } from 'lucide-react';
 
@@ -77,14 +78,32 @@ interface SelectValueProps {
   placeholder?: string;
   className?: string;
   children?: React.ReactNode;
+  options?: Array<{ value: string; name: string }>;
 }
 
-export const SelectValue: React.FC<SelectValueProps> = ({ placeholder, className, children }) => {
+export const SelectValue: React.FC<SelectValueProps> = ({ placeholder, className, children, options }) => {
   const { value } = useSelectContext();
+  
+  // Função para encontrar o texto correspondente ao valor selecionado
+  const getDisplayValue = () => {
+    // Se tiver children ou não tiver valor, retorna o comportamento padrão
+    if (children || !value) {
+      return children || (value || placeholder || "Selecione uma opção");
+    }
+    
+    // Se tiver options (array de {value, name}), usa ele para buscar o name
+    if (options) {
+      const selected = options.find(option => option.value === value);
+      return selected?.name || value;
+    }
+    
+    // Caso contrário, retorna o próprio valor
+    return value;
+  };
 
   return (
     <span className={twMerge("flex-grow truncate", className)}>
-      {children || (value ? value : placeholder || "Selecione uma opção")}
+      {getDisplayValue()}
     </span>
   );
 };
@@ -93,11 +112,30 @@ export const SelectValue: React.FC<SelectValueProps> = ({ placeholder, className
 interface SelectContentProps {
   children: React.ReactNode;
   className?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
-export const SelectContent: React.FC<SelectContentProps> = ({ children, className }) => {
+export const SelectContent: React.FC<SelectContentProps> = ({ 
+  children, 
+  className,
+  searchable = false,
+  searchPlaceholder = "Pesquisar..." 
+}) => {
   const { open, setOpen, triggerRef } = useSelectContext();
   const contentRef = useRef<HTMLDivElement>(null);
+  const [searchValue, setSearchValue] = useState('');
+  
+  // Função para filtrar os itens com base na pesquisa
+  const filteredChildren = searchable && searchValue 
+    ? React.Children.toArray(children).filter(child => {
+        if (React.isValidElement(child) && child.type === SelectItem) {
+          const childText = String(child.props.children || '').toLowerCase();
+          return childText.includes(searchValue.toLowerCase());
+        }
+        return true;
+      })
+    : children;
 
   // Fechar ao clicar fora
   useEffect(() => {
@@ -119,19 +157,49 @@ export const SelectContent: React.FC<SelectContentProps> = ({ children, classNam
     };
   }, [open, setOpen, triggerRef]);
 
+  // Limpar pesquisa quando fechar
+  useEffect(() => {
+    if (!open) {
+      setSearchValue('');
+    }
+  }, [open]);
+
   if (!open) return null;
 
-  return (
+  // Modificação para usar portal diretamente no body
+  return createPortal(
     <div
       ref={contentRef}
       className={twMerge(
-        "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800",
+        "fixed z-[9999] overflow-auto rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200",
         className
       )}
+      style={{
+        maxHeight: '15rem',
+        width: triggerRef.current?.getBoundingClientRect().width || 'auto',
+        top: (triggerRef.current?.getBoundingClientRect().bottom || 0) + window.scrollY,
+        left: triggerRef.current?.getBoundingClientRect().left || 0
+      }}
       role="listbox"
     >
-      {children}
-    </div>
+      {searchable && (
+        <div className="sticky top-0 px-2 pt-1 pb-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <input
+            type="text"
+            className="w-full px-2 py-1 text-sm border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+          />
+        </div>
+      )}
+      <div className="py-1">
+        {filteredChildren}
+      </div>
+    </div>,
+    document.body
   );
 };
 

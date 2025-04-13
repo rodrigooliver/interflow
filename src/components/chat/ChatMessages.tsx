@@ -1194,9 +1194,24 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       } : null);
       
       setShowResolutionModal(false);
+
+      // Iniciar flow associado ao tipo de encerramento
+      const selectedClosureType = closureTypes.find(type => type.id === closureTypeId);
+      
+      if (selectedClosureType?.flow_id) {
+        try {
+          // Iniciar o fluxo sem aguardar o retorno e sem fazer qualquer ação após
+          api.post(`/api/${organizationId}/chat/${chatId}/start-flow`, {
+            flowId: selectedClosureType.flow_id
+          }).catch(error => {
+            console.error('Erro ao iniciar flow após encerramento:', error);
+          });
+        } catch (error) {
+          console.error('Erro ao iniciar flow após encerramento:', error);
+        }
+      }
     } catch (error) {
       console.error('Erro ao resolver chat:', error);
-      setError(t('errors.resolving'));
     }
   };
 

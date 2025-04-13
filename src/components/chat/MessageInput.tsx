@@ -1817,7 +1817,7 @@ export function MessageInput({
             </div>
           </div>
         ) : (
-          <div className="input-container flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full p-1 border border-gray-200 dark:border-gray-600">
+          <div className="input-container flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-3xl p-1 border border-gray-200 dark:border-gray-600">
             {/* Botão de anexo (Plus) no lado esquerdo */}
             <div className="relative" ref={attachmentMenuRef}>
               <button
@@ -1869,7 +1869,7 @@ export function MessageInput({
               onFocus={handleTextareaFocus}
               onBlur={handleTextareaBlur}
               placeholder={t('input.placeholder')}
-              className="flex-1 px-4 py-2 bg-transparent border-0 rounded-lg focus:ring-0 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+              className="flex-1 px-0 py-2 bg-transparent border-0 rounded-lg focus:ring-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
               style={{ height: '40px', maxHeight: '120px', overflowY: 'auto' }}
             />
             

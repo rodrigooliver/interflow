@@ -616,6 +616,7 @@ export interface ClosureType {
   title: string;
   color: string;
   flow_id: string;
+  flow?: Flow; // Não está no banco, mas útil para UI
   created_at: string;
   organization_id?: string;
 }
