@@ -738,33 +738,33 @@ export const useBlog = () => {
     });
   };
 
-  // Função para atualizar o sitemap de forma assíncrona
-  const updateSitemap = async () => {
-    if (typeof window !== 'undefined') {
-      try {
-        // Verificar se estamos em ambiente de produção
-        const isProd = process.env.NODE_ENV === 'production';
+  // // Função para atualizar o sitemap de forma assíncrona
+  // const updateSitemap = async () => {
+  //   if (typeof window !== 'undefined') {
+  //     try {
+  //       // Verificar se estamos em ambiente de produção
+  //       const isProd = process.env.NODE_ENV === 'production';
         
-        // Em desenvolvimento, apenas logamos que atualizaria
-        if (!isProd) {
-          console.log('[DEV] Simulando atualização do sitemap (desativado em desenvolvimento)');
-          return;
-        }
+  //       // Em desenvolvimento, apenas logamos que atualizaria
+  //       if (!isProd) {
+  //         console.log('[DEV] Simulando atualização do sitemap (desativado em desenvolvimento)');
+  //         return;
+  //       }
         
-        // Em produção, tentamos atualizar o sitemap
-        console.log('Atualizando sitemap após alteração em posts do blog...');
-        const success = await updateSitemapWithBlogPosts();
+  //       // Em produção, tentamos atualizar o sitemap
+  //       console.log('Atualizando sitemap após alteração em posts do blog...');
+  //       const success = await updateSitemapWithBlogPosts();
         
-        if (success) {
-          console.log('Sitemap atualizado com sucesso');
-        } else {
-          console.warn('Não foi possível atualizar o sitemap automaticamente');
-        }
-      } catch (error) {
-        console.error('Erro ao atualizar sitemap:', error);
-      }
-    }
-  };
+  //       if (success) {
+  //         console.log('Sitemap atualizado com sucesso');
+  //       } else {
+  //         console.warn('Não foi possível atualizar o sitemap automaticamente');
+  //       }
+  //     } catch (error) {
+  //       console.error('Erro ao atualizar sitemap:', error);
+  //     }
+  //   }
+  // };
 
   const useCreatePostMutation = () => {
     return useMutation({
@@ -820,7 +820,7 @@ export const useBlog = () => {
         
         // Atualizar sitemap de forma assíncrona se o post foi publicado
         if (variables.status === 'published') {
-          updateSitemap();
+          // updateSitemap();
         }
       },
       onError: (error: Error) => {
@@ -849,7 +849,7 @@ export const useBlog = () => {
         });
         
         // Atualizar sitemap de forma assíncrona após excluir um post
-        updateSitemap();
+        // updateSitemap();
       },
       onError: (error: Error) => {
         toast.show({
