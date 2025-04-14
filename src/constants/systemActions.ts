@@ -3,7 +3,7 @@ export interface SystemActionType {
   title?: string | null | undefined;
   name: string;
   description: string;
-  type: 'endChat' | 'changeCustomerName' | 'changeFunnel' | 'assignTeam' | 'schedule' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext' | 'updateCustomerCustomData';
+  type: 'endChat' | 'changeCustomerName' | 'updateCustomerCustomData' | 'transferToTeam'  | 'schedule'  | 'changeFunnel' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext' ;
   config?: {
     schedule?: string | null;
     funnel?: string;
@@ -17,18 +17,35 @@ export interface SystemActionType {
 }
 
 export const SYSTEM_ACTIONS: SystemActionType[] = [
-  // {
-  //   name: 'Encerrar Chat',
-  //   description: 'Encerra o chat atual',
-  //   type: 'endChat',
-  //   config: {}
-  // },
-  // {
-  //   name: 'Alterar Nome do Cliente',
-  //   description: 'Altera o nome do cliente no chat',
-  //   type: 'changeCustomerName',
-  //   config: {}
-  // },
+ 
+  {
+    name: 'Alterar Nome do Cliente',
+    description: 'Altera o nome do cliente no chat',
+    type: 'changeCustomerName',
+    config: {}
+  },
+  {
+    name: 'Atualizar dados do cliente',
+    description: 'Atualiza os dados do cliente',
+    type: 'updateCustomerCustomData',
+    config: {
+      customFields: []
+    }
+  },
+  {
+    name: 'Transferir para equipe',
+    description: 'Transferir para alguma equipe',
+    type: 'transferToTeam',
+    config: {}
+  },
+  {
+    name: 'Agendar',
+    description: 'Agenda uma ação para o futuro',
+    type: 'schedule',
+    config: {
+      schedule: ''
+    }
+  },
   // {
   //   name: 'Alterar Funil',
   //   description: 'Altera o funil do cliente',
@@ -43,22 +60,13 @@ export const SYSTEM_ACTIONS: SystemActionType[] = [
   //   type: 'assignTeam',
   //   config: {}
   // },
-  {
-    name: 'Agendar',
-    description: 'Agenda uma ação para o futuro',
-    type: 'schedule',
-    config: {
-      schedule: ''
-    }
-  },
-  {
-    name: 'Atualizar dados do cliente',
-    description: 'Atualiza os dados do cliente',
-    type: 'updateCustomerCustomData',
-    config: {
-      customFields: []
-    }
-  },
+  
+   // {
+  //   name: 'Encerrar Chat',
+  //   description: 'Encerra o chat atual',
+  //   type: 'endChat',
+  //   config: {}
+  // },
   // {
   //   name: 'Criar Tarefa',
   //   description: 'Cria uma nova tarefa',

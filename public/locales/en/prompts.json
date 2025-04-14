@@ -268,6 +268,11 @@
         "nameInsert": "Update {{fields}} of the customer",
         "description": "Update {{fields}} of the customer when they send these data"
       },
+      "transferToTeam": {
+        "name": "Transfer to Team",
+        "nameInsert": "Transfer to Team",
+        "description": "Transfer to some team when... (example: customer says 'I want to speak with sales')"
+      },
       "endChat": {
         "name": "End Chat",
         "nameInsert": "End Chat",
@@ -276,7 +281,7 @@
       "changeCustomerName": {
         "name": "Change Customer Name",
         "nameInsert": "Change Customer Name",
-        "description": "Change the current customer name when... (example: customer says 'my name is John')"
+        "description": "Change the current customer name only when the customer says 'my name is John'"
       },
       "changeFunnel": {
         "name": "Change Funnel",

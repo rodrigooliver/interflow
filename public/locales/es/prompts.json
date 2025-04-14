@@ -262,6 +262,11 @@
         "nameInsert": "Actualizar {{fields}} del cliente",
         "description": "Actualizar {{fields}} del cliente cuando el cliente envía esos datos"
       },
+      "transferToTeam": {
+        "name": "Transferir para equipo",
+        "nameInsert": "Transferir para equipo",
+        "description": "Transferir para algún equipo cuando... (ejemplo: el cliente dice 'quiero hablar con ventas')"
+      },
       "endChat": {
         "name": "Finalizar Chat", 
         "nameInsert": "Finalizar Chat",
@@ -270,7 +275,7 @@
       "changeCustomerName": {
         "name": "Cambiar Nombre del Cliente",
         "nameInsert": "Cambiar Nombre del Cliente",
-        "description": "Cambiar el nombre del cliente actual cuando... (ejemplo: el cliente dice 'mi nombre es Juan')"
+        "description": "Cambiar el nombre del cliente somente cuando el cliente diga 'mi nombre es Juan'"
       },
       "changeFunnel": {
         "name": "Cambiar Embudo",
