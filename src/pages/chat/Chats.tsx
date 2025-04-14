@@ -825,7 +825,7 @@ export default function Chats() {
         </div>
 
         {/* Status Filter Buttons */}
-        <div className="mt-3 overflow-x-auto pb-1 flex space-x-2 scrollbar-hide custom-scrollbar">
+        <div className="mt-3 overflow-x-auto pb-2 flex space-x-2 custom-scrollbar">
           <button
             onClick={() => handleFilterChange('status', 'unassigned')}
             className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${

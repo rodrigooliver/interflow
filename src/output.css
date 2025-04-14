@@ -5233,15 +5233,43 @@ main.overflow-y-auto {
 
 .scrollbar-hide.custom-scrollbar::-webkit-scrollbar {
   /* Não escondemos completamente para que a estilização da custom-scrollbar funcione em Windows */
-  display: initial;
+  display: initial !important;
+  width: 6px !important;
+  height: 6px !important;
+}
+
+/* Estilo específico para scrollbar horizontal na barra de filtros rápidos */
+
+.mt-3.overflow-x-auto.custom-scrollbar::-webkit-scrollbar {
+  height: 4px !important;
+  bottom: 0 !important;
+  position: absolute !important;
+  opacity: 0;
+  -webkit-transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease;
+}
+
+.mt-3.overflow-x-auto.custom-scrollbar:hover::-webkit-scrollbar {
+  opacity: 1;
+}
+
+.mt-3.overflow-x-auto.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.7) !important;
+  border-radius: 2px !important;
+}
+
+.dark .mt-3.overflow-x-auto.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.7) !important;
 }
 
 /* Apenas em macOS, mesmo com custom-scrollbar, esconder a scrollbar */
 
 @media screen and (max-width: 100vw) and (min-width: 0px) and (-webkit-min-device-pixel-ratio: 2), screen and (max-width: 100vw) and (min-width: 0px) and (min-resolution: 192dpi) {
   .scrollbar-hide.custom-scrollbar::-webkit-scrollbar {
-    display: none;
+    display: none !important;
     /* Safari e Chrome em macOS */
+    width: 0 !important;
+    height: 0 !important;
   }
 }
 
