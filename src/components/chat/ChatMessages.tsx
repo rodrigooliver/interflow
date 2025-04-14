@@ -1175,7 +1175,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       if (messageError) throw messageError;
 
-      const newStatus = (selectedClosureType ? 'await_closing' : 'closed');
+      const newStatus = (selectedClosureType?.flow_id ? 'await_closing' : 'closed');
 
       // Depois atualiza o status do chat
       const { error: chatError } = await supabase
