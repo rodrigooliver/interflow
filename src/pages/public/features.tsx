@@ -33,8 +33,8 @@ export default function Features() {
               className="rounded-lg shadow-lg w-full object-cover" 
             />
           ) : (
-            <div className="bg-blue-100 dark:bg-blue-900 rounded-lg h-64 w-full flex items-center justify-center">
-              <span className="text-blue-600 dark:text-blue-300 text-lg font-medium">
+            <div className="bg-blue-300 dark:bg-slate-950 rounded-lg h-64 w-full flex items-center justify-center">
+              <span className="text-blue-900 dark:text-blue-100 text-lg font-medium">
                 {feature.title}
               </span>
             </div>
@@ -90,18 +90,18 @@ export default function Features() {
       <div className="pt-4 pb-8">
         <main>
           {/* Hero section */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-16">
+          <div className="bg-gradient-to-r from-blue-900 to-indigo-950 py-16">
             <div className="container mx-auto px-4">
               <div className="max-w-4xl mx-auto text-center">
                 <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">
                   {t('heroTitle')}
                 </h1>
-                <p className="text-xl md:text-2xl text-blue-100 mb-8">
+                <p className="text-xl md:text-2xl text-blue-50 mb-8">
                   {t('heroSubtitle')}
                 </p>
                 <Link 
                   to="/signup" 
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-950 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
                 >
                   {t('startFree')}
                   <ArrowRight className="ml-2 -mr-1 h-5 w-5" />
@@ -134,7 +134,7 @@ export default function Features() {
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                   <Link 
                     to="/signup" 
-                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-900 hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
                   >
                     {t('ctaButton')}
                   </Link>
