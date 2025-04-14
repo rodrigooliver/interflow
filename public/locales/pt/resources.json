@@ -10,21 +10,21 @@
         {
           "title": "Guia de Introdução ao Interflow",
           "description": "Aprenda os fundamentos do Interflow e como configurar sua conta em menos de uma hora.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/getting-started.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/getting-started.png",
           "link": "/resources/getting-started",
           "type": "Guia"
         },
         {
           "title": "Configurando Canais de Atendimento",
           "description": "Tutorial completo sobre como integrar WhatsApp, Facebook, Instagram e outros canais.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/channels-setup.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/channels-setup.png",
           "link": "/resources/channels-setup",
           "type": "Tutorial"
         },
         {
           "title": "Criando Fluxos Automatizados",
           "description": "Aprenda a criar fluxos de conversação automáticos para atender seus clientes 24/7.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/automation-flows.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/automation-flows.png",
           "link": "/resources/automation-flows",
           "type": "Tutorial"
         }
@@ -37,21 +37,21 @@
         {
           "title": "Templates de Mensagens para WhatsApp",
           "description": "20 templates aprovados pelo WhatsApp para diferentes setores e situações.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/whatsapp-templates.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/whatsapp-templates.png",
           "link": "/resources/whatsapp-templates",
           "type": "Template"
         },
         {
           "title": "Scripts de Atendimento ao Cliente",
           "description": "Scripts profissionais para lidar com dúvidas, reclamações e situações comuns.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/customer-scripts.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/customer-scripts.png",
           "link": "/resources/customer-scripts",
           "type": "Script"
         },
         {
           "title": "Fluxos de Vendas Pré-configurados",
           "description": "Acelere seu processo de vendas com fluxos prontos para qualificação e negociação.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/sales-flows.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/sales-flows.png",
           "link": "/resources/sales-flows",
           "type": "Template"
         }
@@ -64,21 +64,21 @@
         {
           "title": "Como Aumentar Vendas com Automação",
           "description": "Webinar com especialistas em como usar automação para impulsionar conversões.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/sales-webinar.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/sales-webinar.png",
           "link": "/resources/sales-automation-webinar",
           "type": "Webinar"
         },
         {
           "title": "Melhores Práticas em Atendimento Omnichannel",
           "description": "Aprenda estratégias para oferecer uma experiência consistente em todos os canais.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/omnichannel-webinar.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/omnichannel-webinar.png",
           "link": "/resources/omnichannel-best-practices",
           "type": "Webinar"
         },
         {
           "title": "Interflow na Prática: Demo Completa",
           "description": "Demonstração completa de todas as funcionalidades do Interflow em um caso real.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/demo-video.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/demo-video.png",
           "link": "/resources/complete-demo",
           "type": "Vídeo"
         }
@@ -91,21 +91,21 @@
         {
           "title": "Guia Definitivo de Atendimento ao Cliente Digital",
           "description": "E-book completo com estratégias, técnicas e métricas para atendimento digital de excelência.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/ebook-customer-service.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/ebook-customer-service.png",
           "link": "/resources/ebook-customer-service",
           "type": "E-book"
         },
         {
           "title": "CRM na Era Digital: Estratégias que Funcionam",
           "description": "Guia prático sobre como implementar estratégias de CRM modernas e eficazes.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/crm-guide.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/crm-guide.png",
           "link": "/resources/crm-guide",
           "type": "Guia PDF"
         },
         {
           "title": "ROI do Atendimento: Como Medir e Melhorar",
           "description": "Aprenda a calcular o retorno sobre investimento do seu atendimento e otimizar resultados.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/resources/roi-guide.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/resources/roi-guide.png",
           "link": "/resources/roi-guide",
           "type": "E-book"
         }

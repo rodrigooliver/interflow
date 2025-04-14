@@ -22,11 +22,11 @@ export default function Resources() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
         {resource.imageUrl && (
-          <div className="w-full h-40 overflow-hidden">
+          <div className="w-full pt-[56.25%] relative overflow-hidden">
             <img 
               src={resource.imageUrl} 
               alt={resource.title}
-              className="w-full h-full object-cover" 
+              className="absolute top-0 left-0 w-full h-full object-cover" 
             />
           </div>
         )}
