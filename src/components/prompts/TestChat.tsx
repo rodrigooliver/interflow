@@ -11,12 +11,18 @@ interface TestChatProps {
   selectedModel: string;
   temperature: number;
   systemPrompt: string;
+  content_addons?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    content: string;
+    type: string;
+  }>;
   placeholder?: string;
   emptyMessage?: string;
   clearChatText?: string;
   sendButtonText?: string;
   testingText?: string;
-  successMessage?: string;
   noIntegrationMessage?: string;
   tokenUsageLabel?: string;
   promptTokensLabel?: string;
@@ -31,12 +37,12 @@ const TestChat: React.FC<TestChatProps> = ({
   selectedModel,
   temperature,
   systemPrompt,
+  content_addons = [],
   placeholder,
   emptyMessage,
   clearChatText,
   sendButtonText,
   testingText,
-  successMessage,
   noIntegrationMessage,
   tokenUsageLabel,
   promptTokensLabel,
@@ -53,7 +59,6 @@ const TestChat: React.FC<TestChatProps> = ({
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [success, setSuccess] = useState('');
 
   // Effect to scroll to the end of the conversation when new messages are added
   useEffect(() => {
@@ -67,7 +72,6 @@ const TestChat: React.FC<TestChatProps> = ({
     
     setTesting(true);
     setError('');
-    setSuccess('');
     // Reset token usage information when starting a new test
     setTokenUsage(null);
     
@@ -107,7 +111,8 @@ const TestChat: React.FC<TestChatProps> = ({
           systemPrompt,
           messages: apiMessages,
           model: selectedModel,
-          temperature
+          temperature,
+          content_addons
         }
       );
       
@@ -130,7 +135,6 @@ const TestChat: React.FC<TestChatProps> = ({
           content: assistantMessage.content 
         }
       ]);
-      setSuccess(successMessage || t('prompts:test.success'));
     } catch (error: unknown) {
       console.error('Error testing prompt:', error);
       const apiError = error as { response?: { data?: { error?: string } }, message?: string };
@@ -147,7 +151,6 @@ const TestChat: React.FC<TestChatProps> = ({
   const handleClearChat = () => {
     setChatMessages([]);
     setTokenUsage(null);
-    setSuccess('');
   };
 
   return (
@@ -195,11 +198,6 @@ const TestChat: React.FC<TestChatProps> = ({
           {error}
         </div>
       )}
-      {/* {success && (
-        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-sm">
-          {success}
-        </div>
-      )} */}
 
       {/* Container de mensagens */}
       <div 

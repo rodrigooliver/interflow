@@ -1547,6 +1547,7 @@ const PromptFormMain: React.FC = () => {
                         selectedModel={selectedModel}
                         temperature={temperature}
                         systemPrompt={formData.content}
+                        content_addons={formData.content_addons}
                       />
                     </div>
                   )}
@@ -1562,6 +1563,7 @@ const PromptFormMain: React.FC = () => {
               selectedModel={selectedModel}
               temperature={temperature}
               systemPrompt={formData.content}
+              content_addons={formData.content_addons}
             />
           </div>
         </div>
