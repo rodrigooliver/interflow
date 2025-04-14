@@ -209,7 +209,7 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
         .eq('organization_id', currentOrganizationMember.organization.id)
         .eq('channel_id', channel.id)
         .eq('customer_id', customerId)
-        .in('status', ['in_progress', 'pending']);
+        .in('status', ['in_progress', 'pending', 'await_closing']);
 
       if (activeChatsError) throw activeChatsError;
 

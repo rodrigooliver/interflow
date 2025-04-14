@@ -21,7 +21,7 @@ export interface Chat {
   organization_id: Organization;
   channel_id: ChatChannel;
   team_id?: string;
-  status: 'pending' | 'in_progress' | 'closed';
+  status: 'pending' | 'in_progress' | 'closed' | 'await_closing';
   created_at: string;
   arrival_time: string;
   start_time?: string;

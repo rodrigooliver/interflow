@@ -105,7 +105,7 @@ interface ChatMessagesProps {
 // Definir interface para o objeto chat
 interface Chat {
   id: string;
-  status: 'pending' | 'in_progress' | 'closed';
+  status: 'pending' | 'in_progress' | 'closed' | 'await_closing';
   customer?: {
     id: string;
     name: string;
@@ -1159,6 +1159,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         throw new Error(t('errors.unauthenticated'));
       }
 
+      // Iniciar flow associado ao tipo de encerramento
+      const selectedClosureType = closureTypes.find(type => type.id === closureTypeId);
+
       const { error: messageError } = await supabase
         .from('messages')
         .insert({
@@ -1172,11 +1175,13 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       if (messageError) throw messageError;
 
+      const newStatus = (selectedClosureType ? 'await_closing' : 'closed');
+
       // Depois atualiza o status do chat
       const { error: chatError } = await supabase
         .from('chats')
         .update({ 
-          status: 'closed',
+          status: newStatus,
           end_time: new Date().toISOString(),
           closure_type_id: closureTypeId,
           title: title
@@ -1187,16 +1192,13 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       
       setChat((prev: Chat | null) => prev ? {
         ...prev,
-        status: 'closed',
+        status: newStatus,
         end_time: new Date().toISOString(),
         closure_type_id: closureTypeId,
         title: title
       } : null);
       
       setShowResolutionModal(false);
-
-      // Iniciar flow associado ao tipo de encerramento
-      const selectedClosureType = closureTypes.find(type => type.id === closureTypeId);
       
       if (selectedClosureType?.flow_id) {
         try {
@@ -2800,7 +2802,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             )}
             
             {/* Adicionar título do chat quando fechado */}
-            {chat?.status === 'closed' && chat?.title && (
+            {(chat?.status === 'closed' || chat?.status === 'await_closing') && chat?.title && (
               <div className="w-full mt-4">
                 <div className="flex justify-center">
                   <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400">
@@ -2943,7 +2945,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             </div>
           )}
 
-          {chat?.status === 'closed' && (
+          {(chat?.status === 'closed' || chat?.status === 'await_closing') && (
             <div className="border-t border-gray-200 dark:border-gray-700 p-4 pb-4">
               <div className="text-center text-gray-500 dark:text-gray-400">
                 <span className="inline-block mr-2">✓</span>
