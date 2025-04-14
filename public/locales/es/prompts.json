@@ -382,5 +382,33 @@
     "previewMode": "Vista Previa"
   },
   "togglePreview": "Alternar vista previa",
-  "toggleFullscreen": "Alternar pantalla completa"
+  "toggleFullscreen": "Alternar pantalla completa",
+  "extraContexts": "Contextos Adicionales",
+  "addExtraContext": "Añadir Contexto Adicional",
+  "editExtraContext": "Editar Contexto Adicional",
+  "noExtraContexts": "No hay contextos adicionales",
+  "selectTemplate": "Seleccione una plantilla",
+  "templates": {
+    "whatsappList": {
+      "title": "Lista de WhatsApp",
+      "description": "Lista interactiva de WhatsApp con secciones y opciones",
+      "defaultTitle": "Lista de WhatsApp",
+      "defaultDescription": "Lista interactiva de WhatsApp con secciones y opciones seleccionables",
+      "formatHeading": "Formato para lista al solicitar lista de servicios de la empresa, o cuando puedas estructurar la lista de servicios en secciones y opciones",
+      "buttonText": "Nombre del botón:",
+      "sectionTitle": "Título Sección 1",
+      "sectionTitle2": "Título Sección 2",
+      "optionTitle": "Opción 1",
+      "optionTitle2": "Opción 2",
+      "optionDescription": "Descripción de la opción 1",
+      "optionDescription2": "Descripción de la opción 2"
+    },
+    "blank": {
+      "title": "En blanco",
+      "description": "Cree un contexto personalizado desde cero",
+      "defaultTitle": "Contexto Personalizado",
+      "defaultDescription": "Contexto personalizado creado manualmente"
+    }
+  },
+  "description": "Descripción"
 }

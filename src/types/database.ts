@@ -510,6 +510,7 @@ export interface Prompt {
   organization_id: Organization;
   title: string;
   content: string;
+  content_addons?: string[];
   description?: string;
   tags?: string[];
   created_at: string;

@@ -428,5 +428,33 @@
     "previewMode": "Preview"
   },
   "togglePreview": "Toggle preview",
-  "toggleFullscreen": "Toggle fullscreen"
+  "toggleFullscreen": "Toggle fullscreen",
+  "extraContexts": "Extra Contexts",
+  "addExtraContext": "Add Extra Context",
+  "editExtraContext": "Edit Extra Context",
+  "noExtraContexts": "No extra contexts added",
+  "selectTemplate": "Select a template",
+  "templates": {
+    "whatsappList": {
+      "title": "WhatsApp List",
+      "description": "Interactive WhatsApp list with sections and options",
+      "defaultTitle": "WhatsApp List",
+      "defaultDescription": "Interactive WhatsApp list with sections and selectable options",
+      "formatHeading": "Format for list when requesting company service list, or when you can structure the service list into sections and options",
+      "buttonText": "Button name:",
+      "sectionTitle": "Section 1 Title",
+      "sectionTitle2": "Section 2 Title",
+      "optionTitle": "Option 1",
+      "optionTitle2": "Option 2",
+      "optionDescription": "Description of option 1",
+      "optionDescription2": "Description of option 2"
+    },
+    "blank": {
+      "title": "Blank",
+      "description": "Create a custom context from scratch",
+      "defaultTitle": "Custom Context",
+      "defaultDescription": "Manually created custom context"
+    }
+  },
+  "description": "Description"
 }

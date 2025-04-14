@@ -5,7 +5,8 @@ import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, Chevro
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
-import { PromptFormData, Tool, ToolAction } from '../../types/prompts';
+import { Tool, ToolAction } from '../../types/prompts';
+import { SystemActionType } from '../../constants/systemActions';
 import { Integration } from '../../types/database';
 import ContentEditor from './ContentEditor';
 import ToolForm from './ToolForm';
@@ -20,6 +21,8 @@ import SystemActionsList from './SystemActionsList';
 import { Trigger } from '../../types/flow';
 import { TriggersList } from '../flow/TriggersList';
 import MediaList from './MediaList';
+import ExtraContextModal from './ExtraContextModal';
+import ExtraContextList from './ExtraContextList';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -200,6 +203,30 @@ const nameTool = (text: string): string => {
   return slug;
 };
 
+interface ExtraContext {
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  type: 'whatsapp_list';
+}
+
+interface PromptFormData {
+  title: string;
+  content: string;
+  tools: Tool[];
+  destinations: Record<string, ToolAction[]>;
+  actions: SystemActionType[];
+  config: Record<string, unknown>;
+  media: Array<{
+    id: string;
+    url: string;
+    type: 'audio' | 'video' | 'image' | 'pdf' | 'document';
+    name: string;
+  }>;
+  content_addons: ExtraContext[];
+}
+
 const PromptFormMain: React.FC = () => {
   const { t } = useTranslation(['prompts', 'common', 'flows']);
   const navigate = useNavigate();
@@ -217,7 +244,8 @@ const PromptFormMain: React.FC = () => {
     destinations: {},
     actions: [],
     config: {},
-    media: []
+    media: [],
+    content_addons: []
   });
   
   // Adicionar estado para timezone usando o fuso horário padrão do navegador
@@ -269,6 +297,8 @@ const PromptFormMain: React.FC = () => {
   const queryClient = useQueryClient();
   const [showIntegrationModal, setShowIntegrationModal] = useState(false);
   const [triggers, setTriggers] = useState<Trigger[]>([]);
+  const [showContextModal, setShowContextModal] = useState(false);
+  const [editingContext, setEditingContext] = useState<ExtraContext | undefined>();
 
   useEffect(() => {
     if (id) {
@@ -333,7 +363,8 @@ const PromptFormMain: React.FC = () => {
           destinations: data.destinations || {},
           actions: data.actions || [],
           config: data.config || {},
-          media: data.media || []
+          media: data.media || [],
+          content_addons: data.content_addons || []
         });
         
         // Set up integration, model, temperature, is_default if they exist
@@ -498,6 +529,7 @@ const PromptFormMain: React.FC = () => {
         actions: formData.actions,
         config: updatedConfig,
         media: formData.media,
+        content_addons: formData.content_addons,
         is_default: profile?.is_superadmin ? isDefault : false
       };
 
@@ -862,7 +894,7 @@ const PromptFormMain: React.FC = () => {
 
                   {/* Tab Content */}
                   {activeTab === 'general' && (
-                    <div className="mb-6">
+                    <div className="overflow-y-auto pr-2 min-h-0 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                       {/* Título */}
                       <div className="mb-6">
                         <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1220,46 +1252,81 @@ const PromptFormMain: React.FC = () => {
                             </div>
                           </button>
                         </div>
-                      </div>
-                      
-                      {/* Adicionar botões de salvar na aba Geral */}
-                      <div className="flex justify-end space-x-3 mt-6">
-                        <button
-                          type="button"
-                          onClick={handleBack}
-                          disabled={saving}
-                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                        >
-                          {t('common:back')}
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={saving}
-                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                          {t('common:save')}
-                        </button>
+
+                        {/* Botões de salvar */}
+                        <div className="flex justify-end space-x-3 mt-6">
+                          <button
+                            type="button"
+                            onClick={handleBack}
+                            disabled={saving}
+                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          >
+                            {t('common:back')}
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={saving}
+                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            {t('common:save')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {activeTab === 'context' && (
-                    <div className="flex flex-col h-full">
+                    <div className="flex flex-col h-full overflow-auto">
                       <div className="mb-4 hidden sm:block">
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
                           {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
                         </p>
                       </div>
                       
-                      <div className="flex-1 min-h-0 mb-4">
+                      <div className="mb-4">
                         <ContentEditor 
                           content={formData.content} 
                           onChange={(content) => setFormData({ ...formData, content })} 
                         />
                       </div>
 
-                      <div className="flex justify-end space-x-3 mt-auto">
+                      <div className="space-y-6 mb-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                              {t('prompts:extraContexts')}
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingContext(undefined);
+                                setShowContextModal(true);
+                              }}
+                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              {t('prompts:addExtraContext')}
+                            </button>
+                          </div>
+
+                          <ExtraContextList
+                            contexts={formData.content_addons}
+                            onEdit={(context) => {
+                              setEditingContext(context);
+                              setShowContextModal(true);
+                            }}
+                            onDelete={(id) => {
+                              setFormData({
+                                ...formData,
+                                content_addons: formData.content_addons.filter(context => context.id !== id)
+                              });
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end space-x-3 mt-4 mb-4">
                         <button
                           type="button"
                           onClick={handleBack}
@@ -1531,6 +1598,30 @@ const PromptFormMain: React.FC = () => {
           onCancel={() => setShowIntegrationModal(false)}
         />
       </Modal>
+
+      <ExtraContextModal
+        isOpen={showContextModal}
+        onClose={() => setShowContextModal(false)}
+        onSave={(context) => {
+          if (editingContext) {
+            // Atualizar contexto existente
+            setFormData({
+              ...formData,
+              content_addons: formData.content_addons.map(c => 
+                c.id === context.id ? context : c
+              )
+            });
+          } else {
+            // Adicionar novo contexto
+            setFormData({
+              ...formData,
+              content_addons: [...formData.content_addons, context]
+            });
+          }
+          setShowContextModal(false);
+        }}
+        initialContext={editingContext}
+      />
     </div>
   );
 };

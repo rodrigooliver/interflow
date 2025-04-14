@@ -8,7 +8,10 @@ interface ContentEditorProps {
   onChange: (content: string) => void;
 }
 
-const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
+const ContentEditor: React.FC<ContentEditorProps> = ({
+  content,
+  onChange
+}) => {
   const { t } = useTranslation(['prompts', 'common']);
   const [previewMode, setPreviewMode] = useState<'edit' | 'preview' | 'live'>('edit');
   const [isExpanded, setIsExpanded] = useState(false);
