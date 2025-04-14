@@ -211,7 +211,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
       )}
 
       {/* Scrollable Navigation - ajustando para garantir scroll adequado */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
         <nav className="p-4">
           <ul className="space-y-2">
             {links.map((link) => (

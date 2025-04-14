@@ -177,8 +177,26 @@
   scrollbar-width: none;  /* Firefox */
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+/* Em macOS (sistema darwin), esconder a scrollbar */
+@media screen and (max-width: 100vw) and (min-width: 0px) and (-webkit-min-device-pixel-ratio: 2), 
+       screen and (max-width: 100vw) and (min-width: 0px) and (min-resolution: 192dpi) {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari e Chrome em macOS */
+  }
+}
+
+/* Em Windows e outros sistemas, mostrar scrollbar personalizada quando também tiver custom-scrollbar */
+.scrollbar-hide.custom-scrollbar::-webkit-scrollbar {
+  /* Não escondemos completamente para que a estilização da custom-scrollbar funcione em Windows */
+  display: initial;
+}
+
+/* Apenas em macOS, mesmo com custom-scrollbar, esconder a scrollbar */
+@media screen and (max-width: 100vw) and (min-width: 0px) and (-webkit-min-device-pixel-ratio: 2),
+       screen and (max-width: 100vw) and (min-width: 0px) and (min-resolution: 192dpi) {
+  .scrollbar-hide.custom-scrollbar::-webkit-scrollbar {
+    display: none;  /* Safari e Chrome em macOS */
+  }
 }
 
 /* ReactFlow custom styles */
