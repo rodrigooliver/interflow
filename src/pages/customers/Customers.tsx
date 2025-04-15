@@ -442,7 +442,8 @@ export default function Customers() {
           p_stage_id: selectedStageId,
           p_tag_ids: selectedTagIds.length > 0 ? selectedTagIds : null,
           p_sort_column: sortConfig?.key || 'name',
-          p_sort_direction: sortConfig?.direction || 'asc'
+          p_sort_direction: sortConfig?.direction || 'asc',
+          p_cache_buster: new Date().toISOString() // Adicionar timestamp atual para evitar cache
         });
 
       if (error) {

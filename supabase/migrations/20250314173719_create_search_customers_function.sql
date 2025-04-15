@@ -8,7 +8,8 @@ CREATE OR REPLACE FUNCTION public.search_customers(
   p_stage_id UUID DEFAULT NULL,
   p_tag_ids UUID[] DEFAULT NULL,
   p_sort_column TEXT DEFAULT 'name',
-  p_sort_direction TEXT DEFAULT 'asc'
+  p_sort_direction TEXT DEFAULT 'asc',
+  p_cache_buster TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP -- Parâmetro para evitar cache
 )
 RETURNS TABLE (
   id UUID,
@@ -39,6 +40,8 @@ BEGIN
   IF v_sort_direction NOT IN ('asc', 'desc') THEN
     v_sort_direction := 'asc';
   END IF;
+
+  -- O parâmetro p_cache_buster não é utilizado nas consultas, apenas para evitar cache
 
   -- Obter o total de resultados
   WITH filtered_customers AS (
@@ -248,8 +251,8 @@ END;
 $$;
 
 -- Conceder permissões para a função
-GRANT EXECUTE ON FUNCTION public.search_customers(UUID, TEXT, INTEGER, INTEGER, UUID, UUID, UUID[], TEXT, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.search_customers(UUID, TEXT, INTEGER, INTEGER, UUID, UUID, UUID[], TEXT, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.search_customers(UUID, TEXT, INTEGER, INTEGER, UUID, UUID, UUID[], TEXT, TEXT, TIMESTAMPTZ) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.search_customers(UUID, TEXT, INTEGER, INTEGER, UUID, UUID, UUID[], TEXT, TEXT, TIMESTAMPTZ) TO service_role;
 
 -- Comentário para documentação
 COMMENT ON FUNCTION public.search_customers IS 'Busca clientes e seus contatos, tags, campos personalizados e estágios de CRM com base em vários critérios de pesquisa. Suporta paginação, ordenação e filtragem por funil, estágio e tags.'; 
