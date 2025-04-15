@@ -21,28 +21,6 @@ type CustomerWithStage = Customer & {
   stage?: CRMStage;
 };
 
-interface CustomerChat {
-  id: string;
-  created_at: string;
-  last_message_id?: string;
-  messages?: {
-    id: string;
-    content: string;
-    created_at: string;
-    sender_type: string;
-  };
-}
-
-interface CustomerTag {
-  id: string;
-  tag_id: string;
-  tags: {
-    id: string;
-    name: string;
-    color: string;
-  };
-}
-
 export default function CRMFunnel() {
   const { t } = useTranslation(['crm', 'common']);
   const { id } = useParams();
@@ -113,13 +91,21 @@ export default function CRMFunnel() {
           ),
           chats(
             id,
+            external_id,
             created_at,
             last_message_id,
+            status,
+            title,
             messages!chats_last_message_id_fkey(
               id,
               content,
               created_at,
               sender_type
+            ),
+            channel_details:chat_channels(
+              id,
+              name,
+              type
             )
           )
         `)
@@ -128,44 +114,9 @@ export default function CRMFunnel() {
 
       if (error) throw error;
 
-      // Processar os dados para extrair a última mensagem de cada cliente
-      const processedCustomers = data?.map(customer => {
-        let lastMessage = null;
-        
-        if (customer.chats && customer.chats.length > 0) {
-          // Ordenar os chats pela data de criação (mais recente primeiro)
-          const sortedChats = [...customer.chats]
-            .sort((a: CustomerChat, b: CustomerChat) => {
-              const dateA = new Date(a.created_at).getTime();
-              const dateB = new Date(b.created_at).getTime();
-              return dateB - dateA;
-            });
-          
-          // Pegar o chat mais recente que tenha uma mensagem
-          const recentChatWithMessage = sortedChats.find(
-            (chat: CustomerChat) => chat.messages && chat.last_message_id
-          );
-          
-          if (recentChatWithMessage && recentChatWithMessage.messages) {
-            lastMessage = recentChatWithMessage.messages;
-          }
-        }
-        
-        // Processar as tags para um formato mais fácil de usar
-        const processedTags = customer.tags
-          ? customer.tags
-              .filter((tagRelation: CustomerTag) => tagRelation.tags)
-              .map((tagRelation: CustomerTag) => tagRelation.tags)
-          : [];
-        
-        return {
-          ...customer,
-          last_message: lastMessage,
-          tags: processedTags
-        };
-      });
-
-      setCustomers(processedCustomers || []);
+      // Definir diretamente os clientes sem processamento adicional
+      // O componente KanbanCard agora extrai as informações necessárias
+      setCustomers(data || []);
     } catch (error) {
       console.error('Error loading customers:', error);
       setError(t('common:error'));

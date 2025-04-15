@@ -33,6 +33,13 @@ export function KanbanBoard({
   onRemoveCustomer
 }: KanbanBoardProps) {
   const [activeCustomer, setActiveCustomer] = React.useState<CustomerWithStage | null>(null);
+  // Estado local para atualizar imediatamente a UI após o drop
+  const [localCustomers, setLocalCustomers] = React.useState<CustomerWithStage[]>(customers);
+
+  // Atualizar o estado local quando os clientes mudam
+  React.useEffect(() => {
+    setLocalCustomers(customers);
+  }, [customers]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -44,12 +51,30 @@ export function KanbanBoard({
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const draggedCustomer = customers.find(c => c.id === active.id);
+    const draggedCustomer = localCustomers.find(c => c.id === active.id);
     setActiveCustomer(draggedCustomer || null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      // Atualizar o estado local imediatamente para evitar animação de retorno
+      const updatedCustomers = localCustomers.map(customer => {
+        if (customer.id === active.id) {
+          return {
+            ...customer,
+            stage_id: over.id as string
+          };
+        }
+        return customer;
+      });
+      
+      setLocalCustomers(updatedCustomers);
+    }
+    
     setActiveCustomer(null);
+    // Chamamos o onDragEnd depois da atualização local
     onDragEnd(event);
   };
 
@@ -59,17 +84,17 @@ export function KanbanBoard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 p-6 overflow-x-auto min-h-[calc(100vh-12rem)]">
+      <div className="flex gap-6 p-6 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4">
         {stages.map((stage) => (
           <SortableContext
             key={stage.id}
             id={stage.id}
-            items={customers.filter(c => c.stage_id === stage.id).map(c => c.id)}
+            items={localCustomers.filter(c => c.stage_id === stage.id).map(c => c.id)}
             strategy={verticalListSortingStrategy}
           >
             <KanbanColumn
               stage={stage}
-              customers={customers.filter(c => c.stage_id === stage.id)}
+              customers={localCustomers.filter(c => c.stage_id === stage.id)}
               onEdit={() => onEditStage(stage)}
               onDelete={() => onDeleteStage(stage)}
               onAddCustomer={() => onAddCustomer(stage)}
