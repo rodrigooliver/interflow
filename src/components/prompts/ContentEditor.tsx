@@ -274,6 +274,30 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     const htmlData = event.clipboardData.getData('text/html');
     const plainText = event.clipboardData.getData('text/plain');
     
+    // Obter o textarea e a posição do cursor
+    const textareaElement = event.target as HTMLTextAreaElement;
+    const cursorPos = textareaElement.selectionStart;
+    const cursorEnd = textareaElement.selectionEnd;
+    const hasSelection = cursorPos !== cursorEnd;
+    const currentContent = content;
+
+    // Função para inserir texto na posição do cursor
+    const insertAtCursor = (processedText: string) => {
+      if (hasSelection) {
+        // Se há seleção, substituir apenas o texto selecionado
+        const newContent = currentContent.substring(0, cursorPos) + 
+                         processedText + 
+                         currentContent.substring(cursorEnd);
+        onChange(newContent);
+      } else {
+        // Se não há seleção, inserir na posição do cursor
+        const newContent = currentContent.substring(0, cursorPos) + 
+                         processedText + 
+                         currentContent.substring(cursorPos);
+        onChange(newContent);
+      }
+    };
+    
     // Verificar se o plainText contém marcações de negrito ou itálico
     const hasMarkdownFormatting = 
       plainText.includes('**') || 
@@ -301,7 +325,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       });
       
       const result = processPlainTextWithMarkdown(processedLines.join('\n'));
-      onChange(result);
+      insertAtCursor(result);
       event.preventDefault();
       return;
     }
@@ -310,7 +334,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     if (!htmlData || hasMarkdownFormatting) {
       // Processar texto simples que pode conter marcações Markdown já existentes
       const result = processPlainTextWithMarkdown(plainText);
-      onChange(result);
+      insertAtCursor(result);
       event.preventDefault();
       return;
     }
@@ -468,35 +492,47 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
             if (
               htmlEl.style.fontWeight === 'bold' || 
               htmlEl.style.fontWeight === '700' || 
-              parseInt(htmlEl.style.fontWeight || '0') >= 600 ||
-              htmlEl.getAttribute('data-bold') === 'true' ||
-              htmlEl.classList.contains('bold') || 
-              htmlEl.classList.contains('font-bold') || 
-              htmlEl.classList.contains('font-weight-bold')
+              htmlEl.style.fontWeight === 'bolder' || 
+              parseInt(htmlEl.style.fontWeight) >= 600
             ) {
-              if (!isInsideFormattedElement(el) && !containsBoldTag(el)) {
-                el.outerHTML = `**${el.textContent}**`;
-                return; // Retornar para evitar processar o mesmo elemento novamente
+              // Se não estiver dentro de outro elemento formatado e não contiver outros elementos formatados
+              if (!isInsideFormattedElement(htmlEl) && !containsBoldTag(htmlEl)) {
+                htmlEl.outerHTML = `**${htmlEl.textContent}**`;
               }
             }
-            
             // Aplicar itálico baseado em estilo
-            if (
+            else if (
               htmlEl.style.fontStyle === 'italic' || 
-              htmlEl.getAttribute('data-italic') === 'true' ||
-              htmlEl.classList.contains('italic') || 
-              htmlEl.classList.contains('font-italic')
+              htmlEl.style.fontStyle === 'oblique'
             ) {
-              if (!isInsideFormattedElement(el) && !containsItalicTag(el)) {
-                el.outerHTML = `*${el.textContent}*`;
-                return; // Retornar para evitar processar o mesmo elemento novamente
+              // Se não estiver dentro de outro elemento formatado e não contiver outros elementos formatados
+              if (!isInsideFormattedElement(htmlEl) && !containsItalicTag(htmlEl)) {
+                htmlEl.outerHTML = `*${htmlEl.textContent}*`;
               }
             }
           }
         }
       });
       
-      // Verificar elementos inline do MS Word
+      // Processar listagem de definições
+      const dts = tempDiv.querySelectorAll('dt');
+      dts.forEach(dt => {
+        dt.outerHTML = `**${dt.textContent}**\n`;
+      });
+      
+      const dds = tempDiv.querySelectorAll('dd');
+      dds.forEach(dd => {
+        dd.outerHTML = `${dd.textContent}\n\n`;
+      });
+      
+      // Processar citações/blockquotes
+      const quotes = tempDiv.querySelectorAll('blockquote, q');
+      quotes.forEach(quote => {
+        const lines = quote.textContent?.split('\n') || [];
+        const quotedText = lines.map(line => `> ${line}`).join('\n');
+        quote.outerHTML = `${quotedText}\n\n`;
+      });
+      
       convertWordFormatting();
     }
     
@@ -554,8 +590,8 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     // Realizar pós-processamento para limpeza final
     markdown = processPostProcessing(markdown);
     
-    // Inserir o markdown no editor
-    onChange(markdown);
+    // Inserir o markdown na posição do cursor
+    insertAtCursor(markdown);
     
     // Prevenir o comportamento padrão de colagem
     event.preventDefault();

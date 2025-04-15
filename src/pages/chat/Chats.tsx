@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, MessageSquare, Users, UserCheck, Bot, Share2, Tags, X, Plus, GitMerge } from 'lucide-react';
+import { Search, Filter, MessageSquare, Users, UserCheck, Bot, Share2, Tags, X, Plus, GitMerge, Mail } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ChatList } from '../../components/chat/ChatList';
@@ -35,6 +35,7 @@ export default function Chats() {
   const [selectedStage, setSelectedStage] = useState<string>('');
   const [selectedAutomation, setSelectedAutomation] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -165,7 +166,8 @@ export default function Chats() {
     selectedTags, 
     selectedFunnel, 
     selectedStage,
-    selectedAutomation
+    selectedAutomation,
+    showUnreadOnly
   ]);
 
   // Efeito para verificar o ID do chat na URL
@@ -301,6 +303,9 @@ export default function Chats() {
         if (selectedAgent && chatData.assigned_to !== selectedAgent) return false;
         if (selectedTeam && chatData.team_id !== selectedTeam) return false;
         if (selectedChannel && chatData.channel_id !== selectedChannel) return false;
+        
+        // Verificar filtro de não lidos
+        if (showUnreadOnly && (!chatData.unread_count || chatData.unread_count <= 0)) return false;
         
         // Verificação de tags usando os dados obtidos diretamente
         if (selectedTags.length > 0) {
@@ -493,6 +498,11 @@ export default function Chats() {
 
       if (selectedChannel) {
         query = query.eq('channel_id', selectedChannel);
+      }
+
+      // Filtro para mensagens não lidas
+      if (showUnreadOnly) {
+        query = query.gt('unread_count', 0);
       }
 
       if (selectedTags.length > 0) {
@@ -801,6 +811,15 @@ export default function Chats() {
             {t('chats:title')}
           </h2>
           <div className="flex space-x-2">
+            <button
+              onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+              className={`p-2 rounded-md ${
+                showUnreadOnly ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+              title={t('chats:filters.unreadOnly')}
+            >
+              <Mail className="w-5 h-5" />
+            </button>
             <button
               onClick={() => setShowSearchModal(true)}
               className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md"

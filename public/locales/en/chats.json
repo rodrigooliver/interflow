@@ -58,7 +58,8 @@
     "automation": "Automation",
     "automationActive": "Active",
     "automationInactive": "Inactive",
-    "stage": "Stage"
+    "stage": "Stage",
+    "unreadOnly": "Unread only"
   },
   "search": {
     "title": "Search",

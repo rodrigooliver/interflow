@@ -10,6 +10,7 @@ import { useState, useMemo } from 'react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { ChatMessages } from '../../components/chat/ChatMessages';
 import { getChannelIcon } from '../../utils/channel';
+import { useNavigate } from 'react-router-dom';
 
 // Interface para o chat do cliente
 interface CustomerChat {
@@ -80,6 +81,7 @@ interface KanbanCardProps {
 export function KanbanCard({ customer, index, onEditCustomer, onRemove }: KanbanCardProps) {
   const { t, i18n } = useTranslation(['common']);
   const { currentOrganizationMember } = useAuthContext();
+  const navigate = useNavigate();
   
   // Estado para controlar a exibição do modal de chat
   const [showChatModal, setShowChatModal] = useState(false);
@@ -217,6 +219,11 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
     setSelectedChatId(null);
   };
 
+  // Função para expandir o chat em uma nova página
+  const handleExpandChat = (chatId: string) => {
+    navigate(`/app/chats/${chatId}`);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -336,12 +343,26 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
                 <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
                 {t('common:customerChat', 'Atendimento do Cliente')}
               </h2>
-              <button 
-                onClick={handleCloseChatModal}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => handleExpandChat(selectedChatId)}
+                  className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title={t('common:expandChat', 'Expandir conversa')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-expand">
+                    <path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"></path>
+                    <path d="M3 16.2V21m0 0h4.8M3 21l6-6"></path>
+                    <path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"></path>
+                    <path d="M3 7.8V3m0 0h4.8M3 3l6 6"></path>
+                  </svg>
+                </button>
+                <button 
+                  onClick={handleCloseChatModal}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <div className="flex-1 relative chat-modal-wrapper overflow-hidden">
               <div className="absolute inset-0 flex flex-col h-full">

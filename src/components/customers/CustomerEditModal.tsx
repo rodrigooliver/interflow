@@ -14,6 +14,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
 import { getChannelIcon } from '../../utils/channel';
 import { ChatMessages } from '../../components/chat/ChatMessages';
+import { useNavigate } from 'react-router-dom';
 
 // Interface para contatos do cliente
 interface CustomerContact {
@@ -90,6 +91,8 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   
   const [isLoadingCustomerData, setIsLoadingCustomerData] = useState(false);
   const [customerData, setCustomerData] = useState<Customer | null>(null);
+  
+  const navigate = useNavigate();
   
   // Efeito para fechar dropdowns quando clicar fora deles
   useEffect(() => {
@@ -748,6 +751,11 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
     };
   }, [showChatModal]);
 
+  // Função para expandir o chat em uma nova página
+  const handleExpandChat = (chatId: string) => {
+    navigate(`/app/chats/${chatId}`);
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-45 flex md:items-stretch z-50">
       <div className="hidden md:block flex-1" onClick={onClose}></div>
@@ -1239,7 +1247,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                               {/* Cabeçalho do atendimento com status e data */}
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-3">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium truncate ${
                                     chat.status === 'in_progress'
                                       ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400'
                                       : chat.status === 'closed' || chat.status === 'await_closing'
@@ -1248,13 +1256,13 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                                   }`}>
                                     {t(`chats:status.${chat.status}`)}
                                   </span>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                     {format(new Date(chat.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: locales[i18n.language as keyof typeof locales] || enUS })}
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   {chat.last_message?.status && getStatusIcon(chat.last_message.status)}
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                     {formatDistanceToNow(new Date(chat.created_at), {
                                       addSuffix: true,
                                       locale: locales[i18n.language as keyof typeof locales] || enUS
@@ -1362,12 +1370,26 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                   </span>
                 )}
               </h2>
-              <button 
-                onClick={handleCloseChatModal}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => handleExpandChat(selectedChatId)}
+                  className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title={t('chats:expandChat', 'Expandir conversa')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-expand">
+                    <path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"></path>
+                    <path d="M3 16.2V21m0 0h4.8M3 21l6-6"></path>
+                    <path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"></path>
+                    <path d="M3 7.8V3m0 0h4.8M3 3l6 6"></path>
+                  </svg>
+                </button>
+                <button 
+                  onClick={handleCloseChatModal}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <div className="flex-1 relative chat-modal-wrapper overflow-hidden">
               <div className="absolute inset-0 flex flex-col h-full">

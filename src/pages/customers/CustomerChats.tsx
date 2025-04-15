@@ -135,6 +135,11 @@ export default function CustomerChats() {
     setSelectedChatId(null);
   };
 
+  // Função para expandir o chat em uma nova página
+  const handleExpandChat = (chatId: string) => {
+    navigate(`/app/chats/${chatId}`);
+  };
+
   const handleTransferClick = (e: React.MouseEvent, chat: Chat) => {
     e.preventDefault();
     e.stopPropagation();
@@ -257,7 +262,7 @@ export default function CustomerChats() {
                   {/* Cabeçalho do atendimento com status e data */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium truncate ${
                         chat.status === 'in_progress'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400'
                           : chat.status === 'closed' || chat.status === 'await_closing'
@@ -272,7 +277,7 @@ export default function CustomerChats() {
                     </div>
                     <div className="flex items-center space-x-2">
                       {chat.last_message?.status && getStatusIcon(chat.last_message.status)}
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ">
                         {formatDistanceToNow(new Date(chat.created_at), {
                           addSuffix: true,
                           locale: locales[i18n.language as keyof typeof locales] || enUS
@@ -385,12 +390,26 @@ export default function CustomerChats() {
                   </span>
                 )}
               </h2>
-              <button 
-                onClick={handleCloseModal}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => handleExpandChat(selectedChatId)}
+                  className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title={t('chats:expandChat', 'Expandir conversa')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-expand">
+                    <path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"></path>
+                    <path d="M3 16.2V21m0 0h4.8M3 21l6-6"></path>
+                    <path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"></path>
+                    <path d="M3 7.8V3m0 0h4.8M3 3l6 6"></path>
+                  </svg>
+                </button>
+                <button 
+                  onClick={handleCloseModal}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <div className="flex-1 relative chat-modal-wrapper overflow-hidden">
               <div className="absolute inset-0 flex flex-col h-full">

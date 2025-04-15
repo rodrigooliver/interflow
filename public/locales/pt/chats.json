@@ -62,7 +62,8 @@
     "automation": "Automação",
     "automationActive": "Ativo",
     "automationInactive": "Inativo",
-    "stage": "Estágio"
+    "stage": "Estágio",
+    "unreadOnly": "Não lidos"
   },
   "search": {
     "title": "Pesquisar",
