@@ -422,9 +422,9 @@
   "loadingIntegrations": "Carregando integrações...",
   "noIntegrationsAvailable": "Nenhuma integração disponível",
   "editor": {
-    "editMode": "Edição",
-    "splitMode": "Visualização dividida",
-    "previewMode": "Visualização"
+    "editMode": "Código",
+    "liveMode": "Visualização dividida",
+    "previewMode": "Pré-visualização"
   },
   "togglePreview": "Alternar visualização",
   "toggleFullscreen": "Alternar tela cheia",

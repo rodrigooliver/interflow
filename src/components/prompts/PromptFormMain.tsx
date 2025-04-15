@@ -26,9 +26,8 @@ import ExtraContextList from './ExtraContextList';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
-  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
-  { id: 'gpt-4', name: 'GPT-4' },
-  { id: 'gpt-4o', name: 'GPT-4o' }
+  { id: 'gpt-4o', name: 'GPT-4o' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
 ];
 
 // Função para criar um fluxo baseado em um prompt
@@ -1278,11 +1277,11 @@ const PromptFormMain: React.FC = () => {
 
                   {activeTab === 'context' && (
                     <div className="flex flex-col h-full overflow-auto">
-                      <div className="mb-4 hidden sm:block">
+                      {/* <div className="mb-0 hidden sm:block">
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-0">
                           {t('prompts:form.contextDescription') || 'Configure o contexto que será enviado ao modelo. Este contexto define o comportamento e o ambiente do modelo durante a conversa.'}
                         </p>
-                      </div>
+                      </div> */}
                       
                       <div className="mb-4">
                         <ContentEditor 

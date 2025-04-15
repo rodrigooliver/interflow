@@ -423,8 +423,8 @@
   "loadingIntegrations": "Loading integrations...",
   "noIntegrationsAvailable": "No integrations available",
   "editor": {
-    "editMode": "Edit",
-    "splitMode": "Split View",
+    "editMode": "Code",
+    "liveMode": "Split View",
     "previewMode": "Preview"
   },
   "togglePreview": "Toggle preview",

@@ -377,9 +377,9 @@
   "loadingIntegrations": "Cargando integraciones...",
   "noIntegrationsAvailable": "No hay integraciones disponibles",
   "editor": {
-    "editMode": "Editar",
-    "splitMode": "Vista Dividida",
-    "previewMode": "Vista Previa"
+    "editMode": "Código",
+    "liveMode": "Vista dividida",
+    "previewMode": "Vista previa"
   },
   "togglePreview": "Alternar vista previa",
   "toggleFullscreen": "Alternar pantalla completa",
