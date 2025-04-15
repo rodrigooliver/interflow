@@ -202,6 +202,13 @@ export default function Customers() {
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
+      // Resetar para a primeira página ao mudar o termo de pesquisa
+      if (searchTerm !== debouncedSearchTerm) {
+        setSearchParams(prev => {
+          prev.delete('page');
+          return prev;
+        });
+      }
     }, 500); // 500ms de delay
 
     return () => {
@@ -1381,9 +1388,8 @@ export default function Customers() {
             // loadCustomers(true);
           }}
           onSuccess={(silentRefresh = false) => {
-            if (!silentRefresh) {
-              loadCustomers(true);
-            }
+            // Forçar uma recarga, mas mantendo o carregamento silencioso
+            loadCustomers(true);
           }}
         />
       )}
