@@ -201,13 +201,19 @@ export default function Customers() {
   // Implementar debounce para o termo de pesquisa
   useEffect(() => {
     const timerId = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      // Resetar para a primeira página ao mudar o termo de pesquisa
+      // Verificar se o termo de pesquisa mudou realmente
       if (searchTerm !== debouncedSearchTerm) {
+        // Se mudou, resetamos a página para 1
         setSearchParams(prev => {
-          prev.delete('page');
-          return prev;
+          const newParams = new URLSearchParams(prev);
+          newParams.delete('page');
+          return newParams;
         });
+        // Atualizar o termo debounced
+        setDebouncedSearchTerm(searchTerm);
+      } else {
+        // Mesmo sem mudança, atualizamos o debounced para garantir consistência
+        setDebouncedSearchTerm(searchTerm);
       }
     }, 500); // 500ms de delay
 
@@ -449,8 +455,7 @@ export default function Customers() {
           p_stage_id: selectedStageId,
           p_tag_ids: selectedTagIds.length > 0 ? selectedTagIds : null,
           p_sort_column: sortConfig?.key || 'name',
-          p_sort_direction: sortConfig?.direction || 'asc',
-          p_cache_buster: new Date().toISOString() // Adicionar timestamp atual para evitar cache
+          p_sort_direction: sortConfig?.direction || 'asc'
         });
 
       if (error) {
@@ -551,7 +556,7 @@ export default function Customers() {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    // Não resetamos a página aqui, isso será feito no efeito do debouncedSearchTerm
+    // Não precisamos resetar a página aqui, isso será feito no efeito do debounce
   };
 
   // Registrar o totalPages para fins de depuração
@@ -1388,8 +1393,9 @@ export default function Customers() {
             // loadCustomers(true);
           }}
           onSuccess={(silentRefresh = false) => {
-            // Forçar uma recarga, mas mantendo o carregamento silencioso
-            loadCustomers(true);
+            if (!silentRefresh) {
+              loadCustomers(true);
+            }
           }}
         />
       )}

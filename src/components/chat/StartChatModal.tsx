@@ -122,8 +122,7 @@ if (error) {
           p_stage_id: null,
           p_tag_ids: null,
           p_sort_column: 'name',
-          p_sort_direction: 'asc',
-          p_cache_buster: new Date().toISOString()
+          p_sort_direction: 'asc'
         });
 
       if (error) throw error;
