@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, Maximize2 } from 'lucide-react';
 import MDEditor, { commands } from '@uiw/react-md-editor';
@@ -20,9 +20,105 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
   const [colorMode, setColorMode] = useState<'light' | 'dark'>(
     document.documentElement.classList.contains('dark') ? 'dark' : 'light'
   );
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isUndoing, setIsUndoing] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const tempDiv = document.createElement('div');
+  const lastChangeTime = useRef(Date.now());
 
+  // Função para adicionar uma alteração ao histórico
+  const addToHistory = useCallback((newContent: string) => {
+    if (isUndoing) return; // Não adicionar ao histórico durante a operação de desfazer
+    
+    // Evitar adicionar a mesma entrada consecutivamente
+    if (history.length > 0 && history[historyIndex] === newContent) {
+      return;
+    }
+    
+    // Se passaram mais de 500ms desde a última alteração, considerar uma nova entrada
+    // Isso evita encher o histórico com muitas pequenas alterações próximas
+    const now = Date.now();
+    if (now - lastChangeTime.current < 500 && history.length > 0) {
+      // Substituir a última entrada em vez de adicionar uma nova
+      const newHistory = [...history.slice(0, historyIndex), newContent];
+      setHistory(newHistory);
+      return;
+    }
+    
+    // Criar um novo histórico a partir do ponto atual 
+    // (descartando alterações "desfeitas" se estivermos no meio do histórico)
+    const newHistory = [...history.slice(0, historyIndex + 1), newContent];
+    
+    // Limitar o tamanho do histórico para evitar consumo excessivo de memória
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    }
+    
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    lastChangeTime.current = now;
+  }, [history, historyIndex, isUndoing]);
+
+  // Função para desfazer a última alteração - memoizada com useCallback
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      setIsUndoing(true);
+      const previousContent = history[historyIndex - 1];
+      setHistoryIndex(historyIndex - 1);
+      onChange(previousContent);
+      
+      // Resetar a flag de desfazer após a operação ser concluída
+      setTimeout(() => {
+        setIsUndoing(false);
+      }, 0);
+    }
+  }, [history, historyIndex, onChange]);
+
+  // Função para refazer a última alteração desfeita - memoizada com useCallback
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setIsUndoing(true);
+      const nextContent = history[historyIndex + 1];
+      setHistoryIndex(historyIndex + 1);
+      onChange(nextContent);
+      
+      // Resetar a flag de desfazer após a operação ser concluída
+      setTimeout(() => {
+        setIsUndoing(false);
+      }, 0);
+    }
+  }, [history, historyIndex, onChange]);
+
+  // Tratar atalhos de teclado para desfazer/refazer - memoizado com useCallback
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Ctrl+Z ou Command+Z (Mac) para desfazer
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+      event.preventDefault();
+      undo();
+    }
+    
+    // Ctrl+Shift+Z ou Command+Shift+Z (Mac) para refazer
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) {
+      event.preventDefault();
+      redo();
+    }
+    
+    // Ctrl+Y ou Command+Y (Mac) para refazer (alternativa)
+    if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+      event.preventDefault();
+      redo();
+    }
+  }, [undo, redo]);
+
+  // Inicializar o histórico quando o componente montar ou quando o conteúdo mudar externamente
+  useEffect(() => {
+    if (history.length === 0 && content) {
+      setHistory([content]);
+      setHistoryIndex(0);
+    }
+  }, [content, history.length]);
+  
   // Função auxiliar para verificar se um elemento está dentro de um elemento já formatado
   const isInsideFormattedElement = (element: Element): boolean => {
     let parent = element.parentElement;
@@ -266,6 +362,45 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     return processedTitle;
   };
   
+  // Função para inserir texto na posição do cursor
+  const insertAtCursor = useCallback((processedText: string, originalEvent: ClipboardEvent) => {
+    const textareaElement = originalEvent.target as HTMLTextAreaElement;
+    const cursorPos = textareaElement.selectionStart;
+    const cursorEnd = textareaElement.selectionEnd;
+    const hasSelection = cursorPos !== cursorEnd;
+    const currentContent = content;
+    
+    let newContent = '';
+    
+    if (hasSelection) {
+      // Se há seleção, substituir apenas o texto selecionado
+      newContent = currentContent.substring(0, cursorPos) + 
+                  processedText + 
+                  currentContent.substring(cursorEnd);
+    } else {
+      // Se não há seleção, inserir na posição do cursor
+      newContent = currentContent.substring(0, cursorPos) + 
+                  processedText + 
+                  currentContent.substring(cursorPos);
+    }
+    
+    // Adicionar a nova alteração ao histórico
+    addToHistory(newContent);
+    
+    // Atualizar o conteúdo
+    onChange(newContent);
+    
+    // Agora precisamos definir a nova posição do cursor após a operação
+    setTimeout(() => {
+      const newTextarea = editorRef.current?.querySelector('textarea');
+      if (newTextarea) {
+        const newPosition = cursorPos + processedText.length;
+        newTextarea.setSelectionRange(newPosition, newPosition);
+        newTextarea.focus();
+      }
+    }, 0);
+  }, [content, addToHistory, onChange]);
+
   // Função para processar texto formatado colado
   const processFormattedPaste = (event: ClipboardEvent) => {
     if (!event.clipboardData) return;
@@ -273,38 +408,6 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     // Capturar os diferentes formatos disponíveis
     const htmlData = event.clipboardData.getData('text/html');
     const plainText = event.clipboardData.getData('text/plain');
-    
-    // Obter o textarea e a posição do cursor
-    const textareaElement = event.target as HTMLTextAreaElement;
-    const cursorPos = textareaElement.selectionStart;
-    const cursorEnd = textareaElement.selectionEnd;
-    const hasSelection = cursorPos !== cursorEnd;
-    const currentContent = content;
-
-    // Função para inserir texto na posição do cursor
-    const insertAtCursor = (processedText: string) => {
-      if (hasSelection) {
-        // Se há seleção, substituir apenas o texto selecionado
-        const newContent = currentContent.substring(0, cursorPos) + 
-                         processedText + 
-                         currentContent.substring(cursorEnd);
-        onChange(newContent);
-      } else {
-        // Se não há seleção, inserir na posição do cursor
-        const newContent = currentContent.substring(0, cursorPos) + 
-                         processedText + 
-                         currentContent.substring(cursorPos);
-        onChange(newContent);
-      }
-    };
-    
-    // Verificar se o plainText contém marcações de negrito ou itálico
-    const hasMarkdownFormatting = 
-      plainText.includes('**') || 
-      plainText.includes('__') || 
-      (plainText.includes('*') && !plainText.includes('**')) || 
-      (plainText.includes('_') && !plainText.includes('__')) ||
-      plainText.includes('[') && plainText.includes('](');
     
     // Tratamento especial para textos que parecem ter títulos com hífen
     if (plainText.match(/^#{1,6}\s+.*\s+-\s+.*$/m)) {
@@ -325,16 +428,16 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       });
       
       const result = processPlainTextWithMarkdown(processedLines.join('\n'));
-      insertAtCursor(result);
+      insertAtCursor(result, event);
       event.preventDefault();
       return;
     }
     
     // Se for apenas texto simples ou se o texto contiver marcações Markdown
-    if (!htmlData || hasMarkdownFormatting) {
+    if (!htmlData || hasMarkdownFormatting(plainText)) {
       // Processar texto simples que pode conter marcações Markdown já existentes
       const result = processPlainTextWithMarkdown(plainText);
-      insertAtCursor(result);
+      insertAtCursor(result, event);
       event.preventDefault();
       return;
     }
@@ -591,11 +694,35 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     markdown = processPostProcessing(markdown);
     
     // Inserir o markdown na posição do cursor
-    insertAtCursor(markdown);
+    insertAtCursor(markdown, event);
     
     // Prevenir o comportamento padrão de colagem
     event.preventDefault();
   };
+
+  // Verificar marcações de negrito, itálico, etc.
+  const hasMarkdownFormatting = (text: string): boolean => {
+    return text.includes('**') || 
+           text.includes('__') || 
+           (text.includes('*') && !text.includes('**')) || 
+           (text.includes('_') && !text.includes('__')) ||
+           (text.includes('[') && text.includes(']('));
+  };
+
+  // Função para detectar e preservar títulos formatados no editor
+  const handleContentChange = useCallback((value?: string) => {
+    if (value === undefined) return;
+    
+    // Adicionar ao histórico apenas se não for uma operação de desfazer/refazer
+    // e se o valor realmente mudou
+    if (!isUndoing && value !== content) {
+      addToHistory(value);
+    }
+    
+    // Usar diretamente o valor fornecido sem processamento adicional
+    // para preservar a posição do cursor
+    onChange(value);
+  }, [content, isUndoing, addToHistory, onChange]);
 
   useEffect(() => {
     // Adicionar event listener para o evento de colar
@@ -606,14 +733,17 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       
       if (textareaElement) {
         textareaElement.addEventListener('paste', processFormattedPaste);
+        textareaElement.addEventListener('keydown', handleKeyDown);
         
         // Função de limpeza
         return () => {
           textareaElement.removeEventListener('paste', processFormattedPaste);
+          textareaElement.removeEventListener('keydown', handleKeyDown);
         };
       }
     }
-  }, [onChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [undo, redo]);
 
   useEffect(() => {
     // Function to detect theme changes
@@ -667,15 +797,6 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     });
     
     return processed.join('\n');
-  };
-
-  // Função para detectar e preservar títulos formatados no editor
-  const handleContentChange = (value?: string) => {
-    if (value === undefined) return;
-    
-    // Usar diretamente o valor fornecido sem processamento adicional
-    // para preservar a posição do cursor
-    onChange(value);
   };
 
   return (
