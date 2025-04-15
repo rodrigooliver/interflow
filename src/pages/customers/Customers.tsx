@@ -523,7 +523,7 @@ export default function Customers() {
         
         // Construir mapa de valores de campo personalizado
         const newCustomFieldValues: Record<string, Record<string, string>> = {};
-        formattedCustomers.forEach(customer => {
+        formattedCustomers.forEach((customer: Customer) => {
           if (customer.field_values) {
             newCustomFieldValues[customer.id] = customer.field_values;
           }
