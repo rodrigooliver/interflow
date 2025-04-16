@@ -278,14 +278,27 @@ Sentry.init({
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
   enabled: true,
   integrations: [
-    browserTracingIntegration(),
-    replayIntegration(),
+    browserTracingIntegration({
+      idleTimeout: 5000, // Aumenta o tempo limite para não iniciar tantas transações
+    }),
+    replayIntegration({
+      blockAllMedia: true, // Bloqueia captura de mídia para melhorar performance
+      maskAllText: true, // Mascara todo texto para melhorar performance
+    }),
   ],
-  // Performance Monitoring
-  tracesSampleRate: 1.0,
-  // Session Replay
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
+  // Performance Monitoring - reduz significativamente a amostragem
+  tracesSampleRate: 0.2,
+  // Session Replay - reduz amostragem
+  replaysSessionSampleRate: 0.05,
+  replaysOnErrorSampleRate: 0.2,
+  // Função beforeSend para adiar processamento de eventos durante carregamento inicial
+  beforeSend: (event) => {
+    // Durante carregamento inicial da página, adia o envio de eventos não críticos
+    if (document.readyState !== 'complete' && event.level !== 'fatal') {
+      return null;
+    }
+    return event;
+  },
 });
 
 // Create root element
