@@ -488,7 +488,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
         }
-        
+
         // Aguardar 2 segundos antes de verificar reconexão
         reconnectTimeoutRef.current = setTimeout(async () => {
           // Verificar se há novas mensagens desde a última atualização
@@ -497,11 +497,14 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           const timeSinceLastUpdate = now.getTime() - lastUpdate.getTime();
           
           // Se passou mais de 30 segundos, recarregar completamente o chat
-          
+          console.log('timeSinceLastUpdate', timeSinceLastUpdate);
           if (timeSinceLastUpdate > 30000) {
             // Ativar o loading inicial para mostrar o skeleton
             setInitialLoading(true);
             messagesLoadedRef.current = false;
+            
+            // IMPORTANTE: Forçar o newMessagesCount a ser zero imediatamente
+            const forceReset = true;
             
             // Resetar todos os estados relevantes
             setNewMessagesCount(0);
@@ -513,15 +516,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             setUnreadMessagesCount(0);
             setShowNewMessagesIndicator(false);
             
-            
-            // Primeiro carregar o chat para obter informações atualizadas
-            await loadChat();
-            
-            // Depois carregar as mensagens a partir da página 1
-            await loadMessages(1, false);
-            
-            // Atualizar timestamp de última atualização
-            setLastSubscriptionUpdate(new Date());
+            // Usar um timeout para garantir que o estado seja atualizado antes de seguir
+            setTimeout(async () => {
+              // Primeiro carregar o chat para obter informações atualizadas
+              await loadChat();
+              
+              // Depois carregar as mensagens a partir da página 1, forçando newMessagesCount como 0
+              await loadMessages(1, false, forceReset);
+              
+              // Atualizar timestamp de última atualização
+              setLastSubscriptionUpdate(new Date());
+            }, 0);
           } else {
             setLastSubscriptionUpdate(new Date());
           }
@@ -958,14 +963,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     return subscription;
   };
 
-  const loadMessages = async (pageNumber = 1, append = false) => {
+  const loadMessages = async (pageNumber = 1, append = false, forceReset = false) => {
     try {
       if (append) {
         setIsLoadingMore(true);
       }
       
       // Calcular o offset considerando as novas mensagens
-      const offset = (pageNumber - 1) * MESSAGES_PER_PAGE + newMessagesCount;
+      // Se forceReset for true, ignoramos newMessagesCount completamente
+      const offset = forceReset ? (pageNumber - 1) * MESSAGES_PER_PAGE : (pageNumber - 1) * MESSAGES_PER_PAGE + newMessagesCount;
+      
+      console.log(`loadMessages - pageNumber: ${pageNumber}, newMessagesCount: ${newMessagesCount}, forceReset: ${forceReset}, offset calculado: ${offset}`);
       
       const { data, error } = await supabase
         .from('messages')
@@ -1067,6 +1075,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               id,
               full_name,
               avatar_url
+            )
+          ),
+          flow_session:flow_sessions!flow_sessions_chat_id_fkey(
+            flow:flows(
+              id,
+              name
             )
           )
         `)
@@ -2421,7 +2435,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                     : 'bg-purple-600 hover:bg-purple-700'
                 } text-white rounded-md transition-colors flex items-center justify-center`}
                 onClick={() => setShowFlowModal(true)}
-                title={chat?.flow_session_id ? t('flows.pauseFlow') : t('flows.startFlow')}
+                title={chat?.flow_session_id ? `${t('flows.pauseFlow')} ${chat?.flow_session?.[0]?.flow?.name}` : t('flows.startFlow')}
               >
                 {chat?.flow_session_id ? (
                   <>

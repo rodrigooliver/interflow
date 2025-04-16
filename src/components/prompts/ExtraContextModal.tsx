@@ -41,8 +41,8 @@ const ExtraContextModal: React.FC<ExtraContextModalProps> = ({
     return `### *${t('prompts:templates.whatsappList.formatHeading', 'Format for list when requesting health center service list, which can be more specific lists of service types')}* (json format):
 \`\`\`
 {
-    "title": "${t('prompts:title', 'Title')}",
-    "description": "${t('prompts:description', 'Description')}",
+    "title": "${t('prompts:templates.whatsappList.titleExample', 'Example title')}",
+    "description": "${t('prompts:templates.whatsappList.descriptionExample', 'Description')}",
     "buttonText": "${t('prompts:templates.whatsappList.buttonText', 'Button name:')}",
     "sections": [
         {

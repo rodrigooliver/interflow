@@ -440,13 +440,15 @@
       "defaultTitle": "Lista do WhatsApp",
       "defaultDescription": "Lista interativa para WhatsApp com seções e opções selecionáveis",
       "formatHeading": "Formato para lista ao solicitar lista de serviços da empresa, ou quando puder estruturar a lista de serviços em seções e opções",
-      "buttonText": "Nome do botão:",
-      "sectionTitle": "Título da Seção 1",
-      "sectionTitle2": "Título da Seção 2",
-      "optionTitle": "Opção 1",
-      "optionTitle2": "Opção 2",
-      "optionDescription": "Descrição da opção 1",
-      "optionDescription2": "Descrição da opção 2"
+      "titleExample": "Ex.: Lista de serviços da empresa (Obrigatório)",
+      "descriptionExample": "Ex.: Descrição da lista de serviços da empresa (Obrigatório)",
+      "buttonText": "Ex.: Abrir lista",
+      "sectionTitle": "Ex.: Seção 1",
+      "sectionTitle2": "Ex.: Seção 2",
+      "optionTitle": "Ex.: Opção 1",
+      "optionTitle2": "Ex.: Opção 2",
+      "optionDescription": "Ex.: Descrição da opção 1",
+      "optionDescription2": "Ex.: Descrição da opção 2"
     },
     "blank": {
       "title": "Em branco",

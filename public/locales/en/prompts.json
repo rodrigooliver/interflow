@@ -441,13 +441,15 @@
       "defaultTitle": "WhatsApp List",
       "defaultDescription": "Interactive WhatsApp list with sections and selectable options",
       "formatHeading": "Format for list when requesting company service list, or when you can structure the service list into sections and options",
-      "buttonText": "Button name:",
-      "sectionTitle": "Section 1 Title",
-      "sectionTitle2": "Section 2 Title",
-      "optionTitle": "Option 1",
-      "optionTitle2": "Option 2",
-      "optionDescription": "Description of option 1",
-      "optionDescription2": "Description of option 2"
+      "titleExample": "Ex.: Company service list (Required)",
+      "descriptionExample": "Ex.: Description of the company service list (Required)",
+      "buttonText": "Ex.: Open list",
+      "sectionTitle": "Ex.: Section 1 Title",
+      "sectionTitle2": "Ex.: Section 2 Title",
+      "optionTitle": "Ex.: Option 1",
+      "optionTitle2": "Ex.: Option 2",
+      "optionDescription": "Ex.: Description of option 1",
+      "optionDescription2": "Ex.: Description of option 2"
     },
     "blank": {
       "title": "Blank",
