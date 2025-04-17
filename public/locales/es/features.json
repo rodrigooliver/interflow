@@ -14,7 +14,7 @@
         {
           "title": "Atención por WhatsApp",
           "description": "Conecta tu cuenta de WhatsApp Business y atiende a tus clientes en el canal que más utilizan. Nuestra integración oficial permite usar todas las funciones de la API de WhatsApp.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/whatsapp-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/whatsapp-feature.png",
           "benefits": [
             "Atención con múltiples agentes en el mismo número",
             "Envío de mensajes multimedia (imágenes, audios, documentos)",
@@ -26,7 +26,7 @@
         {
           "title": "Redes Sociales Integradas",
           "description": "Gestiona tus conversaciones de Facebook Messenger e Instagram Direct en la misma plataforma, sin necesidad de alternar entre aplicaciones.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/social-media-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/social-media-feature.png",
           "benefits": [
             "Integración con Facebook e Instagram Messenger",
             "Comentarios y menciones de perfil capturados automáticamente",
@@ -38,7 +38,7 @@
         {
           "title": "Chat en el Sitio y Email",
           "description": "Ofrece soporte en tiempo real a través del chat en tu sitio web y mantén la comunicación por email centralizada.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/chat-email-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/chat-email-feature.png",
           "benefits": [
             "Widget de chat personalizable para tu sitio web",
             "Conexión con tu dominio de email corporativo",
@@ -56,7 +56,7 @@
         {
           "title": "Flujos de Atención",
           "description": "Crea jornadas automatizadas para calificar clientes, responder preguntas frecuentes y dirigir al sector correcto sin intervención humana.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/flows-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/flows-feature.png",
           "benefits": [
             "Editor visual de flujos sin necesidad de código",
             "Condiciones personalizables basadas en las respuestas",
@@ -68,7 +68,7 @@
         {
           "title": "Chatbot con IA",
           "description": "Implementa un asistente virtual con inteligencia artificial para atender a tus clientes las 24 horas del día, los 7 días de la semana.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/chatbot-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/chatbot-feature.png",
           "benefits": [
             "Inteligencia artificial que entiende el lenguaje natural",
             "Entrenamiento personalizado con la base de conocimiento de tu empresa",
@@ -80,7 +80,7 @@
         {
           "title": "Mensajes Programados",
           "description": "Programa campañas, recordatorios y seguimientos para que se envíen automáticamente en el momento adecuado.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/scheduled-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/scheduled-feature.png",
           "benefits": [
             "Programación de mensajes individuales o masivos",
             "Secuencias de mensajes con intervalos personalizados",
@@ -98,7 +98,7 @@
         {
           "title": "Gestión de Contactos",
           "description": "Mantén todos los datos e interacciones de tus clientes organizados y accesibles para todo el equipo.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/contacts-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/contacts-feature.png",
           "benefits": [
             "Perfiles completos de clientes con datos personalizables",
             "Historial unificado de interacciones en todos los canales",
@@ -110,7 +110,7 @@
         {
           "title": "Embudo de Ventas",
           "description": "Sigue las oportunidades desde el primer contacto hasta el cierre, con etapas personalizables para tu proceso de ventas.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/sales-funnel-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/sales-funnel-feature.png",
           "benefits": [
             "Visualización de embudo personalizable",
             "Kanban para gestión de oportunidades",
@@ -122,7 +122,7 @@
         {
           "title": "Agendamiento Integrado",
           "description": "Permite que tus clientes programen reuniones directamente en la agenda de tu equipo, eliminando el ir y venir de emails.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/calendar-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/calendar-feature.png",
           "benefits": [
             "Sincronización con Google Calendar y Outlook",
             "Páginas de agendamiento personalizables",
@@ -140,7 +140,7 @@
         {
           "title": "Equipos de Atención",
           "description": "Organiza tu equipo en departamentos o especialidades, con configuraciones de permisos y distribución de trabajo específicas.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/teams-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/teams-feature.png",
           "benefits": [
             "Creación ilimitada de equipos y departamentos",
             "Definición de horarios de atención por equipo",
@@ -152,7 +152,7 @@
         {
           "title": "Monitoreo en Tiempo Real",
           "description": "Monitorea el desempeño de tu operación en tiempo real, identificando cuellos de botella y oportunidades de mejora.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/monitoring-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/monitoring-feature.png",
           "benefits": [
             "Panel de control de atención en tiempo real",
             "Tiempo medio de respuesta y resolución",
@@ -164,7 +164,7 @@
         {
           "title": "Gestión Financiera",
           "description": "Gestiona pagos, suscripciones y facturación directamente en la plataforma, integrando tus ventas al flujo financiero.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/financial-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/financial-feature.png",
           "benefits": [
             "Generación de facturas y enlaces de pago",
             "Control de suscripciones recurrentes",

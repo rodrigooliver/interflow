@@ -14,7 +14,7 @@
         {
           "title": "WhatsApp Customer Service",
           "description": "Connect your WhatsApp Business account and serve your customers in the channel they use most. Our official integration allows you to use all WhatsApp API features.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/whatsapp-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/whatsapp-feature.png",
           "benefits": [
             "Service with multiple agents on the same number",
             "Sending multimedia messages (images, audio, documents)",
@@ -26,7 +26,7 @@
         {
           "title": "Integrated Social Networks",
           "description": "Manage your Facebook Messenger and Instagram Direct conversations on the same platform, without having to switch between applications.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/social-media-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/social-media-feature.png",
           "benefits": [
             "Integration with Facebook and Instagram Messenger",
             "Comments and profile mentions automatically captured",
@@ -38,7 +38,7 @@
         {
           "title": "Website Chat and Email",
           "description": "Offer real-time support through chat on your website and keep email communication centralized.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/chat-email-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/chat-email-feature.png",
           "benefits": [
             "Customizable chat widget for your website",
             "Connection with your corporate email domain",
@@ -56,7 +56,7 @@
         {
           "title": "Service Flows",
           "description": "Create automated journeys to qualify customers, answer frequently asked questions, and direct to the correct department without human intervention.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/flows-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/flows-feature.png",
           "benefits": [
             "Visual flow editor with no coding required",
             "Customizable conditions based on responses",
@@ -68,7 +68,7 @@
         {
           "title": "AI Chatbot",
           "description": "Implement a virtual assistant with artificial intelligence to serve your customers 24 hours a day, 7 days a week.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/chatbot-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/chatbot-feature.png",
           "benefits": [
             "Artificial intelligence that understands natural language",
             "Customized training with your company's knowledge base",
@@ -80,7 +80,7 @@
         {
           "title": "Scheduled Messages",
           "description": "Schedule campaigns, reminders, and follow-ups to be sent automatically at the right time.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/scheduled-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/scheduled-feature.png",
           "benefits": [
             "Scheduling of individual or mass messages",
             "Message sequences with customized intervals",
@@ -98,7 +98,7 @@
         {
           "title": "Contact Management",
           "description": "Keep all your customers' data and interactions organized and accessible to the entire team.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/contacts-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/contacts-feature.png",
           "benefits": [
             "Complete customer profiles with customizable data",
             "Unified history of interactions across all channels",
@@ -110,7 +110,7 @@
         {
           "title": "Sales Funnel",
           "description": "Track opportunities from first contact to closing, with customizable stages for your sales process.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/sales-funnel-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/sales-funnel-feature.png",
           "benefits": [
             "Customizable funnel visualization",
             "Kanban for opportunity management",
@@ -122,7 +122,7 @@
         {
           "title": "Integrated Scheduling",
           "description": "Allow your customers to schedule meetings directly on your team's calendar, eliminating back-and-forth emails.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/calendar-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/calendar-feature.png",
           "benefits": [
             "Synchronization with Google Calendar and Outlook",
             "Customizable scheduling pages",
@@ -140,7 +140,7 @@
         {
           "title": "Service Teams",
           "description": "Organize your team into departments or specialties, with specific permissions and work distribution settings.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/teams-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/teams-feature.png",
           "benefits": [
             "Unlimited creation of teams and departments",
             "Definition of service hours by team",
@@ -152,7 +152,7 @@
         {
           "title": "Real-Time Monitoring",
           "description": "Monitor your operation's performance in real-time, identifying bottlenecks and opportunities for improvement.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/monitoring-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/monitoring-feature.png",
           "benefits": [
             "Real-time service dashboard",
             "Average response and resolution time",
@@ -164,7 +164,7 @@
         {
           "title": "Financial Management",
           "description": "Manage payments, subscriptions, and billing directly on the platform, integrating your sales with financial flow.",
-          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/sign/images/features/financial-feature.jpg",
+          "imageUrl": "https://ttifgdlgcabuliwtjcnu.supabase.co/storage/v1/object/public/images/features/financial-feature.png",
           "benefits": [
             "Generation of invoices and payment links",
             "Control of recurring subscriptions",
