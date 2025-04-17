@@ -6,7 +6,6 @@ export const SocialProof = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
-  const testimonialRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -16,14 +15,14 @@ export const SocialProof = () => {
           observer.disconnect();
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.2 } 
     );
 
     if (sectionRef.current) {
       observer.observe(sectionRef.current);
     }
 
-    // Rotação automática dos destaques
+    // Rotação automática dos depoimentos
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % testimonials.length);
     }, 8000);
@@ -42,7 +41,8 @@ export const SocialProof = () => {
       role: t('socialProof.testimonial1.role'),
       company: t('socialProof.testimonial1.company'),
       image: '/images/testimonials/testimonial1.png',
-      result: t('socialProof.testimonial1.result')
+      result: t('socialProof.testimonial1.result'),
+      rating: 5
     },
     {
       id: 2,
@@ -51,7 +51,8 @@ export const SocialProof = () => {
       role: t('socialProof.testimonial2.role'),
       company: t('socialProof.testimonial2.company'),
       image: '/images/testimonials/testimonial3.png',
-      result: t('socialProof.testimonial2.result')
+      result: t('socialProof.testimonial2.result'),
+      rating: 5
     },
     {
       id: 3,
@@ -60,7 +61,8 @@ export const SocialProof = () => {
       role: t('socialProof.testimonial3.role'),
       company: t('socialProof.testimonial3.company'),
       image: '/images/testimonials/testimonial2.png',
-      result: t('socialProof.testimonial3.result')
+      result: t('socialProof.testimonial3.result'),
+      rating: 5
     }
   ];
 
@@ -90,7 +92,7 @@ export const SocialProof = () => {
           </p>
         </div>
         
-        {/* Logos das empresas - versão melhorada */}
+        {/* Logos das empresas */}
         <div className="relative mb-24">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
@@ -132,53 +134,54 @@ export const SocialProof = () => {
           </div>
         </div>
         
-        {/* Depoimento em destaque - Versão corrigida */}
+        {/* Depoimento em destaque - Versão melhorada */}
         <div className="mb-20">
           <div className={`relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-xl transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
                style={{ transitionDelay: '400ms' }}>
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-indigo-600/10 opacity-50"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-indigo-600/5"></div>
             
-            {/* Padrão geométrico decorativo */}
+            {/* Padrão decorativo */}
             <div className="absolute right-0 top-0 h-full w-1/3 overflow-hidden">
-              <svg className="absolute right-0 top-0 h-full w-full text-blue-600/10 dark:text-blue-400/10" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+              <svg className="absolute right-0 top-0 h-full w-full text-blue-600/5 dark:text-blue-400/5" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
                 <polygon points="0,0 100,0 100,100" />
               </svg>
             </div>
             
             <div className="relative z-10 px-6 py-12 md:px-12 md:py-16 flex flex-col md:flex-row items-start">
               <div className="md:w-2/3 md:pr-12">
-                <div className="flex items-center mb-6">
+                <div className="flex items-center mb-8">
                   <div className="text-blue-600 dark:text-blue-400 mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{t('socialProof.featuredTestimonial')}</h3>
                 </div>
                 
-                {/* Carrossel corrigido */}
-                <div className="relative min-h-[300px]">
+                {/* Carrossel de depoimentos */}
+                <div className="relative min-h-[250px]">
                   {testimonials.map((testimonial, index) => (
                     <div 
                       key={testimonial.id}
-                      ref={el => testimonialRefs.current[index] = el}
-                      className={`transition-all duration-700 ${
+                      className={`absolute inset-0 transition-all duration-700 ease-in-out ${
                         activeIndex === index 
                           ? 'opacity-100 translate-x-0 relative z-10' 
-                          : 'opacity-0 absolute inset-0 translate-x-8 -z-10'
+                          : 'opacity-0 translate-x-8 z-0'
                       }`}
                     >
                       <div className="relative">
-                        <span className="text-5xl text-blue-600/20 absolute -top-4 -left-2">"</span>
-                        <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 italic mb-6 pl-6">
+                        <svg className="absolute -top-6 -left-2 h-12 w-12 text-blue-600/20 dark:text-blue-400/20" fill="currentColor" viewBox="0 0 32 32">
+                          <path d="M9.5,18c0,2.5-2,4.5-4.5,4.5S0.5,20.5,0.5,18s2-4.5,4.5-4.5c0.2,0,0.4,0,0.6,0.1c-0.3-0.9-0.6-1.7-0.6-2.1 c0-3,2.5-7,7-7v4c-2,0-3,2-3,3s1,1,1,1C13,12.5,9.5,13.6,9.5,18z M25.5,18c0,2.5-2,4.5-4.5,4.5S16.5,20.5,16.5,18s2-4.5,4.5-4.5 c0.2,0,0.4,0,0.6,0.1c-0.3-0.9-0.6-1.7-0.6-2.1c0-3,2.5-7,7-7v4c-2,0-3,2-3,3s1,1,1,1C29,12.5,25.5,13.6,25.5,18z" />
+                        </svg>
+                        
+                        <p className="text-lg text-gray-700 dark:text-gray-300 mb-6 pl-4 leading-relaxed">
                           {testimonial.content}
                         </p>
-                        <span className="text-5xl text-blue-600/20 absolute -bottom-4 right-0">"</span>
                       </div>
                       
-                      <div className="mt-8 flex items-center">
-                        <div className="relative">
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 animate-pulse opacity-70 blur-sm"></div>
+                      <div className="mt-6 flex items-center">
+                        <div className="relative h-14 w-14">
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 blur-sm opacity-30"></div>
                           <img 
                             src={testimonial.image} 
                             alt={testimonial.author}
@@ -186,24 +189,24 @@ export const SocialProof = () => {
                           />
                         </div>
                         <div className="ml-4">
-                          <p className="font-semibold text-gray-900 dark:text-white text-lg">{testimonial.author}</p>
-                          <p className="text-gray-500 dark:text-gray-400">{testimonial.role}, {testimonial.company}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{testimonial.author}</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">{testimonial.role}, {testimonial.company}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
                 
-                {/* Indicadores */}
+                {/* Indicadores de navegação */}
                 <div className="flex space-x-2 mt-10">
                   {testimonials.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setActiveIndex(index)}
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      className={`h-2 rounded-full transition-all duration-300 ${
                         activeIndex === index 
-                          ? 'bg-blue-600 w-8' 
-                          : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+                          ? 'bg-blue-600 w-10' 
+                          : 'bg-gray-300 dark:bg-gray-600 w-2 hover:bg-gray-400 dark:hover:bg-gray-500'
                       }`}
                       aria-label={t('socialProof.viewTestimonial', { number: index + 1 })}
                     />
@@ -212,30 +215,31 @@ export const SocialProof = () => {
               </div>
               
               <div className="md:w-1/3 mt-10 md:mt-0">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 rounded-lg shadow-inner">
-                  <div className="flex items-center mb-4">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg shadow-inner">
+                  <div className="flex items-center mb-6">
                     <div className="mr-3 text-blue-600 dark:text-blue-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <h4 className="font-medium text-gray-900 dark:text-white">{t('socialProof.resultsAchieved')}</h4>
                   </div>
                   
-                  <div className="space-y-4 min-h-[100px] relative">
+                  <div className="space-y-4 min-h-[120px] relative">
                     {testimonials.map((testimonial, index) => (
                       <div 
                         key={testimonial.id}
-                        className={`transition-all duration-700 ${
+                        className={`absolute inset-0 transition-all duration-700 ${
                           activeIndex === index 
                             ? 'opacity-100 translate-y-0 relative' 
-                            : 'opacity-0 absolute inset-0 translate-y-4'
+                            : 'opacity-0 translate-y-4'
                         }`}
                       >
-                        <p className="text-blue-700 dark:text-blue-300 font-medium">{testimonial.result}</p>
+                        <p className="text-blue-700 dark:text-blue-300 font-medium mb-3">{testimonial.result}</p>
                         
-                        <div className="mt-3 w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full animate-pulse" style={{ width: '85%' }}></div>
+                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full" 
+                               style={{ width: '85%' }}></div>
                         </div>
                       </div>
                     ))}
@@ -246,42 +250,39 @@ export const SocialProof = () => {
           </div>
         </div>
         
-        {/* Grade de depoimentos menores */}
+        {/* Grade de depoimentos */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
             <div 
               key={testimonial.id} 
-              className={`rounded-xl bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-500 border border-gray-100 dark:border-gray-700 group relative transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+              className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
               style={{ transitionDelay: `${600 + index * 150}ms` }}
             >
-              {/* Efeito de brilho no hover */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-indigo-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
-              
-              <div className="flex items-center mb-4">
-                <div className="flex-shrink-0">
-                  <img 
-                    src={testimonial.image} 
-                    alt={testimonial.author}
-                    className="h-10 w-10 rounded-full border-2 border-white dark:border-gray-700 object-cover shadow-md" 
-                  />
-                </div>
-                <div className="ml-3">
-                  <p className="font-medium text-gray-900 dark:text-white">{testimonial.author}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.company}</p>
-                </div>
+              <div className="flex items-center space-x-1 mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
               </div>
               
-              <p className="text-gray-700 dark:text-gray-300 text-sm mb-4">"{testimonial.content.substring(0, 120)}..."</p>
+              <p className="text-gray-700 dark:text-gray-300 text-sm mb-6">"{testimonial.content.substring(0, 150)}..."</p>
               
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <svg key={star} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
+              <div className="flex items-center mt-auto">
+                <img 
+                  src={testimonial.image} 
+                  alt={testimonial.author}
+                  className="h-10 w-10 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" 
+                />
+                <div className="ml-3">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm">{testimonial.author}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.company}</p>
                 </div>
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{t('socialProof.verifiedCustomer')}</span>
+                <div className="ml-auto">
+                  <span className="text-xs px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-full font-medium">
+                    {t('socialProof.verifiedCustomer')}
+                  </span>
+                </div>
               </div>
             </div>
           ))}

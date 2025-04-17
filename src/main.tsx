@@ -1,7 +1,7 @@
 import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as Sentry from "@sentry/react";
-import { browserTracingIntegration, replayIntegration } from "@sentry/react";
+import { browserTracingIntegration } from "@sentry/react";
 import './i18n'; // Import i18n configuration before App
 import App from './App.tsx';
 import './index.css';
@@ -281,20 +281,20 @@ Sentry.init({
     browserTracingIntegration({
       idleTimeout: 5000, // Aumenta o tempo limite para não iniciar tantas transações
     }),
-    replayIntegration({
-      blockAllMedia: true, // Bloqueia captura de mídia para melhorar performance
-      maskAllText: true, // Mascara todo texto para melhorar performance
-    }),
   ],
   // Performance Monitoring - reduz significativamente a amostragem
-  tracesSampleRate: 0.2,
-  // Session Replay - reduz amostragem
-  replaysSessionSampleRate: 0.05,
-  replaysOnErrorSampleRate: 0.2,
+  tracesSampleRate: 0.05, // Reduzido de 0.2 para 0.05
+  // Session Replay - desativado
+  replaysSessionSampleRate: 0, // Reduzido de 0.05 para 0
+  replaysOnErrorSampleRate: 0.1, // Reduzido de 0.2 para 0.1
   // Função beforeSend para adiar processamento de eventos durante carregamento inicial
   beforeSend: (event) => {
     // Durante carregamento inicial da página, adia o envio de eventos não críticos
     if (document.readyState !== 'complete' && event.level !== 'fatal') {
+      return null;
+    }
+    // Filtra eventos de baixa prioridade
+    if (event.level === 'info' || event.level === 'debug') {
       return null;
     }
     return event;
