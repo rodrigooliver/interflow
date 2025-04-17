@@ -76,20 +76,21 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     { to: '/app/appointments', icon: Calendar, label: t('navigation:appointments') },
     { to: '/app/tasks', icon: ListTodo, label: t('navigation:tasks') },
     { to: '/app/financial', icon: DollarSign, label: t('navigation:financial') },
-    { to: '/app/shortcuts', icon: Keyboard, label: t('navigation:shortcuts') },
-    { to: '/app/tags', icon: Tag, label: t('navigation:tags') },
-    { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
   ];
 
   // Admin and owner only links
   const adminLinks = [
+    { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
+    { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
+    { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
+    { to: '/app/tags', icon: Tag, label: t('navigation:tags') },
+    { to: '/app/closure-types', icon: CheckCircle, label: t('navigation:closureTypes') },
+    { to: '/app/shortcuts', icon: Keyboard, label: t('navigation:shortcuts') },
+
     ...(typeof window.isNativeApp !== 'boolean' || !window.isNativeApp ? [
       { to: '/app/member', icon: UserPlus, label: t('navigation:users') }
     ] : []),
     { to: '/app/service-teams', icon: UsersRound, label: t('navigation:serviceTeams') },
-    { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
-    { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
-    { to: '/app/closure-types', icon: CheckCircle, label: t('navigation:closureTypes') },
     // Remover link de configurações se estiver no app nativo
     ...(typeof window.isNativeApp !== 'boolean' || !window.isNativeApp ? [
       { to: '/app/settings/billing', icon: SettingsIcon, label: t('navigation:settings') }

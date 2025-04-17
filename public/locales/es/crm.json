@@ -15,6 +15,10 @@
       "hasCustomers": "No se puede eliminar el embudo porque hay clientes en algunas etapas."
     },
     "select": "Seleccionar embudo",
+    "selectFunnel": "Seleccionar embudo",
+    "makeDefault": "Establecer como predeterminado",
+    "defaultDescription": "Este embudo se mostrará automáticamente cuando accedas al CRM. Solo un embudo puede establecerse como predeterminado.",
+    "alreadyDefault": "Embudo predeterminado",
     "none": "Ningún embudo"
   },
   "stages": {
@@ -40,7 +44,8 @@
   "customers": {
     "addCustomer": "Agregar Cliente",
     "addToStage": "Agregar Cliente a {stage}",
-    "searchPlaceholder": "Buscar clientes por nombre, email o teléfono..."
+    "searchPlaceholder": "Buscar clientes por nombre, email o teléfono...",
+    "noCustomersInStage": "No hay clientes en esta etapa"
   },
   "funnel": "Embudo",
   "allFunnels": "Todos los embudos",

@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { CRMFunnel } from '../../types/crm';
+import { FunnelModal } from '../../components/crm/FunnelModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function CRMFunnels() {
   const { t } = useTranslation(['crm', 'common']);
@@ -13,16 +15,10 @@ export default function CRMFunnels() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedFunnel, setSelectedFunnel] = useState<CRMFunnel | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: ''
-  });
   const [error, setError] = useState('');
-  const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (currentOrganizationMember) {
@@ -47,56 +43,6 @@ export default function CRMFunnels() {
       setError(t('common:error'));
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleCreateFunnel(e: React.FormEvent) {
-    e.preventDefault();
-    if (!currentOrganizationMember) return;
-    
-    setCreating(true);
-    setError('');
-
-    try {
-      const { data, error } = await supabase
-        .from('crm_funnels')
-        .insert([
-          {
-            organization_id: currentOrganizationMember.organization.id,
-            name: formData.name,
-            description: formData.description,
-            is_active: true
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Create default stages
-      const defaultStages = [
-        { name: t('crm:stages.new'), color: '#3B82F6', position: 0 },
-        { name: t('crm:stages.inProgress'), color: '#F59E0B', position: 1 },
-        { name: t('crm:stages.completed'), color: '#10B981', position: 2 }
-      ];
-
-      await supabase
-        .from('crm_stages')
-        .insert(
-          defaultStages.map(stage => ({
-            funnel_id: data.id,
-            ...stage
-          }))
-        );
-
-      await loadFunnels();
-      setShowCreateModal(false);
-      setFormData({ name: '', description: '' });
-    } catch (err) {
-      console.error('Error creating funnel:', err);
-      setError(t('common:error'));
-    } finally {
-      setCreating(false);
     }
   }
 
@@ -137,6 +83,12 @@ export default function CRMFunnels() {
 
       if (error) throw error;
 
+      // Invalidar cache do React Query para funnels
+      await queryClient.invalidateQueries({ queryKey: ['funnels', currentOrganizationMember.organization.id] });
+      
+      // Também invalidar cache para useFilters que inclui funnels
+      await queryClient.invalidateQueries({ queryKey: ['filters', currentOrganizationMember.organization.id] });
+
       await loadFunnels();
       setShowDeleteModal(false);
       setSelectedFunnel(null);
@@ -146,37 +98,6 @@ export default function CRMFunnels() {
       setError(t('common:error'));
     } finally {
       setDeleting(false);
-    }
-  }
-
-  async function handleEditFunnel(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedFunnel || !currentOrganizationMember) return;
-    
-    setEditing(true);
-    setError('');
-
-    try {
-      const { error } = await supabase
-        .from('crm_funnels')
-        .update({
-          name: formData.name,
-          description: formData.description
-        })
-        .eq('id', selectedFunnel.id)
-        .eq('organization_id', currentOrganizationMember.organization.id);
-
-      if (error) throw error;
-
-      await loadFunnels();
-      setShowEditModal(false);
-      setSelectedFunnel(null);
-      setFormData({ name: '', description: '' });
-    } catch (err) {
-      console.error('Error editing funnel:', err);
-      setError(t('common:error'));
-    } finally {
-      setEditing(false);
     }
   }
 
@@ -264,11 +185,7 @@ export default function CRMFunnels() {
                   onClick={(e) => {
                     e.preventDefault();
                     setSelectedFunnel(funnel);
-                    setFormData({
-                      name: funnel.name,
-                      description: funnel.description || ''
-                    });
-                    setShowEditModal(true);
+                    setShowCreateModal(true);
                   }}
                   className="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                 >
@@ -290,174 +207,17 @@ export default function CRMFunnels() {
         ))}
       </div>
 
-      {/* Create Funnel Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
-            <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {t('crm:funnels.newFunnel')}
-              </h3>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateFunnel} className="p-6">
-              {error && (
-                <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('crm:funnels.name')}
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('crm:funnels.description')}
-                  </label>
-                  <textarea
-                    id="description"
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={creating}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  {t('common:back')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {creating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('common:saving')}
-                    </>
-                  ) : (
-                    t('crm:funnels.newFunnel')
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Funnel Modal */}
-      {showEditModal && selectedFunnel && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
-            <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {t('crm:funnels.editFunnel')}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setSelectedFunnel(null);
-                  setFormData({ name: '', description: '' });
-                }}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditFunnel} className="p-6">
-              {error && (
-                <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('crm:funnels.name')}
-                  </label>
-                  <input
-                    type="text"
-                    id="edit-name"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('crm:funnels.description')}
-                  </label>
-                  <textarea
-                    id="edit-description"
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedFunnel(null);
-                    setFormData({ name: '', description: '' });
-                  }}
-                  disabled={editing}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  {t('common:back')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={editing}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {editing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('common:saving')}
-                    </>
-                  ) : (
-                    t('common:save')
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* FunnelModal para criação e edição */}
+      {showCreateModal && currentOrganizationMember && (
+        <FunnelModal 
+          onClose={() => {
+            setShowCreateModal(false);
+            setSelectedFunnel(null);
+          }}
+          funnel={selectedFunnel}
+          organizationId={currentOrganizationMember.organization.id}
+          onSuccess={loadFunnels}
+        />
       )}
 
       {/* Delete Confirmation Modal */}

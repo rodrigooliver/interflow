@@ -15,6 +15,10 @@
       "hasCustomers": "Cannot delete funnel because there are customers in some stages."
     },
     "select": "Select funnel",
+    "selectFunnel": "Select funnel",
+    "makeDefault": "Set as default",
+    "defaultDescription": "This funnel will be automatically displayed when you access the CRM. Only one funnel can be set as default.",
+    "alreadyDefault": "Default funnel",
     "none": "No funnel"
   },
   "stages": {
@@ -40,7 +44,8 @@
   "customers": {
     "addCustomer": "Add Customer",
     "addToStage": "Add Customer to {stage}",
-    "searchPlaceholder": "Search customers by name, email or phone..."
+    "searchPlaceholder": "Search customers by name, email or phone...",
+    "noCustomersInStage": "No customers in this stage"
   },
   "funnel": "Funnel",
   "allFunnels": "All funnels",

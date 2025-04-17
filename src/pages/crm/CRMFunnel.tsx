@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, GitMerge } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -13,6 +13,7 @@ import { AddCustomerModal } from '../../components/crm/AddCustomerModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { RemoveCustomerModal } from '../../components/crm/RemoveCustomerModal';
 import { FunnelHeader } from '../../components/crm/FunnelHeader';
+import { FunnelModal } from '../../components/crm/FunnelModal';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useFunnels } from '../../hooks/useQueryes';
 
@@ -21,17 +22,33 @@ type CustomerWithStage = Customer & {
   stage?: CRMStage;
 };
 
+// Interface estendida para funil com propriedade 'default'
+interface FunnelWithDefault {
+  id: string;
+  name: string;
+  stages: any[];
+  default?: boolean;
+  organization_id: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+  [key: string]: any;
+}
+
 export default function CRMFunnel() {
   const { t } = useTranslation(['crm', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentOrganizationMember } = useAuthContext();
   
-  // State
-  const [funnel, setFunnel] = useState<Record<string, any> | null>(null);
+  // State com tipo atualizado para FunnelWithDefault
+  const [funnel, setFunnel] = useState<FunnelWithDefault | null>(null);
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [error, setError] = useState('');
+  const [noFunnels, setNoFunnels] = useState(false);
+  const [showCreateFunnelModal, setShowCreateFunnelModal] = useState(false);
 
   // Modal states
   const [showStageModal, setShowStageModal] = useState(false);
@@ -51,28 +68,63 @@ export default function CRMFunnel() {
   const [creatingStage, setCreatingStage] = useState(false);
   const [deletingStage, setDeletingStage] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
-  const { data: funnelData } = useFunnels(currentOrganizationMember?.organization.id);
+  const { data: funnelData, isLoading: funnelLoading } = useFunnels(currentOrganizationMember?.organization.id);
 
   useEffect(() => {
-    if (funnelData && id) {
-      const currentFunnel = funnelData.find((f: Record<string, any>) => f.id === id);
-      if (currentFunnel) {
-        setFunnel(currentFunnel);
-        setStages(currentFunnel.stages || []);
+    if (funnelData && funnelData.length > 0) {
+      if (id) {
+        // Se um ID específico for fornecido na URL
+        const currentFunnel = funnelData.find((f) => f.id === id);
+        if (currentFunnel) {
+          setFunnel(currentFunnel as unknown as FunnelWithDefault);
+          setStages(currentFunnel.stages as CRMStage[]);
+          loadCustomers(currentFunnel.id);
+        } else {
+          // ID não encontrado, tentar redirecionar para o funil padrão ou o primeiro
+          findDefaultOrFirstFunnel();
+        }
+      } else {
+        // Nenhum ID fornecido, tentar encontrar o funil padrão ou o primeiro
+        findDefaultOrFirstFunnel();
       }
+    } else if (funnelData && funnelData.length === 0 && !funnelLoading) {
+      // Não existem funis
+      setNoFunnels(true);
     }
-  }, [funnelData, id]);
+  }, [funnelData, id, funnelLoading]);
 
-  useEffect(() => {
-    if (currentOrganizationMember && id) {
-      loadCustomers();
+  const findDefaultOrFirstFunnel = () => {
+    if (!funnelData || funnelData.length === 0) {
+      setNoFunnels(true);
+      return;
     }
-  }, [currentOrganizationMember, id]);
 
-  async function loadCustomers() {
-    if (!currentOrganizationMember) return;
+    // Tentar encontrar o funil padrão (default: true)
+    const defaultFunnel = funnelData.find((f) => f.default === true);
+    
+    if (defaultFunnel) {
+      setFunnel(defaultFunnel as unknown as FunnelWithDefault);
+      setStages(defaultFunnel.stages as CRMStage[]);
+      loadCustomers(defaultFunnel.id);
+      // Atualizar a URL para mostrar o ID do funil padrão
+      navigate(`/app/crm/${defaultFunnel.id}`, { replace: true });
+    } else {
+      // Caso não exista um funil padrão, pegar o primeiro da lista
+      const firstFunnel = funnelData[0];
+      setFunnel(firstFunnel as unknown as FunnelWithDefault);
+      setStages(firstFunnel.stages as CRMStage[]);
+      loadCustomers(firstFunnel.id);
+      // Atualizar a URL para mostrar o ID do primeiro funil
+      navigate(`/app/crm/${firstFunnel.id}`, { replace: true });
+    }
+  };
 
+  async function loadCustomers(funnelId?: string) {
+    if (!currentOrganizationMember || (!id && !funnelId)) return;
+
+    setLoadingCustomers(true);
     try {
       const { data, error } = await supabase
         .from('customers')
@@ -115,50 +167,122 @@ export default function CRMFunnel() {
       if (error) throw error;
 
       // Definir diretamente os clientes sem processamento adicional
-      // O componente KanbanCard agora extrai as informações necessárias
       setCustomers(data || []);
     } catch (error) {
       console.error('Error loading customers:', error);
       setError(t('common:error'));
+    } finally {
+      setLoadingCustomers(false);
     }
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent, stageOrder?: number) {
     const { active, over } = event;
     
     if (!active || !over) return;
+
+    console.log('Drag End Event:', { active: active.id, over: over.id, stageOrder });
 
     // Get the customer being dragged
     const customer = customers.find(c => c.id === active.id);
     if (!customer) return;
 
-    // Get target stage
-    const targetStage = stages.find(s => s.id === over.id);
-    if (!targetStage) return;
+    // Verificar se o target é um stage ou outro cliente
+    const isTargetStage = stages.some(s => s.id === over.id);
+    const isTargetCustomer = customers.some(c => c.id === over.id);
+    
+    let targetStageId: string | null = null;
+    
+    if (isTargetStage) {
+      // Se o alvo for um estágio, usar diretamente esse ID
+      targetStageId = over.id as string;
+      console.log('Target é um estágio:', targetStageId);
+    } else if (isTargetCustomer) {
+      // Se o alvo for outro cliente, usar o estágio desse cliente
+      const targetCustomer = customers.find(c => c.id === over.id);
+      targetStageId = targetCustomer?.stage_id || null;
+      console.log('Target é um cliente no estágio:', targetStageId);
+    }
 
-    // If trying to move to the same stage, abort
-    if (customer.stage_id === targetStage.id) {
+    if (!targetStageId) {
+      console.log('Não foi possível determinar o estágio de destino');
+      return;
+    }
+    
+    // Get target stage
+    const targetStage = stages.find(s => s.id === targetStageId);
+    if (!targetStage) {
+      console.log('Estágio de destino não encontrado');
       return;
     }
 
+    // Se está na mesma coluna e não há stageOrder, não precisamos atualizar o estágio no banco de dados
+    if (customer.stage_id === targetStageId && !stageOrder) {
+      console.log('Cliente já está no estágio de destino e não houve mudança na ordem, ignorando');
+      return;
+    }
+    
+    // Se mudou apenas a ordem, precisamos atualizar apenas o stage_order
+    if (customer.stage_id === targetStageId && stageOrder) {
+      console.log(`Atualizando apenas a ordem do cliente: ${stageOrder}`);
+      try {
+        const { error } = await supabase
+          .from('customers')
+          .update({
+            stage_order: stageOrder
+          })
+          .eq('id', customer.id);
+
+        if (error) {
+          console.error('Erro ao atualizar ordem do cliente:', error);
+          throw error;
+        }
+
+        // Update local state
+        setCustomers(prev =>
+          prev.map(c =>
+            c.id === customer.id
+              ? { ...c, stage_order: stageOrder }
+              : c
+          ) as Customer[]
+        );
+        
+        console.log('Ordem do cliente atualizada com sucesso');
+      } catch (error) {
+        console.error('Error updating customer order:', error);
+        setError(t('common:error'));
+      }
+      return;
+    }
+
+    console.log(`Movendo cliente ${customer.id} do estágio ${customer.stage_id} para o estágio ${targetStageId}`);
+
     try {
-      // Update customer's stage_id
+      // Determinar o valor de stage_order a usar - usar exatamente o valor calculado pelo componente
+      const orderToUse = typeof stageOrder === 'number' ? stageOrder : 1000;
+      console.log(`Valor stage_order a ser usado: ${orderToUse}, tipo: ${typeof stageOrder}`);
+      
+      // Update customer's stage_id and stage_order
       const { error } = await supabase
         .from('customers')
         .update({
-          stage_id: targetStage.id
+          stage_id: targetStageId,
+          stage_order: orderToUse
         })
         .eq('id', customer.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar estágio do cliente:', error);
+        throw error;
+      }
 
       // Update local state
       setCustomers(prev =>
         prev.map(c =>
           c.id === customer.id
-            ? { ...c, stage_id: targetStage.id, stage: targetStage }
+            ? { ...c, stage_id: targetStageId, stage: targetStage, stage_order: orderToUse }
             : c
-        )
+        ) as Customer[]
       );
 
       // Record the stage change in history
@@ -166,9 +290,11 @@ export default function CRMFunnel() {
         .from('customer_stage_history')
         .insert({
           customer_id: customer.id,
-          stage_id: targetStage.id,
+          stage_id: targetStageId,
           organization_id: currentOrganizationMember?.organization.id
         });
+      
+      console.log('Cliente movido com sucesso');
     } catch (error) {
       console.error('Error updating customer stage:', error);
       setError(t('common:error'));
@@ -343,7 +469,94 @@ export default function CRMFunnel() {
     setError(''); // Clear error message when closing modal
   };
 
-  if (!currentOrganizationMember || !funnel) {
+  // Redirecionamento para a página de criação de funil
+  const handleCreateFunnel = () => {
+    setShowCreateFunnelModal(true);
+  };
+
+  // Função chamada após a criação bem-sucedida de um funil
+  const handleFunnelCreated = async (funnelId?: string) => {
+    // Se o hook já tiver carregado, ele vai atualizar automaticamente com o novo funil
+    // devido à invalidação do cache que fizemos no FunnelModal
+    setNoFunnels(false);
+    setShowCreateFunnelModal(false);
+    
+    // Se recebemos o ID do funil criado, selecioná-lo automaticamente
+    if (funnelId && funnelData) {
+      // Navegar para o novo funil
+      handleFunnelSelect(funnelId);
+    }
+  };
+
+  const handleFunnelSelect = (funnelId: string) => {
+    // Garantir que o funil selecionado seja atualizado em tempo real
+    if (funnelData) {
+      const selectedFunnel = funnelData.find(f => f.id === funnelId);
+      if (selectedFunnel) {
+        setFunnel(selectedFunnel as unknown as FunnelWithDefault);
+        setStages(selectedFunnel.stages as CRMStage[]);
+        loadCustomers(selectedFunnel.id);
+      }
+    }
+    // Redirecionar para o funil selecionado
+    navigate(`/app/crm/${funnelId}`);
+  };
+
+  if (!currentOrganizationMember) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center min-h-[200px]">
+          <div className="text-gray-500 dark:text-gray-400">
+            {t('common:loading')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (funnelLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center min-h-[200px]">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </div>
+    );
+  }
+
+  if (noFunnels) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <GitMerge className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+          <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+            {t('crm:funnels.noFunnels')}
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            {t('crm:funnels.createFirst')}
+          </p>
+          <button
+            onClick={handleCreateFunnel}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {t('crm:funnels.newFunnel')}
+          </button>
+        </div>
+        {/* Modal para criar funil quando não existem funis */}
+        {showCreateFunnelModal && currentOrganizationMember && (
+            <FunnelModal
+              onClose={() => setShowCreateFunnelModal(false)}
+              funnel={null}
+              organizationId={currentOrganizationMember.organization.id}
+              onSuccess={handleFunnelCreated}
+            />
+          )}
+      </div>
+    );
+  }
+
+  if (!funnel) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">
@@ -357,14 +570,17 @@ export default function CRMFunnel() {
     <div className="h-screen flex flex-col">
       <FunnelHeader
         funnelName={funnel.name}
-        funnel={funnel}
-        onBack={() => navigate('/app/crm')}
+        funnel={funnel as any}
+        onBack={() => navigate('/app/crm/funnels')}
         onAddStage={() => {
           setSelectedStage(null);
           setStageForm({ name: '', description: '', color: '#3B82F6' });
           setShowStageModal(true);
         }}
-        onCustomerAdded={loadCustomers}
+        onCustomerAdded={() => loadCustomers(funnel.id)}
+        allFunnels={funnelData as any || []}
+        onSelectFunnel={handleFunnelSelect}
+        organizationId={currentOrganizationMember.organization.id}
       />
 
       <div className="flex-1 overflow-hidden">
@@ -419,11 +635,19 @@ export default function CRMFunnel() {
               </div>
             </div>
           </div>
+        ) : loadingCustomers ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+            <span className="ml-3 text-lg text-gray-700 dark:text-gray-300">{t('common:loading')}</span>
+          </div>
         ) : (
           <KanbanBoard
             stages={stages}
-            customers={customers}
-            onDragEnd={handleDragEnd}
+            customers={customers as CustomerWithStage[]}
+            onDragEnd={(event, stageOrder) => {
+              console.log("KanbanBoard onDragEnd:", { event, stageOrder });
+              handleDragEnd(event, stageOrder);
+            }}
             onEditStage={(stage) => {
               setSelectedStage(stage);
               setStageForm({
@@ -504,7 +728,7 @@ export default function CRMFunnel() {
             setShowEditCustomerModal(false);
             setSelectedCustomer(null);
           }}
-          onSuccess={loadCustomers}
+          onSuccess={() => loadCustomers(funnel.id)}
         />
       )}
 

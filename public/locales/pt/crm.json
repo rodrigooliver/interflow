@@ -15,6 +15,10 @@
       "hasCustomers": "Não é possível excluir o funil pois existem clientes em algum dos estágios."
     },
     "select": "Selecione o funil",
+    "selectFunnel": "Selecionar funil",
+    "makeDefault": "Definir como padrão",
+    "defaultDescription": "Este funil será exibido automaticamente quando você acessar o CRM. Apenas um funil pode ser definido como padrão.",
+    "alreadyDefault": "Funil padrão",
     "none": "Nenhum funil"
   },
   "stages": {
@@ -40,7 +44,8 @@
   "customers": {
     "addCustomer": "Adicionar Cliente",
     "addToStage": "Adicionar Cliente a {stage}",
-    "searchPlaceholder": "Buscar clientes por nome, email ou telefone..."
+    "searchPlaceholder": "Buscar clientes por nome, email ou telefone...",
+    "noCustomersInStage": "Nenhum cliente neste estágio"
   },
   "funnel": "Funil",
   "allFunnels": "Todos os funis",

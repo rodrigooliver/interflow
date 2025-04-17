@@ -106,6 +106,7 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    overflow: 'scroll',
   };
 
   // Extrair o último chat, a última mensagem e o external_id
@@ -231,6 +232,8 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
       {...attributes}
       {...listeners}
       className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 mb-2 cursor-grab"
+      data-id={customer.id}
+      data-card="true"
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0">

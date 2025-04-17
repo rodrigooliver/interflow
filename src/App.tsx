@@ -683,7 +683,8 @@ function AppContent() {
                         <Route path="shortcuts" element={<MessageShortcuts />} />
                         <Route path="flows" element={<FlowList />} />
                         <Route path="flows/:id" element={<FlowEditor />} />
-                        <Route path="crm" element={<CRMFunnels />} />
+                        <Route path="crm/funnels" element={<CRMFunnels />} />
+                        <Route path="crm" element={<CRMFunnel />} />
                         <Route path="crm/:id" element={<CRMFunnel />} />
                         <Route path="profile" element={<Profile />} />
                         <Route path="tags" element={<Tags />} />

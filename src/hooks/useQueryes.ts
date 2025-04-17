@@ -27,6 +27,12 @@ interface Funnel {
   id: string;
   name: string;
   stages: FunnelStage[];
+  default?: boolean;
+  organization_id: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  description?: string;
 }
 
 // Remover a interface não utilizada
@@ -337,8 +343,7 @@ export const useFunnels = (organizationId?: string) => {
       const { data: funnels, error: funnelError } = await supabase
         .from('crm_funnels')
         .select(`
-          id,
-          name,
+          *,
           stages:crm_stages(
             id,
             name,

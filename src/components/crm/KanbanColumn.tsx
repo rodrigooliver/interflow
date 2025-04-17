@@ -6,6 +6,44 @@ import { Customer } from '../../types/database';
 import { KanbanCard } from './KanbanCard';
 import { useState, useRef, useEffect } from 'react';
 
+// Note: Os tipos CustomerDbTag e CustomerTag devem ser compatíveis 
+// com os equivalentes em KanbanCard.tsx
+interface CustomerDbTag {
+  id: string;
+  tag_id: string;
+  tags: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
+
+interface CustomerTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface CustomerChat {
+  id: string;
+  created_at: string;
+  last_message_id?: string;
+  external_id?: string;
+  status?: 'pending' | 'in_progress' | 'closed' | 'await_closing';
+  title: string;
+  channel_details?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  messages?: {
+    id: string;
+    content: string;
+    created_at: string;
+    sender_type: string;
+  };
+}
+
 // Definir o tipo CustomerWithStage para compatibilidade com KanbanCard
 type CustomerWithStage = Customer & {
   stage?: CRMStage;
@@ -15,29 +53,8 @@ type CustomerWithStage = Customer & {
     created_at: string;
     sender_type: string;
   };
-  chats?: Array<{
-    id: string;
-    created_at: string;
-    last_message_id?: string;
-    messages?: {
-      id: string;
-      content: string;
-      created_at: string;
-      sender_type: string;
-    };
-  }>;
-  tags?: Array<{
-    id: string;
-    name: string;
-    color: string;
-  }> | Array<{
-    tag_id: string;
-    tags: {
-      id: string;
-      name: string;
-      color: string;
-    };
-  }>;
+  chats?: CustomerChat[];
+  tags?: CustomerDbTag[] | CustomerTag[];
 };
 
 interface KanbanColumnProps {
@@ -60,8 +77,14 @@ export function KanbanColumn({
   onRemoveCustomer
 }: KanbanColumnProps) {
   const { t } = useTranslation(['crm', 'common']);
+  // Usar o ID do estágio como identificador dropável
   const { setNodeRef, isOver } = useDroppable({
-    id: stage.id
+    id: stage.id,
+    data: {
+      type: 'column',
+      stage: stage,
+      isEmpty: customers.length === 0
+    }
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -92,14 +115,27 @@ export function KanbanColumn({
     } as CustomerWithStage;
   });
 
+  // Adicionar log durante o isOver para debug
+  useEffect(() => {
+    if (isOver) {
+      console.log(`Hover sobre a coluna ${stage.name} (${stage.id}), vazia: ${customersWithStage.length === 0}`);
+    }
+  }, [isOver, stage, customersWithStage.length]);
+  
+  // Verificar se a coluna está vazia
+  const isEmpty = customersWithStage.length === 0;
+
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-800/50 rounded-lg ${
-        isOver ? 'ring-2 ring-dashed ring-blue-500 dark:ring-blue-400' : ''
+      className={`flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-800/50 rounded-lg flex flex-col h-full max-h-[calc(100vh-8rem)] ${
+        isOver ? 'bg-blue-50/50 dark:bg-blue-900/5' : ''
       }`}
+      data-is-empty={isEmpty}
+      data-id={stage.id}
+      data-column-type="stage"
     >
-      <div className="p-4">
+      <div className="p-4 flex flex-col h-full">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center">
             <div
@@ -156,16 +192,43 @@ export function KanbanColumn({
           </div>
         </div>
 
-        <div className={`space-y-3 ${isOver ? 'opacity-50' : ''}`}>
-          {customersWithStage.map((customer, index) => (
-            <KanbanCard
-              key={customer.id}
-              customer={customer}
-              index={index}
-              onEditCustomer={() => onEditCustomer(customer)}
-              onRemove={() => onRemoveCustomer(customer)}
-            />
-          ))}
+        <div 
+          className={`space-y-3 overflow-y-auto flex-1 pr-1`}
+          data-column-content={stage.id}
+        >
+          {isEmpty ? (
+            <div 
+              className={`h-48 border-2 border-dashed transition-all ${
+                isOver 
+                  ? 'border-blue-300/70 dark:border-blue-600/70 bg-blue-50/50 dark:bg-blue-900/10'
+                  : 'border-gray-200 dark:border-gray-700'
+              } rounded-md flex items-center justify-center`}
+              data-empty-placeholder="true"
+              data-column-id={stage.id}
+            >
+              <span className={`text-sm ${
+                isOver 
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-400 dark:text-gray-500'
+              }`}>
+                {isOver 
+                  ? t('crm:customers.dropHere') 
+                  : t('crm:customers.noCustomersInStage')}
+              </span>
+            </div>
+          ) : (
+            <>
+              {customersWithStage.map((customer, index) => (
+                <KanbanCard
+                  key={customer.id}
+                  customer={{...customer}}
+                  index={index}
+                  onEditCustomer={() => onEditCustomer(customer)}
+                  onRemove={() => onRemoveCustomer(customer)}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
