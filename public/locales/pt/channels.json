@@ -63,7 +63,7 @@
     "insertNicknameAtStart": "Inserir nickname no início da mensagem",
     "insertNicknameAtEnd": "Inserir nickname no final da mensagem",
     "regards": "Atenciosamente",
-    "namePlaceholder": "Digite o nome do canal. Ex: WhatsApp",
+    "namePlaceholder": "Digite o nome do canal. Ex: Principal",
     "title": {
       "create": "Novo Canal de Atendimento",
       "edit": "Editar Canal de Atendimento"
