@@ -107,11 +107,11 @@ export default function ChannelBasicFields({
 
       {onMessageSignatureChange && (
         <div>
-          <div className="flex justify-between items-center mb-1">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-1 space-y-2 sm:space-y-0">
             <label htmlFor="messageSignature" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('form.messageSignature')}
             </label>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={insertNicknameAtStart}

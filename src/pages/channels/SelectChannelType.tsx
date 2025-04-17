@@ -67,7 +67,7 @@ export default function SelectChannelType() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6 pb-20 md:pb-0">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <button
@@ -76,7 +76,7 @@ export default function SelectChannelType() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-1xl md:text-2xl font-bold text-gray-900 dark:text-white">
             {t('form.title.create')}
           </h1>
         </div>

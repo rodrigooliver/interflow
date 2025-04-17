@@ -140,16 +140,16 @@ export default function Channels() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6 pb-20 md:pb-unset">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <h1 className="text md:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
           <Share2 className="w-6 h-6 mr-2" />
           {t('title')}
         </h1>
         {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
           <button
             onClick={() => navigate('/app/channels/new')}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center p-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('newChannel')}

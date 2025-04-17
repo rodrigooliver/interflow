@@ -299,7 +299,7 @@ export default function InstagramForm() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6 pb-20 md:pb-0">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <button
@@ -308,7 +308,7 @@ export default function InstagramForm() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-1xl md:text-2xl font-bold text-gray-900 dark:text-white">
             {id ? t('form.title.edit') : t('form.title.create')}
           </h1>
 
@@ -368,7 +368,7 @@ export default function InstagramForm() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
-          <form onSubmit={id ? handleUpdateChannel : handleCreateChannel} className="p-6 space-y-6">
+          <form onSubmit={id ? handleUpdateChannel : handleCreateChannel} className="p-3 md:p-6 space-y-6">
             {error && (
               <div className="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
                 {error}
