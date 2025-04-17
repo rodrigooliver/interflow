@@ -9,19 +9,22 @@ export const Demonstration = () => {
       id: 1,
       title: t('demonstration.feature1.title'),
       description: t('demonstration.feature1.description'),
-      image: '/images/demo-flow.png'
+      image: '/images/demo-flow.png',
+      link: '/features/automation'
     },
     {
       id: 2,
       title: t('demonstration.feature2.title'),
       description: t('demonstration.feature2.description'),
-      image: '/images/demo-crm.png'
+      image: '/images/demo-crm.png',
+      link: '/features/crm'
     },
     {
       id: 3,
       title: t('demonstration.feature3.title'),
       description: t('demonstration.feature3.description'),
-      image: '/images/demo-audio.png'
+      image: '/images/demo-audio.png',
+      link: '/features/communication'
     }
   ];
 
@@ -51,7 +54,7 @@ export const Demonstration = () => {
                   {feature.description}
                 </p>
                 <Link
-                  to="/demo"
+                  to={feature.link}
                   className="text-blue-600 dark:text-blue-400 font-medium flex items-center hover:underline"
                 >
                   {t('demonstration.learnMore')} <span aria-hidden="true" className="ml-1">→</span>

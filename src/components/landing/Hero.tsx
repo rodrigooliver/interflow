@@ -115,7 +115,7 @@ export const Hero = () => {
                 <span className="absolute bottom-0 left-0 w-full h-1 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
               </Link>
               <Link
-                to="/demo"
+                to="/signup"
                 className="text-md font-semibold leading-6 text-gray-900 dark:text-white flex items-center justify-center group"
               >
                 <span>{t('hero.demo')}</span>

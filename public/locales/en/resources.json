@@ -2,6 +2,11 @@
   "title": "Resources and Materials",
   "intro": "Explore our free resources to help your business make the most of Interflow and improve your customer service.",
   "viewResource": "View Resource",
+  "downloadResource": "Download",
+  "shareResource": "Share",
+  "backToResources": "Back to Resources",
+  "relatedResources": "Related Resources",
+  "linkCopied": "Link copied to clipboard!",
   "sections": {
     "guides": {
       "title": "Guides and Tutorials",

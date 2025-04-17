@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { PublicLayout } from '../../layouts/PublicLayout';
+import { PublicLayout } from '../../../layouts/PublicLayout';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 
 interface Feature {
   title: string;
@@ -10,15 +10,18 @@ interface Feature {
   benefits: string[];
 }
 
-interface FeaturesSection {
+interface SectionData {
   title: string;
   description?: string;
   features: Feature[];
 }
 
-export default function Features() {
+export default function AutomationFeatures() {
   const { t } = useTranslation('features');
 
+  // Obter apenas a seção de automação do JSON de features
+  const section = t('sections.automation', { returnObjects: true }) as SectionData;
+  
   const renderFeature = (feature: Feature, index: number) => {
     const isEven = index % 2 === 0;
     
@@ -63,40 +66,6 @@ export default function Features() {
     );
   };
 
-  const renderSection = (section: FeaturesSection, sectionKey: string) => {
-    const firstFeature = section.features && section.features.length > 0 ? section.features[0] : null;
-    
-    return (
-      <div className="mb-20">
-        <div className="flex flex-wrap items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-bold mb-3 text-gray-900 dark:text-white">
-              {section.title}
-            </h2>
-            {section.description && (
-              <p className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl">
-                {section.description}
-              </p>
-            )}
-          </div>
-          <Link 
-            to={`/features/${sectionKey}`}
-            className="inline-flex items-center text-blue-600 dark:text-blue-400 font-medium hover:text-blue-800 dark:hover:text-blue-300 mt-4 lg:mt-0"
-          >
-            {t('seeDetails')}
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
-        </div>
-        
-        {firstFeature && (
-          <div className="mb-8">
-            {renderFeature(firstFeature, 0)}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <PublicLayout>
       <div className="pt-4 pb-8">
@@ -106,10 +75,10 @@ export default function Features() {
             <div className="container mx-auto px-4">
               <div className="max-w-4xl mx-auto text-center">
                 <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-                  {t('heroTitle')}
+                  {section.title}
                 </h1>
                 <p className="text-xl md:text-2xl text-blue-50 mb-8">
-                  {t('heroSubtitle')}
+                  {section.description}
                 </p>
                 <Link 
                   to="/signup" 
@@ -125,9 +94,9 @@ export default function Features() {
           {/* Features content */}
           <div className="container mx-auto px-4 py-16">
             <div className="max-w-6xl mx-auto">
-              {Object.entries(t('sections', { returnObjects: true })).map(([key, section]) => (
-                <div key={key}>
-                  {renderSection(section as FeaturesSection, key)}
+              {section.features.map((feature: Feature, index: number) => (
+                <div key={index}>
+                  {renderFeature(feature, index)}
                 </div>
               ))}
             </div>

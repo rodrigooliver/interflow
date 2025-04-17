@@ -58,9 +58,15 @@ import About from './pages/public/about';
 import Blog from './pages/public/blog';
 import BlogPost from './pages/public/blogPost';
 import Resources from './pages/public/resources';
+import RSS from './pages/public/rss';
 import PricingPage from './pages/public/pricing';
 import Contact from './pages/public/contact';
 import Features from './pages/public/features';
+import AutomationFeatures from './pages/public/features/automation';
+import CommunicationFeatures from './pages/public/features/communication';
+import ChatFeatures from './pages/public/features/chat';
+import CRMFeatures from './pages/public/features/crm';
+import ManagementFeatures from './pages/public/features/management';
 import SubscriptionPlans from './pages/admin/SubscriptionPlans';
 import SubscriptionPlanForm from './pages/admin/SubscriptionPlanForm';
 import Referrals from './pages/organization/Referrals';
@@ -86,6 +92,20 @@ import FinancialPaymentMethods from './pages/financial/FinancialPaymentMethods';
 import FinancialReports from './pages/financial/FinancialReports';
 import BlogPosts from './pages/admin/BlogPosts';
 import BlogPostForm from './pages/admin/BlogPostForm';
+
+// Lazy loading dos recursos
+const GettingStartedGuide = React.lazy(() => import('./pages/public/resources/getting-started'));
+const ChannelsSetupGuide = React.lazy(() => import('./pages/public/resources/channels-setup'));
+const AutomationFlowsGuide = React.lazy(() => import('./pages/public/resources/automation-flows'));
+const SalesAutomationWebinar = React.lazy(() => import('./pages/public/resources/sales-automation-webinar'));
+const SalesFlowsGuide = React.lazy(() => import('./pages/public/resources/sales-flows'));
+const OmnichannelBestPractices = React.lazy(() => import('./pages/public/resources/omnichannel-best-practices'));
+const CrmGuide = React.lazy(() => import('./pages/public/resources/crm-guide'));
+const RoiGuide = React.lazy(() => import('./pages/public/resources/roi-guide'));
+const WhatsappTemplates = React.lazy(() => import('./pages/public/resources/whatsapp-templates'));
+const CustomerScripts = React.lazy(() => import('./pages/public/resources/customer-scripts'));
+const CompleteDemo = React.lazy(() => import('./pages/public/resources/complete-demo'));
+const EbookCustomerService = React.lazy(() => import('./pages/public/resources/ebook-customer-service'));
 
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
@@ -518,9 +538,27 @@ function AppContent() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/resources" element={<Resources />} />
+          <Route path="/resources/getting-started" element={<Suspense fallback={<LoadingScreen />}><GettingStartedGuide /></Suspense>} />
+          <Route path="/resources/channels-setup" element={<Suspense fallback={<LoadingScreen />}><ChannelsSetupGuide /></Suspense>} />
+          <Route path="/resources/automation-flows" element={<Suspense fallback={<LoadingScreen />}><AutomationFlowsGuide /></Suspense>} />
+          <Route path="/resources/sales-automation-webinar" element={<Suspense fallback={<LoadingScreen />}><SalesAutomationWebinar /></Suspense>} />
+          <Route path="/resources/sales-flows" element={<Suspense fallback={<LoadingScreen />}><SalesFlowsGuide /></Suspense>} />
+          <Route path="/resources/omnichannel-best-practices" element={<Suspense fallback={<LoadingScreen />}><OmnichannelBestPractices /></Suspense>} />
+          <Route path="/resources/crm-guide" element={<Suspense fallback={<LoadingScreen />}><CrmGuide /></Suspense>} />
+          <Route path="/resources/roi-guide" element={<Suspense fallback={<LoadingScreen />}><RoiGuide /></Suspense>} />
+          <Route path="/resources/whatsapp-templates" element={<Suspense fallback={<LoadingScreen />}><WhatsappTemplates /></Suspense>} />
+          <Route path="/resources/customer-scripts" element={<Suspense fallback={<LoadingScreen />}><CustomerScripts /></Suspense>} />
+          <Route path="/resources/complete-demo" element={<Suspense fallback={<LoadingScreen />}><CompleteDemo /></Suspense>} />
+          <Route path="/resources/ebook-customer-service" element={<Suspense fallback={<LoadingScreen />}><EbookCustomerService /></Suspense>} />
+          <Route path="/rss" element={<RSS />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/features" element={<Features />} />
+          <Route path="/features/automation" element={<AutomationFeatures />} />
+          <Route path="/features/communication" element={<CommunicationFeatures />} />
+          <Route path="/features/chat" element={<ChatFeatures />} />
+          <Route path="/features/crm" element={<CRMFeatures />} />
+          <Route path="/features/management" element={<ManagementFeatures />} />
           {/* Redireciona qualquer outra rota para a home */}
           <Route path="*" element={<Navigate to="/" replace state={{ from: location }} />} />
         </Routes>
@@ -578,9 +616,27 @@ function AppContent() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/resources" element={<Resources />} />
+            <Route path="/resources/getting-started" element={<Suspense fallback={<LoadingScreen />}><GettingStartedGuide /></Suspense>} />
+            <Route path="/resources/channels-setup" element={<Suspense fallback={<LoadingScreen />}><ChannelsSetupGuide /></Suspense>} />
+            <Route path="/resources/automation-flows" element={<Suspense fallback={<LoadingScreen />}><AutomationFlowsGuide /></Suspense>} />
+            <Route path="/resources/sales-automation-webinar" element={<Suspense fallback={<LoadingScreen />}><SalesAutomationWebinar /></Suspense>} />
+            <Route path="/resources/sales-flows" element={<Suspense fallback={<LoadingScreen />}><SalesFlowsGuide /></Suspense>} />
+            <Route path="/resources/omnichannel-best-practices" element={<Suspense fallback={<LoadingScreen />}><OmnichannelBestPractices /></Suspense>} />
+            <Route path="/resources/crm-guide" element={<Suspense fallback={<LoadingScreen />}><CrmGuide /></Suspense>} />
+            <Route path="/resources/roi-guide" element={<Suspense fallback={<LoadingScreen />}><RoiGuide /></Suspense>} />
+            <Route path="/resources/whatsapp-templates" element={<Suspense fallback={<LoadingScreen />}><WhatsappTemplates /></Suspense>} />
+            <Route path="/resources/customer-scripts" element={<Suspense fallback={<LoadingScreen />}><CustomerScripts /></Suspense>} />
+            <Route path="/resources/complete-demo" element={<Suspense fallback={<LoadingScreen />}><CompleteDemo /></Suspense>} />
+            <Route path="/resources/ebook-customer-service" element={<Suspense fallback={<LoadingScreen />}><EbookCustomerService /></Suspense>} />
+            <Route path="/rss" element={<RSS />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/features" element={<Features />} />
+            <Route path="/features/automation" element={<AutomationFeatures />} />
+            <Route path="/features/communication" element={<CommunicationFeatures />} />
+            <Route path="/features/chat" element={<ChatFeatures />} />
+            <Route path="/features/crm" element={<CRMFeatures />} />
+            <Route path="/features/management" element={<ManagementFeatures />} />
           </>
         ) : (
           // Se estiver no app nativo, redireciona a rota raiz para /app

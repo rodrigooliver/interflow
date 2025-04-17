@@ -2,6 +2,11 @@
   "title": "Recursos y Materiales",
   "intro": "Explora nuestros recursos gratuitos para ayudar a tu empresa a aprovechar al máximo Interflow y mejorar tu servicio al cliente.",
   "viewResource": "Ver Recurso",
+  "downloadResource": "Descargar",
+  "shareResource": "Compartir",
+  "backToResources": "Volver a Recursos",
+  "relatedResources": "Recursos relacionados",
+  "linkCopied": "¡Enlace copiado al portapapeles!",
   "sections": {
     "guides": {
       "title": "Guías y Tutoriales",

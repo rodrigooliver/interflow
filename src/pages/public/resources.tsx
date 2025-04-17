@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { PublicLayout } from '../../layouts/PublicLayout';
 
 interface Resource {
@@ -17,6 +18,7 @@ interface ResourcesSection {
 
 export default function Resources() {
   const { t } = useTranslation('resources');
+  const navigate = useNavigate();
 
   const renderResource = (resource: Resource) => {
     return (
@@ -40,12 +42,14 @@ export default function Resources() {
           <p className="text-gray-700 dark:text-gray-300 mb-4">
             {resource.description}
           </p>
-          <a 
-            href={resource.link} 
+          <button 
+            onClick={() => {
+              navigate(resource.link);
+            }}
             className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300"
           >
             {t('viewResource')}
-          </a>
+          </button>
         </div>
       </div>
     );
