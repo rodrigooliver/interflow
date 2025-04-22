@@ -819,6 +819,37 @@ export interface AppointmentReminder {
   status: 'pending' | 'sent' | 'failed';
   scheduled_for: string; // ISO DateTime
   sent_at?: string; // ISO DateTime
+  template_id?: string; // Referência ao template usado
+  created_at: string;
+  updated_at: string;
+}
+
+// Template de Notificação para Agendamento
+export interface ScheduleNotificationTemplate {
+  id: string;
+  schedule_id: string;
+  organization_id: string;
+  name: string;
+  channel_id?: string; // Referência ao canal de envio (email, whatsapp, etc)
+  channel?: ChatChannel; // Não está no banco de dados, mas útil para UI
+  trigger_type: 'before_appointment' | 'on_confirmation' | 'on_cancellation' | 'after_appointment' | 'on_reschedule' | 'on_no_show';
+  content: string;
+  subject?: string; // Obrigatório apenas para emails
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  settings?: ScheduleNotificationSetting[]; // Configurações associadas, preenchido pelo useScheduleTemplates
+}
+
+// Configuração de Notificação para Agendamento
+export interface ScheduleNotificationSetting {
+  id: string;
+  schedule_id: string;
+  organization_id: string;
+  template_id: string;
+  template?: ScheduleNotificationTemplate; // Referência ao template (não está no banco)
+  time_before?: string; // Intervalo como string (ex: '30 minutes', '1 day')
+  active: boolean;
   created_at: string;
   updated_at: string;
 }

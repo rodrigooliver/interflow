@@ -54,6 +54,8 @@
   "name": "Nombre",
   "value": "Valor",
   "status": "Estado",
+  "active": "Activo",
+  "inactive": "Inactivo",
   "customer": "Cliente",
   "trialDaysLeft": "{{days}} días restantes del período de prueba",
   "subscriptionEndingSoon": "Tu suscripción está a punto de vencer",

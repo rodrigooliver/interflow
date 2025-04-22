@@ -53,6 +53,8 @@
   "agent": "Agent",
   "name": "Name",
   "value": "Value",
+  "active": "Active",
+  "inactive": "Inactive",
   "status": "Status",
   "customer": "Customer",
   "trialDaysLeft": "{{days}} days left in trial period",

@@ -81,6 +81,7 @@ import SchedulesListPage from './pages/schedules/SchedulesListPage';
 import ScheduleAvailabilityPage from './pages/schedules/management/ScheduleAvailabilityPage';
 import ScheduleHolidaysPage from './pages/schedules/management/ScheduleHolidaysPage';
 import Tasks from './pages/Tasks';
+import NotificationTemplatesPage from './pages/schedules/NotificationTemplatesPage';
 
 // Import das novas páginas do sistema financeiro
 import FinancialDashboard from './pages/financial/FinancialDashboard';
@@ -699,6 +700,7 @@ function AppContent() {
                         <Route path="schedules/:scheduleId/management" element={<ScheduleManagementPage />} />
                         <Route path="schedules/:scheduleId/availability" element={<ScheduleAvailabilityPage />} />
                         <Route path="schedules/:scheduleId/holidays" element={<ScheduleHolidaysPage />} />
+                        <Route path="schedules/:scheduleId/notifications" element={<NotificationTemplatesPage />} />
                         <Route path="financial" element={<FinancialDashboard />} />
                         <Route path="financial/transactions" element={<FinancialTransactions />} />
                         <Route path="financial/cashiers" element={<FinancialCashiers />} />

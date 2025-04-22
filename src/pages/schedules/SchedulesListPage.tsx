@@ -14,7 +14,8 @@ import {
   Users,
   UserCheck,
   CalendarOff,
-  ExternalLink
+  ExternalLink,
+  Bell
 } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useSchedules } from '../../hooks/useQueryes';
@@ -54,6 +55,11 @@ const SchedulesListPage: React.FC = () => {
   // Função para navegar para a página de feriados e folgas
   const handleGoToHolidays = (scheduleId: string) => {
     navigate(`/app/schedules/${scheduleId}/holidays`);
+  };
+  
+  // Função para navegar para a página de notificações
+  const handleGoToNotifications = (scheduleId: string) => {
+    navigate(`/app/schedules/${scheduleId}/notifications`);
   };
   
   // Função para criar uma nova agenda
@@ -345,6 +351,13 @@ const SchedulesListPage: React.FC = () => {
                                 <CalendarOff className="h-5 w-5" />
                               </button>
                               <button
+                                onClick={() => handleGoToNotifications(schedule.id)}
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                title={t('schedules:manageNotifications')}
+                              >
+                                <Bell className="h-5 w-5" />
+                              </button>
+                              <button
                                 onClick={() => handleEditSchedule(schedule)}
                                 className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
                                 title={t('common:edit')}
@@ -507,6 +520,13 @@ const SchedulesListPage: React.FC = () => {
                               title={t('schedules:holidaysAndDaysOff')}
                             >
                               <CalendarOff className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleGoToNotifications(schedule.id)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              title={t('schedules:manageNotifications')}
+                            >
+                              <Bell className="h-5 w-5" />
                             </button>
                           </div>
                           <div className="flex items-center gap-3">

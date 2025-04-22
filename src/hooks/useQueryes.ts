@@ -1337,3 +1337,41 @@ export function useTasks(organizationId?: string, status?: 'pending' | 'in_progr
     enabled: !!organizationId && !!userId
   });
 }
+
+/**
+ * Hook para buscar templates de notificação e suas configurações
+ */
+export function useScheduleTemplates(scheduleId?: string) {
+  return useQuery({
+    queryKey: ['notification-templates', scheduleId],
+    queryFn: async () => {
+      if (!scheduleId) return [];
+
+      const { data: templates, error: templatesError } = await supabase
+        .from('schedule_notification_templates')
+        .select(`
+          *,
+          channel:channel_id (
+            id,
+            name,
+            type
+          ),
+          settings:schedule_notification_settings (
+            id,
+            time_before,
+            active
+          )
+        `)
+        .eq('schedule_id', scheduleId)
+        .order('created_at', { ascending: false });
+        
+      if (templatesError) throw templatesError;
+      
+      // Processar os resultados para o formato necessário no frontend
+      return templates || [];
+    },
+    enabled: !!scheduleId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
