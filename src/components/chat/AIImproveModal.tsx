@@ -45,6 +45,8 @@ export function AIImproveModal({ text, onClose, onTextUpdate, chatId }: AIImprov
         if (defaultPrompt) {
           // Se existir um prompt padrão, selecione-o automaticamente
           setSelectedPrompt(defaultPrompt.id);
+        } else {
+          setSelectedPrompt(prompts[0].id);
         }
       }
     }
