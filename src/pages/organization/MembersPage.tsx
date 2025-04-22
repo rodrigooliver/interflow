@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Users, Loader2, X, Mail, AlertTriangle, Edit, Link } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAgents } from '../../hooks/useQueryes';
 import { useQueryClient } from '@tanstack/react-query';
@@ -126,28 +125,37 @@ export default function OrganizationMembers() {
     }
   }
 
-  console.log(editProfileForm);
-
   async function handleRemoveMember() {
-    if (!selectedMember || !currentOrganizationMember) return;
+    if (!selectedMember?.profile || !currentOrganizationMember) return;
     
     setDeletingMember(true);
+    setError('');
+    
     try {
-      const { error } = await supabase
-        .from('organization_members')
-        .delete()
-        .eq('id', selectedMember.id);
-
-      if (error) throw error;
+      const response = await api.delete(`/api/${currentOrganizationMember.organization.id}/member/${selectedMember.profile.id}`);
+      
+      const data = response.data;
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao remover membro');
+      }
 
       // Invalidar cache dos agents
       await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganizationMember.organization.id] });
       
       setShowDeleteModal(false);
       setSelectedMember(null);
-    } catch (error) {
-      console.error('Error removing member:', error);
-      setError(t('common:error'));
+      
+      // Mostrar mensagem de sucesso com base na resposta da API
+      setSuccessMessage(data.message || t('member:delete.success', 'Membro removido com sucesso!'));
+      
+      // Esconder mensagem após 5 segundos
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+    } catch (err: unknown) {
+      console.error('Erro ao remover membro:', err);
+      setError(err instanceof Error ? err.message : t('common:error'));
     } finally {
       setDeletingMember(false);
     }
@@ -555,6 +563,10 @@ export default function OrganizationMembers() {
                 {t('member:delete.confirmation', { name: selectedMember.profile?.full_name })}
                 <br />
                 {t('member:delete.warning')}
+                <br /><br />
+                <span className="text-red-500 dark:text-red-400">
+                  {t('member:delete.permanentWarning', 'Atenção: Se este membro não estiver vinculado a nenhuma outra organização, sua conta será completamente excluída do sistema.')}
+                </span>
               </p>
               <div className="flex justify-end space-x-3">
                 <button

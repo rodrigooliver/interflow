@@ -4,10 +4,16 @@ import { User, Loader2, Lock, Search, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthContext } from '../contexts/AuthContext';
 import { countryCodes } from '../utils/countryCodes';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import api from '../lib/api';
+import * as Sentry from "@sentry/react";
 
 export default function Profile() {
   const { t } = useTranslation(['profile', 'common']);
-  const { profile: currentProfile } = useAuthContext();
+  const { profile: currentProfile, session } = useAuthContext();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -30,6 +36,60 @@ export default function Profile() {
   const [countrySearch, setCountrySearch] = useState('');
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const dropdownContentRef = useRef<HTMLDivElement>(null);
+  
+  // Verificar parâmetros da URL após redirecionamento de convite
+  useEffect(() => {
+    const processInvitation = async () => {
+      try {
+        // Verificar se este é um redirecionamento de convite
+        const isJoin = searchParams.get('join') === 'true';
+        const orgId = searchParams.get('org');
+        
+        if (isJoin && orgId && session?.user?.id) {
+          // console.log('Processando convite após autenticação na página de perfil:', { orgId, memberId });
+          
+          try {
+            // Chamar o backend para atualizar o status do membro
+            const response = await api.post(`/api/${orgId}/member/join`, {
+              userId: session.user.id
+            });
+            
+            if (response.data.success) {
+              console.log('Convite aceito automaticamente após redirecionamento para perfil');
+              setSuccess(t('common:joinSuccess', 'Você foi adicionado à organização com sucesso!'));
+              
+              // Limpar os parâmetros da URL
+              // const newUrl = new URL(window.location.href);
+              // newUrl.searchParams.delete('join');
+              // newUrl.searchParams.delete('org');
+              // newUrl.searchParams.delete('member');
+              // window.history.replaceState({}, '', newUrl.toString());
+              
+            }
+          } catch (error) {
+            console.error('Erro ao processar convite automático:', error);
+            Sentry.captureException(error, {
+              tags: {
+                location: 'Profile.processInvitation'
+              }
+            });
+            setError(t('common:joinError', 'Erro ao processar o convite. Por favor, tente novamente.'));
+          }
+        }
+      } catch (error) {
+        console.error('Erro no processamento de parâmetros da URL:', error);
+        Sentry.captureException(error, {
+          tags: {
+            location: 'Profile.useEffect.searchParams'
+          }
+        });
+      }
+    };
+    
+    if (session) {
+      processInvitation();
+    }
+  }, [searchParams, session, navigate, t]);
 
   // Efeito para fechar dropdown quando clicar fora dele
   useEffect(() => {

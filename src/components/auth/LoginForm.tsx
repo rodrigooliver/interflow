@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ResetPasswordForm from './ResetPasswordForm';
 import OneSignal from 'react-onesignal';
+import api from '../../lib/api';
 
 // Estendendo a interface Window para incluir nossas propriedades personalizadas
 declare global {
@@ -56,6 +57,17 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
         // Se o login for bem-sucedido
         // Obter o userId do usuário atual
         const { data: { user } } = await supabase.auth.getUser();
+        
+        // Atualizar status de first_login para true
+        if (user) {
+          try {
+            await api.put(`/api/user/${user.id}/first-login`);
+            console.log('Status de primeiro login atualizado com sucesso');
+          } catch (updateError) {
+            console.error('Erro ao atualizar status de primeiro login:', updateError);
+            // Continuar com o fluxo mesmo se houver erro aqui
+          }
+        }
         
         // Registrar no OneSignal se estiver em ambiente mobile
         if (user && window.isNativeApp && window.nativeApp?.registerForNotifications) {
@@ -179,7 +191,7 @@ export default function LoginForm({ onSuccess, redirectPath, isModal = false }: 
           )}
         </button>
 
-        {!isModal && !window.isNativeApp && (
+        {!window.isNativeApp && (
           <div className="space-y-3">
             <div className="text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
