@@ -1008,7 +1008,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Se forceReset for true, ignoramos newMessagesCount completamente
       const offset = forceReset ? (pageNumber - 1) * MESSAGES_PER_PAGE : (pageNumber - 1) * MESSAGES_PER_PAGE + newMessagesCount;
       
-      console.log(`loadMessages - pageNumber: ${pageNumber}, newMessagesCount: ${newMessagesCount}, forceReset: ${forceReset}, offset calculado: ${offset}`);
+      // console.log(`loadMessages - pageNumber: ${pageNumber}, newMessagesCount: ${newMessagesCount}, forceReset: ${forceReset}, offset calculado: ${offset}`);
       
       const { data, error } = await supabase
         .from('messages')
@@ -1154,7 +1154,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           initialScrollDoneRef.current = true;
         }
       }
-    }, 50);
+    }, 0);
   };
 
   const formatMessageDate = (date: string) => {
@@ -1499,7 +1499,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 // Verificar visibilidade da mensagem destacada após carregar mais mensagens
                 checkHighlightedMessageVisibility();
               }
-            }, 50);
+            }, 0);
           })
           .catch((error) => {
             console.error('Erro ao carregar mais mensagens:', error);
@@ -1511,7 +1511,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             setIsLoadingMore(false);
             scrollDebounceTimerRef.current = null;
           });
-      }, 100); // 100ms debounce
+      }, 0); // 100ms debounce
     }
   };
 
@@ -2449,7 +2449,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           // Rolar para o final após o carregamento
           setTimeout(() => {
             scrollToBottom();
-          }, 300);
+          }, 0);
         }
       }
       
@@ -2934,9 +2934,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         )}
       </div>
 
+      
+
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative overflow-x-hidden w-full pb-2 custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative overflow-x-hidden w-full pb-2 custom-scrollbar"
         onScroll={handleScroll}
       >
         {/* Indicador de carregamento relativo ao contêiner de mensagens */}
