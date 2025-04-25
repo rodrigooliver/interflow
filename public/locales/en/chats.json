@@ -20,6 +20,13 @@
   "backToActiveChats": "Back to Active Conversations",
   "resolutionTitle": "Summary",
   "allMessagesLoaded": "All messages loaded",
+  "viewAllCustomerMessages": "Complete history",
+  "viewCurrentChat": "View current chat",
+  "viewingAllMessages": "Complete history",
+  "noMessagesFound": "No messages found",
+  "currentChat": "Current chat",
+  "ticketNumber": "Ticket number",
+  "chatId": "Chat ID",
   "collaborator": {
     "collaborators": "Collaborators",
     "attendedBy": "Attended by {{name}}",
@@ -49,9 +56,9 @@
     "completed": "Completed",
     "spam": "Spam",
     "status": "Status",
-    "channel": "Channel",
     "agent": "Agent",
     "team": "Team",
+    "channel": "Channel",
     "funnel": "Funnel",
     "tag": "Tag",
     "tags": "Tags",
@@ -164,6 +171,8 @@
   "errors": {
     "loading": "Error loading messages",
     "loadingChat": "Error loading conversation",
+    "loadingAllMessages": "Error loading complete customer history",
+    "customerOrChannelNotFound": "Customer or channel information not found",
     "sending": "Error sending message",
     "deleteMessage": "Error deleting message",
     "microphoneAccess": "Could not access microphone. Please check your permissions.",
@@ -232,7 +241,7 @@
   },
   "noChatsFound": "No chats found",
   "resolution": {
-    "title": "Resolve chat",
+    "title": "Resolve conversation",
     "summaryPlaceholder": "Enter a brief summary of the conversation...",
     "generateNew": "Generate new summary",
     "summary": "Summary",
@@ -272,18 +281,19 @@
   "chatAssignedToYou": "This conversation has been transferred to you",
   "chatReopened": "This conversation has been reopened",
   "transfer": {
-    "title": "Transfer All Chats",
+    "title": "Transfer All Conversations",
     "searchPlaceholder": "Search customer...",
     "noResults": "No customers found",
-    "success": "Chats transferred successfully",
-    "error": "Error transferring chats",
-    "confirm": "Are you sure you want to transfer all chats from this customer?"
+    "success": "Conversations transferred successfully",
+    "error": "Error transferring conversations",
+    "confirm": "Are you sure you want to transfer all conversations from this customer?"
   },
   "chatDetails": {
     "title": "Chat Details",
     "description": "View detailed information about the chat, including channel, agent, status, and metrics.",
     "basicInfo": "Basic Information",
     "ticketNumber": "Ticket Number",
+    "team": "Team",
     "status": "Status",
     "isArchived": "Archived",
     "isFixed": "Fixed",
@@ -319,6 +329,7 @@
     "user_entered": "User entered",
     "user_left": "User left",
     "user_transferred": "Chat transferred",
+    "user_transferred_himself": "Chat transferred to self",
     "user_closed": "Chat closed",
     "user_join": "User joined as collaborator",
     "template": "Template message",
@@ -356,6 +367,16 @@
     "featureDisabled": "Deletion not allowed in this channel",
     "timeExpired": "Deletion only available within the first 48 hours"
   },
+  "leaveAttendance": {
+    "title": "Leave Attendance",
+    "description": "Select the team to transfer the chat to:",
+    "selectTeam": "Select a team",
+    "selectAgent": "Select an agent (optional)",
+    "pendingOption": "Leave pending awaiting attendance",
+    "assignmentInfo": "The chat will be transferred directly to this agent",
+    "keepInTeam": "Keep in team",
+    "transferToTeam": "Transfer to team"
+  },
   "teamTransfer": {
     "title": "Transfer to Another Team",
     "selectTeam": "Select team",
@@ -370,15 +391,5 @@
     "generateNew": "Generate New",
     "generatingTitle": "Generating title...",
     "titlePlaceholder": "Enter or generate a title for the chat"
-  },
-  "leaveAttendance": {
-    "title": "Leave Attendance",
-    "description": "Select the team to transfer the chat to:",
-    "selectTeam": "Select a team",
-    "selectAgent": "Select an agent (optional)",
-    "pendingOption": "Leave pending awaiting attendance",
-    "assignmentInfo": "The chat will be transferred directly to this agent",
-    "keepInTeam": "Keep in team",
-    "transferToTeam": "Transfer to team"
   }
 }

@@ -24,6 +24,13 @@
   "backToActiveChats": "Voltar para Atendimentos Ativos",
   "resolutionTitle": "Resumo",
   "allMessagesLoaded": "Todas as mensagens carregadas",
+  "viewAllCustomerMessages": "Histórico completo",
+  "viewCurrentChat": "Ver chat atual",
+  "viewingAllMessages": "Histórico completo",
+  "noMessagesFound": "Nenhuma mensagem encontrada",
+  "currentChat": "Chat atual",
+  "ticketNumber": "Número do ticket",
+  "chatId": "ID do atendimento",
   "collaborator": {
     "collaborators": "Colaboradores",
     "attendedBy": "Atendido por {{name}}",
@@ -168,6 +175,8 @@
   "errors": {
     "loading": "Erro ao carregar mensagens",
     "loadingChat": "Erro ao carregar atendimento",
+    "loadingAllMessages": "Erro ao carregar histórico completo do cliente",
+    "customerOrChannelNotFound": "Informações do cliente ou canal não encontradas",
     "sending": "Erro ao enviar mensagem",
     "deleteMessage": "Erro ao excluir mensagem",
     "microphoneAccess": "Não foi possível acessar o microfone. Verifique suas permissões.",

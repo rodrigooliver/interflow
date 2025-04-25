@@ -12,7 +12,7 @@ import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2 } from 'lucide-react';
+import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2, History } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { FlowModal } from './FlowModal';
@@ -22,6 +22,15 @@ import { LeaveAttendanceModal } from './LeaveAttendanceModal';
 // Estendendo a interface Message para incluir a propriedade response_to
 interface Message extends BaseMessage {
   response_to?: Message;
+  chats?: {
+    id: string;
+    ticket_number?: string;
+    customer_id: string;
+    channel_id: string;
+    start_time?: string;
+    end_time?: string;
+    status?: string;
+  };
 }
 
 // Interface para tags do cliente
@@ -147,7 +156,7 @@ interface ChatCollaborator {
   };
 }
 
-// Interface para configurações de funcionalidades por canal
+// Interface para recursos do canal
 interface ChannelFeatures {
   canReplyToMessages: boolean;
   canSendAudio: boolean;
@@ -155,6 +164,26 @@ interface ChannelFeatures {
   has24HourWindow: boolean;
   canSendAfter24Hours: boolean;
   canDeleteMessages: boolean;
+}
+
+// Interfaces para agrupamento de mensagens
+interface ChatInfo {
+  id: string;
+  ticket_number?: string;
+  customer_id: string;
+  channel_id: string;
+  start_time?: string;
+  status?: string;
+}
+
+interface ChatGroup {
+  chatInfo: ChatInfo | null;
+  messages: Message[];
+}
+
+interface ChatGroupResult {
+  chatInfo: ChatInfo | null;
+  dateGroups: Record<string, Message[]>;
 }
 
 export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesProps) {
@@ -239,6 +268,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [lastSubscriptionUpdate, setLastSubscriptionUpdate] = useState<Date | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [isViewingAllCustomerMessages, setIsViewingAllCustomerMessages] = useState(false);
+
+  // Vamos adicionar estados para controlar o carregamento específico do botão
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isLoadingCurrentChat, setIsLoadingCurrentChat] = useState(false);
 
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
@@ -1137,32 +1172,102 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Modificar a função para agrupar mensagens por chat_id também
   const groupMessagesByDate = (messages: Message[]) => {
-    const groups: { [key: string]: Message[] } = {};
-    
-    messages.forEach(message => {
-      const date = new Date(message.created_at).toDateString();
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(message);
-    });
-    
-    // Transformar em um array ordenado por data (mais antiga para mais recente)
-    const sortedGroups = Object.entries(groups)
-      .sort((a, b) => {
-        const dateA = new Date(a[0]);
-        const dateB = new Date(b[0]);
-        return dateA.getTime() - dateB.getTime();
+    if (!isViewingAllCustomerMessages) {
+      // Comportamento original - apenas agrupamento por data
+      const groups: { [key: string]: Message[] } = {};
+      
+      messages.forEach(message => {
+        const date = new Date(message.created_at).toDateString();
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(message);
       });
-    
-    // Converter de volta para objeto preservando a ordem
-    const orderedGroups: { [key: string]: Message[] } = {};
-    sortedGroups.forEach(([date, msgs]) => {
-      orderedGroups[date] = msgs;
-    });
-    
-    return orderedGroups;
+      
+      // Transformar em um array ordenado por data (mais antiga para mais recente)
+      const sortedGroups = Object.entries(groups)
+        .sort((a, b) => {
+          const dateA = new Date(a[0]);
+          const dateB = new Date(b[0]);
+          return dateA.getTime() - dateB.getTime();
+        });
+      
+      // Converter de volta para objeto preservando a ordem
+      const orderedGroups: { [key: string]: Message[] } = {};
+      sortedGroups.forEach(([date, msgs]) => {
+        orderedGroups[date] = msgs;
+      });
+      
+      return orderedGroups;
+    } else {
+      // Agrupar primeiro por chat_id e depois por data quando estiver vendo todo o histórico
+      const chatGroups: Record<string, ChatGroup> = {};
+      
+      // Primeiro, agrupar mensagens por chat_id
+      messages.forEach(message => {
+        const chatId = message.chat_id;
+        // Garante que chatId seja sempre uma string
+        const chatIdStr = String(chatId);
+        
+        if (!chatGroups[chatIdStr]) {
+          chatGroups[chatIdStr] = {
+            chatInfo: null,
+            messages: []
+          };
+          
+          // Obter informações do chat da primeira mensagem
+          if (message.chats) {
+            chatGroups[chatIdStr].chatInfo = {
+              id: chatIdStr,
+              ticket_number: message.chats.ticket_number,
+              customer_id: message.chats.customer_id,
+              channel_id: message.chats.channel_id,
+              start_time: message.chats.start_time,
+              status: message.chats.status
+            };
+          }
+        }
+        chatGroups[chatIdStr].messages.push(message);
+      });
+      
+      // Para cada chat, agrupar mensagens por data
+      const result: Record<string, ChatGroupResult> = {};
+      
+      Object.entries(chatGroups).forEach(([chatId, chatData]) => {
+        const dateGroups: Record<string, Message[]> = {};
+        
+        chatData.messages.forEach(message => {
+          const date = new Date(message.created_at).toDateString();
+          if (!dateGroups[date]) {
+            dateGroups[date] = [];
+          }
+          dateGroups[date].push(message);
+        });
+        
+        // Ordenar as datas (mais antiga para mais recente)
+        const sortedDateGroups = Object.entries(dateGroups)
+          .sort((a, b) => {
+            const dateA = new Date(a[0]);
+            const dateB = new Date(b[0]);
+            return dateA.getTime() - dateB.getTime();
+          });
+        
+        // Converter de volta para objeto preservando a ordem
+        const orderedDateGroups: Record<string, Message[]> = {};
+        sortedDateGroups.forEach(([date, msgs]) => {
+          orderedDateGroups[date] = msgs;
+        });
+        
+        result[chatId] = {
+          chatInfo: chatData.chatInfo,
+          dateGroups: orderedDateGroups
+        };
+      });
+      
+      return result;
+    }
   };
 
   const handleResolveChat = async ({ closureTypeId, title }: { closureTypeId: string; title: string }) => {
@@ -1366,7 +1471,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         const newPage = page + 1;
         setPage(newPage);
         
-        loadMessages(newPage, true)
+        // Decidir qual função de carregamento usar com base no modo de visualização
+        const loadMorePromise = isViewingAllCustomerMessages 
+          ? loadAllCustomerMessages(newPage, true)
+          : loadMessages(newPage, true);
+          
+        loadMorePromise
           .then(() => {
             // Após o conteúdo ser carregado, mantém a posição de referência
             setTimeout(() => {
@@ -1462,6 +1572,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         .from('messages')
         .select(`
           *,
+          chats!messages_chat_id_fkey!inner(customer_id, channel_id, ticket_number),
           sender_agent:messages_sender_agent_id_fkey(
             id,
             full_name
@@ -2274,6 +2385,117 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     return () => container.removeEventListener('scroll', handleScroll);
   }, [isNearBottom]);
 
+  // Função para carregar todas as mensagens do cliente em todos os chats
+  const loadAllCustomerMessages = async (pageNumber = 1, append = false) => {
+    if (!chat?.customer?.id || !chat?.channel_details?.id) {
+      toast.error(t('errors.customerOrChannelNotFound'));
+      return;
+    }
+
+    try {
+      if (!append) {
+        setIsLoadingHistory(true);
+        setIsViewingAllCustomerMessages(true);
+        setNewMessagesCount(0);
+        setShowNewMessagesIndicator(false);
+      } else {
+        setIsLoadingMore(true);
+      }
+      
+      // Calcular o offset para paginação
+      const offset = (pageNumber - 1) * MESSAGES_PER_PAGE;
+      
+      // Buscar mensagens de todos os chats deste cliente no mesmo canal
+      const { data: allMessages, error: messagesError } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          chats!messages_chat_id_fkey!inner(customer_id, channel_id, ticket_number),
+          sender_agent:messages_sender_agent_id_fkey(
+            id,
+            full_name,
+            avatar_url
+          ),
+          response_to:response_message_id(
+            id,
+            content,
+            sender_type,
+            sender_agent_response:messages_sender_agent_id_fkey(
+              id,
+              full_name
+            )
+          )
+        `)
+        .eq('chats.customer_id', chat.customer.id)
+        .eq('chats.channel_id', chat.channel_details.id)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + MESSAGES_PER_PAGE - 1);
+        
+      if (messagesError) throw messagesError;
+      
+      const newMessages = allMessages || [];
+      
+      // Verificar se há mais mensagens para carregar
+      setHasMore(newMessages.length === MESSAGES_PER_PAGE);
+      
+      if (append) {
+        setMessages(prev => [...newMessages.reverse(), ...prev]);
+      } else {
+        setMessages(newMessages.reverse());
+        
+        // Se for o primeiro carregamento e temos mensagens, rolar para o fim
+        if (pageNumber === 1 && newMessages.length > 0) {
+          initialScrollDoneRef.current = false; // Resetar para permitir o scroll inicial
+          // Rolar para o final após o carregamento
+          setTimeout(() => {
+            scrollToBottom();
+          }, 300);
+        }
+      }
+      
+      if (newMessages.length === 0 && pageNumber === 1) {
+        toast.error(t('noMessagesFound'));
+      }
+      
+    } catch (error) {
+      console.error('Erro ao carregar todas as mensagens do cliente:', error);
+      toast.error(t('errors.loadingAllMessages'));
+      // Em caso de erro, voltar para a visualização normal
+      if (!append) {
+        setIsViewingAllCustomerMessages(false);
+      }
+    } finally {
+      if (!append) {
+        setIsLoadingHistory(false);
+      } else {
+        setIsLoadingMore(false);
+      }
+    }
+  };
+
+  // Função para voltar à visualização normal do chat atual
+  const resetToCurrentChat = async () => {
+    setIsLoadingCurrentChat(true);
+    setIsViewingAllCustomerMessages(false);
+    setMessages([]);
+    setNewMessagesCount(0);
+    setShowNewMessagesIndicator(false);
+    setPage(1);
+    
+    try {
+      await loadMessages(1, false, true);
+      // Rolar para o final após o carregamento
+      setTimeout(() => {
+        scrollToBottom();
+      }, 300);
+    } catch (error) {
+      console.error('Erro ao recarregar mensagens do chat atual:', error);
+      toast.error(t('errors.loading'));
+    } finally {
+      setIsLoadingCurrentChat(false);
+    }
+  };
+
   if (!chatId) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -2358,6 +2580,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 <>
                   <div className="font-medium text-gray-900 dark:text-gray-100 truncate ">
                     {chat?.customer?.name || t('unnamed')}
+                    {isViewingAllCustomerMessages && (
+                      <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded-full">
+                        {t('viewingAllMessages')}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   {chat?.external_id && (
@@ -2426,6 +2653,48 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
           {/* Botões de ação */}
           <div className="flex-shrink-0 justify-self-end flex items-center space-x-2">
+            {/* Botão para visualizar todas as mensagens do cliente */}
+            {chat?.customer?.id && chat?.channel_details?.id && (
+              <button
+                className={`p-2 ${
+                  isViewingAllCustomerMessages 
+                    ? 'bg-blue-600 hover:bg-blue-700' 
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
+                } ${
+                  isViewingAllCustomerMessages 
+                    ? 'text-white' 
+                    : 'text-gray-700 dark:text-gray-300'
+                } rounded-md transition-colors flex items-center justify-center md:px-3`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (isViewingAllCustomerMessages) {
+                    resetToCurrentChat();
+                  } else {
+                    loadAllCustomerMessages(1, false);
+                  }
+                }}
+                disabled={isLoadingHistory || isLoadingCurrentChat}
+                title={isViewingAllCustomerMessages ? t('viewCurrentChat') : t('viewAllCustomerMessages')}
+              >
+                {isLoadingHistory || isLoadingCurrentChat ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="hidden md:inline ml-2">{t('loading')}</span>
+                  </>
+                ) : (
+                  <>
+                    <History className="w-5 h-5" />
+                    <span className="hidden md:inline ml-2">
+                      {isViewingAllCustomerMessages ? t('viewCurrentChat') : t('viewAllCustomerMessages')}
+                    </span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Botão de Play para Fluxos */}
             {(chat?.status === 'pending' || chat?.status === 'in_progress') && (
               <button
@@ -2702,32 +2971,98 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               </div>
             )}
             
-            {Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
-              <div key={date} className="w-full">
-                <div className="sticky top-2 flex justify-center mb-4 z-10">
-                  <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
-                    {formatMessageDate(dateMessages[0].created_at)}
-                  </span>
-                </div>
+            {/* Renderização das mensagens com base no modo de visualização */}
+            {messages.length > 0 && (
+              <>
+                {!isViewingAllCustomerMessages ? (
+                  // Modo de visualização normal - apenas agrupamento por data
+                  Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
+                    <div key={date} className="w-full">
+                      <div className="sticky top-0 z-10 flex justify-center mb-4">
+                        <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
+                          {formatMessageDate(dateMessages[0].created_at)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 w-full">
+                        {dateMessages.map((message) => (
+                          <MessageBubble
+                            key={message.id}
+                            message={message}
+                            chatStatus={chat?.status || ''}
+                            onReply={channelFeatures.canReplyToMessages ? (message) => {
+                              setReplyingTo(message);
+                            } : undefined}
+                            isHighlighted={message.id === highlightedMessageId}
+                            channelFeatures={channelFeatures}
+                            onDeleteMessage={handleDeleteMessage}
+                            onRetry={handleRetryMessage}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  // Modo de visualização de histórico completo - agrupamento por chat e por data
+                  Object.entries(groupMessagesByDate(messages) as Record<string, ChatGroupResult>).map(([chatId, chatData]) => (
+                    <div key={chatId} className="w-full mb-8 border-b border-gray-200 dark:border-gray-700 pb-4 relative">
+                      {/* Cabeçalho do chat - sticky no topo */}
+                      <div className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-t-lg mb-4 flex justify-between items-center shadow-sm border-b border-gray-200 dark:border-gray-700">
+                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                          <span className="flex items-center">
+                            <span className="font-semibold mr-1">{t('ticketNumber')}:</span> 
+                            <span className="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-md text-blue-600 dark:text-blue-400 font-mono">
+                              #{chatData.chatInfo?.ticket_number}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Mensagens agrupadas por data dentro deste chat */}
+                      {Object.entries(chatData.dateGroups).map(([date, msgs]) => (
+                        <div key={`${chatId}-${date}`} className="w-full">
+                          <div className="sticky top-14 z-10 flex justify-center mb-4">
+                            <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
+                              {formatMessageDate(msgs[0].created_at)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 w-full">
+                            {msgs.map((message: Message) => (
+                              <MessageBubble
+                                key={message.id}
+                                message={message}
+                                chatStatus={chatId === chat?.id ? (chat?.status || '') : 'closed'}
+                                onReply={chatId === chat?.id && channelFeatures.canReplyToMessages ? (msg) => {
+                                  setReplyingTo(msg);
+                                } : undefined}
+                                isHighlighted={message.id === highlightedMessageId}
+                                channelFeatures={channelFeatures}
+                                onDeleteMessage={chatId === chat?.id ? handleDeleteMessage : undefined}
+                                onRetry={chatId === chat?.id ? handleRetryMessage : undefined}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))
+                )}
                 
-                <div className="flex flex-col gap-2 w-full">
-                  {dateMessages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      chatStatus={chat?.status || ''}
-                      onReply={channelFeatures.canReplyToMessages ? (message) => {
-                        setReplyingTo(message);
-                      } : undefined}
-                      isHighlighted={message.id === highlightedMessageId}
-                      channelFeatures={channelFeatures}
-                      onDeleteMessage={handleDeleteMessage}
-                      onRetry={handleRetryMessage}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+                {/* Adicionar título do chat quando fechado */}
+                {!isViewingAllCustomerMessages && (chat?.status === 'closed' || chat?.status === 'await_closing') && chat?.title && (
+                  <div className="w-full mt-4">
+                    <div className="flex justify-center">
+                      <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">{t('resolutionTitle')}:</span> {chat.title}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </>
+            )}
             
             {/* Renderizar mensagens otimistas em seu próprio grupo */}
             {optimisticMessages.length > 0 && (
@@ -2814,19 +3149,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 </div>
               </div>
             )}
-            
-            {/* Adicionar título do chat quando fechado */}
-            {(chat?.status === 'closed' || chat?.status === 'await_closing') && chat?.title && (
-              <div className="w-full mt-4">
-                <div className="flex justify-center">
-                  <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">{t('resolutionTitle')}:</span> {chat.title}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
           </>
         )}
       </div>

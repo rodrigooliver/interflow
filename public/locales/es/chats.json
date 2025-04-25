@@ -20,6 +20,13 @@
   "backToActiveChats": "Volver a Conversaciones Activas",
   "resolutionTitle": "Resumen",
   "allMessagesLoaded": "Todos los mensajes cargados",
+  "viewAllCustomerMessages": "Historial completo",
+  "viewCurrentChat": "Ver chat actual",
+  "viewingAllMessages": "Historial completo",
+  "noMessagesFound": "Ningún mensaje encontrado",
+  "currentChat": "Chat actual",
+  "ticketNumber": "Número de ticket",
+  "chatId": "ID de la conversación",
   "collaborator": {
     "collaborators": "Colaboradores",
     "attendedBy": "Atendido por {{name}}",
@@ -49,9 +56,9 @@
     "completed": "Completados",
     "spam": "Spam",
     "status": "Estado",
-    "channel": "Canal",
     "agent": "Agente",
     "team": "Equipo",
+    "channel": "Canal",
     "funnel": "Embudo",
     "tag": "Etiqueta",
     "tags": "Etiquetas",
@@ -164,6 +171,8 @@
   "errors": {
     "loading": "Error al cargar mensajes",
     "loadingChat": "Error al cargar conversación",
+    "loadingAllMessages": "Error al cargar historial completo del cliente",
+    "customerOrChannelNotFound": "Información del cliente o canal no encontrada",
     "sending": "Error al enviar mensaje",
     "deleteMessage": "Error al eliminar mensaje",
     "microphoneAccess": "Error al acceder al micrófono. Por favor, verifica tus permisos.",
@@ -228,28 +237,8 @@
     "userJoin": "{{name}} se unió como colaborador",
     "userLeftAttendance": "{{name}} salió de la atención",
     "userTransferredHimself": "{{name}} transfirió el chat a sí mismo",
-    "teamTransferred": "Chat transferido a la equidad {{name}}"
+    "teamTransferred": "Chat transferido al equipo {{name}}"
   },
-  "noChatsFound": "No se encontraron chats",
-  "resolution": {
-    "title": "Resolver Conversación",
-    "summaryPlaceholder": "Escribe un breve resumen de la conversación...",
-    "generateNew": "Generar nuevo resumen",
-    "summary": "Resumen",
-    "generating": "Generando...",
-    "generatingSummary": "Generando resumen..."
-  },
-  "confirm": "Confirmar",
-  "cancel": "Cancelar",
-  "loading": "Cargando...",
-  "showAllMessages": "Mostrar todos los mensajes",
-  "showCurrentChat": "Mostrar chat actual",
-  "unnamed": "Sin nombre",
-  "history": "Historial de Conversaciones",
-  "untitledConversation": "Conversación sin título",
-  "noMessages": "Sin mensajes",
-  "assignedTo": "Agente",
-  "channel": "Canal",
   "messageDetails": {
     "title": "Detalles del Mensaje",
     "id": "ID",
@@ -268,22 +257,42 @@
     "url": "URL",
     "metadata": "Metadatos"
   },
+  "noChatsFound": "No se encontraron chats",
+  "resolution": {
+    "title": "Resolver Conversación",
+    "summaryPlaceholder": "Escribe un breve resumen de la conversación...",
+    "generateNew": "Generar nuevo resumen",
+    "summary": "Resumen",
+    "generating": "Generando...",
+    "generatingSummary": "Generando resumen..."
+  },
+  "confirm": "Confirmar",
+  "cancel": "Cancelar",
+  "loading": "Cargando...",
+  "showAllMessages": "Mostrar todos los mensajes",
+  "showCurrentChat": "Mostrar chat actual",
+  "unnamed": "Sin nombre",
+  "leaveSuccess": "Has salido de la colaboración",
+  "leaveError": "Error al salir de la colaboración",
+  "leaveAttendanceSuccess": "Has salido de la atención",
+  "leaveAttendanceError": "Error al salir de la atención",
   "chatReassigned": "Esta conversación ha sido transferida a otro agente",
   "chatAssignedToYou": "Esta conversación ha sido transferida a ti",
   "chatReopened": "Esta conversación ha sido reabierta",
   "transfer": {
-    "title": "Transferir Todos los Chats",
+    "title": "Transferir Todas las Conversaciones",
     "searchPlaceholder": "Buscar cliente...",
     "noResults": "No se encontraron clientes",
-    "success": "Chats transferidos con éxito",
-    "error": "Error al transferir los chats",
-    "confirm": "¿Estás seguro que deseas transferir todos los chats de este cliente?"
+    "success": "Conversaciones transferidas con éxito",
+    "error": "Error al transferir las conversaciones",
+    "confirm": "¿Estás seguro que deseas transferir todas las conversaciones de este cliente?"
   },
   "chatDetails": {
     "title": "Detalles del Chat",
     "description": "Visualice información detallada sobre el chat, incluyendo canal, agente, estado y métricas.",
     "basicInfo": "Información Básica",
     "ticketNumber": "Número de Ticket",
+    "team": "Equipo",
     "status": "Estado",
     "isArchived": "Archivado",
     "isFixed": "Fijado",
@@ -319,6 +328,7 @@
     "user_entered": "Usuario entró",
     "user_left": "Usuario salió",
     "user_transferred": "Chat transferido",
+    "user_transferred_himself": "Chat transferido a sí mismo",
     "user_closed": "Chat cerrado",
     "user_join": "Usuario se unió como colaborador",
     "template": "Mensaje plantilla",
@@ -356,6 +366,16 @@
     "featureDisabled": "Eliminación no permitida en este canal",
     "timeExpired": "Eliminación solo disponible durante las primeras 48 horas"
   },
+  "leaveAttendance": {
+    "title": "Salir de la Atención",
+    "description": "Seleccione el equipo para transferir el chat:",
+    "selectTeam": "Seleccione un equipo",
+    "selectAgent": "Seleccione un agente (opcional)",
+    "pendingOption": "Dejar pendiente esperando atención",
+    "assignmentInfo": "El chat será transferido directamente a este agente",
+    "keepInTeam": "Mantener en equipo",
+    "transferToTeam": "Transferir a equipo"
+  },
   "teamTransfer": {
     "title": "Transferir a Otro Equipo",
     "selectTeam": "Seleccionar equipo",
@@ -370,15 +390,5 @@
     "generateNew": "Generar Nuevo",
     "generatingTitle": "Generando título...",
     "titlePlaceholder": "Ingrese o genere un título para el chat"
-  },
-  "leaveAttendance": {
-    "title": "Salir de la Atención",
-    "description": "Seleccione el equipo para transferir el chat:",
-    "selectTeam": "Seleccione un equipo",
-    "selectAgent": "Seleccione un agente (opcional)",
-    "pendingOption": "Dejar pendiente esperando atención",
-    "assignmentInfo": "El chat será transferido directamente a este agente",
-    "keepInTeam": "Mantener en equipo",
-    "transferToTeam": "Transferir a equipo"
   }
 }
