@@ -17,6 +17,8 @@ import { Input } from "../../components/ui/Input";
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
+import { ChatAvatar } from './ChatAvatar';
+import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 
 // Interface para os locales de formatação de data
 const locales = {
@@ -47,9 +49,8 @@ export function MergeChatModal({
   const { t, i18n } = useTranslation(['chats', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
-  const [availableChats, setAvailableChats] = useState<Chat[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [merging, setMerging] = useState(false);
   const [error, setError] = useState('');
@@ -61,34 +62,29 @@ export function MergeChatModal({
     }
   }, [isOpen, sourceChatId, currentOrganizationMember]);
 
-  // Filtrar os atendimentos com base na busca
+  // Efeito para executar a pesquisa quando o termo mudar
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredChats(availableChats);
-      return;
+    if (isOpen && sourceChatId && currentOrganizationMember && customerId) {
+      const delayDebounceFn = setTimeout(() => {
+        loadAvailableChats(false);
+      }, 300); // 300ms de debounce para evitar muitas consultas
+      
+      return () => clearTimeout(delayDebounceFn);
     }
-
-    const lowercaseQuery = searchQuery.toLowerCase();
-    const filtered = availableChats.filter(chat => 
-      (chat.title?.toLowerCase().includes(lowercaseQuery) || false) ||
-      (chat.ticket_number?.toString().includes(lowercaseQuery) || false) ||
-      (chat.customer?.name?.toLowerCase().includes(lowercaseQuery) || false) ||
-      (chat.external_id?.toLowerCase().includes(lowercaseQuery) || false)
-    );
-    
-    setFilteredChats(filtered);
-  }, [searchQuery, availableChats]);
+  }, [searchQuery]);
 
   // Carrega os atendimentos disponíveis para mesclar
-  const loadAvailableChats = async () => {
+  const loadAvailableChats = async (showLoading = true) => {
     if (!currentOrganizationMember?.organization.id || !customerId) return;
     
-    setLoading(true);
+    if (showLoading) {
+      setLoading(true);
+    }
     setError('');
     
     try {
-      // Carregar os atendimentos do mesmo cliente excluindo o atendimento de origem
-      const { data: chatsData, error: chatsError } = await supabase
+      // Obter a consulta base
+      let query = supabase
         .from('chats')
         .select(`
           id,
@@ -100,17 +96,20 @@ export function MergeChatModal({
           customer_id,
           organization_id,
           channel_id,
+          profile_picture,
           arrival_time,
           last_message:messages!chats_last_message_id_fkey(
             id,
             content,
             created_at,
-            status
+            status,
+            type
           ),
           channel_details:chat_channels(
             id,
             name,
-            type
+            type,
+            is_connected
           ),
           customer:customers(
             id,
@@ -123,30 +122,36 @@ export function MergeChatModal({
         .order('created_at', { ascending: false })
         .limit(10);
         
+      
+      // Adicionar a pesquisa à consulta se houver um termo de pesquisa
+      if (searchQuery.trim()) {
+        // Verificar se a busca é um número para pesquisar pelo ticket
+        const isNumberSearch = !isNaN(Number(searchQuery.trim()));
+        
+        if (isNumberSearch) {
+          // Se a busca for um número, buscamos pelo número do ticket
+          query = query.filter('ticket_number', 'eq', searchQuery.trim());
+        } else {
+          // Caso contrário, continuamos com a busca por título
+          query = query.filter('title', 'ilike', `%${searchQuery}%`);
+        }
+      }
+      
+      const { data: chatsData, error: chatsError } = await query;
+
+      console.log(chatsData);
+        
       if (chatsError) throw chatsError;
 
-      // Processar os atendimentos para manter a estrutura existente
-      const processedChats = (chatsData || []).map(chat => {
-        // Converter para o formato esperado pela interface Chat
-        return {
-          ...chat,
-          last_message: chat.last_message && chat.last_message[0] ? {
-            content: chat.last_message[0].content,
-            created_at: chat.last_message[0].created_at,
-            status: chat.last_message[0].status
-          } : undefined,
-          channel_details: chat.channel_details && chat.channel_details[0] ? chat.channel_details[0] : undefined,
-          customer: chat.customer && chat.customer[0] ? chat.customer[0] : undefined
-        } as Chat;
-      });
 
-      setAvailableChats(processedChats);
-      setFilteredChats(processedChats);
+      setFilteredChats(chatsData);
     } catch (error) {
       console.error('Erro ao carregar atendimentos disponíveis:', error);
       setError(t('common:error'));
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -311,23 +316,38 @@ export function MergeChatModal({
                     }`}
                     onClick={() => setSelectedChatId(chat.id)}
                   >
-                    <div className="flex-1 min-w-0">
+                    <div className="mr-3">
+                      <ChatAvatar 
+                        id={chat.id}
+                        name={chat.customer?.name || 'Anônimo'}
+                        profilePicture={chat.profile_picture}
+                        channel={chat.channel_details}
+                        size="sm"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900 dark:text-white">
                           #{chat.ticket_number}
                         </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
                           {chat.title || t('chats:untitledConversation')}
                         </span>
                       </div>
-                      <div className="mt-1 text-sm">
-
-                        {chat.last_message && (
-                          <p className="text-gray-500 dark:text-gray-400 truncate mt-1">
-                            {chat.last_message.content}
-                          </p>
-                        )}
-                      </div>
+                      
+                      {chat.last_message && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1 max-w-[400px]">
+                          {chat.last_message.type === 'text' ? (
+                            <MarkdownRenderer 
+                              content={chat.last_message.content || ''}
+                              variant="compact"
+                            />
+                          ) : (
+                            t(`chats:messageTypes.${chat.last_message.type || 'text'}`, chat.last_message.type)
+                          )}
+                        </div>
+                      )}
+                      
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         {chat.last_message ? formatDistanceToNow(
                           new Date(chat.last_message.created_at),

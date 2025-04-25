@@ -7,7 +7,7 @@ import { formatLastMessageTime } from '../../utils/date';
 import { supabase } from '../../lib/supabase';
 import { MoreVertical, Pin, Archive, Eye, CheckCircle, User, AlertTriangle, Info,
   Image, Video, Mic, FileText, Sticker, Mail, UserPlus, LogIn, LogOut, 
-  UserCog, XCircle, Users, FileCode, Users2 } from 'lucide-react';
+  UserCog, XCircle, Users, FileCode, Users2, GitMerge } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ import { ChatDetailsModal } from './ChatDetailsModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { TeamTransferModal } from './TeamTransferModal';
+import { MergeChatModal } from './MergeChatModal';
 
 interface CustomerTag {
   tag_id: string;
@@ -56,6 +57,7 @@ export function ChatItem({
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const [showTeamTransferModal, setShowTeamTransferModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   const handleUpdateChat = async (chatId: string, updates: Partial<Chat>) => {
     try {
@@ -162,6 +164,9 @@ export function ChatItem({
       case 'team_transfer':
         setShowTeamTransferModal(true);
         break;
+      case 'merge_chat':
+        setShowMergeModal(true);
+        break;
     }
   };
 
@@ -170,7 +175,7 @@ export function ChatItem({
     setSelectedCustomer(null);
   };
 
-  const handleCustomerEditSuccess = async (silentRefresh: boolean = false) => {
+  const handleCustomerEditSuccess = async () => {
     handleCloseEditCustomerModal();
     if (onUpdateChat && chat.id) {
       // Recarregar os dados do chat
@@ -226,6 +231,14 @@ export function ChatItem({
         );
       default:
         return null;
+    }
+  };
+
+  const handleMergeComplete = () => {
+    setShowMergeModal(false);
+    // Recarregar os dados ou atualizar a UI conforme necessário
+    if (onUpdateChat && chat.id) {
+      onUpdateChat(chat.id, { is_archived: true });
     }
   };
 
@@ -330,6 +343,13 @@ export function ChatItem({
                     }}>
                       <Pin className={`w-4 h-4 mr-2 ${chat.is_fixed ? 'text-yellow-500' : ''}`} />
                       {t(chat.is_fixed ? 'actions.unpin' : 'actions.pin')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      handleChatAction('merge_chat', chat);
+                    }}>
+                      <GitMerge className="w-4 h-4 mr-2" />
+                      {t('actions.mergeChats', 'Mesclar com outro chat')}
                     </DropdownMenuItem>
                     {chat.is_archived ? (
                       <DropdownMenuItem onClick={(e) => {
@@ -532,7 +552,7 @@ export function ChatItem({
           chatId={chat.id || ''}
           isOpen={showTeamTransferModal}
           onClose={() => setShowTeamTransferModal(false)}
-          organizationId={chat.organization_id || ''}
+          organizationId={chat.organization_id?.toString() || ''}
           currentTeamId={chat.team_id || ''}
           onTransfer={() => {
             if (onUpdateChat && chat.id) {
@@ -549,6 +569,17 @@ export function ChatItem({
                 });
             }
           }}
+        />
+      )}
+
+      {/* Modal de Mesclagem de Chats */}
+      {showMergeModal && (
+        <MergeChatModal
+          sourceChatId={chat.id}
+          customerId={chat.customer_id?.toString() || ''}
+          isOpen={showMergeModal}
+          onClose={() => setShowMergeModal(false)}
+          onMergeComplete={handleMergeComplete}
         />
       )}
     </>

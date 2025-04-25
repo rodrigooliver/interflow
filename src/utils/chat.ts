@@ -16,18 +16,28 @@ export const handleImageError = async (chatId: string) => {
 };
 
 export const getRandomColor = (name: string) => {
+  // Usando apenas cores que existem no CSS compilado
   const colors = [
     'bg-blue-500',
     'bg-green-500',
     'bg-yellow-500',
     'bg-purple-500',
-    'bg-pink-500',
     'bg-indigo-500',
-    'bg-red-500',
-    'bg-teal-500'
+    'bg-red-500'
   ];
   
-  // Use name to generate consistent color
-  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return colors[index % colors.length];
+  // Lidar com nomes vazios ou inválidos
+  let processedName = 'Anônimo';
+  
+  if (name && typeof name === 'string' && name.trim().length > 0) {
+    processedName = name.trim();
+  }
+  
+  // Calcular um índice baseado nos caracteres do nome
+  let sum = 0;
+  for (let i = 0; i < processedName.length; i++) {
+    sum += processedName.charCodeAt(i);
+  }
+  
+  return colors[sum % colors.length];
 }; 

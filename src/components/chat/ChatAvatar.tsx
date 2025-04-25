@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { getChannelIcon } from '../../utils/channel';
 import { getRandomColor } from '../../utils/chat';
-import { supabase } from '../../lib/supabase';
 
 interface ChatAvatarProps {
   id: string;
@@ -19,7 +18,6 @@ interface ChatAvatarProps {
 }
 
 export function ChatAvatar({ 
-  id, 
   name, 
   profilePicture, 
   channel, 
@@ -28,13 +26,21 @@ export function ChatAvatar({
   const { t } = useTranslation('chats');
   const [hasImageError, setHasImageError] = React.useState(false);
   
-  const handleImageError = async () => {
-    setHasImageError(true);
-  };
   
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
+    if (!name.trim()) return 'AN';
+    
+    const parts = name.trim().split(' ').filter(part => part.length > 0);
+    
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+    
+    if (parts.length > 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    
+    return parts
       .map(n => n[0])
       .join('')
       .toUpperCase()
@@ -62,9 +68,18 @@ export function ChatAvatar({
     }
   };
 
+  // Definir a cor de fundo com base no nome - forçar uso de string válida para getRandomColor
+  const getBgColor = () => {
+    if (profilePicture && !hasImageError) {
+      return '';
+    }
+    
+    return getRandomColor(name || 'Anônimo');
+  };
+
   return (
     <div className="relative">
-      <div className={`flex-shrink-0 ${sizeClasses[size].avatar} rounded-full ${(!profilePicture || hasImageError) ? getRandomColor(name || 'Anônimo') : ''} flex items-center justify-center overflow-hidden`}>
+      <div className={`flex-shrink-0 ${sizeClasses[size].avatar} rounded-full ${getBgColor()} flex items-center justify-center overflow-hidden`}>
         {profilePicture && !hasImageError ? (
           <img
             src={profilePicture}
@@ -86,8 +101,8 @@ export function ChatAvatar({
               <Tooltip.Trigger asChild>
                 <div className="relative w-full h-full flex items-center justify-center">
                   <img
-                    src={getChannelIcon(channel.type)}
-                    alt={channel.type}
+                    src={getChannelIcon(channel.type || '')}
+                    alt={channel.type || ''}
                     className={sizeClasses[size].channelIcon}
                   />
                   {channel.is_connected === false && (
