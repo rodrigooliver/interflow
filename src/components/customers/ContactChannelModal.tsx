@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { ChatChannel, Customer } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { getChannelIcon } from '../../utils/channel';
+import api from '../../lib/api';
 
 interface ServiceTeam {
   id: string;
@@ -31,6 +32,7 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [startingChat, setStartingChat] = useState(false);
+  const [validatingNumber, setValidatingNumber] = useState(false);
 
   useEffect(() => {
     if (currentOrganizationMember && session?.user) {
@@ -220,17 +222,6 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
         // Use o chat ativo existente
         chatId = activeChats[0].id;
 
-        // Atualizar o agente designado se não estiver definido
-        if (!activeChats[0].assigned_to) {
-          await supabase
-            .from('chats')
-            .update({ 
-              assigned_to: session.user.id, 
-              status: 'in_progress', 
-              start_time: new Date().toISOString() 
-            })
-            .eq('id', chatId);
-        }
       } else {
         // Procurar em chats fechados para obter o external_id
         const { data: closedChats, error: closedChatsError } = await supabase
@@ -266,29 +257,45 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
           existingExternalId = closedChats[0].external_id;
         }
 
-        // Obter a equipe do usuário (usar a primeira equipe se pertencer a várias)
-        const teamId = userTeams.length > 0 ? userTeams[0].id : null;
-
-        // Para canais de WhatsApp e novo chat, usar a versão sem o 9 adicional se for BR
-        if ((contactType === 'whatsapp' || contactType === 'phone') && 
-            formattedValue.startsWith('55') && 
-            !existingExternalId) {
-          const cleanNumber = formattedValue.replace(/\D/g, '');
-          if (cleanNumber.length >= 12) {
-            const ddd = cleanNumber.substring(2, 4);
-            const rest = cleanNumber.substring(4);
+        // Validar o número apenas para canais whatsapp_wapi quando não existir external_id
+        if (!existingExternalId && channel.type === 'whatsapp_wapi' && ['whatsapp', 'phone'].includes(contactType)) {
+          const cleanNumber = contactValue.replace(/\D/g, '');
+          
+          setValidatingNumber(true);
+          try {
+            const response = await api.post(`/api/${currentOrganizationMember.organization.id}/chat/validate-wapi-number`, {
+              number: cleanNumber
+            });
             
-            if (rest.startsWith('9') && rest.length > 8) {
-              // Remover o 9 para iniciar o chat
-              const withoutNine = `55${ddd}${rest.substring(1)}`;
-              if (channel.type === 'whatsapp_evo') {
-                formattedValue = `${withoutNine}@s.whatsapp.net`;
-              } else {
-                formattedValue = withoutNine;
+            if (!response.data.isValid) {
+              setValidatingNumber(false);
+              setStartingChat(false);
+              setError(t('channels:errors.invalidWhatsAppNumber'));
+              return;
+            }
+            
+            // Usar o número formatado retornado pela API
+            if (response.data.data?.outputPhone) {
+              // Atualizar o número formatado com o valor correto do WhatsApp
+              const outputPhone = response.data.data.outputPhone;
+              formattedValue = outputPhone;
+              
+              // Mostrar mensagem mais amigável em vez de usar console.log
+              if (response.data.data?.exists) {
+                // Se quisermos mostrar algum aviso visual de sucesso, podemos adicionar aqui
+                // Por enquanto, mantemos silencioso para não interromper o fluxo
               }
             }
+          } catch (validationError) {
+            console.error('Erro ao validar número de WhatsApp:', validationError);
+            // Se houver erro na validação, continuar mesmo assim
+          } finally {
+            setValidatingNumber(false);
           }
         }
+
+        // Obter a equipe do usuário (usar a primeira equipe se pertencer a várias)
+        const teamId = userTeams.length > 0 ? userTeams[0].id : null;
 
         // Criar um novo chat, usando o external_id existente se disponível
         const { data: newChat, error: createError } = await supabase
@@ -298,11 +305,9 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
             channel_id: channel.id,
             customer_id: customerId,
             external_id: existingExternalId || formattedValue,
-            status: 'in_progress',
-            assigned_to: session.user.id,
+            status: 'pending',
             team_id: teamId,
             arrival_time: new Date().toISOString(),
-            start_time: new Date().toISOString()
           }])
           .select()
           .single();
@@ -373,9 +378,14 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
         <div className="p-6">
           {error ? (
             <div className="text-red-600 dark:text-red-400">{error}</div>
-          ) : loading || startingChat ? (
-            <div className="flex justify-center">
+          ) : loading || startingChat || validatingNumber ? (
+            <div className="flex flex-col items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              {validatingNumber && (
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  {t('channels:validatingWhatsAppNumber')}
+                </p>
+              )}
             </div>
           ) : channels.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400">
@@ -391,7 +401,7 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
                 <button
                   key={channel.id}
                   onClick={() => handleSelectChannel(channel)}
-                  disabled={startingChat}
+                  disabled={startingChat || validatingNumber}
                   className="w-full flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <img 

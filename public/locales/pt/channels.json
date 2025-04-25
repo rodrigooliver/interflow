@@ -19,9 +19,6 @@
     "whatsapp_wapi": "Integração com WhatsApp via WApi",
     "whatsapp_zapi": "Integração com WhatsApp via ZApi - API gerenciada e estável"
   },
-  "errors": {
-    "testRequired": "O canal precisa ser testado antes de ser ativado"
-  },
   "noChannelsYet": "Nenhum canal criado ainda",
   "noChannelsDescription": "Canais permitem que você se conecte com seus clientes através de diferentes plataformas. Crie seu primeiro canal para começar.",
   "createFirstChannel": "Criar primeiro canal",
@@ -316,5 +313,11 @@
     "facebook": "Facebook Messenger",
     "email": "Email",
     "telegram": "Telegram"
+  },
+  "validatingWhatsAppNumber": "Validando número do WhatsApp...",
+  "errors": {
+    "testRequired": "É necessário testar a conexão antes de salvar",
+    "connectionRequired": "É necessário conectar o WhatsApp antes de ativar",
+    "invalidWhatsAppNumber": "O número informado não é um WhatsApp válido"
   }
 }

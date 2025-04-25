@@ -307,7 +307,9 @@
     "updating": "Updating..."
   },
   "errors": {
-    "testRequired": "Channel must be tested before activation"
+    "testRequired": "Channel must be tested before activation",
+    "connectionRequired": "WhatsApp must be connected before activating",
+    "invalidWhatsAppNumber": "The provided number is not a valid WhatsApp"
   },
   "delete": {
     "title": "Remove Channel",
@@ -316,5 +318,6 @@
     "error": {
       "hasChats": "Cannot delete channel with existing chats"
     }
-  }
+  },
+  "validatingWhatsAppNumber": "Validating WhatsApp number..."
 }
