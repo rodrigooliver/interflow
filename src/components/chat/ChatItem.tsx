@@ -384,15 +384,13 @@ export function ChatItem({
                         {t('actions.markResolved')}
                       </DropdownMenuItem>
                     )}
-                    {chat.status === 'pending' && (
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        handleChatAction('team_transfer', chat);
-                      }}>
-                        <Users2 className="w-4 h-4 mr-2" />
-                        {t('actions.transferTeam')}
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      handleChatAction('team_transfer', chat);
+                    }}>
+                      <Users2 className="w-4 h-4 mr-2" />
+                      {t('actions.transferTeam')}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={(e) => {
                       e.stopPropagation();
                       handleChatAction(chat.customer?.is_spam ? 'unmark_spam' : 'mark_spam', chat);

@@ -119,7 +119,7 @@ export function MergeChatModal({
         .neq('id', sourceChatId)
         .eq('organization_id', currentOrganizationMember.organization.id)
         .eq('customer_id', customerId)
-        .order('created_at', { ascending: false })
+        .order('last_message_at', { ascending: false })
         .limit(10);
         
       
