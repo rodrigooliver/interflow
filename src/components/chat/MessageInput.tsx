@@ -42,6 +42,8 @@ interface MessageInputProps {
     replyToMessageId?: string;
     isPending: boolean;
   }) => void;
+  // Adicionar suporte a arquivos arrastados
+  droppedFiles?: File[];
 }
 
 interface EmojiData {
@@ -96,7 +98,8 @@ export function MessageInput({
     has24HourWindow: false,
     canSendAfter24Hours: true
   },
-  addOptimisticMessage
+  addOptimisticMessage,
+  droppedFiles = []
 }: MessageInputProps) {
   const { i18n, t } = useTranslation('chats');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -282,6 +285,7 @@ export function MessageInput({
     }, 100);
   };
 
+  // Expor a função de upload como uma constante
   const handleFileUploadComplete = (file: File, type: string, name: string) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1387,6 +1391,44 @@ export function MessageInput({
     }
   };
 
+  // Função para lidar com colagem (paste) no textarea
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    
+    // Verificar se há alguma imagem nos dados colados
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      // Verificar se o tipo do item começa com "image/"
+      if (item.type.startsWith('image/')) {
+        // Obter o arquivo do item de imagem
+        const file = item.getAsFile();
+        
+        if (file) {
+          // Adicionar a imagem como anexo pendente
+          handleFileUploadComplete(file, item.type, file.name || `image-${Date.now()}.${item.type.split('/')[1]}`);
+          
+          // Se somente queremos a imagem, impedimos a colagem normal no textarea
+          e.preventDefault();
+        }
+      } else if (item.type === 'application/pdf' || 
+                item.type.includes('document') || 
+                item.type.includes('audio/') ||
+                item.type.includes('video/')) {
+        // Para outros tipos de arquivo como PDF, documentos, áudio ou vídeo
+        const file = item.getAsFile();
+        
+        if (file) {
+          // Adicionar o arquivo como anexo pendente
+          handleFileUploadComplete(file, item.type, file.name || `file-${Date.now()}`);
+          
+          // Impedimos a colagem normal para arquivos
+          e.preventDefault();
+        }
+      }
+    }
+  };
+
   const handleKeyUp = () => {
     // Função vazia já que removemos toda a funcionalidade
   };
@@ -1566,8 +1608,125 @@ export function MessageInput({
     };
   }, [errorTimeout, pendingAttachments]);
 
+  const [isDragging, setIsDragging] = useState(false);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  
+  // Funções para drag and drop
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Verificar se o cursor saiu realmente da área de drop
+    // e não apenas entrou em um elemento filho
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return;
+    }
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Garantir que o cursor indique que o drop é permitido
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    // Processar os arquivos soltos
+    const files = Array.from(e.dataTransfer.files);
+    
+    if (files.length === 0) return;
+    
+    files.forEach(file => {
+      // Determinar o tipo de arquivo
+      if (file.type.startsWith('image/')) {
+        // Imagem
+        handleFileUploadComplete(file, file.type, file.name);
+      } else if (
+        file.type === 'application/pdf' || 
+        file.type.includes('document') || 
+        file.type.includes('audio/') ||
+        file.type.includes('video/') ||
+        file.type.includes('text/')
+      ) {
+        // Documento, áudio, vídeo ou texto
+        handleFileUploadComplete(file, file.type, file.name);
+      } else {
+        // Outro tipo de arquivo
+        handleFileUploadComplete(file, file.type || 'application/octet-stream', file.name);
+      }
+    });
+    
+    // Focar no textarea após o drop
+    if (textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+    }
+  };
+
+  // Effect para processar arquivos arrastados
+  useEffect(() => {
+    if (droppedFiles && droppedFiles.length > 0) {
+      // Processar cada arquivo
+      droppedFiles.forEach(file => {
+        try {
+          // Determinar o tipo de arquivo
+          if (file.type.startsWith('image/')) {
+            // Imagem
+            handleFileUploadComplete(file, file.type, file.name);
+          } else if (
+            file.type === 'application/pdf' || 
+            file.type.includes('document') || 
+            file.type.includes('audio/') ||
+            file.type.includes('video/') ||
+            file.type.includes('text/')
+          ) {
+            // Documento, áudio, vídeo ou texto
+            handleFileUploadComplete(file, file.type, file.name);
+          } else {
+            // Outro tipo de arquivo
+            handleFileUploadComplete(
+              file, 
+              file.type || 'application/octet-stream', 
+              file.name
+            );
+          }
+        } catch (error) {
+          console.error('Erro ao processar arquivo:', error);
+        }
+      });
+    }
+  }, [droppedFiles]);
+
   return (
-    <div className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700">
+    <div 
+      className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700"
+      ref={dropZoneRef}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Overlay para drag and drop */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/30 border-2 border-dashed border-blue-500 rounded-lg z-10 flex items-center justify-center">
+          <div className="text-blue-600 dark:text-blue-400 font-medium flex flex-col items-center">
+            <Image className="w-12 h-12 mb-2" />
+            <span>{t('attachments.dropHere', 'Solte aqui para anexar')}</span>
+          </div>
+        </div>
+      )}
+      
       {replyTo && (
         <div className="mb-4 flex items-start p-2 bg-blue-50 dark:bg-blue-900/20 text-gray-700 dark:text-gray-300 rounded-lg border border-blue-200 dark:border-blue-900">
           <div className="flex-1 overflow-hidden">
@@ -1868,6 +2027,7 @@ export function MessageInput({
               onKeyUp={handleKeyUp}
               onFocus={handleTextareaFocus}
               onBlur={handleTextareaBlur}
+              onPaste={handlePaste}
               placeholder={t('input.placeholder')}
               className="flex-1 px-0 py-2 bg-transparent border-0 rounded-lg focus:ring-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
               style={{ height: '40px', maxHeight: '120px', overflowY: 'auto' }}

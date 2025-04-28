@@ -12,7 +12,7 @@ import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2, History } from 'lucide-react';
+import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2, History, Image } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { FlowModal } from './FlowModal';
@@ -274,6 +274,77 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   // Vamos adicionar estados para controlar o carregamento específico do botão
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingCurrentChat, setIsLoadingCurrentChat] = useState(false);
+
+  // Estado para armazenar os anexos que serão passados para o MessageInput
+  const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
+
+  // Estados para controle de drag and drop
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Estado para armazenar a posição e dimensões da área de conversa
+  const [chatAreaRect, setChatAreaRect] = useState<DOMRect | null>(null);
+  const chatAreaRef = useRef<HTMLDivElement>(null);
+
+  // Função para atualizar as dimensões da área de chat quando o drag começa
+  const updateChatAreaRect = useCallback(() => {
+    if (chatAreaRef.current) {
+      setChatAreaRect(chatAreaRef.current.getBoundingClientRect());
+    }
+  }, []);
+
+  // Atualizar o estado do rect quando o componente monta e quando a janela é redimensionada
+  useEffect(() => {
+    updateChatAreaRect();
+    
+    const handleResize = () => {
+      updateChatAreaRect();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [updateChatAreaRect]);
+
+  // Funções para lidar com drag and drop
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    updateChatAreaRect(); // Atualizar as dimensões quando o drag começa
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Verificar se o cursor saiu realmente da área de drop
+    // e não apenas entrou em um elemento filho
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return;
+    }
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Garantir que o cursor indique que o drop é permitido
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    // Processar os arquivos soltos
+    const files = Array.from(e.dataTransfer.files);
+    
+    if (files.length === 0) return;
+    
+    // Armazenar os arquivos para que o MessageInput possa usá-los
+    setDroppedFiles(files);
+  };
 
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
@@ -2496,6 +2567,18 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Effect para limpar os arquivos após eles serem processados
+  useEffect(() => {
+    if (droppedFiles.length > 0) {
+      // Limpar os arquivos após um pequeno delay para garantir que foram processados
+      const timer = setTimeout(() => {
+        setDroppedFiles([]);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [droppedFiles]);
+
   if (!chatId) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -2534,7 +2617,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   }
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div 
+      ref={chatAreaRef} 
+      className="flex flex-col h-full overflow-hidden bg-[#f8f9fa] dark:bg-gray-900"
+    >
       <div className="border-b border-gray-200 dark:border-gray-700 p-2">
         <div className="grid grid-cols-[auto_1fr_auto] items-center w-full">
           {/* Botão de voltar (apenas em mobile) */}
@@ -2938,9 +3024,36 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative overflow-x-hidden w-full pb-2 custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 relative scroll-smooth"
         onScroll={handleScroll}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
+        {/* Overlay para drag and drop independente do scroll */}
+        {isDragging && chatAreaRect && createPortal(
+          <div 
+            className="fixed z-50 pointer-events-none"
+            style={{
+              top: `${chatAreaRect.top}px`,
+              left: `${chatAreaRect.left}px`,
+              width: `${chatAreaRect.width}px`,
+              height: `${chatAreaRect.height}px`
+            }}
+          >
+            <div className="absolute inset-0 bg-blue-100/70 dark:bg-blue-900/30 border-2 border-dashed border-blue-500 rounded-lg">
+              <div className="flex items-center justify-center h-full">
+                <div className="text-blue-600 dark:text-blue-400 font-medium flex flex-col items-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                  <Image className="w-16 h-16 mb-2" />
+                  <span className="text-lg">{t('attachments.dropHere', 'Solte aqui para anexar')}</span>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
         {/* Indicador de carregamento relativo ao contêiner de mensagens */}
         {isLoadingMore && (
           <div className="absolute top-4 left-[40%] transform -translate-x-1/2 bg-white dark:bg-gray-900 bg-opacity-95 dark:bg-opacity-95 backdrop-blur-sm rounded-lg py-2 px-4 shadow-lg z-50 loading-indicator-enter border border-gray-200 dark:border-gray-700">
@@ -3206,6 +3319,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               isSubscriptionReady={isSubscriptionReady}
               channelFeatures={channelFeatures}
               addOptimisticMessage={addOptimisticMessage}
+              droppedFiles={droppedFiles}
             />
           )}
 
