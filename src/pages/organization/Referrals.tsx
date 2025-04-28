@@ -21,10 +21,13 @@ interface Referral {
 
 interface TrackingPixel {
   id: string;
+  organization_id: string;
   referral_id: string;
   name: string;
-  pixel_type: 'facebook' | 'google' | 'tiktok' | 'custom';
+  type: 'facebook' | 'google' | 'tiktok' | 'custom';
   pixel_id: string;
+  token: string;
+  configuration: Record<string, unknown>;
   status: 'active' | 'inactive';
   created_at: string;
 }
@@ -36,8 +39,9 @@ interface ReferralFormData {
 
 interface TrackingPixelFormData {
   name: string;
-  pixel_type: 'facebook' | 'google' | 'tiktok' | 'custom';
+  type: 'facebook' | 'google' | 'tiktok' | 'custom';
   pixel_id: string;
+  token: string;
   status: 'active';
 }
 
@@ -79,8 +83,9 @@ export default function Referrals() {
   const [savingPixel, setSavingPixel] = useState(false);
   const [pixelForm, setPixelForm] = useState<TrackingPixelFormData>({
     name: '',
-    pixel_type: 'facebook',
+    type: 'facebook',
     pixel_id: '',
+    token: '',
     status: 'active'
   });
 
@@ -242,7 +247,7 @@ export default function Referrals() {
 
   async function handleAddPixel(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedReferral) return;
+    if (!selectedReferral || !currentOrganizationMember) return;
 
     setSavingPixel(true);
     try {
@@ -250,10 +255,13 @@ export default function Referrals() {
         .from('tracking_pixels')
         .insert([
           {
+            organization_id: currentOrganizationMember.organization.id,
             referral_id: selectedReferral.id,
             name: pixelForm.name,
-            pixel_type: pixelForm.pixel_type,
+            type: pixelForm.type,
             pixel_id: pixelForm.pixel_id,
+            token: pixelForm.token,
+            configuration: {},
             status: pixelForm.status,
           },
         ]);
@@ -264,8 +272,9 @@ export default function Referrals() {
       setShowAddPixelModal(false);
       setPixelForm({
         name: '',
-        pixel_type: 'facebook',
+        type: 'facebook',
         pixel_id: '',
+        token: '',
         status: 'active'
       });
     } catch (error) {
@@ -616,6 +625,9 @@ export default function Referrals() {
                           {t('referrals:pixels.id')}
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          {t('referrals:pixels.token')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           {t('referrals:pixels.status')}
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -630,10 +642,13 @@ export default function Referrals() {
                             {pixel.name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">
-                            {pixel.pixel_type}
+                            {pixel.type}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {pixel.pixel_id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {pixel.token ? <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{pixel.token.substring(0, 8)}...</span> : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -656,7 +671,7 @@ export default function Referrals() {
                       ))}
                       {trackingPixels.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                          <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                             {t('referrals:pixels.empty')}
                           </td>
                         </tr>
@@ -710,8 +725,8 @@ export default function Referrals() {
                     id="pixelType"
                     required
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
-                    value={pixelForm.pixel_type}
-                    onChange={(e) => setPixelForm({ ...pixelForm, pixel_type: e.target.value as TrackingPixel['pixel_type'] })}
+                    value={pixelForm.type}
+                    onChange={(e) => setPixelForm({ ...pixelForm, type: e.target.value as TrackingPixel['type'] })}
                   >
                     <option value="facebook">{t('referrals:pixels.types.facebook')}</option>
                     <option value="google">{t('referrals:pixels.types.google')}</option>
@@ -731,6 +746,21 @@ export default function Referrals() {
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
                     value={pixelForm.pixel_id}
                     onChange={(e) => setPixelForm({ ...pixelForm, pixel_id: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="pixelToken" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('referrals:pixels.token')}
+                  </label>
+                  <input
+                    type="text"
+                    id="pixelToken"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
+                    value={pixelForm.token}
+                    onChange={(e) => setPixelForm({ ...pixelForm, token: e.target.value })}
+                    placeholder={t('referrals:pixels.tokenPlaceholder')}
                   />
                 </div>
               </div>

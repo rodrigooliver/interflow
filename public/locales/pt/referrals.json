@@ -41,6 +41,8 @@
     "name": "Nome",
     "type": "Tipo",
     "id": "ID do Pixel",
+    "token": "Token",
+    "tokenPlaceholder": "Opcional - Informe o token de acesso",
     "status": "Status",
     "actions": "Ações",
     "types": {

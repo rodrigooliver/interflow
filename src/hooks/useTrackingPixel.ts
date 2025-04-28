@@ -1,15 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import { TrackingPixel, TrackingEventType } from '../types/tracking';
+import { TrackingEventType } from '../types/tracking';
 import { initFacebookPixel, initGooglePixel, initTikTokPixel } from '../lib/pixels';
+import { useReferral } from './useReferral';
 
 interface TrackingPixelHookReturn {
   trackEvent: (eventName: TrackingEventType, params?: Record<string, unknown>) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
-
-const STORAGE_KEY = '@interflow:referral';
 
 // Mapeamento de eventos para cada plataforma
 const EVENT_MAPPING: Record<'facebook' | 'google' | 'tiktok', Record<TrackingEventType, string>> = {
@@ -64,43 +62,29 @@ const EVENT_MAPPING: Record<'facebook' | 'google' | 'tiktok', Record<TrackingEve
 };
 
 export function useTrackingPixel(): TrackingPixelHookReturn {
-  const [pixels, setPixels] = useState<TrackingPixel[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Usar os pixels já carregados pelo hook useReferral
+  const { trackingPixels: referralPixels, loading: referralLoading, referral } = useReferral();
+  
   const [error, setError] = useState<string | null>(null);
   const [initializedPixels, setInitializedPixels] = useState<Set<string>>(new Set());
+  const [pixelsReady, setPixelsReady] = useState(false);
 
-  // Carregar pixels vinculados ao referral do localStorage
+  // Inicializar os pixels de rastreamento
   useEffect(() => {
-    async function loadPixels() {
-      try {
-        // Tentar pegar o referral do localStorage
-        const storedReferral = localStorage.getItem(STORAGE_KEY);
-        if (!storedReferral) {
-          setPixels([]);
-          setLoading(false);
-          return;
-        }
+    // Se o referral ainda está carregando ou não há pixels, não fazer nada ainda
+    if (referralLoading || !referralPixels?.length) {
+      return;
+    }
 
-        const referral = JSON.parse(storedReferral);
-        if (!referral?.id) {
-          setPixels([]);
-          setLoading(false);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('tracking_pixels')
-          .select('*')
-          .eq('referral_id', referral.id)
-          .eq('status', 'active');
-
-        if (error) throw error;
-        setPixels(data || []);
-
-        // Inicializar os pixels que ainda não foram inicializados
-        data?.forEach(pixel => {
-          if (!initializedPixels.has(pixel.pixel_id)) {
-            switch (pixel.pixel_type) {
+    setPixelsReady(false);
+    
+    try {
+      // Inicializar os pixels que ainda não foram inicializados
+      referralPixels.forEach(pixel => {
+        // Usar pixel_id que é o ID do serviço externo (Facebook, Google, TikTok)
+        if (pixel.pixel_id && !initializedPixels.has(pixel.pixel_id)) {
+          try {
+            switch (pixel.type) {
               case 'facebook':
                 initFacebookPixel(pixel.pixel_id);
                 break;
@@ -112,28 +96,33 @@ export function useTrackingPixel(): TrackingPixelHookReturn {
                 break;
             }
             setInitializedPixels(prev => new Set([...prev, pixel.pixel_id]));
+          } catch (err) {
+            console.error(`Erro ao inicializar pixel ${pixel.type}:`, err);
           }
-        });
-      } catch (err) {
-        console.error('Erro ao carregar pixels:', err);
-        setError('Falha ao carregar pixels de rastreamento');
-      } finally {
-        setLoading(false);
-      }
+        }
+      });
+      
+      // Marcar os pixels como prontos para uso
+      setPixelsReady(true);
+    } catch (err) {
+      console.error('Erro ao inicializar pixels de rastreamento:', err);
+      setError('Falha ao inicializar pixels de rastreamento');
     }
-
-    loadPixels();
-  }, [initializedPixels]);
+    
+    // Adicionar um pequeno delay para garantir que os scripts de pixels foram carregados
+    const pixelInitTimeout = setTimeout(() => {
+      setPixelsReady(true);
+    }, 1000);
+    
+    return () => clearTimeout(pixelInitTimeout);
+  }, [referralPixels, referralLoading, initializedPixels]);
 
   // Função para disparar eventos para todos os pixels ativos
   const trackEvent = useCallback(async (eventName: TrackingEventType, params?: Record<string, unknown>) => {
-    if (!pixels.length) return;
+    // Não disparar eventos se os pixels não estiverem prontos ou se não houver pixels
+    if (!pixelsReady || !referralPixels?.length) return;
 
     try {
-      // Pegar o referral do localStorage para incluir nos parâmetros
-      const storedReferral = localStorage.getItem(STORAGE_KEY);
-      const referral = storedReferral ? JSON.parse(storedReferral) : null;
-
       // Adicionar informações do referral aos parâmetros
       const eventParams = {
         ...params,
@@ -142,24 +131,33 @@ export function useTrackingPixel(): TrackingPixelHookReturn {
       };
 
       // Disparar evento para cada pixel ativo
-      pixels.forEach(pixel => {
-        switch (pixel.pixel_type) {
+      referralPixels.forEach(pixel => {
+        // Verificar se temos o pixel_id antes de tentar disparar eventos
+        if (!pixel.pixel_id) {
+          console.warn(`Pixel ${pixel.id} não tem pixel_id definido, pulando evento ${eventName}`);
+          return;
+        }
+
+        switch (pixel.type) {
           case 'facebook':
             if (window.fbq) {
               const fbEvent = EVENT_MAPPING.facebook[eventName];
               window.fbq('track', fbEvent, eventParams);
+              console.log(`[Facebook Pixel] Evento ${eventName} enviado para pixel ${pixel.pixel_id}`);
             }
             break;
           case 'google':
             if (window.gtag) {
               const gaEvent = EVENT_MAPPING.google[eventName];
               window.gtag('event', gaEvent, eventParams);
+              console.log(`[Google Tag] Evento ${eventName} enviado para pixel ${pixel.pixel_id}`);
             }
             break;
           case 'tiktok':
             if (window.ttq) {
               const ttEvent = EVENT_MAPPING.tiktok[eventName];
               window.ttq.track(ttEvent, eventParams);
+              console.log(`[TikTok Pixel] Evento ${eventName} enviado para pixel ${pixel.pixel_id}`);
             }
             break;
           case 'custom':
@@ -171,7 +169,11 @@ export function useTrackingPixel(): TrackingPixelHookReturn {
       console.error('Erro ao disparar eventos:', err);
       setError('Falha ao disparar eventos de rastreamento');
     }
-  }, [pixels]);
+  }, [referralPixels, pixelsReady, referral]);
 
-  return { trackEvent, loading, error };
+  return { 
+    trackEvent, 
+    loading: referralLoading, 
+    error 
+  };
 } 

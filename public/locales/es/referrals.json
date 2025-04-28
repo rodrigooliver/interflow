@@ -41,6 +41,8 @@
     "name": "Nombre",
     "type": "Tipo",
     "id": "ID del Píxel",
+    "token": "Token",
+    "tokenPlaceholder": "Opcional - Ingrese el token de acceso",
     "status": "Estado",
     "actions": "Acciones",
     "types": {

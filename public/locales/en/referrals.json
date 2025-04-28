@@ -41,6 +41,8 @@
     "name": "Name",
     "type": "Type",
     "id": "Pixel ID",
+    "token": "Token",
+    "tokenPlaceholder": "Optional - Enter access token",
     "status": "Status",
     "actions": "Actions",
     "types": {

@@ -16,12 +16,15 @@ export type TrackingEventType =
 
 export interface TrackingPixel {
   id: string;
+  organization_id: string;
   referral_id: string;
   name: string;
-  pixel_type: 'facebook' | 'google' | 'tiktok' | 'custom';
+  type: 'facebook' | 'google' | 'tiktok' | 'custom';
   pixel_id: string;
+  configuration: Record<string, unknown>;
   status: 'active' | 'inactive';
   created_at: string;
+  token?: string;
 }
 
 type FacebookPixelFunction = {
