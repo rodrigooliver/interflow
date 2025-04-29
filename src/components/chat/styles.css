@@ -38,11 +38,6 @@ button[class*="mb-2 text-sm rounded-md"] {
   box-sizing: border-box;
 }
 
-/* Estilos para rolagem suave */
-.smooth-scroll {
-  scroll-behavior: smooth;
-}
-
 /* Estilos para transições */
 .message-transition {
   transition: all 0.3s ease-in-out;

@@ -1315,10 +1315,10 @@ export function MessageInput({
       
       if (isAbove) {
         // Se o item estiver acima da área visível, rolar para cima
-        selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        selectedItem.scrollIntoView({ behavior: 'auto', block: 'nearest' });
       } else if (isBelow) {
         // Se o item estiver abaixo da área visível, rolar para baixo
-        selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        selectedItem.scrollIntoView({ behavior: 'auto', block: 'nearest' });
       }
     }
   }, [selectedShortcutIndex]);

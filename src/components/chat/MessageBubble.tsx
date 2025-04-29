@@ -516,7 +516,7 @@ export function MessageBubble({
               onClick={() => {
                 // Encontrar e rolar até a mensagem original
                 const element = document.getElementById(`message-${message.response_to?.id}`);
-                element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element?.scrollIntoView({ behavior: 'auto', block: 'center' });
                 // Adicionar um highlight temporário
                 element?.classList.add('highlight-message');
                 setTimeout(() => element?.classList.remove('highlight-message'), 2000);

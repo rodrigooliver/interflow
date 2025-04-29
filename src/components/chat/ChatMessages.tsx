@@ -1732,7 +1732,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const scrollToMessage = (messageId: string) => {
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      messageElement.scrollIntoView({ behavior: 'auto', block: 'center' });
     }
   };
 
@@ -3024,7 +3024,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 relative scroll-smooth"
+        className="flex-1 overflow-y-auto p-4 relative"
         onScroll={handleScroll}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
