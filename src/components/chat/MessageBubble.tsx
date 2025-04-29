@@ -99,6 +99,10 @@ export function MessageBubble({
   // Verificar se existe uma lista no metadata
   const whatsappList = metadata?.list as WhatsAppList | undefined;
   
+  // Extrair reações se existirem no metadata
+  const reactions = metadata?.reactions || {};
+  const hasReactions = Object.keys(reactions).length > 0;
+  
   // Se a mensagem tiver status 'deleted', mostrar um formato especial
   if (status === 'deleted') {
     const isAgent = sender_type === 'agent';
@@ -487,7 +491,7 @@ export function MessageBubble({
         onDoubleClick={handleReply}
       >
         <div
-          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-3 relative overflow-hidden ${
+          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-3 relative ${
             isAgent
               ? 'bg-blue-600 text-gray-300'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
@@ -642,6 +646,20 @@ export function MessageBubble({
               </>
             )}
           </div>
+          
+          {/* Exibir as reações */}
+          {hasReactions && (
+            <div className="absolute -bottom-2 right-6 flex flex-row gap-1 z-10">
+              {Object.entries(reactions).map(([senderId, reaction], index) => (
+                <div 
+                  key={`${senderId}-${index}`} 
+                  className="text-lg leading-none"
+                >
+                  {reaction.reaction}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
