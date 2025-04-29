@@ -3024,7 +3024,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 relative"
+        className="flex-1 overflow-y-auto p-4 relative bg-gray-200 dark:bg-gray-900"
         onScroll={handleScroll}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}

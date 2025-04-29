@@ -125,7 +125,8 @@
     "read": "Mensaje leído",
     "failed": "Error al enviar",
     "edited": "Editado",
-    "deleted": "Mensaje eliminado"
+    "deleted": "Mensaje eliminado",
+    "sending": "Enviando..."
   },
   "time": {
     "start": "Inicio",

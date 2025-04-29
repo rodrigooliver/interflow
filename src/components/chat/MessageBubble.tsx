@@ -487,7 +487,7 @@ export function MessageBubble({
     messageContent = (
       <div 
         id={`message-${message.id}`}
-        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}  ${hasReactions ? 'mb-2' : ''}`}
+        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}  ${hasReactions ? 'mb-3' : ''}`}
         onDoubleClick={handleReply}
       >
         <div
@@ -602,9 +602,9 @@ export function MessageBubble({
             )}
           </div>
 
-          <div className={`flex items-center justify-end space-x-1 text-xs mt-1 ${
+          <div className={`flex items-center justify-end space-x-1 text-xs mt-1 -mb-1.5 -mr-1 ${
             isAgent
-              ? 'text-blue-100'
+              ? 'text-gray-400 dark:text-gray-400'
               : 'text-gray-500 dark:text-gray-400'
           }`}>
             {metadata?.edited === true && (
@@ -649,7 +649,7 @@ export function MessageBubble({
           
           {/* Exibir as reações */}
           {hasReactions && (
-            <div className="absolute -bottom-3 right-4 flex flex-row gap-1 z-10">
+            <div className="absolute -bottom-4 right-4 flex flex-row gap-1 z-10">
               {Object.entries(reactions).map(([senderId, reaction], index) => (
                 <div 
                   key={`${senderId}-${index}`} 
