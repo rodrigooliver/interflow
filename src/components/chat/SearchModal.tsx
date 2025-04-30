@@ -16,6 +16,7 @@ type ChatData = {
   ticket_number?: number;
   created_at: string;
   customer?: CustomerData | CustomerData[];
+  status?: 'pending' | 'in_progress' | 'closed' | 'await_closing';
 };
 
 type MessageData = {
@@ -38,6 +39,7 @@ type SearchResult = {
   messageId?: string;
   type: 'message' | 'chat';
   ticketNumber?: number;
+  status?: 'pending' | 'in_progress' | 'closed' | 'await_closing';
 };
 
 type SearchModalProps = {
@@ -111,6 +113,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
           title,
           ticket_number,
           created_at,
+          status,
           customer:customers!inner(
             id,
             name
@@ -131,6 +134,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
           title,
           ticket_number,
           created_at,
+          status,
           customer:customers!inner(
             id,
             name
@@ -205,7 +209,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             subtitle: chatTitle,
             date: new Date(chat.created_at).toLocaleDateString(),
             type: 'chat',
-            ticketNumber: chat.ticket_number
+            ticketNumber: chat.ticket_number,
+            status: chat.status
           });
         }
       }
@@ -242,7 +247,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             subtitle: chatTitle,
             date: new Date(chat.created_at).toLocaleDateString(),
             type: 'chat',
-            ticketNumber: chat.ticket_number
+            ticketNumber: chat.ticket_number,
+            status: chat.status
           });
         }
       }
@@ -333,6 +339,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                           <div className="ml-2 flex items-center text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
                             <Hash className="w-3 h-3 mr-1" />
                             <span>{result.ticketNumber}</span>
+                          </div>
+                        )}
+                        {result.type === 'chat' && result.status && (
+                          <div className={`ml-2 flex items-center text-xs px-2 py-0.5 rounded-full 
+                            ${result.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                            result.status === 'in_progress' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                            result.status === 'closed' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : 
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}`}>
+                            {t(`status.${result.status}`)}
                           </div>
                         )}
                       </div>
