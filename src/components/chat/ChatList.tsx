@@ -33,7 +33,16 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
   useEffect(() => {
     const stagesMap = chats.reduce((acc, chat) => {
       if (chat.customer?.stage) {
-        acc[chat.customer.stage.id] = chat.customer.stage;
+        // Converter o tipo CrmStage para Stage
+        const stage: Stage = {
+          id: chat.customer.stage.id,
+          name: chat.customer.stage.name,
+          funnel_id: typeof chat.customer.stage.funnel_id === 'object' 
+            ? (chat.customer.stage.funnel_id as { id: string }).id || '' 
+            : chat.customer.stage.funnel_id || '',
+          color: chat.customer.stage.color
+        };
+        acc[chat.customer.stage.id] = stage;
       }
       return acc;
     }, {} as Record<string, Stage>);

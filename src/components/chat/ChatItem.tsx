@@ -234,6 +234,51 @@ export function ChatItem({
     }
   };
 
+  // Função para obter as iniciais da equipe
+  const getTeamInitials = (teamName: string) => {
+    if (!teamName) return '';
+    
+    // Dividir o nome da equipe em palavras
+    const words = teamName.trim().split(/\s+/);
+    
+    // Se tiver apenas uma palavra, pegar as duas primeiras letras
+    if (words.length === 1) {
+      return words[0].substring(0, 2).toUpperCase();
+    }
+    
+    // Se tiver mais de uma palavra, pegar a primeira letra de cada palavra (até 2 letras)
+    return words.slice(0, 2).map(word => word[0]).join('').toUpperCase();
+  };
+
+  // Função para gerar uma cor consistente baseada no nome da equipe
+  const getTeamColor = (teamName: string) => {
+    if (!teamName) return '#4B5563'; // Cor padrão cinza
+    
+    // Lista de cores predefinidas (tons diferentes para melhor visualização)
+    const colors = [
+      '#2563EB', // azul
+      '#D97706', // âmbar
+      '#059669', // esmeralda
+      '#DC2626', // vermelho
+      '#7C3AED', // violeta
+      '#DB2777', // rosa
+      '#0891B2', // ciano
+      '#4338CA', // indigo
+      '#65A30D', // lima
+      '#9333EA'  // púrpura
+    ];
+    
+    // Calcular um hash simples a partir do nome da equipe
+    let hash = 0;
+    for (let i = 0; i < teamName.length; i++) {
+      hash = teamName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Usar o hash para escolher uma cor da lista
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
   const handleMergeComplete = () => {
     setShowMergeModal(false);
     // Recarregar os dados ou atualizar a UI conforme necessário
@@ -488,6 +533,21 @@ export function ChatItem({
             <div className="flex items-center gap-1.5 flex-wrap">
               <div className="flex items-center gap-1.5">
                 {getStatusBadge(chat)}
+                {chat.team?.name && (
+                  <CustomTooltip 
+                    content={chat.team.name}
+                    color={getTeamColor(chat.team.name)}
+                  >
+                    <span 
+                      className="px-2 py-1 text-xs font-medium rounded-full text-white"
+                      style={{ 
+                        backgroundColor: getTeamColor(chat.team.name),
+                      }}
+                    >
+                      {getTeamInitials(chat.team.name)}
+                    </span>
+                  </CustomTooltip>
+                )}
               </div>
               
               {/* Tags do cliente */}
