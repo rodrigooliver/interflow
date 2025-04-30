@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Filter, MessageSquare, Users, UserCheck, Bot, Share2, Tags, X, Plus, GitMerge, Mail } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -38,6 +38,7 @@ export default function Chats() {
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -46,6 +47,29 @@ export default function Chats() {
   const [showStartChatModal, setShowStartChatModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const { showNavbar } = useNavbarVisibility();
+  
+  // Referência para o elemento de observação no final da lista
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para controle de paginação
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 20;
+  
+  // Referência para o último timestamp de carregamento e filtros
+  const [lastLoadTime, setLastLoadTime] = useState<number>(0);
+  const CACHE_EXPIRY_TIME = 60000; // 1 minuto em milissegundos
+  
+  // Referência para controlar montagem inicial e mudança de tabs
+  const isInitialMountRef = useRef(true);
+  const isTabChangeRef = useRef(false);
+  
+  // Função para verificar se deve recarregar com base no timestamp
+  const shouldReload = useCallback(() => {
+    const now = Date.now();
+    return (now - lastLoadTime) > CACHE_EXPIRY_TIME;
+  }, [lastLoadTime]);
 
   // Hooks para buscar dados dos filtros
   const { data: agents } = useAgents(currentOrganizationMember?.organization.id);
@@ -151,10 +175,77 @@ export default function Chats() {
     });
   }
 
+  // Setup intersection observer para carregar mais chats quando o usuário rolar até o final da lista
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMoreChats();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current = observer;
+    
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loading, loadingMore, page]);
+
+  // Efeito para verificar visibilidade da página e timestamp
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Marcar que estamos vindo de uma mudança de tab
+        isTabChangeRef.current = true;
+        
+        if (page === 1 && shouldReload()) {
+          setPage(1);
+          setChats([]);
+          setHasMore(true);
+          loadChats(false, 1);
+        }
+      } else if (document.visibilityState === 'hidden') {
+        // Quando o usuário sai da aba, atualizar o timestamp
+        setLastLoadTime(Date.now());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [page, shouldReload, lastLoadTime]);
+
   useEffect(() => {
     if (currentOrganizationMember && session?.user) {
-      loadChats();
-      subscribeToChats();
+      // Verificar se é a montagem inicial ou se estamos retornando de uma tab
+      if (isInitialMountRef.current) {
+        // É a primeira montagem do componente
+        isInitialMountRef.current = false;
+        setPage(1);
+        setChats([]);
+        setHasMore(true);
+        loadChats(false, 1);
+        subscribeToChats();
+      } else if (isTabChangeRef.current) {
+        // Estamos retornando de uma mudança de tab, não recarregar se não for necessário
+        isTabChangeRef.current = false;
+      } else {
+        // É uma mudança genuína nos filtros
+        setPage(1);
+        setChats([]);
+        setHasMore(true);
+        loadChats(false, 1);
+        subscribeToChats();
+      }
     }
   }, [
     currentOrganizationMember, 
@@ -220,8 +311,12 @@ export default function Chats() {
 
   // Função auxiliar para atualizar um chat específico na lista
   const updateChatInList = async (chatId: string) => {
-    // console.log('updateChatInList', chatId);
-    const { data: chatData, error: chatError } = await supabase
+    // Evitar atualizações se o usuário acabou de voltar para a aba
+    if (!shouldReload() && page > 1) {
+      return;
+    }
+    
+    const { data: chatData } = await supabase
       .from('chats')
       .select(`
         *,
@@ -343,53 +438,74 @@ export default function Chats() {
       // Como matchesAdditionalFilters agora é assíncrono, precisamos chamar de forma diferente
       const additionalFiltersMatch = await matchesAdditionalFilters();
       
-      setChats(prev => {
-        // Remover o chat atual da lista
-        const newChats = prev.filter(chat => chat.id !== chatId);
-        
-        // Se o chat não corresponder aos filtros, retornar a lista sem ele
-        if (!shouldIncludeChat() || !additionalFiltersMatch) {
-          return newChats;
-        }
-
-        // Caso contrário, adicionar o chat atualizado e ordenar
-        const processedChat = {
-          ...chatData,
-          channel_id: chatData.channel,
-          last_message: chatData.last_message ? {
-            content: chatData.last_message.content,
-            status: chatData.last_message.status,
-            error_message: chatData.last_message.error_message,
-            created_at: chatData.last_message.created_at,
-            sender_type: chatData.last_message.sender_type,
-            type: chatData.last_message.type
-          } : undefined
-        };
-
-        // Ordenar a lista mantendo a consistência com a ordenação do banco
-        return [...newChats, processedChat].sort((a, b) => {
-          // Primeiro ordena por is_fixed
-          if (a.is_fixed !== b.is_fixed) {
-            return a.is_fixed ? -1 : 1;
+      // Processar o chat apenas se estiver na primeira página ou se for o chat selecionado atualmente
+      if (page === 1 || selectedChat === chatId) {
+        setChats(prev => {
+          // Remover o chat atual da lista
+          const newChats = prev.filter(chat => chat.id !== chatId);
+          
+          // Se o chat não corresponder aos filtros, retornar a lista sem ele
+          if (!shouldIncludeChat() || !additionalFiltersMatch) {
+            return newChats;
           }
-          // Se ambos são fixados ou não fixados, ordena por data da última mensagem
-          const dateA = a.last_message?.created_at || '';
-          const dateB = b.last_message?.created_at || '';
-          return dateB.localeCompare(dateA);
+
+          // Caso contrário, adicionar o chat atualizado e ordenar
+          const processedChat = {
+            ...chatData,
+            channel_id: chatData.channel,
+            last_message: chatData.last_message ? {
+              content: chatData.last_message.content,
+              status: chatData.last_message.status,
+              error_message: chatData.last_message.error_message,
+              created_at: chatData.last_message.created_at,
+              sender_type: chatData.last_message.sender_type,
+              type: chatData.last_message.type
+            } : undefined
+          };
+
+          // Ordenar a lista mantendo a consistência com a ordenação do banco
+          return [...newChats, processedChat].sort((a, b) => {
+            // Primeiro ordena por is_fixed
+            if (a.is_fixed !== b.is_fixed) {
+              return a.is_fixed ? -1 : 1;
+            }
+            // Se ambos são fixados ou não fixados, ordena por data da última mensagem
+            const dateA = a.last_message?.created_at || '';
+            const dateB = b.last_message?.created_at || '';
+            return dateB.localeCompare(dateA);
+          });
         });
-      });
+      }
     }
   };
 
+  // Função para carregar mais chats
+  const loadMoreChats = useCallback(async () => {
+    if (!hasMore || loadingMore || loading) return;
+    
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    
+    try {
+      await loadChats(true, nextPage);
+      setPage(nextPage);
+    } catch (error) {
+      console.error('Error loading more chats:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [page, hasMore, loadingMore, loading]);
+
   // Função para carregar os chats
-  const loadChats = async (silentRefresh: boolean = false) => {
-    console.log('loadChats');
-    if (!silentRefresh) {
+  const loadChats = async (silentRefresh: boolean = false, currentPage: number = page) => {
+    if (!silentRefresh && currentPage === 1) {
       setLoading(true);
     }
     setError('');
     
-    if (!currentOrganizationMember || !session?.user) return;
+    if (!currentOrganizationMember || !session?.user) {
+      return;
+    }
 
     try {
       let query = supabase
@@ -444,7 +560,8 @@ export default function Chats() {
         .eq('organization_id', currentOrganizationMember.organization.id)
         .eq('team.members.user_id', session.user.id)
         .order('is_fixed', { ascending: false })
-        .order('last_message_at', { ascending: false });
+        .order('last_message_at', { ascending: false })
+        .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
       // Mover declarações para fora do switch
       // let teamMembers;
@@ -566,13 +683,28 @@ export default function Chats() {
           type: chat.last_message.type
         } : undefined
       }));
-
-      setChats(processedChats);
+      
+      // Verificar se temos mais dados
+      setHasMore(processedChats.length === PAGE_SIZE);
+      
+      // Atualizar a lista de chats (concatenar com os existentes se for carregamento de mais itens)
+      if (currentPage === 1) {
+        setChats(processedChats);
+      } else {
+        setChats(prev => {
+          // Filtrar chats duplicados
+          const existingIds = new Set(prev.map(chat => chat.id));
+          const newChats = processedChats.filter(chat => !existingIds.has(chat.id));
+          return [...prev, ...newChats];
+        });
+      }
     } catch (error) {
       console.error('Error loading chats:', error);
       setError(t('common:error'));
     } finally {
-      setLoading(false);
+      if (currentPage === 1) {
+        setLoading(false);
+      }
     }
   };
 
@@ -916,13 +1048,30 @@ export default function Chats() {
               </p>
             </div>
           ) : (
-            <ChatList 
-              chats={chats}
-              selectedChat={selectedChat}
-              onSelectChat={handleSelectChat}
-              isLoading={loading}
-              // onUpdateChat={updateChatInList}
-            />
+            <>
+              <ChatList 
+                chats={chats}
+                selectedChat={selectedChat}
+                onSelectChat={handleSelectChat}
+                isLoading={loading}
+                // onUpdateChat={updateChatInList}
+              />
+              
+              {/* Elemento de observação para carregamento infinito */}
+              {!loading && hasMore && (
+                <div 
+                  ref={loadMoreRef} 
+                  className="w-full py-4 flex justify-center"
+                >
+                  {loadingMore && (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin w-5 h-5 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full"></div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{t('common:loading')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
