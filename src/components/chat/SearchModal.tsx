@@ -1,9 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Search, MessageSquare, Loader2 } from 'lucide-react';
+import { X, Search, MessageSquare, Loader2, MessageCircle, Hash } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+
+type CustomerData = {
+  name?: string;
+  id?: string;
+};
+
+type ChatData = {
+  id: string;
+  title?: string;
+  ticket_number?: number;
+  created_at: string;
+  customer?: CustomerData | CustomerData[];
+};
+
+type MessageData = {
+  id: string;
+  chat_id: string;
+  content: string;
+  created_at: string;
+  sender_type: string;
+  chat?: {
+    customer?: CustomerData | CustomerData[];
+  };
+};
 
 type SearchResult = {
   id: string;
@@ -11,7 +35,9 @@ type SearchResult = {
   title: string;
   subtitle: string;
   date: string;
-  messageId: string;
+  messageId?: string;
+  type: 'message' | 'chat';
+  ticketNumber?: number;
 };
 
 type SearchModalProps = {
@@ -55,7 +81,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
     setLoading(true);
     try {
-      // Buscar apenas mensagens
+      // Buscar mensagens
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select(`
@@ -73,24 +99,67 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
         .eq('organization_id', currentOrganizationMember.organization.id)
         .ilike('content', `%${searchTerm}%`)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10);
 
       if (messagesError) throw messagesError;
+
+      // Buscar chats por título, nome do cliente e número de ticket
+      const { data: chatsData, error: chatsError } = await supabase
+        .from('chats')
+        .select(`
+          id,
+          title,
+          ticket_number,
+          created_at,
+          customer:customers!inner(
+            id,
+            name
+          )
+        `)
+        .eq('organization_id', currentOrganizationMember.organization.id)
+        .or(`title.ilike.%${searchTerm}%,ticket_number.eq.${!isNaN(Number(searchTerm)) ? Number(searchTerm) : 0}`)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (chatsError) throw chatsError;
+
+      // Buscar chats pelo nome do cliente
+      const { data: customerChatsData, error: customerChatsError } = await supabase
+        .from('chats')
+        .select(`
+          id,
+          title,
+          ticket_number,
+          created_at,
+          customer:customers!inner(
+            id,
+            name
+          )
+        `)
+        .eq('organization_id', currentOrganizationMember.organization.id)
+        .filter('customer.name', 'ilike', `%${searchTerm}%`)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (customerChatsError) throw customerChatsError;
 
       // Processar resultados de mensagens
       const messageResults: SearchResult[] = [];
       if (messagesData) {
-        for (const message of messagesData) {
+        for (const message of messagesData as MessageData[]) {
           if (!message.content) continue; // Pular mensagens sem conteúdo
           
           // Acessar os dados do cliente de forma segura
           let customerName = t('chats:unnamed');
           try {
-            if (message.chat && 
-                message.chat.customer && 
-                typeof message.chat.customer === 'object' && 
-                message.chat.customer.name) {
-              customerName = message.chat.customer.name;
+            const customerData = message.chat?.customer;
+            if (customerData) {
+              // Verificar o formato dos dados retornados
+              if (Array.isArray(customerData) && customerData.length > 0) {
+                customerName = customerData[0].name || t('chats:unnamed');
+              } else if (typeof customerData === 'object' && 'name' in customerData) {
+                customerName = (customerData as CustomerData).name || t('chats:unnamed');
+              }
             }
           } catch (e) {
             console.error('Erro ao acessar dados do cliente:', e);
@@ -103,11 +172,85 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             title: customerName,
             subtitle: message.content,
             date: new Date(message.created_at).toLocaleDateString(),
+            type: 'message'
           });
         }
       }
 
-      setResults(messageResults);
+      // Processar resultados de chats por título e número de ticket
+      const chatResults: SearchResult[] = [];
+      if (chatsData) {
+        for (const chat of chatsData as ChatData[]) {
+          let customerName = t('chats:unnamed');
+          try {
+            const customerData = chat.customer;
+            if (customerData) {
+              // Verificar o formato dos dados retornados
+              if (Array.isArray(customerData) && customerData.length > 0) {
+                customerName = customerData[0].name || t('chats:unnamed');
+              } else if (typeof customerData === 'object' && 'name' in customerData) {
+                customerName = (customerData as CustomerData).name || t('chats:unnamed');
+              }
+            }
+          } catch (e) {
+            console.error('Erro ao acessar dados do cliente:', e);
+          }
+
+          const chatTitle = chat.title || '';
+          
+          chatResults.push({
+            id: `chat-${chat.id}`,
+            chatId: chat.id,
+            title: customerName,
+            subtitle: chatTitle,
+            date: new Date(chat.created_at).toLocaleDateString(),
+            type: 'chat',
+            ticketNumber: chat.ticket_number
+          });
+        }
+      }
+
+      // Processar resultados de chats por nome do cliente
+      if (customerChatsData) {
+        for (const chat of customerChatsData as ChatData[]) {
+          // Verificar se este chat já está nos resultados
+          if (chatResults.some(result => result.chatId === chat.id)) {
+            continue;
+          }
+          
+          let customerName = t('chats:unnamed');
+          try {
+            const customerData = chat.customer;
+            if (customerData) {
+              // Verificar o formato dos dados retornados
+              if (Array.isArray(customerData) && customerData.length > 0) {
+                customerName = customerData[0].name || t('chats:unnamed');
+              } else if (typeof customerData === 'object' && 'name' in customerData) {
+                customerName = (customerData as CustomerData).name || t('chats:unnamed');
+              }
+            }
+          } catch (e) {
+            console.error('Erro ao acessar dados do cliente:', e);
+          }
+
+          const chatTitle = chat.title || '';
+          
+          chatResults.push({
+            id: `chat-${chat.id}`,
+            chatId: chat.id,
+            title: customerName,
+            subtitle: chatTitle,
+            date: new Date(chat.created_at).toLocaleDateString(),
+            type: 'chat',
+            ticketNumber: chat.ticket_number
+          });
+        }
+      }
+
+      // Combinar e ordenar todos os resultados
+      setResults([...chatResults, ...messageResults].sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }));
     } catch (error) {
       console.error('Erro ao buscar:', error);
     } finally {
@@ -116,8 +259,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
   };
 
   const handleResultClick = (result: SearchResult) => {
-    // Navegar para o chat e destacar a mensagem específica
-    navigate(`/app/chats/${result.chatId}?messageId=${result.messageId}`);
+    // Navegar para o chat e destacar a mensagem específica se for uma mensagem
+    if (result.type === 'message' && result.messageId) {
+      navigate(`/app/chats/${result.chatId}?messageId=${result.messageId}`);
+    } else {
+      navigate(`/app/chats/${result.chatId}`);
+    }
     onClose();
   };
 
@@ -171,15 +318,29 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                 >
                   <div className="flex items-start">
                     <div className="flex-shrink-0 mr-3">
-                      <MessageSquare className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      {result.type === 'message' ? (
+                        <MessageSquare className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      ) : (
+                        <MessageCircle className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {result.title}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                        {result.subtitle}
-                      </p>
+                      <div className="flex items-center">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {result.title}
+                        </p>
+                        {result.ticketNumber && (
+                          <div className="ml-2 flex items-center text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                            <Hash className="w-3 h-3 mr-1" />
+                            <span>{result.ticketNumber}</span>
+                          </div>
+                        )}
+                      </div>
+                      {(result.type === 'message' || (result.type === 'chat' && result.subtitle)) && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {result.subtitle}
+                        </p>
+                      )}
                     </div>
                     <div className="flex-shrink-0 ml-3">
                       <p className="text-xs text-gray-500 dark:text-gray-400">
