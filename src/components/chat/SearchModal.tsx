@@ -71,7 +71,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
       } else {
         setResults([]);
       }
-    }, 300);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [searchTerm, currentOrganizationMember]);
