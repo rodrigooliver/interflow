@@ -40,12 +40,12 @@ export default function SelectChannelType() {
     //   description: t('descriptions.whatsapp_zapi'),
     //   icon: getChannelIcon('whatsapp_zapi')
     // },
-    // { 
-    //   id: 'whatsapp_evo', 
-    //   name: t('types.whatsapp_evo'),
-    //   description: t('descriptions.whatsapp_evo'),
-    //   icon: getChannelIcon('whatsapp_evo')
-    // },
+    { 
+      id: 'whatsapp_evo', 
+      name: t('types.whatsapp_evo'),
+      description: t('descriptions.whatsapp_evo'),
+      icon: getChannelIcon('whatsapp_evo')
+    },
     { 
       id: 'instagram', 
       name: t('types.instagram'),
