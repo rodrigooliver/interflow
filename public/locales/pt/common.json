@@ -46,6 +46,7 @@
   "confirmQuestion": "Pergunta",
   "confirmYes": "Sim",
   "confirmNo": "Não",
+  "no": "Não",
   "expiresAt": "Expira em",
   "createdAt": "Criado em",
   "saveSuccess": "Alterações salvas com sucesso!",
@@ -67,6 +68,16 @@
     "message": "Tem certeza que deseja excluir este item?"
   },
   "all": "Todos",
+  "allTypes": "Todos os tipos",
+  "allStatuses": "Todos os status",
+  "select": "Selecionar",
+  "errorSaving": "Erro ao salvar. Por favor, tente novamente.",
+  "showingResults": "Mostrando {{count}} de {{total}} resultados",
+  "showingPagination": "Mostrando {{from}} a {{to}} de {{total}} resultados",
+  "searchResults": "Resultados da busca",
+  "noServicesYet": "Nenhum serviço encontrado",
+  "backToList": "Voltar para a lista",
+  "noContactInfo": "Sem informações de contato",
   "searchCountry": "Buscar por país, código ou DDI...",
   "noCountriesFound": "Nenhum país encontrado",
   "signup": {
@@ -133,5 +144,8 @@
   "clearFilters": "Limpar filtros",
   "view": "Visualizar",
   "pageInfo": "Página {{current}} de {{total}}",
-  "comingSoon": "Em breve"
+  "comingSoon": "Em breve",
+  "description": "Descrição",
+  "download": "Baixar",
+  "downloadPdf": "Baixar PDF"
 }

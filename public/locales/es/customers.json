@@ -7,6 +7,7 @@
   "viewCRM": "Ver CRM",
   "name": "Nombre",
   "contact": "Contacto",
+  "contactInfo": "Información de contacto",
   "contactLabel": "Nombre del contacto",
   "registeredAt": "Registrado el",
   "actions": "Acciones",
@@ -22,6 +23,7 @@
     "confirmation": "¿Estás seguro de que deseas eliminar el cliente {{name}}?",
     "warning": "Esta acción no se puede deshacer."
   },
+  "detailedInfo": "Información detallada",
   "tabs": {
     "general": "General",
     "chats": "Conversaciones"
@@ -53,6 +55,8 @@
   "activeFilters": "Filtros activos",
   "clearAll": "Limpiar todo",
   "registeredOn": "Registrado el",
+  "registeredSince": "Cliente desde",
+  "customerSince": "Cliente desde {{date}}",
   "settingsReset": "Configuración restablecida",
   "contacts": "Contactos",
   "noTagsAvailable": "No hay etiquetas disponibles",
@@ -116,5 +120,10 @@
     "deleteMessage": "¿Estás seguro de que deseas eliminar el campo \"{{fieldName}}\"? Esta acción no se puede deshacer.",
     "deleteSuccess": "Campo personalizado eliminado con éxito",
     "deleteError": "Error al eliminar el campo personalizado"
-  }
+  },
+  "customers": "Clientes",
+  "searchPatients": "Buscar pacientes...",
+  "newPatient": "Nuevo Paciente",
+  "noResultsFound": "No se encontraron pacientes",
+  "createPatient": "Crear Paciente"
 }

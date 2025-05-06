@@ -729,6 +729,25 @@ export interface Appointment {
   videoconference_provider?: 'google_meet' | 'zoom' | 'teams' | 'other';
   created_at: string;
   updated_at: string;
+  
+  // Campos médicos adicionados na migração
+  consultation_type?: 'initial' | 'follow_up' | 'emergency' | 'routine' | string;
+  chief_complaint?: string;
+  vital_signs?: {
+    temperature?: number;
+    heart_rate?: number;
+    blood_pressure?: string;
+    respiratory_rate?: number;
+    oxygen_saturation?: number;
+    height?: number;
+    weight?: number;
+    bmi?: number;
+    [key: string]: unknown;
+  };
+  diagnosis?: string;
+  medical_notes?: string;
+  follow_up_recommendations?: string;
+  is_medical_appointment?: boolean;
 }
 
 // Schedule Service (Serviço)
@@ -1110,7 +1129,390 @@ export interface BlogTables {
 
 // Interface simplificada para o Database
 export interface Database {
-  public: ExistingTables & BlogTables;
+  public: ExistingTables & BlogTables & MedicalRecordsTables;
+}
+
+// Adicionar as tabelas relacionadas ao sistema de prontuários médicos
+export interface MedicalRecordsTables {
+  // A tabela emr_consultations será mantida por enquanto, mas está depreciada
+  // Novos registros devem usar a tabela appointments com is_medical_appointment = true
+  emr_consultations: {
+    Row: {
+      id: string;
+      organization_id: string;
+      appointment_id: string | null;
+      customer_id: string;
+      provider_id: string;
+      chat_id: string | null;
+      consultation_type: string;
+      status: string;
+      start_time: string | null;
+      end_time: string | null;
+      chief_complaint: string | null;
+      vital_signs: Record<string, unknown> | null;
+      diagnosis: string | null;
+      notes: string | null;
+      follow_up_recommendations: string | null;
+      metadata: Record<string, unknown> | null;
+      deleted_at: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      // ... manter conforme está, mas marcar como depreciado
+      // @deprecated Usar appointments com is_medical_appointment = true
+      id?: string;
+      organization_id: string;
+      appointment_id?: string | null;
+      customer_id: string;
+      provider_id: string;
+      chat_id?: string | null;
+      consultation_type: string;
+      status?: string;
+      start_time?: string | null;
+      end_time?: string | null;
+      chief_complaint?: string | null;
+      vital_signs?: Record<string, unknown> | null;
+      diagnosis?: string | null;
+      notes?: string | null;
+      follow_up_recommendations?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      // ... manter conforme está, mas marcar como depreciado
+      // @deprecated Usar appointments com is_medical_appointment = true
+      id?: string;
+      organization_id?: string;
+      appointment_id?: string | null;
+      customer_id?: string;
+      provider_id?: string;
+      chat_id?: string | null;
+      consultation_type?: string;
+      status?: string;
+      start_time?: string | null;
+      end_time?: string | null;
+      chief_complaint?: string | null;
+      vital_signs?: Record<string, unknown> | null;
+      diagnosis?: string | null;
+      notes?: string | null;
+      follow_up_recommendations?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  
+  // Atualizar as interfaces das outras tabelas para incluir appointment_id
+  emr_prescriptions: {
+    Row: {
+      id: string;
+      organization_id: string;
+      consultation_id: string | null;
+      appointment_id: string | null; // Novo campo
+      customer_id: string;
+      provider_id: string;
+      prescription_date: string;
+      valid_until: string | null;
+      medications: Record<string, unknown>;
+      instructions: string | null;
+      notes: string | null;
+      is_controlled_substance: boolean;
+      controlled_substance_type: string | null;
+      document_url: string | null;
+      document_generated_at: string | null;
+      metadata: Record<string, unknown> | null;
+      deleted_at: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      organization_id: string;
+      consultation_id?: string | null;
+      appointment_id?: string | null; // Novo campo
+      customer_id: string;
+      provider_id: string;
+      prescription_date?: string;
+      valid_until?: string | null;
+      medications: Record<string, unknown>;
+      instructions?: string | null;
+      notes?: string | null;
+      is_controlled_substance?: boolean;
+      controlled_substance_type?: string | null;
+      document_url?: string | null;
+      document_generated_at?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      organization_id?: string;
+      consultation_id?: string | null;
+      appointment_id?: string | null; // Novo campo
+      customer_id?: string;
+      provider_id?: string;
+      prescription_date?: string;
+      valid_until?: string | null;
+      medications?: Record<string, unknown>;
+      instructions?: string | null;
+      notes?: string | null;
+      is_controlled_substance?: boolean;
+      controlled_substance_type?: string | null;
+      document_url?: string | null;
+      document_generated_at?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  
+  emr_certificates: {
+    Row: {
+      id: string;
+      organization_id: string;
+      consultation_id: string | null;
+      appointment_id: string | null; // Novo campo
+      customer_id: string;
+      provider_id: string;
+      certificate_type: string;
+      issue_date: string;
+      start_date: string | null;
+      end_date: string | null;
+      days_of_leave: number | null;
+      reason: string | null;
+      recommendations: string | null;
+      document_url: string | null;
+      document_generated_at: string | null;
+      metadata: Record<string, unknown> | null;
+      deleted_at: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      organization_id: string;
+      consultation_id?: string | null;
+      appointment_id?: string | null; // Novo campo
+      customer_id: string;
+      provider_id: string;
+      certificate_type: string;
+      issue_date?: string;
+      start_date?: string | null;
+      end_date?: string | null;
+      days_of_leave?: number | null;
+      reason?: string | null;
+      recommendations?: string | null;
+      document_url?: string | null;
+      document_generated_at?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      organization_id?: string;
+      consultation_id?: string | null;
+      appointment_id?: string | null; // Novo campo
+      customer_id?: string;
+      provider_id?: string;
+      certificate_type?: string;
+      issue_date?: string;
+      start_date?: string | null;
+      end_date?: string | null;
+      days_of_leave?: number | null;
+      reason?: string | null;
+      recommendations?: string | null;
+      document_url?: string | null;
+      document_generated_at?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  
+  emr_attachments: {
+    Row: {
+      id: string;
+      organization_id: string;
+      medical_record_id: string | null;
+      consultation_id: string | null;
+      appointment_id: string | null; // Novo campo
+      customer_id: string;
+      file_id: string | null;
+      attachment_type: string;
+      title: string;
+      description: string | null;
+      file_url: string | null;
+      file_name: string | null;
+      file_type: string | null;
+      file_size: number | null;
+      is_highlighted: boolean;
+      metadata: Record<string, unknown> | null;
+      deleted_at: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      organization_id: string;
+      medical_record_id?: string | null;
+      consultation_id?: string | null;
+      appointment_id?: string | null; // Novo campo
+      customer_id: string;
+      file_id?: string | null;
+      attachment_type: string;
+      title: string;
+      description?: string | null;
+      file_url?: string | null;
+      file_name?: string | null;
+      file_type?: string | null;
+      file_size?: number | null;
+      is_highlighted?: boolean;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      organization_id?: string;
+      medical_record_id?: string | null;
+      consultation_id?: string | null;
+      appointment_id?: string | null; // Novo campo
+      customer_id?: string;
+      file_id?: string | null;
+      attachment_type?: string;
+      title?: string;
+      description?: string | null;
+      file_url?: string | null;
+      file_name?: string | null;
+      file_type?: string | null;
+      file_size?: number | null;
+      is_highlighted?: boolean;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  
+  // Manter as outras tabelas como estão (emr_medical_records, emr_document_templates)
+  emr_medical_records: {
+    Row: {
+      id: string;
+      organization_id: string;
+      customer_id: string;
+      record_type: string;
+      allergies: string[] | null;
+      chronic_conditions: string[] | null;
+      current_medications: Record<string, unknown> | null;
+      family_history: string | null;
+      medical_history: string | null;
+      specialized_data: Record<string, unknown> | null;
+      is_active: boolean;
+      last_updated_by: string | null;
+      metadata: Record<string, unknown> | null;
+      deleted_at: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      organization_id: string;
+      customer_id: string;
+      record_type: string;
+      allergies?: string[] | null;
+      chronic_conditions?: string[] | null;
+      current_medications?: Record<string, unknown> | null;
+      family_history?: string | null;
+      medical_history?: string | null;
+      specialized_data?: Record<string, unknown> | null;
+      is_active?: boolean;
+      last_updated_by?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      organization_id?: string;
+      customer_id?: string;
+      record_type?: string;
+      allergies?: string[] | null;
+      chronic_conditions?: string[] | null;
+      current_medications?: Record<string, unknown> | null;
+      family_history?: string | null;
+      medical_history?: string | null;
+      specialized_data?: Record<string, unknown> | null;
+      is_active?: boolean;
+      last_updated_by?: string | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
+  
+  emr_document_templates: {
+    Row: {
+      id: string;
+      organization_id: string;
+      name: string;
+      description: string | null;
+      document_type: string;
+      content: string;
+      format: string;
+      is_default: boolean;
+      is_active: boolean;
+      variables_schema: Record<string, unknown> | null;
+      metadata: Record<string, unknown> | null;
+      deleted_at: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      organization_id: string;
+      name: string;
+      description?: string | null;
+      document_type: string;
+      content: string;
+      format?: string;
+      is_default?: boolean;
+      is_active?: boolean;
+      variables_schema?: Record<string, unknown> | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      organization_id?: string;
+      name?: string;
+      description?: string | null;
+      document_type?: string;
+      content?: string;
+      format?: string;
+      is_default?: boolean;
+      is_active?: boolean;
+      variables_schema?: Record<string, unknown> | null;
+      metadata?: Record<string, unknown> | null;
+      deleted_at?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+  };
 }
 
 

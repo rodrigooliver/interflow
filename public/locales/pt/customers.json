@@ -12,6 +12,7 @@
   "configureColumns": "Configurar colunas",
   "configureVisibleColumns": "Configurar colunas visíveis",
   "contact": "Contato",
+  "contactInfo": "Informações de contato",
   "contactPlaceholder": "Digite o contato",
   "contactRequired": "Contato é obrigatório",
   "contacts": "Contatos",
@@ -23,6 +24,7 @@
     "title": "Excluir Cliente",
     "warning": "Esta ação não pode ser desfeita."
   },
+  "detailedInfo": "Informações detalhadas",
   "edit": {
     "email": "Email",
     "phone": "Telefone",
@@ -47,6 +49,8 @@
   "noTagsAvailable": "Nenhuma tag disponível",
   "registeredAt": "Cadastrado em",
   "registeredOn": "Registrado em",
+  "registeredSince": "Cliente desde",
+  "customerSince": "Cliente desde {{date}}",
   "resetSettings": "Resetar configurações",
   "searchCustomer": "Buscar cliente",
   "searchPlaceholder": "Buscar por nome, email ou WhatsApp...",
@@ -116,5 +120,10 @@
     "deleteMessage": "Tem certeza que deseja excluir o campo \"{{fieldName}}\"? Esta ação não pode ser desfeita.",
     "deleteSuccess": "Campo personalizado excluído com sucesso",
     "deleteError": "Erro ao excluir campo personalizado"
-  }
+  },
+  "customers": "Clientes",
+  "searchPatients": "Buscar pacientes...",
+  "newPatient": "Novo Paciente",
+  "noResultsFound": "Nenhum paciente encontrado",
+  "createPatient": "Criar Paciente"
 }

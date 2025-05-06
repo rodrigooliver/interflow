@@ -7,6 +7,7 @@
   "viewCRM": "View CRM",
   "name": "Name",
   "contact": "Contact",
+  "contactInfo": "Contact information",
   "contactLabel": "Contact name",
   "registeredAt": "Registered At",
   "actions": "Actions",
@@ -22,6 +23,7 @@
     "confirmation": "Are you sure you want to delete customer {{name}}?",
     "warning": "This action cannot be undone."
   },
+  "detailedInfo": "Detailed information",
   "tabs": {
     "general": "General",
     "chats": "Conversations"
@@ -53,6 +55,8 @@
   "activeFilters": "Active filters",
   "clearAll": "Clear all",
   "registeredOn": "Registered on",
+  "registeredSince": "Customer since",
+  "customerSince": "Customer since {{date}}",
   "settingsReset": "Settings reset",
   "contacts": "Contacts",
   "noTagsAvailable": "No tags available",
@@ -116,5 +120,10 @@
     "deleteMessage": "Are you sure you want to delete the field \"{{fieldName}}\"? This action cannot be undone.",
     "deleteSuccess": "Custom field deleted successfully",
     "deleteError": "Error deleting custom field"
-  }
+  },
+  "customers": "Customers",
+  "searchPatients": "Search patients...",
+  "newPatient": "New Patient",
+  "noResultsFound": "No patients found",
+  "createPatient": "Create Patient"
 }

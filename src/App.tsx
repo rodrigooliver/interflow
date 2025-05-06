@@ -108,6 +108,15 @@ const CustomerScripts = React.lazy(() => import('./pages/public/resources/custom
 const CompleteDemo = React.lazy(() => import('./pages/public/resources/complete-demo'));
 const EbookCustomerService = React.lazy(() => import('./pages/public/resources/ebook-customer-service'));
 
+// Importações para o sistema de prontuários médicos
+import EmrConsultations from './pages/medical/EmrConsultations';
+import EmrMedicalRecords from './pages/medical/EmrMedicalRecords';
+import EmrPrescriptions from './pages/medical/EmrPrescriptions';
+import EmrCertificates from './pages/medical/EmrCertificates';
+import EmrDocumentTemplates from './pages/medical/EmrDocumentTemplates';
+import EmrPatients from './pages/medical/EmrPatients';
+import PatientMedicalView from './pages/medical/PatientMedicalView';
+
 // Adicionar declaração de tipo para a propriedade removeInitialLoader no objeto window
 declare global {
   interface Window {
@@ -763,6 +772,16 @@ function AppContent() {
                             <Route path="admin/blog/edit/:id" element={<BlogPostForm />} />
                           </>
                         )}
+                        
+                        {/* Rotas do sistema de prontuários médicos */}
+                        <Route path="medical" element={<Navigate to="/app/medical/consultations" replace />} />
+                        <Route path="medical/consultations" element={<EmrConsultations />} />
+                        <Route path="medical/records" element={<EmrMedicalRecords />} />
+                        <Route path="medical/prescriptions" element={<EmrPrescriptions />} />
+                        <Route path="medical/certificates" element={<EmrCertificates />} />
+                        <Route path="medical/templates" element={<EmrDocumentTemplates />} />
+                        <Route path="medical/patients" element={<EmrPatients />} />
+                        <Route path="medical/patients/:customerId" element={<PatientMedicalView />} />
                       </Routes>
                     </Suspense>
                   </div>

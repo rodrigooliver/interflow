@@ -262,7 +262,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         time_slot: formData.time_slot || null,
         notes: formData.notes || null,
         has_videoconference: formData.create_videoconference || false,
+        organization_id: organizationId,
       };
+
+      console.log('appointmentData', appointmentData);
 
       if (appointment?.id) {
         // Atualizar agendamento existente

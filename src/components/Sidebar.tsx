@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Location } from 'react-router-dom';
-import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown, ListTodo, DollarSign, FileText } from 'lucide-react';
+import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown, ListTodo, DollarSign, FileText, Stethoscope } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -20,11 +20,14 @@ interface NavigationLink {
   icon: React.FC<{ className?: string }>;
   label: string;
   exact?: boolean;
+}
+
+interface NavigationLinkWithChildren extends NavigationLink {
   children?: LinkChild[];
 }
 
 interface SubmenuItemProps {
-  link: NavigationLink;
+  link: NavigationLinkWithChildren;
   location: Location;
   shouldCollapse: boolean;
   onClose?: () => void;
@@ -68,18 +71,31 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
     Math.abs(Math.ceil((Date.now() - new Date(subscription.current_period_end).getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   // Base links that all users can see
-  const baseLinks = [
+  const baseLinks: NavigationLinkWithChildren[] = [
     { to: '/app', icon: LayoutDashboard, label: t('navigation:dashboard') },
     { to: '/app/chats', icon: MessageSquare, label: t('navigation:chats') },
     { to: '/app/customers', icon: Users, label: t('navigation:customers') },
     { to: '/app/crm', icon: GitMerge, label: t('navigation:crm') },
     { to: '/app/appointments', icon: Calendar, label: t('navigation:appointments') },
+    { 
+      to: '/app/medical', 
+      icon: Stethoscope, 
+      label: t('navigation:medicalRecords'),
+      children: [
+        { to: '/app/medical/patients', label: t('navigation:patients') },
+        { to: '/app/medical/consultations', label: t('navigation:consultations') },
+        { to: '/app/medical/records', label: t('navigation:records') },
+        { to: '/app/medical/prescriptions', label: t('navigation:prescriptions') },
+        { to: '/app/medical/certificates', label: t('navigation:certificates') },
+        { to: '/app/medical/templates', label: t('navigation:documentTemplates') }
+      ]
+    },
     { to: '/app/tasks', icon: ListTodo, label: t('navigation:tasks') },
     { to: '/app/financial', icon: DollarSign, label: t('navigation:financial') },
   ];
 
   // Admin and owner only links
-  const adminLinks = [
+  const adminLinks: NavigationLinkWithChildren[] = [
     { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },
@@ -100,7 +116,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   ];
 
   // Super admin links
-  const superAdminLinks = [
+  const superAdminLinks: NavigationLinkWithChildren[] = [
     { to: '/app/admin/organizations', icon: Building2, label: t('navigation:organizations') },
     { to: '/app/admin/subscription-plans', icon: CreditCard, label: t('navigation:subscriptionPlans') },
     { to: '/app/admin/blog', icon: FileText, label: t('navigation:blogAdmin') },
@@ -108,7 +124,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   ];
 
   // Combine links based on user role
-  let links = [...baseLinks];
+  let links: NavigationLinkWithChildren[] = [...baseLinks];
   
   // Add admin links for admin and owner roles
   if (profile?.role === 'admin' || profile?.is_superadmin) {
@@ -121,7 +137,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   }
 
   // Determinar se deve mostrar conteúdo colapsado (apenas em desktop)
-  const shouldCollapse = !isMobile && isCollapsed;
+  const shouldCollapse = !isMobile && !!isCollapsed;
 
   // Effect para colapsar sidebar apenas na versão desktop
   React.useEffect(() => {

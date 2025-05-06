@@ -46,6 +46,7 @@
   "confirmQuestion": "Question",
   "confirmYes": "Yes",
   "confirmNo": "No",
+  "no": "No",
   "expiresAt": "Expires at",
   "createdAt": "Created at",
   "saveSuccess": "Changes saved successfully!",
@@ -67,6 +68,11 @@
     "message": "Are you sure you want to delete this item?"
   },
   "all": "All",
+  "allTypes": "All types",
+  "allStatuses": "All statuses",
+  "select": "Select",
+  "errorSaving": "Error saving. Please try again.",
+  "showingResults": "Showing {{count}} of {{total}} results",
   "signup": {
     "title": "Create an account",
     "subtitle": "Already have an account?",
@@ -133,5 +139,10 @@
   "clearFilters": "Clear filters",
   "view": "View",
   "pageInfo": "Page {{current}} of {{total}}",
-  "comingSoon": "Coming soon"
+  "comingSoon": "Coming soon",
+  "noServicesYet": "No services found",
+  "backToList": "Back to list",
+  "searchResults": "Search results",
+  "noContactInfo": "No contact information",
+  "description": "Description"
 }

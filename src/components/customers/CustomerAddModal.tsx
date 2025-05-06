@@ -9,7 +9,7 @@ import { useFunnels } from '../../hooks/useQueryes';
 
 interface CustomerAddModalProps {
   onClose: () => void;
-  onSuccess: (silentRefresh?: boolean) => void;
+  onSuccess: (silentRefresh?: boolean, customerId?: string) => void;
   initialFunnelId?: string;
 }
 
@@ -150,7 +150,7 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
 
       setSuccess(t('customers:addSuccess'));
       setTimeout(() => {
-        onSuccess();
+        onSuccess(false, customer.id);
       }, 1500);
     } catch (err) {
       console.error('Error:', err);
@@ -345,7 +345,6 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
                 <ContactsFormSection 
                   contacts={contacts}
                   setContacts={setContacts}
-                  dropdownRef={dropdownRef}
                 />
               </div>
 

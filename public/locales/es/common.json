@@ -46,6 +46,7 @@
   "confirmQuestion": "Pregunta",
   "confirmYes": "Sí",
   "confirmNo": "No",
+  "no": "No",
   "expiresAt": "Expira el",
   "createdAt": "Creado el",
   "saveSuccess": "Cambios guardados correctamente!",
@@ -67,6 +68,12 @@
     "message": "¿Estás seguro de querer eliminar este elemento?"
   },
   "all": "Todos",
+  "allTypes": "Todos los tipos",
+  "allStatuses": "Todos los estados",
+  "select": "Seleccionar",
+  "errorSaving": "Error al guardar. Por favor, intente nuevamente.",
+  "showingResults": "Mostrando {{count}} de {{total}} resultados",
+  "showingPagination": "Mostrando {{from}} a {{to}} de {{total}} resultados",
   "searchCountry": "Buscar por país, código o prefijo...",
   "noCountriesFound": "No se encontraron países",
   "signup": {
@@ -133,5 +140,9 @@
   "clearFilters": "Limpiar filtros",
   "view": "Ver",
   "pageInfo": "Página {{current}} de {{total}}",
-  "comingSoon": "Próximamente"
+  "comingSoon": "Próximamente",
+  "noServicesYet": "No se encontraron servicios",
+  "backToList": "Volver a la lista",
+  "noContactInfo": "Sin información de contacto",
+  "description": "Descripción"
 }
