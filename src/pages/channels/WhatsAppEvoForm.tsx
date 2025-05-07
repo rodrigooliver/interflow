@@ -206,24 +206,17 @@ export default function WhatsAppEvoForm() {
             )}
 
             <ChannelBasicFields 
-              name={formData.name}
-              onNameChange={(name) => setFormData(prev => ({ ...prev, name }))}
-              defaultTeamId={formData.settings.defaultTeamId as string}
-              onDefaultTeamChange={(teamId) => setFormData(prev => ({
-                ...prev,
-                settings: {
-                  ...prev.settings,
-                  defaultTeamId: teamId || null
-                }
-              }))}
-              messageSignature={formData.settings.messageSignature as string || ''}
-              onMessageSignatureChange={(signature) => setFormData(prev => ({
-                ...prev,
-                settings: {
-                  ...prev.settings,
-                  messageSignature: signature
-                }
-              }))}
+              channel={{
+                name: formData.name,
+                settings: formData.settings as Record<string, string | boolean | null | undefined>
+              }}
+              onChannelChange={(updatedChannel) => {
+                setFormData(prev => ({
+                  ...prev,
+                  name: updatedChannel.name,
+                  settings: updatedChannel.settings as Record<string, string | boolean | null | undefined>
+                }));
+              }}
               teams={teams}
               isLoadingTeams={isLoadingTeams}
             />

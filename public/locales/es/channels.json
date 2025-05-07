@@ -18,6 +18,8 @@
     "name": "Nombre del Canal",
     "type": "Tipo de Canal",
     "defaultTeam": "Equipo Predeterminado",
+    "defaultFunnel": "Embudo Predeterminado",
+    "defaultStage": "Etapa Predeterminada",
     "selectTeam": "Seleccione Equipo Predeterminado",
     "messageSignature": "Firma del Mensaje",
     "messageSignaturePlaceholder": "Ej: Saludos cordiales,\nEquipo de Soporte",

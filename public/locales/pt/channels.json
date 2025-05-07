@@ -53,6 +53,8 @@
     "transferChats": "Transferir Chats",
     "name": "Nome do Canal",
     "defaultTeam": "Time Padrão",
+    "defaultFunnel": "Funil Padrão",
+    "defaultStage": "Estágio Padrão",
     "selectTeam": "Selecione o Time Padrão",
     "messageSignature": "Assinatura de Mensagem",
     "messageSignaturePlaceholder": "Ex: Atenciosamente,\nEquipe de Suporte",

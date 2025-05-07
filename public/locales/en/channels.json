@@ -18,6 +18,8 @@
     "name": "Channel Name",
     "type": "Channel Type",
     "defaultTeam": "Default Team",
+    "defaultFunnel": "Default Funnel",
+    "defaultStage": "Default Stage",
     "selectTeam": "Select Default Team",
     "messageSignature": "Message Signature",
     "messageSignaturePlaceholder": "Ex: Best regards,\nSupport Team",
