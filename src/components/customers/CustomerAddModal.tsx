@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { ContactType } from '../../types/database';
 import { ContactsFormSection, ContactFormData, formatContactValue } from './ContactsFormSection';
-import { useFunnels } from '../../hooks/useQueryes';
+import { useFunnels, useTags } from '../../hooks/useQueryes';
+import { CustomFieldsSection } from '../custom-fields/CustomFieldsSection';
+import { CustomFieldFormData } from '../../types/database';
 
 interface CustomerAddModalProps {
   onClose: () => void;
@@ -25,10 +27,22 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
     return funnels.flatMap(funnel => funnel.stages || []);
   }, [funnels]);
   
+  // Usando o hook useTags para carregar tags
+  const { data: tagsData, isLoading: loadingTags } = useTags(currentOrganizationMember?.organization.id);
+  const tags = tagsData || [];
+  
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#3B82F6');
+  const [showNewTagForm, setShowNewTagForm] = useState(false);
+  const [showAvailableTags, setShowAvailableTags] = useState(false);
+  const [creatingTag, setCreatingTag] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     funnelId: initialFunnelId || '',
-    stageId: ''
+    stageId: '',
+    salePrice: undefined as number | undefined
   });
   
   const [contacts, setContacts] = useState<ContactFormData[]>([
@@ -37,12 +51,14 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  // Estados para pesquisa de países - usados apenas no efeito de clique fora
-  const [, setCountrySearch] = useState('');
-  const [, setShowCountryDropdown] = useState<number | null>(null);
+  const [customFields, setCustomFields] = useState<CustomFieldFormData[]>([]);
   
-  // Referência para detectar cliques fora do dropdown
+  // Referências para detectar cliques fora dos dropdowns
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tagsDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Referência para controlar operações de tag em andamento
+  const tagOperationInProgress = useRef(false);
 
   // Efeito para fechar dropdowns quando clicar fora deles
   useEffect(() => {
@@ -55,8 +71,12 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
             showTypeDropdown: false
           }))
         );
-        setShowCountryDropdown(null);
-        setCountrySearch('');
+      }
+
+      // Fechar dropdown de tags disponíveis
+      if (tagsDropdownRef.current && !tagsDropdownRef.current.contains(event.target as Node)) {
+        setShowAvailableTags(false);
+        setShowNewTagForm(false);
       }
     }
 
@@ -72,19 +92,36 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
   // Efeito para inicializar o funil e estágio quando os dados são carregados
   useEffect(() => {
     if (!loadingFunnels && funnels.length > 0) {
-      // Se temos um initialFunnelId, usamos ele; caso contrário, usamos o primeiro funil
-      const funnelId = initialFunnelId || funnels[0].id;
-      
-      if (funnelId) {
-        // Encontrar o primeiro estágio do funil selecionado
-        const filteredStages = stages.filter(stage => stage.funnel_id === funnelId);
-        const firstStage = filteredStages.length > 0 ? filteredStages.sort((a, b) => a.position - b.position)[0] : null;
+      // Se temos um initialFunnelId, usamos ele
+      if (initialFunnelId) {
+        const funnelId = initialFunnelId;
+        if (funnelId) {
+          // Encontrar o primeiro estágio do funil selecionado
+          const filteredStages = stages.filter(stage => stage.funnel_id === funnelId);
+          const firstStage = filteredStages.length > 0 ? filteredStages.sort((a, b) => a.position - b.position)[0] : null;
+          
+          setFormData(prev => ({ 
+            ...prev, 
+            funnelId,
+            stageId: firstStage ? firstStage.id : ''
+          }));
+        }
+      } else {
+        // Se não temos initialFunnelId, procurar pelo funil padrão
+        const defaultFunnel = funnels.find(f => f.default === true);
+        const funnelToUse = defaultFunnel || funnels[0]; // Se não houver funil padrão, usar o primeiro
         
-        setFormData(prev => ({ 
-          ...prev, 
-          funnelId,
-          stageId: firstStage ? firstStage.id : ''
-        }));
+        if (funnelToUse) {
+          // Encontrar o primeiro estágio do funil selecionado
+          const filteredStages = stages.filter(stage => stage.funnel_id === funnelToUse.id);
+          const firstStage = filteredStages.length > 0 ? filteredStages.sort((a, b) => a.position - b.position)[0] : null;
+          
+          setFormData(prev => ({ 
+            ...prev, 
+            funnelId: funnelToUse.id,
+            stageId: firstStage ? firstStage.id : ''
+          }));
+        }
       }
     }
   }, [funnels, stages, initialFunnelId, loadingFunnels]);
@@ -92,6 +129,99 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
   // Função para lidar com a seleção de estágio na barra de progressão
   const handleStageSelect = (stageId: string) => {
     setFormData(prev => ({ ...prev, stageId }));
+  };
+
+  const handleTagToggle = (tagId: string) => {
+    // Evitar múltiplas operações simultâneas
+    if (tagOperationInProgress.current) {
+      return;
+    }
+    
+    tagOperationInProgress.current = true;
+    
+    setSelectedTags(prev => {
+      const isSelected = prev.includes(tagId);
+      const newSelectedTags = isSelected
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId];
+      
+      // Liberar o bloqueio após um pequeno atraso para evitar cliques rápidos
+      setTimeout(() => {
+        tagOperationInProgress.current = false;
+      }, 300);
+      
+      return newSelectedTags;
+    });
+  };
+
+  const handleCreateTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentOrganizationMember || !newTagName.trim()) return;
+    
+    // Evitar múltiplas operações simultâneas
+    if (tagOperationInProgress.current) {
+      return;
+    }
+    
+    tagOperationInProgress.current = true;
+    setCreatingTag(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('tags')
+        .insert([
+          {
+            name: newTagName.trim(),
+            color: newTagColor,
+            organization_id: currentOrganizationMember.organization.id
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Verificar se a tag já está selecionada antes de adicioná-la
+      if (!selectedTags.includes(data.id)) {
+        // Adicionar a nova tag às tags selecionadas
+        setSelectedTags(prev => [...prev, data.id]);
+      }
+      
+      // Limpar o formulário
+      setNewTagName('');
+      setNewTagColor('#3B82F6');
+      setShowNewTagForm(false);
+      
+      // Mostrar feedback visual temporário
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = 'Tag criada com sucesso';
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 1500);
+      
+    } catch (error: unknown) {
+      console.error('Erro ao criar tag:', error);
+      setError(t('common:error'));
+      
+      // Mostrar mensagem de erro
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = `Erro ao criar tag: ${error instanceof Error ? error.message : 'Tente novamente'}`;
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+    } finally {
+      setCreatingTag(false);
+      // Liberar o bloqueio após um pequeno atraso
+      setTimeout(() => {
+        tagOperationInProgress.current = false;
+      }, 300);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,7 +251,8 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
         .insert([{
           name: formData.name,
           organization_id: currentOrganizationMember.organization.id,
-          stage_id: formData.stageId || null // Salvar o estágio diretamente na tabela customers
+          stage_id: formData.stageId || null,
+          sale_price: formData.salePrice
         }])
         .select()
         .single();
@@ -145,6 +276,52 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
             .insert(contactsToInsert);
 
           if (contactsError) throw contactsError;
+        }
+
+        // Adicionar tags selecionadas
+        if (selectedTags.length > 0) {
+          const tagsToInsert = selectedTags.map(tagId => ({
+            customer_id: customer.id,
+            tag_id: tagId,
+            organization_id: currentOrganizationMember.organization.id,
+            created_at: new Date().toISOString()
+          }));
+
+          const { error: tagsError } = await supabase
+            .from('customer_tags')
+            .insert(tagsToInsert);
+
+          if (tagsError) throw tagsError;
+        }
+
+        // Salvar campos personalizados
+        const validCustomFields = customFields.filter(field => field.value && field.value.trim() !== '');
+        if (validCustomFields.length > 0) {
+          const customFieldsToInsert = validCustomFields.map(field => ({
+            customer_id: customer.id,
+            field_definition_id: field.field_id,
+            value: field.value || '',
+            updated_at: new Date().toISOString()
+          }));
+
+          const { error: customFieldsError } = await supabase
+            .from('customer_field_values')
+            .insert(customFieldsToInsert);
+
+          if (customFieldsError) throw customFieldsError;
+        }
+
+        // If stage changed and a stage is selected, record in history
+        if (formData.stageId) {
+          const { error: historyError } = await supabase
+            .from('customer_stage_history')
+            .insert({
+              customer_id: customer.id,
+              stage_id: formData.stageId,
+              organization_id: currentOrganizationMember.organization.id
+            });
+            
+          if (historyError) throw historyError;
         }
       }
 
@@ -341,14 +518,204 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
                   />
                 </div>
 
-                {/* Seção de Contatos - Substituída pelo componente */}
+                {/* Seção de Contatos */}
                 <ContactsFormSection 
                   contacts={contacts}
                   setContacts={setContacts}
                 />
+
+                {/* Seção de Tags */}
+                <div className="border-t dark:border-gray-700 pt-4">
+                  {/* Tags selecionadas com scroll horizontal */}
+                  <div className="relative">
+                    <div className="flex items-center">
+                      <div className="flex-1 overflow-x-auto scrollbar-hide">
+                        <div className="flex gap-2 min-w-min">
+                          {selectedTags.length === 0 ? (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
+                              {t('customers:noTags')}
+                            </p>
+                          ) : (
+                            selectedTags.map(tagId => {
+                              const tag = tags.find(t => t.id === tagId);
+                              if (!tag) return null;
+                              
+                              return (
+                                <div 
+                                  key={tag.id}
+                                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-sm flex items-center bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300"
+                                >
+                                  <div
+                                    className="w-2.5 h-2.5 rounded-full mr-1.5"
+                                    style={{ backgroundColor: tag.color }}
+                                  />
+                                  {tag.name}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTagToggle(tag.id)}
+                                    className="ml-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Botão de adicionar tags */}
+                      {!loadingTags && tags.filter(tag => !selectedTags.includes(tag.id)).length > 0 && (
+                        <div className="relative flex-shrink-0 ml-2" ref={tagsDropdownRef}>
+                          <button
+                            type="button"
+                            onClick={() => setShowAvailableTags(!showAvailableTags)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                          
+                          {/* Tags disponíveis para adicionar */}
+                          {showAvailableTags && (
+                            <div className="absolute z-10 right-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
+                              <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                                <div className="flex justify-between items-center">
+                                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Tags disponíveis
+                                  </h5>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowNewTagForm(!showNewTagForm)}
+                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
+                                  >
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Nova tag
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="max-h-[200px] overflow-y-auto p-2">
+                                {loadingTags ? (
+                                  <div className="flex justify-center py-4">
+                                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-wrap gap-2">
+                                    {tags
+                                      .filter(tag => !selectedTags.includes(tag.id))
+                                      .map(tag => (
+                                        <button
+                                          key={tag.id}
+                                          type="button"
+                                          onClick={() => handleTagToggle(tag.id)}
+                                          className="px-3 py-1.5 rounded-full text-sm flex items-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                        >
+                                          <div
+                                            className="w-2.5 h-2.5 rounded-full mr-1.5"
+                                            style={{ backgroundColor: tag.color }}
+                                          />
+                                          {tag.name}
+                                          <Plus className="w-3 h-3 ml-1.5 text-gray-500" />
+                                        </button>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Formulário para adicionar nova tag */}
+                  {showNewTagForm && (
+                    <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        {t('customers:tags.createNew')}
+                      </h5>
+                      <div className="flex flex-col space-y-3">
+                        <input
+                          type="text"
+                          placeholder={t('customers:tags.name')}
+                          value={newTagName}
+                          onChange={(e) => setNewTagName(e.target.value)}
+                          className="w-full h-9 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 text-sm"
+                        />
+                        <div className="flex items-center">
+                          <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+                            {t('customers:tags.color')}:
+                          </label>
+                          <input
+                            type="color"
+                            value={newTagColor}
+                            onChange={(e) => setNewTagColor(e.target.value)}
+                            className="w-8 h-8 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 shadow-sm"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowNewTagForm(false)}
+                            className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                          >
+                            {t('common:cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCreateTag}
+                            disabled={!newTagName.trim() || creatingTag}
+                            className="px-3 py-1.5 text-xs border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                          >
+                            {creatingTag && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                            {t('common:save')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Campo de Preço de Vendas */}
+                <div className="border-t dark:border-gray-700 pt-4">
+                  <div>
+                    <label htmlFor="sale_price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('customers:salePrice')}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 dark:text-gray-400 sm:text-sm">R$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="sale_price"
+                        step="0.01"
+                        min="0"
+                        className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 pl-8 pr-3"
+                        value={formData.salePrice || ''}
+                        onChange={(e) => {
+                          const value = e.target.value ? parseFloat(e.target.value) : undefined;
+                          setFormData(prev => ({ ...prev, salePrice: value }));
+                        }}
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              {/* Seção de Campos Personalizados */}
+              {currentOrganizationMember && (
+                <CustomFieldsSection 
+                  customerId=""
+                  organizationId={currentOrganizationMember.organization.id}
+                  onFieldsChange={(fields) => {
+                    setCustomFields(fields);
+                  }}
+                />
+              )}
+
+              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={onClose}

@@ -44,7 +44,7 @@ export function CustomFieldsSection({
 
   // Efeito para processar os dados quando as definições de campos ou valores pré-carregados estiverem disponíveis
   useEffect(() => {
-    if (customerId && organizationId && fieldDefinitions) {
+    if (organizationId && fieldDefinitions) {
       setLoadingCustomFields(true);
       
       if (preloadedFieldValues) {
@@ -190,7 +190,26 @@ export function CustomFieldsSection({
 
   // Função para salvar um campo personalizado
   const handleSaveField = async (field: CustomFieldFormData) => {
-    if (!customerId || !organizationId || !field.field_id) return;
+    // Se não temos customerId, significa que estamos criando um novo cliente
+    // Neste caso, apenas atualizamos o estado local
+    if (!customerId || !organizationId || !field.field_id) {
+      const updatedFields = [...customFields];
+      const fieldIndex = updatedFields.findIndex(f => f.field_id === field.field_id);
+      
+      if (fieldIndex !== -1) {
+        updatedFields[fieldIndex] = {
+          ...updatedFields[fieldIndex],
+          value: field.value || ''
+        };
+        setCustomFields(updatedFields);
+        
+        // Notificar o componente pai
+        if (onFieldsChange) {
+          onFieldsChange(updatedFields);
+        }
+      }
+      return;
+    }
     
     try {
       // Verificar se houve alteração no nome do campo

@@ -203,6 +203,7 @@ export function FunnelHeader({
         <CustomerAddModal 
           onClose={() => setShowAddCustomerModal(false)}
           onSuccess={handleCustomerAdded}
+          initialFunnelId={funnel.id}
         />
       )}
 
