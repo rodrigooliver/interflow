@@ -251,6 +251,14 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
     });
   };
 
+  // Função para lidar com tecla Enter nos campos
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      saveCustomer();
+    }
+  };
+
   const handleCreateTag = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentOrganizationMember || !newTagName.trim()) return;
@@ -377,7 +385,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         .update({
           name: formData.name.trim(),
           stage_id: stageId || null,
-          sale_price: customerData?.sale_price
+          sale_price: customerData?.sale_price === undefined ? null : customerData?.sale_price
         })
         .eq('id', customer.id)
         .select()
@@ -914,6 +922,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                           className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          onKeyDown={handleKeyPress}
                         />
                       </div>
 
@@ -1098,6 +1107,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                                 const value = e.target.value ? parseFloat(e.target.value) : undefined;
                                 setCustomerData(prev => prev ? { ...prev, sale_price: value } : null);
                               }}
+                              onKeyDown={handleKeyPress}
                               placeholder="0,00"
                             />
                           </div>
