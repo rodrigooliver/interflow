@@ -667,8 +667,15 @@ export default function Customers() {
       const fieldDef = customFieldDefinitions.find(def => def.id === column.field_id);
       if (fieldDef?.type === 'date' && value) {
         try {
-          const date = new Date(value);
-          return date.toLocaleDateString();
+          // Para campos do tipo 'date', consideramos apenas a data sem interferência de fuso horário
+          // Extrair partes da data (ano, mês, dia) e criar uma data local com horário às 12:00
+          const [year, month, day] = value.split('-').map(Number);
+          if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            // Criar uma data usando componentes locais (evita problemas de fuso horário)
+            const date = new Date(year, month - 1, day, 12, 0, 0);
+            return date.toLocaleDateString();
+          }
+          return value;
         } catch {
           return value;
         }
