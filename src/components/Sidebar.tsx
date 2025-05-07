@@ -7,6 +7,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useCurrentSubscription } from '../hooks/useQueryes';
 import OneSignal from 'react-onesignal';
+import { OrganizationSwitcher } from './auth/OrganizationSwitcher';
 
 // Definindo tipos para interface de link
 interface LinkChild {
@@ -58,7 +59,8 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   const isTrialExpired = isTrial && trialDays < 0;
 
   // Verificar se a subscription está próxima de vencer (7 dias ou menos)
-  const isSubscriptionEndingSoon = subscription && !subscription.cancel_at_period_end && 
+  const isSubscriptionEndingSoon = subscription && 
+    subscription.cancel_at_period_end && // Só mostra o alerta se não estiver em recorrência automática
     new Date(subscription.current_period_end).getTime() - Date.now() <= 7 * 24 * 60 * 60 * 1000 &&
     new Date(subscription.current_period_end).getTime() > Date.now();
 
@@ -151,22 +153,22 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
       shouldCollapse ? 'w-16' : 'w-64'
     } transition-all duration-300 ease-in-out relative`}>
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <div className="flex items-center">
-          <img src="/images/logos/interflow.svg" alt="Interflow" className="h-8 w-8" />
-          {!shouldCollapse && (
-            <h1 className="ml-2 text-xl font-bold text-gray-800 dark:text-white">Interflow</h1>
+      <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          {/* Seletor de Organização */}
+          <div className="flex-1">
+            <OrganizationSwitcher isCollapsed={shouldCollapse} />
+          </div>
+          {isMobile && (
+            <button
+              onClick={onClose}
+              className="ml-2 p-2 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              aria-label="Close sidebar"
+            >
+              <X className="h-5 w-5" />
+            </button>
           )}
         </div>
-        {isMobile && (
-          <button
-            onClick={onClose}
-            className="p-2 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-            aria-label="Close sidebar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        )}
       </div>
 
       {/* Botão de colapso apenas no desktop */}
