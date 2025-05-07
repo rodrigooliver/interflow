@@ -55,6 +55,7 @@ type CustomerWithStage = Customer & {
   };
   chats?: CustomerChat[];
   tags?: CustomerDbTag[] | CustomerTag[];
+  sale_price?: number;
 };
 
 interface KanbanColumnProps {
@@ -125,6 +126,11 @@ export function KanbanColumn({
   // Verificar se a coluna está vazia
   const isEmpty = customersWithStage.length === 0;
 
+  // Calcula o valor total de sale_price para todos os clientes na coluna
+  const totalSalePrice = customersWithStage.reduce((total, customer) => {
+    return total + (customer.sale_price || 0);
+  }, 0);
+
   return (
     <div
       ref={setNodeRef}
@@ -135,7 +141,7 @@ export function KanbanColumn({
       data-id={stage.id}
       data-column-type="stage"
     >
-      <div className="p-4 flex flex-col h-full">
+      <div className="p-4 flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center">
             <div
@@ -148,6 +154,11 @@ export function KanbanColumn({
             <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
               ({customers.length})
             </span>
+            {totalSalePrice > 0 && (
+              <span className="ml-2 text-sm font-medium text-green-600 dark:text-green-400">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSalePrice)}
+              </span>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -193,7 +204,7 @@ export function KanbanColumn({
         </div>
 
         <div 
-          className={`space-y-3 overflow-y-auto flex-1 pr-1`}
+          className={`space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar`}
           data-column-content={stage.id}
         >
           {isEmpty ? (

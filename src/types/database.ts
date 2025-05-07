@@ -159,6 +159,7 @@ export interface Customer {
   }[];
   is_spam?: boolean;
   stage?: CrmStage;
+  sale_price?: number;
 }
 
 /**

@@ -9,7 +9,7 @@
     - Adicionar campo `is_spam` à tabela `customers`
       - Indica se o cliente é considerado spam
       - Default é false
-    - Adicionar campo `preco_venda` à tabela `customers`
+    - Adicionar campo `sale_price` à tabela `customers`
       - Preço de venda do cliente
     - Adicionar campos na tabela `chats`:
       - `is_fixed`: chat fixado
@@ -56,11 +56,11 @@ EXECUTE FUNCTION ensure_single_default_team();
 -- Adicionar campos à tabela customers
 ALTER TABLE customers
 ADD COLUMN is_spam BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN preco_venda DECIMAL(10,2);
+ADD COLUMN sale_price DECIMAL(10,2);
 
 -- Criar índices para customers
 CREATE INDEX IF NOT EXISTS customers_is_spam_idx ON customers(is_spam);
-CREATE INDEX IF NOT EXISTS customers_preco_venda_idx ON customers(preco_venda);
+CREATE INDEX IF NOT EXISTS customers_sale_price_idx ON customers(sale_price);
 
 -- Adicionar campos à tabela chats
 ALTER TABLE chats
@@ -97,7 +97,7 @@ CREATE INDEX IF NOT EXISTS profiles_nickname_idx ON profiles(nickname);
 -- Comentários explicativos sobre as mudanças
 COMMENT ON COLUMN service_teams.is_default IS 'Indica se a equipe é a padrão para novos atendimentos na organização.';
 COMMENT ON COLUMN customers.is_spam IS 'Indica se o cliente é considerado spam.';
-COMMENT ON COLUMN customers.preco_venda IS 'Preço de venda do cliente.';
+COMMENT ON COLUMN customers.sale_price IS 'Preço de venda do cliente.';
 COMMENT ON COLUMN chats.is_fixed IS 'Indica se o chat está fixado.';
 COMMENT ON COLUMN chats.unread_count IS 'Contagem de mensagens não lidas no chat.';
 COMMENT ON COLUMN chats.is_archived IS 'Indica se o chat está arquivado.';

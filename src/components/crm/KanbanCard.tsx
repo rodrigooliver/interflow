@@ -63,6 +63,7 @@ type CustomerWithStage = Customer & {
   };
   tags?: CustomerDbTag[] | CustomerTag[];
   chats?: CustomerChat[];
+  sale_price?: number;
 };
 
 const locales = {
@@ -106,7 +107,6 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    overflow: 'scroll',
   };
 
   // Extrair o último chat, a última mensagem e o external_id
@@ -231,7 +231,7 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 mb-2 cursor-grab"
+      className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 mb-2 cursor-grab max-h-[300px] overflow-y-auto custom-scrollbar"
       data-id={customer.id}
       data-card="true"
     >
@@ -240,6 +240,11 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
           <h3 className="font-medium text-gray-900 dark:text-white truncate">
             {customer.name}
           </h3>
+          {customer.sale_price !== undefined && customer.sale_price !== null && (
+            <div className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(customer.sale_price)}
+            </div>
+          )}
         </div>
         <div className="flex space-x-1 flex-shrink-0">
           <button

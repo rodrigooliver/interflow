@@ -52,6 +52,7 @@
   "registeredSince": "Cliente desde",
   "customerSince": "Cliente desde {{date}}",
   "resetSettings": "Resetar configurações",
+  "salePrice": "Preço de Vendas",
   "searchCustomer": "Buscar cliente",
   "searchPlaceholder": "Buscar por nome, email ou WhatsApp...",
   "searchByNameOrContact": "Buscar por nome ou contato...",

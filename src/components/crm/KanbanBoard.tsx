@@ -12,7 +12,7 @@ import {
   pointerWithin,
   CollisionDetection
 } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CRMStage } from '../../types/crm';
 import { Customer } from '../../types/database';
 import { KanbanColumn } from './KanbanColumn';
@@ -22,6 +22,7 @@ import { KanbanCard } from './KanbanCard';
 type CustomerWithStage = Customer & {
   stage?: CRMStage;
   stage_order?: number;
+  sale_price?: number;
 };
 
 interface KanbanBoardProps {
@@ -61,6 +62,9 @@ export function KanbanBoard({
     const sortedCustomers = [...customers].sort((a, b) => {
       // Primeiro, agrupar por stage_id
       if (a.stage_id !== b.stage_id) {
+        // Se algum dos stage_id for nulo, tratar adequadamente
+        if (a.stage_id === null) return 1;
+        if (b.stage_id === null) return -1;
         return a.stage_id > b.stage_id ? 1 : -1;
       }
       
@@ -545,7 +549,7 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 p-6 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4">
+      <div className="flex gap-6 p-6 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
         {stages.map((stage) => {
           // Ordenar clientes pelo stage_order
           const stageCustomers = localCustomers

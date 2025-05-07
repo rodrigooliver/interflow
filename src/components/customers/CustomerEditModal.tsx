@@ -376,7 +376,8 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         .from('customers')
         .update({
           name: formData.name.trim(),
-          stage_id: stageId || null
+          stage_id: stageId || null,
+          sale_price: customerData?.sale_price
         })
         .eq('id', customer.id)
         .select()
@@ -1075,6 +1076,33 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                           </div>
                         )}
                       </div>
+
+                      {/* Campo de Preço de Vendas */}
+                      <div className="border-t dark:border-gray-700 pt-4">
+                        <div>
+                          <label htmlFor="sale_price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {t('customers:salePrice')}
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <span className="text-gray-500 dark:text-gray-400 sm:text-sm">R$</span>
+                            </div>
+                            <input
+                              type="number"
+                              id="sale_price"
+                              step="0.01"
+                              min="0"
+                              className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 pl-8 pr-3"
+                              value={customerData?.sale_price || ''}
+                              onChange={(e) => {
+                                const value = e.target.value ? parseFloat(e.target.value) : undefined;
+                                setCustomerData(prev => prev ? { ...prev, sale_price: value } : null);
+                              }}
+                              placeholder="0,00"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Seção de Campos Personalizados */}
@@ -1134,12 +1162,12 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                     isModal={true}
                     onCloseModal={onClose}
                   />
-                                    </div>
-                                  )}
-                    </>
-                  )}
                 </div>
+              )}
+            </>
+          )}
         </div>
+      </div>
     </div>
   );
 }
