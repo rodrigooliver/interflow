@@ -143,22 +143,22 @@ export function KanbanColumn({
     >
       <div className="p-4 flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center">
-            <div
-              className="w-3 h-3 rounded-full mr-2"
-              style={{ backgroundColor: stage.color }}
-            />
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-              {stage.name}
-            </h3>
-            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-              ({customers.length})
-            </span>
-            {totalSalePrice > 0 && (
-              <span className="ml-2 text-sm font-medium text-green-600 dark:text-green-400">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSalePrice)}
+          <div className="flex flex-col">
+            <div className="flex items-center">
+              <div
+                className="w-3 h-3 rounded-full mr-2"
+                style={{ backgroundColor: stage.color }}
+              />
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {stage.name}
+              </h3>
+              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                ({customers.length})
               </span>
-            )}
+            </div>
+            <div className="mt-1 ml-5 text-sm font-medium text-green-600 dark:text-green-400">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSalePrice)}
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <button

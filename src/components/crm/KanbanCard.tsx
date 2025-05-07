@@ -240,11 +240,9 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
           <h3 className="font-medium text-gray-900 dark:text-white truncate">
             {customer.name}
           </h3>
-          {customer.sale_price !== undefined && customer.sale_price !== null && (
-            <div className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(customer.sale_price)}
-            </div>
-          )}
+          <div className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(customer.sale_price || 0)}
+          </div>
         </div>
         <div className="flex space-x-1 flex-shrink-0">
           <button
