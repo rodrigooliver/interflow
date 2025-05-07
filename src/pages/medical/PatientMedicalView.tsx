@@ -15,7 +15,10 @@ import {
   Eye,
   Edit,
   Download,
-  FileCheck
+  FileCheck,
+  Paperclip,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -23,16 +26,20 @@ import {
   useMedicalAppointments, 
   useMedicalRecords, 
   usePrescriptions,
-  useCertificates
+  useCertificates,
+  useAttachments
 } from '../../hooks/useMedicalHooks';
 import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import MedicalConsultationForm from '../../components/medical/MedicalConsultationForm';
 import MedicalRecordForm from '../../components/medical/MedicalRecordForm';
 import PrescriptionForm from '../../components/medical/PrescriptionForm';
 import CertificateForm from '../../components/medical/CertificateForm';
-import { MedicalAppointment, EmrMedicalRecord, EmrPrescription, EmrCertificate } from '../../types/medicalRecord';
+import AttachmentForm from '../../components/medical/AttachmentForm';
+import { MedicalAppointment, EmrMedicalRecord, EmrPrescription, EmrCertificate, EmrAttachment } from '../../types/medicalRecord';
 import { Customer } from '../../types/database';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 interface Medication {
   name: string;
@@ -71,6 +78,12 @@ interface ExtendedEmrPrescription extends Omit<EmrPrescription, 'customer' | 'pr
   [key: string]: unknown;
 }
 
+// Interface para estender o tipo EmrAttachment para usar CustomerWithDetails
+interface ExtendedEmrAttachment extends Omit<EmrAttachment, 'customer'> {
+  customer?: CustomerWithDetails;
+  [key: string]: unknown;
+}
+
 // Componente principal
 const PatientMedicalView = () => {
   const { t } = useTranslation(['common', 'medical', 'customers']);
@@ -84,10 +97,10 @@ const PatientMedicalView = () => {
   
   // Obtém a tab do URL ou usa 'appointments' como padrão
   const tabFromUrl = searchParams.get('tab');
-  const validTabs = ['appointments', 'records', 'prescriptions', 'certificates'];
-  const [activeTab, setActiveTab] = useState<'appointments' | 'records' | 'prescriptions' | 'certificates'>(
+  const validTabs = ['appointments', 'records', 'prescriptions', 'certificates', 'attachments'];
+  const [activeTab, setActiveTab] = useState<'appointments' | 'records' | 'prescriptions' | 'certificates' | 'attachments'>(
     validTabs.includes(tabFromUrl as string) 
-      ? (tabFromUrl as 'appointments' | 'records' | 'prescriptions' | 'certificates') 
+      ? (tabFromUrl as 'appointments' | 'records' | 'prescriptions' | 'certificates' | 'attachments') 
       : 'appointments'
   );
   
@@ -111,7 +124,7 @@ const PatientMedicalView = () => {
   useEffect(() => {
     const tabParam = searchParams.get('tab') as string;
     if (tabParam && validTabs.includes(tabParam)) {
-      const normalizedTab = tabParam as 'appointments' | 'records' | 'prescriptions' | 'certificates';
+      const normalizedTab = tabParam as 'appointments' | 'records' | 'prescriptions' | 'certificates' | 'attachments';
       if (normalizedTab !== activeTab) {
         setUpdatingFromUrl(true);
         setActiveTab(normalizedTab);
@@ -124,11 +137,23 @@ const PatientMedicalView = () => {
   const [isMedicalRecordModalOpen, setIsMedicalRecordModalOpen] = useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+  const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [isCustomerEditModalOpen, setIsCustomerEditModalOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<MedicalAppointment | null>(null);
   const [selectedMedicalRecord, setSelectedMedicalRecord] = useState<EmrMedicalRecord | null>(null);
   const [selectedPrescription, setSelectedPrescription] = useState<ExtendedEmrPrescription | null>(null);
   const [selectedCertificate, setSelectedCertificate] = useState<ExtendedEmrCertificate | null>(null);
+  const [selectedAttachment, setSelectedAttachment] = useState<ExtendedEmrAttachment | null>(null);
+  
+  // Estado para o modal de confirmação de exclusão
+  const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
+  const [attachmentToDelete, setAttachmentToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  // Context com dados da organização
+  const { currentOrganizationMember } = useAuthContext();
+  const organizationId = currentOrganizationMember?.organization_id;
   
   // Memoizar os filtros de appointments para evitar recálculos desnecessários
   const appointmentsFilters = useMemo(() => ({
@@ -141,12 +166,14 @@ const PatientMedicalView = () => {
   const { data: medicalRecordsData } = useMedicalRecords({ customer_id: customerId });
   const { data: prescriptionsData } = usePrescriptions({ customer_id: customerId });
   const { data: certificatesData } = useCertificates({ customer_id: customerId });
+  const { data: attachmentsData, refetch: refetchAttachments } = useAttachments({ customer_id: customerId });
   
   // Extrair os dados
   const appointments = appointmentsData?.data || [];
   const medicalRecords = medicalRecordsData?.data || [];
   const prescriptions = prescriptionsData?.data || [];
   const certificates = certificatesData?.data || [];
+  const attachments = attachmentsData?.data || [];
   
   // Função para abrir o modal de edição de paciente
   const handleEditCustomer = () => {
@@ -279,13 +306,37 @@ const PatientMedicalView = () => {
     setSelectedCertificate(null);
   };
   
+  // Criar novo anexo
+  const handleNewAttachment = () => {
+    setSelectedAttachment(null);
+    setIsAttachmentModalOpen(true);
+  };
+  
+  // Exibir detalhes de anexo
+  const handleViewAttachment = (attachmentId: string) => {
+    const attachment = attachments.find(a => a.id === attachmentId);
+    if (attachment) {
+      setSelectedAttachment({
+        ...attachment,
+        customer: attachment.customer as CustomerWithDetails
+      });
+      setIsAttachmentModalOpen(true);
+    }
+  };
+  
+  // Fechar modal de anexo
+  const handleCloseAttachmentModal = () => {
+    setIsAttachmentModalOpen(false);
+    setSelectedAttachment(null);
+  };
+  
   // Função auxiliar para obter contato do cliente
   const getCustomerContact = (type: 'email' | 'phone'): string | undefined => {
     return customer?.contacts?.find(contact => contact.type === type)?.value;
   };
   
   // Manipuladores das abas - evita problemas de renderização extra
-  const handleTabChange = (tab: 'appointments' | 'records' | 'prescriptions' | 'certificates') => {
+  const handleTabChange = (tab: 'appointments' | 'records' | 'prescriptions' | 'certificates' | 'attachments') => {
     if (tab !== activeTab) {
       setActiveTab(tab);
     }
@@ -302,7 +353,7 @@ const PatientMedicalView = () => {
         
         if (tab && validTabs.includes(tab)) {
           setUpdatingFromUrl(true);
-          setActiveTab(tab as 'appointments' | 'records' | 'prescriptions' | 'certificates');
+          setActiveTab(tab as 'appointments' | 'records' | 'prescriptions' | 'certificates' | 'attachments');
         }
       } else {
         // Se não estamos mais na página de detalhes, redirecionar para a lista
@@ -316,6 +367,47 @@ const PatientMedicalView = () => {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [navigate, validTabs]);
+  
+  // Abrir modal de confirmação de exclusão
+  const handleDeleteAttachment = (attachmentId: string) => {
+    setAttachmentToDelete(attachmentId);
+    setIsDeleteConfirmModalOpen(true);
+    setDeleteError('');
+  };
+  
+  // Confirmar exclusão de anexo
+  const confirmDeleteAttachment = async () => {
+    if (!attachmentToDelete || !organizationId) return;
+    
+    setDeleteLoading(true);
+    setDeleteError('');
+    
+    try {
+      // Chamar a API para excluir o anexo
+      await api.delete(`/api/${organizationId}/medical/attachment`, {
+        data: { attachmentId: attachmentToDelete }
+      });
+      
+      // Fechar o modal e limpar o estado
+      setIsDeleteConfirmModalOpen(false);
+      setAttachmentToDelete(null);
+      
+      // Recarregar a lista de anexos
+      refetchAttachments();
+    } catch (error) {
+      console.error('Erro ao excluir anexo:', error);
+      setDeleteError(t('medical:attachments.errors.deleteFailed'));
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+  
+  // Cancelar exclusão
+  const cancelDeleteAttachment = () => {
+    setIsDeleteConfirmModalOpen(false);
+    setAttachmentToDelete(null);
+    setDeleteError('');
+  };
   
   // Renderização condicional durante o carregamento
   if (loading) {
@@ -428,6 +520,17 @@ const PatientMedicalView = () => {
         >
           <FileCheck className="w-4 h-4 mr-2" />
           {t('medical:certificates')}
+        </button>
+        <button
+          onClick={() => handleTabChange('attachments')}
+          className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+            activeTab === 'attachments'
+              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+          }`}
+        >
+          <Paperclip className="w-4 h-4 mr-2" />
+          {t('medical:attachments.title')}
         </button>
       </div>
 
@@ -717,6 +820,106 @@ const PatientMedicalView = () => {
             </div>
           </div>
         )}
+
+        {/* Aba de Anexos */}
+        {activeTab === 'attachments' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                {t('medical:attachments.title')}
+              </h2>
+              <button
+                onClick={handleNewAttachment}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-green-700 dark:hover:bg-green-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('medical:attachments.add')}
+              </button>
+            </div>
+            {/* Lista de anexos */}
+            <div className="space-y-4">
+              {attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                >
+                  <div className="flex items-center flex-1">
+                    <div className="w-10 h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-full">
+                      {attachment.file_type?.startsWith('image/') && attachment.file_url ? (
+                        <img
+                          src={attachment.file_url}
+                          alt={attachment.title}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <FileText className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {attachment.title}
+                        {attachment.is_highlighted && (
+                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                            {t('medical:attachments.highlighted')}
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex flex-col text-sm text-gray-500 dark:text-gray-400">
+                        <span>
+                          {t(`medical:attachmentTypes.${attachment.attachment_type}`, 
+                            { defaultValue: attachment.attachment_type })}
+                        </span>
+                        <span>{formatDate(attachment.created_at)}</span>
+                        {attachment.description && (
+                          <span className="mt-1 line-clamp-2">{attachment.description}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleViewAttachment(attachment.id)}
+                      className="p-1.5 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      title={t('common:view')}
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleViewAttachment(attachment.id)}
+                      className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      title={t('common:edit')}
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    {attachment.file_url && (
+                      <a
+                        href={attachment.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        title={t('common:download')}
+                      >
+                        <Download className="w-5 h-5" />
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleDeleteAttachment(attachment.id)}
+                      className="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      title={t('common:delete')}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {attachments.length === 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('medical:attachments.noAttachments')}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modais de formulário */}
@@ -822,6 +1025,34 @@ const PatientMedicalView = () => {
         </div>
       )}
 
+      {/* Modal para criar/editar anexos */}
+      {isAttachmentModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black bg-opacity-25" onClick={handleCloseAttachmentModal} />
+            <div className="relative bg-white rounded-lg shadow-xl dark:bg-gray-800 w-full max-w-4xl">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  onClick={handleCloseAttachmentModal}
+                  className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-6">
+                <AttachmentForm
+                  attachment={selectedAttachment}
+                  onClose={handleCloseAttachmentModal}
+                  customer={customer}
+                  medical_record_id={undefined}
+                  appointment_id={undefined}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de edição de paciente */}
       {isCustomerEditModalOpen && customer && (
         <CustomerEditModal
@@ -829,6 +1060,56 @@ const PatientMedicalView = () => {
           onClose={() => setIsCustomerEditModalOpen(false)}
           onSuccess={handleCustomerEditSuccess}
         />
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      {isDeleteConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black bg-opacity-25" onClick={cancelDeleteAttachment} />
+            <div className="relative bg-white rounded-lg shadow-xl dark:bg-gray-800 w-full max-w-md p-6">
+              <div className="flex items-center justify-center mb-4 text-red-500 dark:text-red-400">
+                <AlertTriangle className="w-12 h-12" />
+              </div>
+              <h3 className="mb-4 text-lg font-medium text-center text-gray-900 dark:text-white">
+                {t('medical:attachments.confirmDelete')}
+              </h3>
+              <p className="mb-6 text-center text-gray-600 dark:text-gray-400">
+                {t('medical:attachments.confirmDeleteText')}
+              </p>
+              
+              {deleteError && (
+                <div className="mb-4 p-3 rounded-md bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm">
+                  {deleteError}
+                </div>
+              )}
+              
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={cancelDeleteAttachment}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                  disabled={deleteLoading}
+                >
+                  {t('common:cancel')}
+                </button>
+                <button
+                  onClick={confirmDeleteAttachment}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      {t('common:deleting')}
+                    </div>
+                  ) : (
+                    t('common:delete')
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

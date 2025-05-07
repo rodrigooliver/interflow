@@ -199,5 +199,49 @@
   "processing": "Processando...",
   "errorLoadingPdf": "Falha ao carregar o PDF",
   "errorDownloadingDocument": "Falha ao baixar o documento",
-  "errorGeneratingPdf": "Falha ao gerar o PDF"
+  "errorGeneratingPdf": "Falha ao gerar o PDF",
+  
+  "attachments": {
+    "title": "Anexos",
+    "add": "Adicionar anexo",
+    "edit": "Editar anexo",
+    "file": "Arquivo",
+    "titlePlaceholder": "Ex: Exame de sangue",
+    "type": "Tipo",
+    "description": "Descrição",
+    "descriptionPlaceholder": "Descreva o conteúdo deste anexo",
+    "upload": "Fazer upload",
+    "highlighted": "Destacado",
+    "highlight": "Destacar este anexo",
+    "highlightHelp": "Anexos destacados aparecem no topo das listas",
+    "noAttachments": "Nenhum anexo encontrado",
+    "uploadTitle": "Fazer upload de arquivo",
+    "dragAndDrop": "Arraste e solte seu arquivo aqui ou clique para selecionar",
+    "maxSize": "Tamanho máximo: {{size}}",
+    "supportedFiles": "Todos os tipos de arquivo são suportados",
+    "uploading": "Enviando... {{progress}}%",
+    "saveSuccess": "Anexo salvo com sucesso",
+    "confirmDelete": "Confirmar exclusão",
+    "confirmDeleteText": "Tem certeza que deseja excluir este anexo? Esta ação não pode ser desfeita e o arquivo associado também será excluído.",
+    "deleteSuccess": "Anexo excluído com sucesso",
+    "errors": {
+      "titleRequired": "O título do anexo é obrigatório",
+      "fileRequired": "O arquivo é obrigatório",
+      "customerRequired": "O paciente é obrigatório",
+      "tooLarge": "O arquivo é muito grande. O tamanho máximo é 20MB",
+      "uploadFailed": "Falha ao enviar o arquivo",
+      "saveFailed": "Falha ao salvar o anexo",
+      "deleteFailed": "Falha ao excluir o anexo"
+    }
+  },
+  
+  "attachmentTypes": {
+    "lab_result": "Resultado de exame",
+    "imaging": "Imagem médica",
+    "report": "Relatório",
+    "examination": "Exame",
+    "prescription": "Prescrição",
+    "certificate": "Atestado",
+    "other": "Outro"
+  }
 } 

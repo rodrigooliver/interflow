@@ -72,8 +72,17 @@
     "label": "Tipo de Certificado",
     "medical": "Certificado Médico",
     "fitness": "Certificado de Aptitud",
-    "absence": "Licencia Médica",
-    "return_to_work": "Retorno al Trabajo"
+    "absence": "Certificado de Ausencia",
+    "return_to_work": "Certificado de Retorno al Trabajo",
+    "sick_leave": "Certificado de Licencia por Enfermedad",
+    "maternity_leave": "Certificado de Licencia por Maternidad",
+    "paternity_leave": "Certificado de Licencia por Paternidad",
+    "medical_condition": "Certificado de Condición Médica",
+    "medical_examination": "Certificado de Examen Médico",
+    "medical_procedure": "Certificado de Procedimiento Médico",
+    "school_absence": "Certificado de Ausencia Escolar",
+    "sports_clearance": "Certificado de Autorización Deportiva",
+    "other": "Otro Tipo de Certificado"
   },
   "issueDate": "Fecha de Emisión",
   "validDates": "Período de Validez",
@@ -167,5 +176,53 @@
   "generatePdf": "Generar PDF",
   "generateDocx": "Generar DOCX",
   "download": "Descargar",
-  "processing": "Procesando..."
+  "processing": "Procesando...",
+  "errorLoadingPdf": "Error al cargar el PDF",
+  "errorDownloadingDocument": "Error al descargar el documento",
+  "errorGeneratingPdf": "Error al generar el PDF",
+  
+  "attachments": {
+    "title": "Anexos",
+    "add": "Añadir anexo",
+    "edit": "Editar anexo",
+    "file": "Archivo",
+    "titlePlaceholder": "Ej: Análisis de sangre",
+    "type": "Tipo",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Describa el contenido de este anexo",
+    "upload": "Subir",
+    "highlighted": "Destacado",
+    "highlight": "Destacar este anexo",
+    "highlightHelp": "Los anexos destacados aparecen al principio de las listas",
+    "noAttachments": "No se encontraron anexos",
+    "uploadTitle": "Subir archivo",
+    "dragAndDrop": "Arrastre y suelte su archivo aquí o haga clic para seleccionar",
+    "maxSize": "Tamaño máximo: {{size}}",
+    "supportedFiles": "Se admiten todos los tipos de archivo",
+    "uploading": "Subiendo... {{progress}}%",
+    "saveSuccess": "Anexo guardado con éxito",
+    "errors": {
+      "titleRequired": "El título del anexo es obligatorio",
+      "fileRequired": "El archivo es obligatorio",
+      "customerRequired": "El paciente es obligatorio",
+      "tooLarge": "El archivo es demasiado grande. El tamaño máximo es 20MB",
+      "uploadFailed": "Error al subir el archivo",
+      "saveFailed": "Error al guardar el anexo",
+      "deleteFailed": "Error al eliminar el archivo"
+    }
+  },
+  
+  "attachmentTypes": {
+    "lab_result": "Resultado de análisis",
+    "imaging": "Imagen médica",
+    "report": "Informe",
+    "examination": "Examen",
+    "prescription": "Receta",
+    "certificate": "Certificado",
+    "other": "Otro"
+  },
+  "reasonPlaceholder": "Describa el motivo del certificado",
+  "confirmDelete": "Confirmar eliminación",
+  "confirmDeleteText": "¿Está seguro de que desea eliminar este anexo? Esta acción no se puede deshacer y el archivo asociado también será eliminado.",
+  "deleteSuccess": "Anexo eliminado con éxito"
 } 

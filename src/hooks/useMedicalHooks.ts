@@ -19,6 +19,7 @@ export const MEDICAL_CACHE_KEYS = {
   prescriptions: 'emr-prescriptions',
   certificates: 'emr-certificates',
   templates: 'emr-document-templates',
+  attachments: 'emr-attachments',
 };
 
 // ==========================================
@@ -968,7 +969,7 @@ export const useUpdatePrescription = () => {
       }
 
       // Remover campos relacionados para evitar erros na API
-      const { customer, provider, appointment, ...prescriptionData } = prescription as any;
+      const { ...prescriptionData } = prescription as Record<string, unknown>;
 
       const { data, error } = await supabase
         .from('emr_prescriptions')
@@ -1213,7 +1214,7 @@ export const useUpdateCertificate = () => {
       }
 
       // Remover campos relacionados para evitar erros na API
-      const { customer, provider, appointment, ...certificateData } = certificate as any;
+      const { ...certificateData } = certificate as Record<string, unknown>;
 
       const { data, error } = await supabase
         .from('emr_certificates')
@@ -1518,6 +1519,275 @@ export const useDocumentTypes = () => {
         'certificate',
         'letter',
         'report'
+      ];
+    },
+    staleTime: Infinity, // Não expira já que os dados são estáticos
+  });
+};
+
+// ==========================================
+// HOOKS PARA ANEXOS MÉDICOS
+// ==========================================
+
+/**
+ * Hook para buscar anexos médicos com suporte a filtros
+ */
+export const useAttachments = (filters?: { 
+  customer_id?: string; 
+  medical_record_id?: string; 
+  appointment_id?: string;
+  consultation_id?: string;
+  attachment_type?: string;
+  is_highlighted?: boolean;
+  search_term?: string;
+}) => {
+  const { currentOrganizationMember } = useAuthContext();
+  const organizationId = currentOrganizationMember?.organization_id;
+
+  return useQuery({
+    queryKey: [MEDICAL_CACHE_KEYS.attachments, organizationId, filters],
+    queryFn: async () => {
+      if (!organizationId) return { data: [], count: 0 };
+
+      let query = supabase
+        .from('emr_attachments')
+        .select('*, customer:customer_id(*), medical_record:medical_record_id(*), appointment:appointment_id(*)', { count: 'exact' })
+        .eq('organization_id', organizationId)
+        .is('deleted_at', null);
+      
+      // Adicionar filtros se existirem
+      if (filters?.customer_id) {
+        query = query.eq('customer_id', filters.customer_id);
+      }
+      
+      if (filters?.medical_record_id) {
+        query = query.eq('medical_record_id', filters.medical_record_id);
+      }
+      
+      if (filters?.appointment_id) {
+        query = query.eq('appointment_id', filters.appointment_id);
+      }
+      
+      if (filters?.consultation_id) {
+        query = query.eq('consultation_id', filters.consultation_id);
+      }
+      
+      if (filters?.attachment_type) {
+        query = query.eq('attachment_type', filters.attachment_type);
+      }
+      
+      if (filters?.is_highlighted !== undefined) {
+        query = query.eq('is_highlighted', filters.is_highlighted);
+      }
+      
+      if (filters?.search_term) {
+        query = query.or(`title.ilike.%${filters.search_term}%, description.ilike.%${filters.search_term}%, file_name.ilike.%${filters.search_term}%`);
+      }
+
+      // Ordenar por data de criação, mais recentes primeiro
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error('Erro ao buscar anexos médicos:', error);
+        throw error;
+      }
+
+      return { data, count: count || 0 };
+    },
+    enabled: !!organizationId,
+  });
+};
+
+/**
+ * Hook para buscar um anexo médico específico por ID
+ */
+export const useAttachment = (attachmentId?: string) => {
+  const { currentOrganizationMember } = useAuthContext();
+  const organizationId = currentOrganizationMember?.organization_id;
+
+  return useQuery({
+    queryKey: [MEDICAL_CACHE_KEYS.attachments, attachmentId],
+    queryFn: async () => {
+      if (!organizationId || !attachmentId) return null;
+
+      const { data, error } = await supabase
+        .from('emr_attachments')
+        .select('*, customer:customer_id(*), medical_record:medical_record_id(*), appointment:appointment_id(*)')
+        .eq('id', attachmentId)
+        .eq('organization_id', organizationId)
+        .is('deleted_at', null)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar anexo médico:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!organizationId && !!attachmentId,
+  });
+};
+
+/**
+ * Hook para criar um novo anexo médico
+ */
+export const useCreateAttachment = () => {
+  const queryClient = useQueryClient();
+  const { currentOrganizationMember } = useAuthContext();
+  const organizationId = currentOrganizationMember?.organization_id;
+
+  return useMutation({
+    mutationFn: async (attachment: { 
+      customer_id: string;
+      medical_record_id?: string;
+      appointment_id?: string;
+      consultation_id?: string;
+      file_id?: string;
+      attachment_type: string;
+      title: string;
+      description?: string;
+      file_url?: string;
+      file_name?: string;
+      file_type?: string;
+      file_size?: number;
+      is_highlighted?: boolean;
+      metadata?: Record<string, unknown>;
+    }) => {
+      if (!organizationId) {
+        throw new Error('Organização não definida');
+      }
+
+      const { data, error } = await supabase
+        .from('emr_attachments')
+        .insert({
+          ...attachment,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar anexo médico:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidar queries para recarregar os dados
+      queryClient.invalidateQueries({ queryKey: [MEDICAL_CACHE_KEYS.attachments] });
+    },
+  });
+};
+
+/**
+ * Hook para atualizar um anexo médico existente
+ */
+export const useUpdateAttachment = () => {
+  const queryClient = useQueryClient();
+  const { currentOrganizationMember } = useAuthContext();
+  const organizationId = currentOrganizationMember?.organization_id;
+
+  return useMutation({
+    mutationFn: async ({ id, ...attachment }: { 
+      id: string;
+      customer_id?: string;
+      medical_record_id?: string;
+      appointment_id?: string;
+      consultation_id?: string;
+      file_id?: string;
+      attachment_type?: string;
+      title?: string;
+      description?: string;
+      file_url?: string;
+      file_name?: string;
+      file_type?: string;
+      file_size?: number;
+      is_highlighted?: boolean;
+      metadata?: Record<string, unknown>;
+    }) => {
+      if (!organizationId) {
+        throw new Error('Organização não definida');
+      }
+
+      // Remover campos relacionados para evitar erros na API
+      const { ...attachmentData } = attachment as Record<string, unknown>;
+
+      const { data, error } = await supabase
+        .from('emr_attachments')
+        .update(attachmentData)
+        .eq('id', id)
+        .eq('organization_id', organizationId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao atualizar anexo médico:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      // Invalidar queries específicas
+      queryClient.invalidateQueries({ queryKey: [MEDICAL_CACHE_KEYS.attachments] });
+      queryClient.invalidateQueries({ queryKey: [MEDICAL_CACHE_KEYS.attachments, data.id] });
+    },
+  });
+};
+
+/**
+ * Hook para excluir um anexo médico (soft delete)
+ */
+export const useDeleteAttachment = () => {
+  const queryClient = useQueryClient();
+  const { currentOrganizationMember } = useAuthContext();
+  const organizationId = currentOrganizationMember?.organization_id;
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!organizationId) {
+        throw new Error('Organização não definida');
+      }
+
+      const { error } = await supabase
+        .from('emr_attachments')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('organization_id', organizationId);
+
+      if (error) {
+        console.error('Erro ao excluir anexo médico:', error);
+        throw error;
+      }
+
+      return id;
+    },
+    onSuccess: () => {
+      // Invalidar queries para recarregar os dados
+      queryClient.invalidateQueries({ queryKey: [MEDICAL_CACHE_KEYS.attachments] });
+    },
+  });
+};
+
+/**
+ * Hook para buscar tipos de anexos médicos disponíveis
+ */
+export const useAttachmentTypes = () => {
+  return useQuery({
+    queryKey: ['attachment-types'],
+    queryFn: async () => {
+      return [
+        'lab_result',   // Resultado de exame laboratorial
+        'imaging',      // Imagem (raio-x, tomografia, etc)
+        'report',       // Relatório médico
+        'examination',  // Exame geral
+        'prescription', // Prescrição médica
+        'certificate',  // Atestado
+        'other'         // Outros
       ];
     },
     staleTime: Infinity, // Não expira já que os dados são estáticos

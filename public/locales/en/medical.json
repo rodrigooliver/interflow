@@ -183,5 +183,52 @@
   "generatePdf": "Generate PDF",
   "generateDocx": "Generate DOCX",
   "download": "Download",
-  "processing": "Processing..."
+  "processing": "Processing...",
+  "errorLoadingPdf": "Failed to load PDF",
+  "errorDownloadingDocument": "Failed to download document",
+  "errorGeneratingPdf": "Failed to generate PDF",
+  
+  "attachments": {
+    "title": "Attachments",
+    "add": "Add attachment",
+    "edit": "Edit attachment",
+    "file": "File",
+    "titlePlaceholder": "Ex: Blood test",
+    "type": "Type",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the content of this attachment",
+    "upload": "Upload",
+    "highlighted": "Highlighted",
+    "highlight": "Highlight this attachment",
+    "highlightHelp": "Highlighted attachments appear at the top of lists",
+    "noAttachments": "No attachments found",
+    "uploadTitle": "Upload file",
+    "dragAndDrop": "Drag and drop your file here or click to select",
+    "maxSize": "Maximum size: {{size}}",
+    "supportedFiles": "All file types are supported",
+    "uploading": "Uploading... {{progress}}%",
+    "saveSuccess": "Attachment saved successfully",
+    "errors": {
+      "titleRequired": "Attachment title is required",
+      "fileRequired": "File is required",
+      "customerRequired": "Patient is required",
+      "tooLarge": "File is too large. Maximum size is 20MB",
+      "uploadFailed": "Failed to upload file",
+      "saveFailed": "Failed to save attachment",
+      "deleteFailed": "Failed to delete file"
+    }
+  },
+  
+  "attachmentTypes": {
+    "lab_result": "Lab result",
+    "imaging": "Medical image",
+    "report": "Report",
+    "examination": "Examination",
+    "prescription": "Prescription",
+    "certificate": "Certificate",
+    "other": "Other"
+  },
+  "confirmDelete": "Confirm deletion",
+  "confirmDeleteText": "Are you sure you want to delete this attachment? This action cannot be undone and the associated file will also be deleted.",
+  "deleteSuccess": "Attachment deleted successfully"
 } 
