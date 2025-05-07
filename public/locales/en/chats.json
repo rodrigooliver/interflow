@@ -287,7 +287,8 @@
     "noResults": "No customers found",
     "success": "Conversations transferred successfully",
     "error": "Error transferring conversations",
-    "confirm": "Are you sure you want to transfer all conversations from this customer?"
+    "confirm": "Are you sure you want to transfer all conversations from this customer?",
+    "transferAll": "Transfer All Conversations"
   },
   "chatDetails": {
     "title": "Chat Details",

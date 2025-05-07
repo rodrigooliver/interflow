@@ -291,7 +291,8 @@
     "noResults": "Nenhum cliente encontrado",
     "success": "Atendimentos transferidos com sucesso",
     "error": "Erro ao transferir atendimentos",
-    "confirm": "Tem certeza que deseja transferir todos os atendimentos deste cliente?"
+    "confirm": "Tem certeza que deseja transferir todos os atendimentos deste cliente?",
+    "transferAll": "Transferir Todos os Atendimentos"
   },
   "chatDetails": {
     "title": "Detalhes do Chat",

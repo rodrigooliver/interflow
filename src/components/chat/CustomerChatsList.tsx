@@ -361,9 +361,9 @@ export function CustomerChatsList({
 
               {/* Conteúdo da última mensagem */}
               <div className="flex items-start justify-between mt-2">
-                <div className="flex-1">
+                <div className="flex-1 truncate">
                   {chat.last_message ? (
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded p-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 italic">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded p-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 italic truncate">
                       {chat.last_message.content}
                     </div>
                   ) : (

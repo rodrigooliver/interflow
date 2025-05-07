@@ -286,7 +286,8 @@
     "noResults": "No se encontraron clientes",
     "success": "Conversaciones transferidas con éxito",
     "error": "Error al transferir las conversaciones",
-    "confirm": "¿Estás seguro que deseas transferir todas las conversaciones de este cliente?"
+    "confirm": "¿Estás seguro que deseas transferir todas las conversaciones de este cliente?",
+    "transferAll": "Transferir Todas las Conversaciones"
   },
   "chatDetails": {
     "title": "Detalles del Chat",

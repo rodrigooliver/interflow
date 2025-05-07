@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, GitMerge } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -174,6 +174,21 @@ export default function CustomerChats() {
               </p>
             </div>
           </div>
+          
+          {/* Botão para transferir todos os chats */}
+          {chats.length > 0 && (
+            <button
+              onClick={() => {
+                // Usar o primeiro chat como referência para o modal
+                setSelectedChat(chats[0]);
+                setShowTransferModal(true);
+              }}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+            >
+              <GitMerge className="w-4 h-4 mr-2" />
+              {t('chats:transfer.transferAll')}
+            </button>
+          )}
         </div>
 
         <CustomerChatsList 
