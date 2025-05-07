@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SYSTEM_ACTIONS, SystemActionType } from '../../constants/systemActions';
-import { Edit2, Trash2, Calendar, Database, Plus } from 'lucide-react';
+import { Edit2, Trash2, Calendar, Database, Plus, AlertCircle } from 'lucide-react';
 import EditSystemActionModal from './EditSystemActionModal';
 import { useSchedules } from '../../hooks/useQueryes';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { Modal } from '../ui/Modal';
+
+// Lista de tipos de ações que podem ser adicionadas apenas uma vez
+const UNIQUE_ACTION_TYPES = ['changeCustomerName', 'transferToTeam'];
 
 interface SystemActionsListProps {
   actions: SystemActionType[];
@@ -21,6 +24,14 @@ const SystemActionsList: React.FC<SystemActionsListProps> = ({ actions, onRemove
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedActionIndex, setSelectedActionIndex] = useState<number | null>(null);
   const [isSystemActionModalOpen, setIsSystemActionModalOpen] = useState(false);
+
+  // Criar um mapa de ações já adicionadas para controle de unicidade
+  const existingActionTypes = useMemo(() => {
+    return actions.reduce<Record<string, boolean>>((acc, action) => {
+      acc[action.type] = true;
+      return acc;
+    }, {});
+  }, [actions]);
 
   const handleEditClick = (index: number) => {
     setSelectedActionIndex(index);
@@ -49,6 +60,14 @@ const SystemActionsList: React.FC<SystemActionsListProps> = ({ actions, onRemove
   const getScheduleName = (scheduleId: string) => {
     const schedule = schedules?.find(s => s.id === scheduleId);
     return schedule?.title || t('prompts:form.actions.config.schedule.noSchedule');
+  };
+
+  // Verifica se uma ação pode ser adicionada (se única, verifica se já existe)
+  const canAddAction = (actionType: string) => {
+    if (UNIQUE_ACTION_TYPES.includes(actionType)) {
+      return !existingActionTypes[actionType];
+    }
+    return true;
   };
 
   return (
@@ -117,6 +136,50 @@ const SystemActionsList: React.FC<SystemActionsListProps> = ({ actions, onRemove
                       </div>
                     </div>
                   )}
+                  
+                  {action.type === 'changeFunnel' && (
+                    <>
+                      {action.config?.sourceStages && action.config.sourceStages.length > 0 && (
+                        <div className="mt-2">
+                          <div className="flex items-center text-sm text-blue-600 dark:text-blue-400">
+                            <Database className="w-4 h-4 mr-1" />
+                            {t('prompts:form.actions.config.changeFunnel.sourceStages')}:
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(action.config.sourceStages as Array<{ id: string; name: string; funnelName: string; description?: string; selected?: boolean }>).map((stage, stageIndex) => (
+                              <span 
+                                key={stageIndex} 
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                title={stage.description ? `${stage.funnelName}: ${stage.name} - ${stage.description}` : `${stage.funnelName}: ${stage.name}`}
+                              >
+                                {stage.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {action.config?.targetStages && action.config.targetStages.length > 0 && (
+                        <div className="mt-2">
+                          <div className="flex items-center text-sm text-indigo-600 dark:text-indigo-400">
+                            <Database className="w-4 h-4 mr-1" />
+                            {t('prompts:form.actions.config.changeFunnel.targetStages')}:
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(action.config.targetStages as Array<{ id: string; name: string; funnelName: string; description?: string; selected?: boolean }>).map((stage, stageIndex) => (
+                              <span 
+                                key={stageIndex} 
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                                title={stage.description ? `${stage.funnelName}: ${stage.name} - ${stage.description}` : `${stage.funnelName}: ${stage.name}`}
+                              >
+                                {stage.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -153,16 +216,37 @@ const SystemActionsList: React.FC<SystemActionsListProps> = ({ actions, onRemove
         title={t('prompts:form.systemActions')}
       >
         <div className="grid grid-cols-1 gap-2">
-          {SYSTEM_ACTIONS.map((action) => (
-            <button
-              key={action.type}
-              onClick={() => handleAddAndEditSystemAction(action)}
-              className="flex items-center justify-between p-3 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <span>{t(`prompts:form.systemActionTypes.${action.type}.name`)}</span>
-              <Plus className="w-5 h-5 text-gray-500" />
-            </button>
-          ))}
+          {SYSTEM_ACTIONS.map((action) => {
+            const isDisabled = !canAddAction(action.type);
+            
+            // Não mostrar a ação se ela não puder ser adicionada novamente e for do tipo único
+            if (isDisabled && UNIQUE_ACTION_TYPES.includes(action.type)) {
+              return null;
+            }
+            
+            return (
+              <button
+                key={action.type}
+                onClick={() => !isDisabled && handleAddAndEditSystemAction(action)}
+                className={`flex items-center justify-between p-3 text-left rounded-lg ${
+                  isDisabled 
+                    ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-700' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+                disabled={isDisabled}
+              >
+                <div className="flex items-center">
+                  <span>{t(`prompts:form.systemActionTypes.${action.type}.name`)}</span>
+                  {isDisabled && (
+                    <div className="ml-2 flex items-center text-amber-500" title={t('prompts:form.actionAlreadyAdded')}>
+                      <AlertCircle className="w-4 h-4" />
+                    </div>
+                  )}
+                </div>
+                <Plus className={`w-5 h-5 ${isDisabled ? 'text-gray-400' : 'text-gray-500'}`} />
+              </button>
+            );
+          })}
         </div>
       </Modal>
     </div>

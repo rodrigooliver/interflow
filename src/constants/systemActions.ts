@@ -6,12 +6,28 @@ export interface SystemActionType {
   type: 'endChat' | 'changeCustomerName' | 'updateCustomerCustomData' | 'transferToTeam'  | 'schedule'  | 'changeFunnel' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext' ;
   config?: {
     schedule?: string | null;
-    funnel?: string;
+    funnels?: Array<{
+      [key: string]: string | boolean | undefined;
+    }>;
     fields?: Array<{
       [key: string]: string | boolean | undefined;
     }>;
     customFields?: Array<{
       [key: string]: string | boolean | undefined;
+    }>;
+    sourceStages?: Array<{
+      id: string;
+      name: string;
+      funnelName: string;
+      selected: boolean;
+      description?: string;
+    }>;
+    targetStages?: Array<{
+      id: string;
+      name: string;
+      funnelName: string;
+      selected: boolean;
+      description?: string;
     }>;
   };
 }
@@ -46,14 +62,16 @@ export const SYSTEM_ACTIONS: SystemActionType[] = [
       schedule: ''
     }
   },
-  // {
-  //   name: 'Alterar Funil',
-  //   description: 'Altera o funil do cliente',
-  //   type: 'changeFunnel',
-  //   config: {
-  //     funnel: ''
-  //   }
-  // },
+  {
+    name: 'Alterar Funil',
+    description: 'Altera o funil do cliente',
+    type: 'changeFunnel',
+    config: {
+      funnels: [],
+      sourceStages: [],
+      targetStages: []
+    }
+  },
   // {
   //   name: 'Atribuir Equipe',
   //   description: 'Atribui uma equipe ao chat',

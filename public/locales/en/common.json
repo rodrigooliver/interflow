@@ -144,5 +144,7 @@
   "backToList": "Back to list",
   "searchResults": "Search results",
   "noContactInfo": "No contact information",
-  "description": "Description"
+  "description": "Description",
+  "noDescription": "No description",
+  "ok": "Ok"
 }

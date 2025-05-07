@@ -76,6 +76,8 @@
     "editTool": "Editar Acción",
     "systemActions": "Acciones del Sistema",
     "systemActionsDescription": "Acciones predefinidas disponibles para uso inmediato",
+    "addSystemAction": "+ Añadir Acción del Sistema",
+    "actionAlreadyAdded": "Esta acción solo se puede añadir una vez",
     "customActions": "Acciones Personalizadas",
     "customActionsDescription": "Acciones creadas y personalizadas por ti",
     "noSystemActions": "No hay acciones del sistema disponibles",
@@ -255,7 +257,6 @@
       "appointmentId": "ID de Cita en formato YYYY-MM-DD-HH:MM"
     },
     "aiSettings": "Configuración de IA",
-    "addSystemAction": "+ Añadir Acción del Sistema",
     "systemActionTypes": {
       "updateCustomerCustomData": {
         "name": "Actualizar campos customizados del cliente",
@@ -275,12 +276,18 @@
       "changeCustomerName": {
         "name": "Cambiar Nombre del Cliente",
         "nameInsert": "Cambiar Nombre del Cliente",
-        "description": "Cambiar el nombre del cliente somente cuando el cliente diga 'mi nombre es Juan'"
+        "description": "Cambiar el nombre del cliente solamente cuando el cliente diga 'mi nombre es Juan'"
       },
       "changeFunnel": {
         "name": "Cambiar Embudo",
         "nameInsert": "Cambiar Embudo",
-        "description": "Cambiar el embudo actual cuando se identifique comportamiento según la descripción de cada etapa del embudo"
+        "description": "Cambiar el embudo actual cuando se identifique comportamiento según la descripción de cada etapa del embudo",
+        "sourceStages": "Etapas de Origen (Cliente debe estar en una de estas)",
+        "targetStages": "Etapas de Destino (IA puede mover a)",
+        "editSourceDescriptions": "Editar descripciones de las etapas de origen",
+        "editTargetDescriptions": "Editar descripciones de las etapas de destino",
+        "sourceStagesDescription": "El cambio de embudo solo se aplicará a clientes que estén en una de estas etapas",
+        "targetStagesDescription": "Etapas a las que la IA podrá mover a los clientes (define descripciones claras)"
       },
       "assignTeam": {
         "name": "Asignar Equipo",
@@ -313,24 +320,68 @@
     "actionDescription": "Descripción de la Acción",
     "toolConfig": "Configuración",
     "images": {
-      "title": "Imágenes",
-      "description": "Agrega imágenes que se usarán en el contexto del prompt",
-      "addImage": "Agregar Imagen",
-      "noImages": "No hay imágenes agregadas",
-      "uploadTitle": "Subir Imagen",
-      "uploading": "Subiendo imagen...",
-      "dragAndDrop": "Arrastra y suelta una imagen aquí o haz clic para seleccionar",
-      "maxSize": "Tamaño máximo: 5MB",
-      "openFile": "Abrir archivo",
-      "deleteFile": "Eliminar archivo",
-      "imageDescription": "Descripción de la Imagen",
-      "imageDescriptionPlaceholder": "Ingresa una descripción para la imagen"
+      "title": "Media",
+      "description": "Agrega imágenes, videos, audio y documentos para enriquecer tu prompt",
+      "addButton": "Agregar Media",
+      "uploadTitle": "Agregar Media",
+      "editTitle": "Editar Descripción",
+      "file": "Archivo",
+      "imageDescription": "Descripción",
+      "imageDescriptionPlaceholder": "Describe el contenido de este archivo...",
+      "cancel": "Cancelar",
+      "addToList": "Agregar a la Lista",
+      "save": "Guardar",
+      "uploading": "Subiendo...",
+      "uploadAll": "Subir Todo",
+      "pendingUploads": "Subidas Pendientes",
+      "noDescription": "Sin descripción",
+      "errors": {
+        "fileSize": "El archivo es demasiado grande. Tamaño máximo permitido: 10MB.",
+        "fileType": "Tipo de archivo no soportado. Usa solo imágenes, videos, audio, PDFs o documentos.",
+        "uploadFailed": "Error al subir el archivo. Por favor, inténtalo de nuevo.",
+        "deleteFailed": "Error al eliminar el archivo. Por favor, inténtalo de nuevo."
+      },
+      "deleting": "Eliminando...",
+      "confirmDelete": "Confirmar Eliminación",
+      "confirmDeleteMessage": "¿Estás seguro de que deseas eliminar este archivo? Esta acción no se puede deshacer.",
+      "confirm": "Confirmar"
     },
     "errors": {
       "imageTooLarge": "La imagen es demasiado grande. Tamaño máximo: 5MB",
       "uploadFailed": "Error al subir la imagen",
       "deleteFailed": "Error al eliminar la imagen"
-    }
+    },
+    "media": {
+      "title": "Media",
+      "description": "Agrega imágenes, videos, audio y documentos para enriquecer el contexto del prompt",
+      "addButton": "Agregar Media",
+      "uploading": "Subiendo...",
+      "uploaded": "Subido",
+      "error": "Error al subir",
+      "deleteButton": "Eliminar",
+      "viewButton": "Ver",
+      "modal": {
+        "title": "Agregar Media",
+        "description": "Arrastra y suelta archivos aquí o haz clic para seleccionar",
+        "fileTypes": {
+          "image": "Imágenes (PNG, JPG, GIF)",
+          "video": "Videos (MP4, MOV, AVI)",
+          "audio": "Audio (MP3, WAV, OGG)",
+          "document": "Documentos (DOC, DOCX, TXT)",
+          "pdf": "PDFs"
+        },
+        "maxSize": "Tamaño máximo: 10MB",
+        "mediaDescription": "Descripción de la Media",
+        "mediaDescriptionPlaceholder": "Ingresa una descripción para la media"
+      },
+      "errors": {
+        "fileTooLarge": "El archivo es demasiado grande. Tamaño máximo: 10MB",
+        "invalidType": "Tipo de archivo no soportado",
+        "uploadFailed": "Error al subir el archivo",
+        "deleteFailed": "Error al eliminar el archivo"
+      }
+    },
+    "filesDescription": "Agrega media que el agente puede enviar durante la conversación. Puedes incluir imágenes, videos, audio y documentos que estarán disponibles para el agente."
   },
   "test": {
     "title": "Probar Prompt",

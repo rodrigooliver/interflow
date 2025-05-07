@@ -21,6 +21,7 @@ interface FunnelStage {
   color: string;
   position: number;
   funnel_id: string;
+  description?: string;
 }
 
 interface Funnel {
@@ -349,7 +350,8 @@ export const useFunnels = (organizationId?: string) => {
             name,
             color,
             position,
-            funnel_id
+            funnel_id,
+            description
           )
         `)
         .eq('organization_id', organizationId)

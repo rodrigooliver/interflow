@@ -79,7 +79,7 @@ export function FlowModal({
       const { error: sessionError } = await supabase
         .from('flow_sessions')
         .update({ status: 'inactive' })
-        .eq('id', currentFlowSessionId);
+        .eq('chat_id', chatId);
 
       if (sessionError) {
         throw sessionError;

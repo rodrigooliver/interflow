@@ -76,6 +76,8 @@
     "editTool": "Edit Action",
     "systemActions": "System Actions",
     "systemActionsDescription": "Ready-to-use actions available immediately",
+    "addSystemAction": "+ Add System Action",
+    "actionAlreadyAdded": "This action can only be added once",
     "customActions": "Custom Actions",
     "customActionsDescription": "Actions created and customized by you",
     "noSystemActions": "No system actions available",
@@ -192,6 +194,14 @@
           "selectSchedule": "Select a schedule",
           "noSchedule": "No schedule selected"
         },
+        "changeFunnel": {
+          "sourceStages": "Source Stages (Customer must be in one of these)",
+          "targetStages": "Target Stages (AI can move to)",
+          "editSourceDescriptions": "Edit source stage descriptions",
+          "editTargetDescriptions": "Edit target stage descriptions",
+          "sourceStagesDescription": "The funnel change will only be applied to customers in one of these stages",
+          "targetStagesDescription": "Stages to which the AI can move customers (define clear descriptions)"
+        },
         "customFields": {
           "selectedFields": "Selected fields"
         }
@@ -256,7 +266,6 @@
       "aiSettings": "AI Settings"
     },
     "aiSettings": "AI Settings",
-    "addSystemAction": "+ Add System Action",
     "systemActionTypes": {
       "schedule": {
         "name": "Schedule Meeting",
@@ -286,14 +295,19 @@
       "changeFunnel": {
         "name": "Change Funnel",
         "nameInsert": "Change Funnel",
-        "description": "Change the current funnel when identifying behavior according to each funnel stage description"
+        "description": "Change the current funnel when identifying behavior according to each funnel stage description",
+        "sourceStages": "Source Stages (Customer must be in one of these)",
+        "targetStages": "Target Stages (AI can move to)",
+        "editSourceDescriptions": "Edit source stage descriptions",
+        "editTargetDescriptions": "Edit target stage descriptions",
+        "sourceStagesDescription": "The funnel change will only be applied to customers in one of these stages",
+        "targetStagesDescription": "Stages to which the AI can move customers (define clear descriptions)"
       },
       "assignTeam": {
         "name": "Assign Team",
         "nameInsert": "Assign Team",
         "description": "Assign the team to the chat when identifying behavior according to each team description. (example: customer says 'I want to speak with sales')"
       },
-     
       "dateReturn": {
         "name": "Return Date",
         "nameInsert": "Return Date",
@@ -444,8 +458,8 @@
       "titleExample": "Ex.: Company service list (Required)",
       "descriptionExample": "Ex.: Description of the company service list (Required)",
       "buttonText": "Ex.: Open list",
-      "sectionTitle": "Ex.: Section 1 Title",
-      "sectionTitle2": "Ex.: Section 2 Title",
+      "sectionTitle": "Ex.: Section 1",
+      "sectionTitle2": "Ex.: Section 2",
       "optionTitle": "Ex.: Option 1",
       "optionTitle2": "Ex.: Option 2",
       "optionDescription": "Ex.: Description of option 1",

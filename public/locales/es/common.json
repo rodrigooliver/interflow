@@ -144,5 +144,7 @@
   "noServicesYet": "No se encontraron servicios",
   "backToList": "Volver a la lista",
   "noContactInfo": "Sin información de contacto",
-  "description": "Descripción"
+  "description": "Descripción",
+  "noDescription": "Sin descripción",
+  "ok": "Ok"
 }

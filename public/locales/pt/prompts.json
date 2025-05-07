@@ -77,6 +77,7 @@
     "systemActions": "Ações do Sistema",
     "systemActionsDescription": "Ações prontas disponíveis para uso imediato",
     "addSystemAction": "+ Adicionar Ação do Sistema",
+    "actionAlreadyAdded": "Esta ação só pode ser adicionada uma vez",
     "flow": {
       "title": "Fluxo",
       "description": "Configure os gatilhos para que este agente IA possa ser acionado"
@@ -105,7 +106,13 @@
       "changeFunnel": {
         "name": "Alterar Funil",
         "nameInsert": "Alterar Funil",
-        "description": "Alterar o funil atual quando identificar comportamento de acordo com a descrição de cada estágio do funil"
+        "description": "Alterar o funil atual quando identificar comportamento de acordo com a descrição de cada estágio do funil",
+        "sourceStages": "Estágios de Origem (Cliente deve estar em um destes)",
+        "targetStages": "Estágios de Destino (IA pode mover para)",
+        "editSourceDescriptions": "Editar descrições dos estágios de origem",
+        "editTargetDescriptions": "Editar descrições dos estágios de destino",
+        "sourceStagesDescription": "A alteração de funil só será aplicada a clientes que estejam em um destes estágios",
+        "targetStagesDescription": "Estágios para os quais a IA poderá mover os clientes (defina descrições claras)"
       },
       "assignTeam": {
         "name": "Atribuir Equipe",
@@ -245,6 +252,12 @@
         "schedule": {
           "selectSchedule": "Selecione uma agenda",
           "noSchedule": "Nenhuma agenda selecionada"
+        },
+        "changeFunnel": {
+          "sourceStages": "Estágios de Origem (Cliente deve estar em um destes)",
+          "targetStages": "Estágios de Destino (IA pode mover para)",
+          "editSourceDescriptions": "Editar descrições dos estágios de origem",
+          "editTargetDescriptions": "Editar descrições dos estágios de destino"
         },
         "customFields": {
           "selectedFields": "Campos selecionados"

@@ -31,6 +31,7 @@
     "deleteStage": "Eliminar Etapa",
     "stageName": "Nombre de la Etapa",
     "stageColor": "Color",
+    "stageDescription": "Descripción de la Etapa",
     "progressTitle": "Progreso del Embudo",
     "select": "Seleccionar etapa",
     "currentStage": "Etapa actual",

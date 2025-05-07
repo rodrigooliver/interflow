@@ -147,5 +147,7 @@
   "comingSoon": "Em breve",
   "description": "Descrição",
   "download": "Baixar",
-  "downloadPdf": "Baixar PDF"
+  "downloadPdf": "Baixar PDF",
+  "noDescription": "Sem descrição",
+  "ok": "Ok"
 }

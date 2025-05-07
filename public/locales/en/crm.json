@@ -31,6 +31,7 @@
     "deleteStage": "Delete Stage",
     "stageName": "Stage Name",
     "stageColor": "Color",
+    "stageDescription": "Stage Description",
     "progressTitle": "Funnel Progress",
     "select": "Select stage",
     "currentStage": "Current stage",
