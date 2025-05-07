@@ -243,5 +243,6 @@
     "prescription": "Prescrição",
     "certificate": "Atestado",
     "other": "Outro"
-  }
+  },
+  "noCertificates": "Nenhum atestado encontrado"
 } 

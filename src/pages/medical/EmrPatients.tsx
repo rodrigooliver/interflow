@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { User, Search, Plus, Calendar, ClipboardList, ChevronLeft, ChevronRight as ChevronRightIcon, FileText, Edit2 } from 'lucide-react';
+import { User, Search, Plus, Calendar, ClipboardList, ChevronLeft, ChevronRight as ChevronRightIcon, FileText, Edit2, FileCheck, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
@@ -474,6 +474,26 @@ const EmrPatients = () => {
                             >
                               <FileText className="h-3 w-3 mr-1" />
                               {t('medical:prescriptions')}
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewPatient(patient.id, 'certificates');
+                              }}
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
+                            >
+                              <FileCheck className="h-3 w-3 mr-1" />
+                              {t('medical:certificates')}
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewPatient(patient.id, 'attachments');
+                              }}
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                            >
+                              <Paperclip className="h-3 w-3 mr-1" />
+                              {t('medical:attachments.title')}
                             </button>
                           </div>
                         </td>
