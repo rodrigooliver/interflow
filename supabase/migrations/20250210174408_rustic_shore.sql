@@ -43,14 +43,6 @@ CREATE POLICY "organization_members_policy"
   USING (true)
   WITH CHECK (true);
 
--- Simplified policies for customers
-CREATE POLICY "customers_policy"
-  ON customers
-  FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
 -- Simplified policies for subscription_plans
 CREATE POLICY "subscription_plans_policy"
   ON subscription_plans

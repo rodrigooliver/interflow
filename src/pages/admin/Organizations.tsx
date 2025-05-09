@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Users, Package, Plus, Loader2, X, Edit, CreditCard } from 'lucide-react';
+import { Building2, Users, Package, Plus, Loader2, X, Edit, CreditCard, Trash2, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Organization, SubscriptionPlan } from '../../types/database';
+import api from '../../lib/api';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 interface OrganizationWithDetails extends Organization {
   _count: {
@@ -39,6 +41,11 @@ export default function Organizations() {
     logo_url: '',
     status: 'active'
   });
+  const { currentOrganizationMember } = useAuthContext();
+  
+  // Adicionar novos estados para exclusão
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingOrg, setDeletingOrg] = useState(false);
 
   useEffect(() => {
     loadOrganizations();
@@ -87,6 +94,36 @@ export default function Organizations() {
       status: org.status as 'active' | 'inactive' | 'suspended'
     });
     setShowEditModal(true);
+  }
+
+  // Função para lidar com a solicitação de exclusão
+  function handleDeleteOrg(org: OrganizationWithDetails) {
+    setSelectedOrg(org);
+    setShowDeleteModal(true);
+  }
+
+  // Função para confirmar e executar a exclusão
+  async function confirmDeleteOrg() {
+    if (!selectedOrg || !currentOrganizationMember) return;
+    
+    setDeletingOrg(true);
+    setError('');
+    
+    try {
+      await api.delete(`/api/organizations/${selectedOrg.id}`);
+      
+      // Se a exclusão for bem-sucedida, recarregue as organizações e feche o modal
+      await loadOrganizations();
+      setShowDeleteModal(false);
+      setSelectedOrg(null);
+    } catch (error: unknown) {
+      console.error('Erro ao excluir organização:', error);
+      setError(typeof error === 'object' && error !== null && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'Ocorreu um erro ao excluir a organização');
+    } finally {
+      setDeletingOrg(false);
+    }
   }
 
   async function handleSaveOrg(e: React.FormEvent) {
@@ -298,6 +335,13 @@ export default function Organizations() {
                         >
                           <CreditCard className="h-4 w-4" />
                         </Link>
+                        <button
+                          onClick={() => handleDeleteOrg(org)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          title="Excluir organização"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -441,6 +485,51 @@ export default function Organizations() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteModal && selectedOrg && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/50 rounded-full mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
+                Excluir Organização
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+                Tem certeza que deseja excluir a organização "{selectedOrg.name}"? Esta ação não poderá ser desfeita.
+              </p>
+              
+              {error && (
+                <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deletingOrg}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteOrg}
+                  disabled={deletingOrg}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingOrg && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Excluir
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
