@@ -89,6 +89,7 @@
   "selectCustomer": "Select a customer",
   "none": "None",
   "all": "All",
+  "noCategoriesAvailable": "No categories available",
   
   "recentTransactions": "Recent Transactions",
   "lastTransactions": "Last 5 recorded transactions",

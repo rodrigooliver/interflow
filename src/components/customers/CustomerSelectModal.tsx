@@ -42,12 +42,14 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [customers, setCustomers] = useState<CustomerWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const observer = useRef<IntersectionObserver | null>(null);
   const { currentOrganizationMember } = useAuthContext();
   const organizationId = currentOrganizationMember?.organization_id;
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const ITEMS_PER_PAGE = 10;
 
@@ -110,9 +112,12 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
         }
         setHasMore(data.length === ITEMS_PER_PAGE);
       }
+      
+      setIsFirstLoad(false);
     } catch (err) {
       console.error('Erro ao buscar clientes:', err);
       setError(t('common:errorFetchingData'));
+      setIsFirstLoad(false);
     } finally {
       setLoading(false);
     }
@@ -128,12 +133,24 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
   // Iniciar busca quando o modal é aberto
   useEffect(() => {
     if (isOpen) {
-      setCustomers([]);
-      setPage(0);
-      setHasMore(true);
-      fetchCustomers(searchTerm, 0, true);
+      // Focus no input de busca quando o modal abre
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+      
+      if (isFirstLoad) {
+        setCustomers([]);
+        setPage(0);
+        setHasMore(true);
+        fetchCustomers(searchTerm, 0, true);
+      }
+    } else {
+      // Reset do estado quando o modal é fechado
+      setIsFirstLoad(true);
     }
-  }, [isOpen, fetchCustomers, searchTerm]);
+  }, [isOpen, fetchCustomers, searchTerm, isFirstLoad]);
   
   // Buscar mais clientes quando a página muda
   useEffect(() => {
@@ -146,6 +163,7 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
   const debouncedSearch = useCallback(
     debounce((term: string) => {
       setPage(0);
+      setIsFirstLoad(true);
       fetchCustomers(term, 0, true);
     }, 1000),
     [fetchCustomers]
@@ -162,6 +180,7 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
   const handleClearSearch = () => {
     setSearchTerm('');
     setPage(0);
+    setIsFirstLoad(true);
     fetchCustomers('', 0, true);
   };
   
@@ -186,6 +205,7 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
         {/* Campo de Pesquisa */}
         <div className="relative mb-4">
           <input
+            ref={searchInputRef}
             type="text"
             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder={t('customers:searchPatients')}
@@ -226,7 +246,7 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
         
         {/* Lista de clientes */}
         <div className="max-h-80 overflow-y-auto">
-          {customers.length === 0 && !loading ? (
+          {customers.length === 0 && !loading && !isFirstLoad ? (
             <div className="flex flex-col items-center justify-center p-6 text-gray-500 dark:text-gray-400">
               <User className="w-12 h-12 mb-2 text-gray-300 dark:text-gray-700" />
               <p>{t('customers:noResultsFound')}</p>
@@ -269,10 +289,18 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
           )}
           
           {/* Indicador de carregamento */}
-          {loading && (
+          {loading && isFirstLoad && (
             <div className="flex items-center justify-center p-4">
               <div className="w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
               <span className="ml-2 text-gray-600 dark:text-gray-300">{t('common:loading')}</span>
+            </div>
+          )}
+          
+          {/* Indicador de carregamento no final da lista */}
+          {loading && !isFirstLoad && hasMore && (
+            <div className="flex items-center justify-center p-2 mt-2">
+              <div className="w-4 h-4 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+              <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">{t('common:loadingMore')}</span>
             </div>
           )}
         </div>

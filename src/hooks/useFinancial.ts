@@ -67,6 +67,7 @@ interface UseFinancialReturn {
   addCashierOperator: (cashierId: string, profileId: string) => Promise<{ success: boolean; error?: Error }>;
   updateCashierOperator: (id: string, data: { is_active: boolean }) => Promise<{ success: boolean; error?: Error }>;
   removeCashierOperator: (id: string) => Promise<{ success: boolean; error?: Error }>;
+  fetchActiveCashiers: (organizationId?: string) => Promise<Cashier[]>;
 }
 
 export function useFinancial(): UseFinancialReturn {
@@ -272,6 +273,29 @@ export function useFinancial(): UseFinancialReturn {
     }
   };
 
+  const fetchActiveCashiers = async (organizationId?: string): Promise<Cashier[]> => {
+    try {
+      const orgId = organizationId || currentOrganizationMember?.organization?.id;
+      
+      if (!orgId) {
+        return [];
+      }
+      
+      const { data, error } = await supabase
+        .from('financial_cashiers')
+        .select('id, name, description, is_active, created_at, updated_at')
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar caixas:', error);
+      return [];
+    }
+  };
+
   return {
     cashiers,
     categories,
@@ -284,6 +308,7 @@ export function useFinancial(): UseFinancialReturn {
     organizationProfiles,
     addCashierOperator,
     updateCashierOperator,
-    removeCashierOperator
+    removeCashierOperator,
+    fetchActiveCashiers
   };
 } 

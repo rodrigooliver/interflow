@@ -453,7 +453,7 @@ const FinancialTransactions: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow className="dark:bg-gray-800 dark:hover:bg-gray-800">
-              <TableHead className="dark:text-gray-300">{t('transactionType')}</TableHead>
+              <TableHead className="dark:text-gray-300"></TableHead>
               <TableHead className="dark:text-gray-300">{t('description')}</TableHead>
               <TableHead className="dark:text-gray-300">{t('category')}</TableHead>
               <TableHead className="dark:text-gray-300">{t('amount')}</TableHead>

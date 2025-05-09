@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useFinancial } from '../../hooks/useFinancial';
-import { useCustomers } from '../../hooks/useQueryes';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -22,11 +21,20 @@ import {
   Save, 
   TrendingUp, 
   TrendingDown,
-  X
+  X,
+  Calendar,
+  User,
+  DollarSign,
+  Tag,
+  CreditCard,
+  Landmark,
+  Clock,
+  Repeat
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '../../hooks/useToast';
 import { PostgrestError } from '@supabase/supabase-js';
+import CustomerSelectModal from '../customers/CustomerSelectModal';
 
 interface TransactionData {
   id: string;
@@ -62,14 +70,14 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
 }) => {
   const { t } = useTranslation('financial');
   const { currentOrganizationMember, profile } = useAuthContext();
-  const { categories, paymentMethods } = useFinancial();
-  const { data: customers = [] } = useCustomers(currentOrganizationMember?.organization.id);
+  const { categories, paymentMethods, fetchActiveCashiers } = useFinancial();
   const isEdit = Boolean(transactionId);
   const toast = useToast();
   
   // Estados do formulário
   const [isSaving, setIsSaving] = useState(false);
-  const [transactionType, setTransactionType] = useState<'income' | 'expense'>(defaultType);
+  const initialTransactionType = useMemo(() => defaultType, [defaultType]);
+  const [transactionType, setTransactionType] = useState<'income' | 'expense'>(initialTransactionType);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -84,13 +92,48 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   // Estado para método de pagamento selecionado
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [cashiers, setCashiers] = useState<Cashier[]>([]);
+  
+  // Estado para cliente selecionado e modal
+  const [selectedCustomer, setSelectedCustomer] = useState<{id: string; name: string; avatar_url?: string} | null>(null);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
-  // Carregar dados para edição
+  // Função para resetar o formulário
+  const resetForm = () => {
+    setDescription('');
+    setAmount('');
+    setCategoryId('');
+    setPaymentMethodId('');
+    setCashierId('');
+    setCustomerId('');
+    setSelectedCustomer(null);
+    setDueDate(format(new Date(), 'yyyy-MM-dd'));
+    setNotes('');
+    setInstallments('1');
+    setFrequency('once');
+    setSelectedPaymentMethod(null);
+  };
+
+  // Atualizar o tipo de transação quando o modal for aberto ou o defaultType mudar
   useEffect(() => {
-    if (isEdit && transactionId) {
-      fetchTransaction(transactionId);
+    if (isOpen) {
+      setTransactionType(defaultType);
+      if (!isEdit) {
+        resetForm();
+      }
     }
-  }, [transactionId, isEdit]);
+  }, [isOpen, defaultType, isEdit]);
+
+  // Resetar categoria quando o tipo de transação mudar
+  useEffect(() => {
+    setCategoryId('');
+  }, [transactionType]);
+
+  // Resetar o formulário quando o modal for fechado
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
 
   // Atualizar método de pagamento selecionado quando o ID muda
   useEffect(() => {
@@ -102,29 +145,24 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     }
   }, [paymentMethodId, paymentMethods]);
 
-  // Buscar caixas
-  const fetchCashiers = async () => {
-    try {
-      const { data: cashiersData, error } = await supabase
-        .from('financial_cashiers')
-        .select('id, name, is_active')
-        .eq('organization_id', currentOrganizationMember?.organization?.id)
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setCashiers(cashiersData || []);
-    } catch (error) {
-      console.error('Erro ao buscar caixas:', error);
-    }
+  // Funções para o modal de cliente
+  const handleOpenCustomerModal = () => {
+    setIsCustomerModalOpen(true);
+  };
+  
+  const handleSelectCustomer = (customer: {id: string; name: string; avatar_url?: string}) => {
+    setSelectedCustomer(customer);
+    setCustomerId(customer.id);
+    setIsCustomerModalOpen(false);
   };
 
+  // Carregar dados para edição
   const fetchTransaction = async (transactionId: string) => {
     try {
       setIsSaving(true);
       const { data, error } = await supabase
         .from('financial_transactions')
-        .select('*')
+        .select('*, customers(*)')
         .eq('id', transactionId)
         .eq('organization_id', currentOrganizationMember?.organization.id)
         .single();
@@ -142,6 +180,15 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
         setDueDate(data.due_date);
         setNotes(data.notes || '');
         setFrequency(data.frequency || 'once');
+        
+        // Se temos um customer_id, podemos buscar os detalhes do cliente
+        if (data.customer_id && data.customers) {
+          setSelectedCustomer({
+            id: data.customer_id,
+            name: data.customers.name,
+            avatar_url: data.customers.avatar_url
+          });
+        }
         
         // Se for uma transação parcelada, definir o número de parcelas
         if (data.total_installments) {
@@ -162,10 +209,24 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     }
   };
 
+  // Buscar caixas
+  const fetchCashiers = async () => {
+    try {
+      const cashiersData = await fetchActiveCashiers();
+      setCashiers(cashiersData || []);
+    } catch (error) {
+      console.error('Erro ao buscar caixas:', error);
+    }
+  };
+
   // Carregar dados necessários ao montar o componente
   useEffect(() => {
     fetchCashiers();
-  }, []);
+    
+    if (isEdit && transactionId) {
+      fetchTransaction(transactionId);
+    }
+  }, [transactionId, isEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -321,274 +382,438 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Determinar a cor primária baseada no tipo de transação
+  const primaryColor = transactionType === 'income' 
+    ? 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white' 
+    : 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white';
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="w-full max-w-4xl mx-4">
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="dark:text-white">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden">
+      <div className="w-full max-w-4xl h-[90vh] flex flex-col">
+        <Card className="dark:bg-gray-800 dark:border-gray-700 shadow-xl flex flex-col h-full overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between border-b dark:border-gray-700 pb-4 bg-white dark:bg-gray-800 shrink-0">
+            <CardTitle className="dark:text-white flex items-center">
+              {transactionType === 'income' ? (
+                <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
+              ) : (
+                <TrendingDown className="h-5 w-5 mr-2 text-red-500" />
+              )}
               {isEdit ? t('editTransaction') : t('newTransaction')}
             </CardTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="dark:text-gray-300 dark:hover:bg-gray-700"
+              className="dark:text-gray-300 dark:hover:bg-gray-700 rounded-full h-8 w-8 p-0"
             >
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Tipo de Transação (somente para novos registros) */}
-              {!isEdit && (
-                <div className="mb-6">
-                  <Label className="dark:text-gray-300">{t('transactionType')}</Label>
-                  <Tabs 
-                    defaultValue={transactionType} 
-                    className="mt-2" 
-                    onValueChange={(v) => setTransactionType(v as 'income' | 'expense')}
-                  >
-                    <TabsList className="grid w-full grid-cols-2 dark:bg-gray-800 dark:border-gray-700">
-                      <TabsTrigger value="income" className="flex items-center dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">
-                        <TrendingUp className="h-4 w-4 mr-2 text-green-500 dark:text-green-400" />
-                        {t('income')}
-                      </TabsTrigger>
-                      <TabsTrigger value="expense" className="flex items-center dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">
-                        <TrendingDown className="h-4 w-4 mr-2 text-red-500 dark:text-red-400" />
-                        {t('expense')}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+          <div className="overflow-y-auto flex-grow">
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Valor e Tipo de Transação (lado a lado) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Valor à esquerda */}
+                  <div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-lg">R$</span>
+                      <Input
+                        id="amount"
+                        value={amount}
+                        onChange={(e) => {
+                          // Permitir somente números e vírgula
+                          const value = e.target.value.replace(/[^0-9,]/g, '');
+                          setAmount(value);
+                        }}
+                        placeholder="0,00"
+                        className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus-within:border-2 focus-within:ring-0 h-12 text-lg font-semibold"
+                        required
+                      />
+                      <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    </div>
+                  </div>
+                  
+                  {/* Tipo de Transação à direita (somente para novos registros) */}
+                  {!isEdit ? (
+                    <div>
+                      <Tabs 
+                        value={transactionType}
+                        onValueChange={(v) => setTransactionType(v as 'income' | 'expense')}
+                        className="w-full"
+                      >
+                        <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 bg-gray-100 p-1 rounded-xl">
+                          <TabsTrigger 
+                            value="income" 
+                            className="flex items-center justify-center dark:text-gray-300 dark:data-[state=active]:bg-green-500 dark:data-[state=active]:text-white data-[state=active]:bg-green-500 data-[state=active]:text-white py-3 rounded-lg shadow-sm hover:bg-green-100 dark:hover:bg-green-900/30 transition-all font-medium"
+                          >
+                            <TrendingUp className="h-5 w-5 mr-2" />
+                            {t('income')}
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="expense" 
+                            className="flex items-center justify-center dark:text-gray-300 dark:data-[state=active]:bg-red-500 dark:data-[state=active]:text-white data-[state=active]:bg-red-500 data-[state=active]:text-white py-3 rounded-lg shadow-sm hover:bg-red-100 dark:hover:bg-red-900/30 transition-all font-medium"
+                          >
+                            <TrendingDown className="h-5 w-5 mr-2" />
+                            {t('expense')}
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className={`flex items-center px-4 py-3 rounded-md border ${
+                        transactionType === 'income' 
+                          ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+                          : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                      }`}>
+                        {transactionType === 'income' ? (
+                          <>
+                            <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
+                            <span className="font-medium text-green-700 dark:text-green-400">{t('income')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <TrendingDown className="h-5 w-5 mr-2 text-red-500" />
+                            <span className="font-medium text-red-700 dark:text-red-400">{t('expense')}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {/* Descrição */}
-              <div className="grid grid-cols-1 gap-6">
+                
+                {/* Descrição */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="dark:text-gray-300">{t('description')} *</Label>
+                  <Label htmlFor="description" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                    <DollarSign className="h-4 w-4 mr-1" /> {t('description')} *
+                  </Label>
                   <Input
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder={t('description')}
                     required
-                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus-within:border-2 focus-within:ring-0"
                   />
                 </div>
-              </div>
-              
-              {/* Valor e Categoria */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="amount" className="dark:text-gray-300">{t('amount')} *</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 dark:text-gray-400">R$</span>
-                    <Input
-                      id="amount"
-                      value={amount}
-                      onChange={(e) => {
-                        // Permitir somente números e vírgula
-                        const value = e.target.value.replace(/[^0-9,]/g, '');
-                        setAmount(value);
-                      }}
-                      placeholder="0,00"
-                      className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      required
-                    />
+                
+                {/* Caixa e Categoria */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {!isEdit ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="cashier" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                          <Landmark className="h-4 w-4 mr-1" /> {t('cashier')}
+                        </Label>
+                        <Select value={cashierId} onValueChange={setCashierId}>
+                          <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <SelectValue placeholder={t('selectCashier')}>
+                              {cashierId ? cashiers.find(c => c.id === cashierId)?.name : t('selectCashier')}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent className="dark:bg-gray-800 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+                            <SelectItem value="" className="dark:text-white">{t('noCashier')}</SelectItem>
+                            {cashiers.map(cashier => (
+                              <SelectItem key={cashier.id} value={cashier.id} className="dark:text-white">
+                                {cashier.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="category" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                          <Tag className="h-4 w-4 mr-1" /> {t('category')} *
+                        </Label>
+                        <Select value={categoryId} onValueChange={setCategoryId}>
+                          <SelectTrigger id="category" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <SelectValue placeholder={t('selectCategory')}>
+                              {categoryId ? categories.find(c => c.id === categoryId)?.name : t('selectCategory')}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent className="dark:bg-gray-800 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+                            <SelectGroup>
+                              {transactionType === 'income' ? (
+                                categories
+                                  .filter(c => c.type === 'income')
+                                  .map(category => (
+                                    <SelectItem key={category.id} value={category.id} className="dark:text-white">
+                                      {category.name}
+                                    </SelectItem>
+                                  ))
+                              ) : (
+                                categories
+                                  .filter(c => c.type === 'expense')
+                                  .map(category => (
+                                    <SelectItem key={category.id} value={category.id} className="dark:text-white">
+                                      {category.name}
+                                    </SelectItem>
+                                  ))
+                              )}
+                              {transactionType === 'income' && categories.filter(c => c.type === 'income').length === 0 && (
+                                <SelectItem disabled value="no-categories" className="text-gray-500 dark:text-gray-400">
+                                  {t('noCategoriesAvailable')}
+                                </SelectItem>
+                              )}
+                              {transactionType === 'expense' && categories.filter(c => c.type === 'expense').length === 0 && (
+                                <SelectItem disabled value="no-categories" className="text-gray-500 dark:text-gray-400">
+                                  {t('noCategoriesAvailable')}
+                                </SelectItem>
+                              )}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Modo de edição - Caixa somente leitura */}
+                      <div className="space-y-2">
+                        <Label htmlFor="cashier" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                          <Landmark className="h-4 w-4 mr-1" /> {t('cashier')}
+                        </Label>
+                        <div className="flex items-center px-4 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                          <Landmark className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                          <span>
+                            {cashierId 
+                              ? cashiers.find(c => c.id === cashierId)?.name 
+                              : t('noCashier')}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Modo de edição - Categoria em largura total */}
+                      <div className="space-y-2 md:col-span-1">
+                        <Label htmlFor="category" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                          <Tag className="h-4 w-4 mr-1" /> {t('category')} *
+                        </Label>
+                        <Select value={categoryId} onValueChange={setCategoryId}>
+                          <SelectTrigger id="category" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <SelectValue placeholder={t('selectCategory')}>
+                              {categoryId ? categories.find(c => c.id === categoryId)?.name : t('selectCategory')}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent className="dark:bg-gray-800 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+                            <SelectGroup>
+                              {transactionType === 'income' ? (
+                                categories
+                                  .filter(c => c.type === 'income')
+                                  .map(category => (
+                                    <SelectItem key={category.id} value={category.id} className="dark:text-white">
+                                      {category.name}
+                                    </SelectItem>
+                                  ))
+                              ) : (
+                                categories
+                                  .filter(c => c.type === 'expense')
+                                  .map(category => (
+                                    <SelectItem key={category.id} value={category.id} className="dark:text-white">
+                                      {category.name}
+                                    </SelectItem>
+                                  ))
+                              )}
+                              {transactionType === 'income' && categories.filter(c => c.type === 'income').length === 0 && (
+                                <SelectItem disabled value="no-categories" className="text-gray-500 dark:text-gray-400">
+                                  {t('noCategoriesAvailable')}
+                                </SelectItem>
+                              )}
+                              {transactionType === 'expense' && categories.filter(c => c.type === 'expense').length === 0 && (
+                                <SelectItem disabled value="no-categories" className="text-gray-500 dark:text-gray-400">
+                                  {t('noCategoriesAvailable')}
+                                </SelectItem>
+                              )}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+                {/* Método de Pagamento e Cliente */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentMethod" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                      <CreditCard className="h-4 w-4 mr-1" /> {t('paymentMethod')}
+                    </Label>
+                    <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
+                      <SelectTrigger id="paymentMethod" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <SelectValue placeholder={t('selectPaymentMethod')}>
+                          {paymentMethodId ? paymentMethods.find(pm => pm.id === paymentMethodId)?.name : t('selectPaymentMethod')}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+                        <SelectItem value="" className="dark:text-white">{t('none')}</SelectItem>
+                        {paymentMethods.map(method => (
+                          <SelectItem key={method.id} value={method.id} className="dark:text-white">
+                            {method.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="customer" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                      <User className="h-4 w-4 mr-1" /> {t('customer')}
+                    </Label>
+                    <div className="flex mt-1">
+                      {selectedCustomer ? (
+                        <div className="flex items-center w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                          <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center dark:bg-gray-700">
+                            {selectedCustomer.avatar_url ? (
+                              <img
+                                src={selectedCustomer.avatar_url}
+                                alt={selectedCustomer.name}
+                                className="rounded-full w-8 h-8 object-cover"
+                              />
+                            ) : (
+                              <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            )}
+                          </div>
+                          <div className="ml-3 flex-grow">
+                            <p className="text-sm font-medium">{selectedCustomer.name}</p>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                            onClick={() => {
+                              setSelectedCustomer(null);
+                              setCustomerId('');
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                          onClick={handleOpenCustomerModal}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          {t('selectCustomer')}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="dark:text-gray-300">{t('category')} *</Label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger id="category" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <SelectValue placeholder={t('selectCategory')}>
-                        {categoryId ? categories.find(c => c.id === categoryId)?.name : t('selectCategory')}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectGroup>
-                        {transactionType === 'income' ? (
-                          categories
-                            .filter(c => c.type === 'income')
-                            .map(category => (
-                              <SelectItem key={category.id} value={category.id} className="dark:text-white">
-                                {category.name}
-                              </SelectItem>
-                            ))
-                        ) : (
-                          categories
-                            .filter(c => c.type === 'expense')
-                            .map(category => (
-                              <SelectItem key={category.id} value={category.id} className="dark:text-white">
-                                {category.name}
-                              </SelectItem>
-                            ))
-                        )}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              {/* Método de Pagamento e Caixa */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="paymentMethod" className="dark:text-gray-300">{t('paymentMethod')}</Label>
-                  <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
-                    <SelectTrigger id="paymentMethod" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <SelectValue placeholder={t('selectPaymentMethod')}>
-                        {paymentMethodId ? paymentMethods.find(pm => pm.id === paymentMethodId)?.name : t('selectPaymentMethod')}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="" className="dark:text-white">{t('none')}</SelectItem>
-                      {paymentMethods.map(method => (
-                        <SelectItem key={method.id} value={method.id} className="dark:text-white">
-                          {method.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="cashier" className="dark:text-gray-300">{t('cashier')}</Label>
-                  <Select value={cashierId} onValueChange={setCashierId}>
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <SelectValue placeholder={t('selectCashier')} />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="" className="dark:text-white">{t('noCashier')}</SelectItem>
-                      {cashiers.map(cashier => (
-                        <SelectItem key={cashier.id} value={cashier.id} className="dark:text-white">
-                          {cashier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              {/* Data de Vencimento e Cliente */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate" className="dark:text-gray-300">{t('dueDate')} *</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    required
-                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="customer" className="dark:text-gray-300">{t('customer')}</Label>
-                  <Select value={customerId} onValueChange={setCustomerId}>
-                    <SelectTrigger id="customer" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <SelectValue placeholder={t('selectCustomer')}>
-                        {customerId ? customers.find(c => c.id === customerId)?.name : t('selectCustomer')}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="" className="dark:text-white">{t('none')}</SelectItem>
-                      {customers.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id} className="dark:text-white">
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              {/* Parcelas e Frequência - apenas para novos registros */}
-              {!isEdit && (
+                {/* Data de Vencimento e Frequência */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {selectedPaymentMethod?.installments_allowed && (
+                  <div className="space-y-2">
+                    <Label htmlFor="dueDate" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                      <Calendar className="h-4 w-4 mr-1" /> {t('dueDate')} *
+                    </Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      required
+                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-white focus-within:border-2 focus-within:ring-0"
+                    />
+                  </div>
+
+                  {!isEdit && (
                     <div className="space-y-2">
-                      <Label htmlFor="installments" className="dark:text-gray-300">{t('installmentsNumber')}</Label>
-                      <Select
-                        value={installments}
-                        onValueChange={setInstallments}
-                      >
-                        <SelectTrigger id="installments" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                      <Label htmlFor="frequency" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                        <Clock className="h-4 w-4 mr-1" /> {t('frequency')}
+                      </Label>
+                      <Select value={frequency} onValueChange={(v) => setFrequency(v as 'once' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual')}>
+                        <SelectTrigger id="frequency" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                           <SelectValue>
-                            {installments ? `${installments}x` : '1x'}
+                            {frequency && t(`frequency${frequency.charAt(0).toUpperCase() + frequency.slice(1)}`)}
                           </SelectValue>
                         </SelectTrigger>
-                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                          {Array.from({ length: selectedPaymentMethod.max_installments || 12 }, (_, i) => i + 1).map(num => (
-                            <SelectItem key={num} value={num.toString()} className="dark:text-white">
-                              {num}x
-                            </SelectItem>
-                          ))}
+                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+                          <SelectItem value="once" className="dark:text-white">{t('frequencyOnce')}</SelectItem>
+                          <SelectItem value="daily" className="dark:text-white">{t('frequencyDaily')}</SelectItem>
+                          <SelectItem value="weekly" className="dark:text-white">{t('frequencyWeekly')}</SelectItem>
+                          <SelectItem value="monthly" className="dark:text-white">{t('frequencyMonthly')}</SelectItem>
+                          <SelectItem value="quarterly" className="dark:text-white">{t('frequencyQuarterly')}</SelectItem>
+                          <SelectItem value="semiannual" className="dark:text-white">{t('frequencySemiannual')}</SelectItem>
+                          <SelectItem value="annual" className="dark:text-white">{t('frequencyAnnual')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   )}
-                  
+                </div>
+                
+                {/* Parcelas - apenas para novos registros */}
+                {!isEdit && selectedPaymentMethod?.installments_allowed && (
                   <div className="space-y-2">
-                    <Label htmlFor="frequency" className="dark:text-gray-300">{t('frequency')}</Label>
-                    <Select value={frequency} onValueChange={(v) => setFrequency(v as 'once' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual')}>
-                      <SelectTrigger id="frequency" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <Label htmlFor="installments" className="dark:text-gray-300 font-semibold text-sm flex items-center">
+                      <Repeat className="h-4 w-4 mr-1" /> {t('installmentsNumber')}
+                    </Label>
+                    <Select
+                      value={installments}
+                      onValueChange={setInstallments}
+                    >
+                      <SelectTrigger id="installments" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         <SelectValue>
-                          {frequency && t(`frequency${frequency.charAt(0).toUpperCase() + frequency.slice(1)}`)}
+                          {installments ? `${installments}x` : '1x'}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                        <SelectItem value="once" className="dark:text-white">{t('frequencyOnce')}</SelectItem>
-                        <SelectItem value="daily" className="dark:text-white">{t('frequencyDaily')}</SelectItem>
-                        <SelectItem value="weekly" className="dark:text-white">{t('frequencyWeekly')}</SelectItem>
-                        <SelectItem value="monthly" className="dark:text-white">{t('frequencyMonthly')}</SelectItem>
-                        <SelectItem value="quarterly" className="dark:text-white">{t('frequencyQuarterly')}</SelectItem>
-                        <SelectItem value="semiannual" className="dark:text-white">{t('frequencySemiannual')}</SelectItem>
-                        <SelectItem value="annual" className="dark:text-white">{t('frequencyAnnual')}</SelectItem>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+                        {Array.from({ length: selectedPaymentMethod.max_installments || 12 }, (_, i) => i + 1).map(num => (
+                          <SelectItem key={num} value={num.toString()} className="dark:text-white">
+                            {num}x
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
+                )}
+                
+                {/* Observações */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="dark:text-gray-300 font-semibold text-sm">{t('notes')}</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder={t('notes')}
+                    rows={3}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 focus-within:border-2 focus-within:ring-0"
+                  />
                 </div>
-              )}
-              
-              {/* Observações */}
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="dark:text-gray-300">{t('notes')}</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t('notes')}
-                  rows={4}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                />
-              </div>
-              
-              {/* Botões de ação */}
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                  {t('cancel')}
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={isSaving}
-                  className={`flex items-center ${transactionType === 'income' ? 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600' : 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600'}`}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSaving ? t('saving') : t('save')}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
+              </form>
+            </CardContent>
+          </div>
+          
+          {/* Botões de ação - fixados na parte inferior */}
+          <div className="p-4 border-t dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg shrink-0">
+            <div className="flex justify-end space-x-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                {t('cancel')}
+              </Button>
+              <Button 
+                onClick={handleSubmit}
+                disabled={isSaving}
+                className={`flex items-center ${primaryColor}`}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isSaving ? t('saving') : t('save')}
+              </Button>
+            </div>
+          </div>
         </Card>
       </div>
+      
+      {/* Modal de seleção de cliente */}
+      <CustomerSelectModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        onSelectCustomer={handleSelectCustomer}
+      />
     </div>
   );
 };
