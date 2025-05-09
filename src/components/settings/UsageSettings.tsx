@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { HardDrive, Users, MessageSquare, GitBranch, Users2, AlertTriangle, Loader2 } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { StorageDetailsModal } from './StorageDetailsModal';
 
 interface UsageStats {
   storage: {
@@ -37,6 +38,7 @@ export function UsageSettings() {
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentOrganizationMember) {
@@ -170,6 +172,10 @@ export function UsageSettings() {
     return 'blue';
   };
 
+  const handleStorageCardClick = () => {
+    setIsStorageModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
@@ -197,7 +203,8 @@ export function UsageSettings() {
       title: t('settings:billing.storage'),
       used: formatStorageSize(stats.storage.used),
       limit: formatStorageSize(stats.storage.limit),
-      percentage: getUsagePercentage(stats.storage.used, stats.storage.limit)
+      percentage: getUsagePercentage(stats.storage.used, stats.storage.limit),
+      onClick: handleStorageCardClick
     },
     {
       icon: Users,
@@ -244,7 +251,11 @@ export function UsageSettings() {
           const usageColor = getUsageColor(item.percentage);
           
           return (
-            <div key={index} className="bg-white dark:bg-gray-800 shadow rounded-lg p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700">
+            <div 
+              key={index} 
+              className={`bg-white dark:bg-gray-800 shadow rounded-lg p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 ${item.onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750' : ''}`}
+              onClick={item.onClick}
+            >
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-gray-400" />
@@ -284,6 +295,15 @@ export function UsageSettings() {
           );
         })}
       </div>
+
+      {/* Modal de detalhes de armazenamento */}
+      {currentOrganizationMember && (
+        <StorageDetailsModal
+          isOpen={isStorageModalOpen}
+          onClose={() => setIsStorageModalOpen(false)}
+          organizationId={currentOrganizationMember.organization.id}
+        />
+      )}
     </div>
   );
 }

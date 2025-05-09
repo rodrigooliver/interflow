@@ -173,6 +173,27 @@
     "limitReached": "Límite alcanzado",
     "almostFull": "Casi lleno"
   },
+  "storage": {
+    "storageDetails": "Detalles de Almacenamiento",
+    "totalStorage": "Almacenamiento Total",
+    "messageFiles": "Archivos de Mensajes",
+    "integrationFiles": "Archivos de Integraciones",
+    "flowFiles": "Archivos de Flujos",
+    "promptFiles": "Archivos de Prompts",
+    "shortcutFiles": "Archivos de Atajos",
+    "otherFiles": "Otros Archivos",
+    "files": "archivos",
+    "fileName": "Nombre del Archivo",
+    "fileSize": "Tamaño",
+    "fileType": "Tipo",
+    "dateCreated": "Fecha de Creación",
+    "noFiles": "No se encontraron archivos en esta categoría",
+    "noData": "No hay datos de almacenamiento disponibles",
+    "actions": "Acciones",
+    "loadMore": "Cargar más",
+    "viewFile": "Ver archivo",
+    "viewRelatedItem": "Ver elemento relacionado"
+  },
   "expand": "Expandir",
   "collapse": "Contraer",
   "marketing": {

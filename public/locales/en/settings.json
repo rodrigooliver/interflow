@@ -173,6 +173,27 @@
     "limitReached": "Limit reached",
     "almostFull": "Almost full"
   },
+  "storage": {
+    "storageDetails": "Storage Details",
+    "totalStorage": "Total Storage",
+    "messageFiles": "Message Files",
+    "integrationFiles": "Integration Files",
+    "flowFiles": "Flow Files",
+    "promptFiles": "Prompt Files",
+    "shortcutFiles": "Shortcut Files",
+    "otherFiles": "Other Files",
+    "files": "files",
+    "fileName": "File Name",
+    "fileSize": "Size",
+    "fileType": "Type",
+    "dateCreated": "Created Date",
+    "noFiles": "No files found in this category",
+    "noData": "No storage data available",
+    "actions": "Actions",
+    "loadMore": "Load more",
+    "viewFile": "View file",
+    "viewRelatedItem": "View related item"
+  },
   "expand": "Expand",
   "collapse": "Collapse",
   "marketing": {
