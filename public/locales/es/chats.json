@@ -95,7 +95,10 @@
     "chatDetails": "Detalles del Chat",
     "confirmDelete": "Confirmar eliminación",
     "retry": "Intentar de nuevo",
-    "transferTeam": "Transferir equipo"
+    "transferTeam": "Transferir equipo",
+    "deleteChat": "Eliminar conversación",
+    "transferChatToCustomer": "Transferir a otro cliente",
+    "mergeChats": "Fusionar con otro chat"
   },
   "dateHeaders": {
     "today": "Hoy",
@@ -392,5 +395,12 @@
     "generateNew": "Generar Nuevo",
     "generatingTitle": "Generando título...",
     "titlePlaceholder": "Ingrese o genere un título para el chat"
+  },
+  "delete": {
+    "confirmTitle": "Eliminar conversación",
+    "confirmMessage": "¿Está seguro de que desea eliminar esta conversación? Esta acción no se puede deshacer.",
+    "confirm": "Eliminar",
+    "success": "Conversación eliminada con éxito",
+    "error": "Error al eliminar la conversación"
   }
 }

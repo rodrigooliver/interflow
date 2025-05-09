@@ -45,6 +45,14 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
 
       if (contactsError) throw contactsError;
 
+      //Excluir as flow_sessions do cliente
+      const { error: flowsSessionsError } = await supabase
+        .from('flow_sessions')
+        .delete()
+        .eq('customer_id', customer.id);
+
+      if (flowsSessionsError) throw flowsSessionsError;
+
       // Depois, excluir o cliente
       const { error: deleteError } = await supabase
         .from('customers')

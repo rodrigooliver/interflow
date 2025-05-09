@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle, Share2, X, GitMerge, MoreVertical, Info } from 'lucide-react';
+import { MessageSquare, User, Clock, Calendar, Check, CheckCheck, AlertCircle, Share2, X, GitMerge, MoreVertical, Info, Trash2 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
 import { Chat } from '../../types/database';
@@ -8,6 +8,7 @@ import { getChannelIcon } from '../../utils/channel';
 import { ChatMessages } from './ChatMessages';
 import { ChatDetailsModal } from './ChatDetailsModal';
 import { MergeChatModal } from './MergeChatModal';
+import { TransferChatToCustomerModal } from './TransferChatToCustomerModal';
 import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
@@ -16,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/DropdownMenu";
 import { toast } from 'react-hot-toast';
+import api from '../../lib/api';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 // Interface para os locales de formatação de data
 const locales = {
@@ -30,23 +33,25 @@ export interface CustomerChatsListProps {
   errorMessage?: string;
   organizationId: string;
   isModal?: boolean; // Define se está sendo exibido em um modal ou página completa
-  onTransferChat?: (chat: Chat) => void; // Callback opcional para transferência de chat
   onCloseModal?: () => void; // Callback opcional para fechar o modal pai
   onMergeChats?: (chatId: string) => void; // Callback opcional para mesclar chats
 }
 
 export function CustomerChatsList({
-  chats,
+  chats: initialChats,
   loadingChats = false,
   errorMessage = '',
   organizationId,
   isModal = false,
-  onTransferChat,
   onCloseModal,
   onMergeChats
 }: CustomerChatsListProps) {
   const { t, i18n } = useTranslation(['chats', 'common']);
   const navigate = useNavigate();
+  const { currentOrganizationMember } = useAuthContext();
+  
+  // Estado local de chats
+  const [chats, setChats] = useState<Chat[]>(initialChats);
   
   // Estados para o modal de chat
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -58,8 +63,22 @@ export function CustomerChatsList({
   const [showMergeChatModal, setShowMergeChatModal] = useState(false);
   const [mergeChatId, setMergeChatId] = useState<string | null>(null);
   
+  // Estado para o modal de transferência de chat
+  const [showTransferChatModal, setShowTransferChatModal] = useState(false);
+  const [transferChat, setTransferChat] = useState<Chat | null>(null);
+  
+  // Estado para confirmação de exclusão
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
+  const [deletingChat, setDeletingChat] = useState(false);
+  
   // Estado para controlar os dropdowns abertos
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  // Atualizar os chats locais quando os props mudarem
+  useEffect(() => {
+    setChats(initialChats);
+  }, [initialChats]);
 
   // Função para obter o ícone de status da mensagem
   const getStatusIcon = (status: string) => {
@@ -122,6 +141,80 @@ export function CustomerChatsList({
     setShowMergeChatModal(true);
   };
 
+  // Função para iniciar a transferência de chat para outro cliente
+  const handleTransferChatToCustomer = (e: React.MouseEvent, chat: Chat) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Fechar o dropdown imediatamente
+    setOpenDropdownId(null);
+    
+   // Iniciar o processo de transferência interno
+   setTransferChat(chat);
+   setShowTransferChatModal(true);
+  };
+
+  // Função para iniciar o processo de exclusão
+  const handleDeleteChat = (e: React.MouseEvent, chat: Chat) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Fechar o dropdown imediatamente
+    setOpenDropdownId(null);
+    
+    // Configurar o chat para exclusão e mostrar confirmação
+    setChatToDelete(chat);
+    setShowDeleteConfirm(true);
+  };
+
+  // Função para confirmar a exclusão
+  const confirmDeleteChat = async () => {
+    if (!chatToDelete || !currentOrganizationMember) return;
+    
+    setDeletingChat(true);
+    
+    try {
+      await api.delete(
+        `/api/${currentOrganizationMember.organization.id}/chat/${chatToDelete.id}`
+      );
+      
+      // Animar o chat sendo removido
+      const chatElement = document.querySelector(`[data-chat-id="${chatToDelete.id}"]`);
+      if (chatElement) {
+        chatElement.classList.add('opacity-0', 'scale-95');
+      }
+      
+      // Mostrar mensagem de sucesso
+      toast.success(t('chats:delete.success', 'Atendimento excluído com sucesso'));
+      
+      const chatIdToDelete = chatToDelete.id;
+      
+      // Esperar a animação terminar antes de atualizar o estado
+      setTimeout(() => {
+        // Remover o chat do estado
+        setChats(prevChats => prevChats.filter(chat => chat.id !== chatIdToDelete));
+        
+        // Notificar o componente pai se necessário
+        if (onMergeChats) {
+          onMergeChats(chatIdToDelete);
+        }
+        
+        // Limpar os estados
+        setShowDeleteConfirm(false);
+        setChatToDelete(null);
+      }, 300);
+    } catch (error) {
+      console.error('Erro ao excluir chat:', error);
+      toast.error(t('chats:delete.error', 'Erro ao excluir atendimento'));
+      
+      // Limpar os estados em caso de erro
+      setShowDeleteConfirm(false);
+      setChatToDelete(null);
+    } finally {
+      setDeletingChat(false);
+    }
+  };
+
   // Função para lidar com a conclusão da mesclagem
   const handleMergeComplete = (details: { 
     sourceChatId: string; 
@@ -132,31 +225,29 @@ export function CustomerChatsList({
       // Garantir que o dropdown esteja fechado
       setOpenDropdownId(null);
       
-      // Importante: Devemos usar uma técnica de mutação de estado para que React detecte a mudança
-      // Criar uma referência distinta para force o re-render
-      const updatedChats = chats.filter(chat => chat.id !== details.sourceChatId);
+      // Animar o chat sendo removido
+      const chatElement = document.querySelector(`[data-chat-id="${details.sourceChatId}"]`);
+      if (chatElement) {
+        chatElement.classList.add('opacity-0', 'scale-95');
+      }
       
-      // Se o callback onMergeChats foi fornecido, chamá-lo com os detalhes
+      // Notificar o componente pai
       if (onMergeChats) {
         onMergeChats(details.sourceChatId);
       }
       
-      // Fechar o modal e resetar o estado
-      setShowMergeChatModal(false);
-      setMergeChatId(null);
-      
-      // Exibir mensagem de sucesso
+      // Mostrar mensagem de sucesso
       toast.success(t('chats:merge.successMessage', 'Atendimentos mesclados com sucesso'));
       
-      // A grande diferença está aqui: vamos atualizar diretamente o DOM
-      // Procurar o elemento do chat que deve ser removido
-      const chatElement = document.querySelector(`[data-chat-id="${details.sourceChatId}"]`);
-      if (chatElement) {
-        chatElement.classList.add('opacity-0', 'scale-95');
-        setTimeout(() => {
-          chatElement.classList.add('hidden');
-        }, 300);
-      }
+      // Esperar a animação terminar antes de atualizar o estado
+      setTimeout(() => {
+        // Atualizar o estado local
+        setChats(prevChats => prevChats.filter(chat => chat.id !== details.sourceChatId));
+        
+        // Fechar o modal e resetar o estado
+        setShowMergeChatModal(false);
+        setMergeChatId(null);
+      }, 300);
     } else {
       // Garantir que o dropdown esteja fechado mesmo em caso de falha
       setOpenDropdownId(null);
@@ -166,6 +257,36 @@ export function CustomerChatsList({
       
       // Exibir mensagem de erro
       toast.error(t('chats:merge.errorMessage', 'Não foi possível mesclar os atendimentos'));
+    }
+  };
+
+  // Função para lidar com a conclusão da transferência
+  const handleTransferComplete = () => {
+    // Fechar todos os menus dropdown
+    setOpenDropdownId(null);
+    
+    if (transferChat) {
+      // Animar o chat sendo removido
+      const chatElement = document.querySelector(`[data-chat-id="${transferChat.id}"]`);
+      if (chatElement) {
+        chatElement.classList.add('opacity-0', 'scale-95');
+      }
+      
+      // Exibir mensagem de sucesso
+      toast.success(t('chats:transfer.singleChatSuccess', 'Atendimento transferido com sucesso'));
+      
+      // Esperar a animação terminar antes de atualizar o estado
+      setTimeout(() => {
+        // Remover o chat transferido da lista
+        setChats(prevChats => prevChats.filter(chat => chat.id !== transferChat.id));
+        
+        // Fechar o modal
+        setShowTransferChatModal(false);
+        setTransferChat(null);
+      }, 300);
+    } else {
+      // Fechar o modal se não houver chat para transferir
+      setShowTransferChatModal(false);
     }
   };
 
@@ -313,16 +434,17 @@ export function CustomerChatsList({
                         <Info className="w-4 h-4 mr-2" />
                         {t('actions.chatDetails', 'Detalhes do atendimento')}
                       </DropdownMenuItem>
-                      {onTransferChat && (
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdownId(null);
-                          onTransferChat(chat);
-                        }}>
-                          <GitMerge className="w-4 h-4 mr-2" />
-                          {t('actions.transferChat', 'Transferir atendimento')}
-                        </DropdownMenuItem>
-                      )}
+                      <DropdownMenuItem onClick={(e) => handleTransferChatToCustomer(e, chat)}>
+                        <User className="w-4 h-4 mr-2" />
+                        {t('actions.transferChatToCustomer', 'Transferir para outro cliente')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={(e) => handleDeleteChat(e, chat)}
+                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {t('actions.deleteChat', 'Excluir atendimento')}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -482,6 +604,62 @@ export function CustomerChatsList({
           }}
           onMergeComplete={handleMergeComplete}
         />
+      )}
+
+      {/* Modal de Transferência de Chat */}
+      {showTransferChatModal && transferChat && (
+        <TransferChatToCustomerModal
+          chat={transferChat}
+          onClose={() => {
+            setShowTransferChatModal(false);
+            setTransferChat(null);
+          }}
+          onTransferComplete={handleTransferComplete}
+        />
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteConfirm && chatToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <AlertCircle className="w-6 h-6 text-red-500 mr-2" />
+                {t('chats:delete.confirmTitle', 'Excluir atendimento')}
+              </h2>
+              
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                {t('chats:delete.confirmMessage', 'Tem certeza que deseja excluir este atendimento? Esta ação não pode ser desfeita.')}
+              </p>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setChatToDelete(null);
+                  }}
+                  disabled={deletingChat}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {t('common:cancel', 'Cancelar')}
+                </button>
+                <button
+                  onClick={confirmDeleteChat}
+                  disabled={deletingChat}
+                  className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {deletingChat && <span className="animate-spin">
+                    <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </span>}
+                  <span>{t('chats:delete.confirm', 'Excluir')}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -95,11 +95,6 @@ export default function CustomerChats() {
     }
   }
 
-  const handleTransferClick = (chat: Chat) => {
-    setSelectedChat(chat);
-    setShowTransferModal(true);
-  };
-
   const handleTransfer = async () => {
     if (!customer) return;
 
@@ -197,7 +192,6 @@ export default function CustomerChats() {
           errorMessage={error}
           organizationId={currentOrganizationMember?.organization.id || ''}
           isModal={false}
-          onTransferChat={handleTransferClick}
           onMergeChats={handleMergeChat}
         />
       </div>

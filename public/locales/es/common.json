@@ -144,6 +144,7 @@
   "noServicesYet": "No se encontraron servicios",
   "backToList": "Volver a la lista",
   "noContactInfo": "Sin información de contacto",
+  "noItemsSelected": "Ningún elemento seleccionado",
   "description": "Descripción",
   "noDescription": "Sin descripción",
   "ok": "Ok"

@@ -99,7 +99,10 @@
     "chatDetails": "Detalhes do Atendimento",
     "confirmDelete": "Confirmar exclusão",
     "retry": "Tentar novamente",
-    "transferTeam": "Transferir equipe"
+    "transferTeam": "Transferir equipe",
+    "deleteChat": "Excluir atendimento",
+    "transferChatToCustomer": "Transferir para outro cliente",
+    "mergeChats": "Mesclar com outro chat"
   },
   "dateHeaders": {
     "today": "Hoje",
@@ -397,5 +400,12 @@
     "generateNew": "Gerar Novo",
     "generatingTitle": "Gerando título...",
     "titlePlaceholder": "Digite ou gere um título para o atendimento"
+  },
+  "delete": {
+    "confirmTitle": "Excluir atendimento",
+    "confirmMessage": "Tem certeza que deseja excluir este atendimento? Esta ação não pode ser desfeita.",
+    "confirm": "Excluir",
+    "success": "Atendimento excluído com sucesso",
+    "error": "Erro ao excluir atendimento"
   }
 }
