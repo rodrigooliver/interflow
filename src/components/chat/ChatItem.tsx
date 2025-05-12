@@ -20,6 +20,7 @@ import { CustomerEditModal } from '../../components/customers/CustomerEditModal'
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { TeamTransferModal } from './TeamTransferModal';
 import { MergeChatModal } from './MergeChatModal';
+import { TransferChatToCustomerModal } from './TransferChatToCustomerModal';
 
 interface CustomerTag {
   tag_id: string;
@@ -58,6 +59,7 @@ export function ChatItem({
   const [showTeamTransferModal, setShowTeamTransferModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showMergeModal, setShowMergeModal] = useState(false);
+  const [showTransferCustomerModal, setShowTransferCustomerModal] = useState(false);
 
   const handleUpdateChat = async (chatId: string, updates: Partial<Chat>) => {
     try {
@@ -166,6 +168,9 @@ export function ChatItem({
         break;
       case 'merge_chat':
         setShowMergeModal(true);
+        break;
+      case 'transfer_to_customer':
+        setShowTransferCustomerModal(true);
         break;
     }
   };
@@ -284,6 +289,25 @@ export function ChatItem({
     // Recarregar os dados ou atualizar a UI conforme necessário
     if (onUpdateChat && chat.id) {
       onUpdateChat(chat.id, { is_archived: true });
+    }
+  };
+
+  const handleTransferCustomerComplete = (newCustomerId: string) => {
+    setShowTransferCustomerModal(false);
+    console.log(`Chat transferido para o cliente ID: ${newCustomerId}`);
+    // Aqui você pode adicionar lógica para atualizar a UI ou recarregar os dados
+    if (onUpdateChat && chat.id) {
+      // Recarregar os dados do chat ou atualizar conforme necessário
+      supabase
+        .from('chats')
+        .select('*')
+        .eq('id', chat.id)
+        .single()
+        .then(({ data }) => {
+          if (data && onUpdateChat) {
+            onUpdateChat(chat.id, data);
+          }
+        });
     }
   };
 
@@ -435,6 +459,13 @@ export function ChatItem({
                     }}>
                       <Users2 className="w-4 h-4 mr-2" />
                       {t('actions.transferTeam')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      handleChatAction('transfer_to_customer', chat);
+                    }}>
+                      <User className="w-4 h-4 mr-2" />
+                      {t('actions.transferChatToCustomer', 'Transferir para outro cliente')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={(e) => {
                       e.stopPropagation();
@@ -638,6 +669,15 @@ export function ChatItem({
           isOpen={showMergeModal}
           onClose={() => setShowMergeModal(false)}
           onMergeComplete={handleMergeComplete}
+        />
+      )}
+
+      {/* Modal de Transferência para Outro Cliente */}
+      {showTransferCustomerModal && (
+        <TransferChatToCustomerModal
+          chat={chat}
+          onClose={() => setShowTransferCustomerModal(false)}
+          onTransferComplete={handleTransferCustomerComplete}
         />
       )}
     </>
