@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFinancial } from '../../hooks/useFinancial';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -11,9 +11,10 @@ import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { Switch } from "../../components/ui/switch";
 import { Button } from "../../components/ui/Button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../../components/ui/Dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/Table";
 import { Label } from "../../components/ui/Label";
+import { useAgents } from '../../hooks/useQueryes';
 import {
   Plus,
   Edit,
@@ -40,6 +41,13 @@ interface CashierOperator {
   cashier_id: string;
   profile_id: string;
   is_active: boolean;
+  is_admin?: boolean;
+  can_view?: boolean;
+  can_create?: boolean;
+  can_edit_any?: boolean;
+  can_edit_own?: boolean;
+  can_delete_any?: boolean;
+  can_delete_own?: boolean;
   created_at: string;
   updated_at: string;
   profile?: {
@@ -75,10 +83,13 @@ export function FinancialCashiers() {
     isLoading, 
     invalidateCache, 
     cashierOperators, 
-    organizationProfiles,
-    addCashierOperator,
     removeCashierOperator
   } = useFinancial();
+  
+  // Usar o hook useAgents diretamente para obter os usuários da organização
+  const { data: agentsData = [] } = useAgents(
+    currentOrganizationMember?.organization?.id
+  );
 
   // Estados
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +111,41 @@ export function FinancialCashiers() {
   const [selectedProfileId, setSelectedProfileId] = useState<string>('');
   const [loadingOperators, setLoadingOperators] = useState(false);
   const [addingOperator, setAddingOperator] = useState(false);
+  // Adicionando estado para as permissões do operador
+  const [operatorPermissions, setOperatorPermissions] = useState({
+    isAdmin: false,
+    canView: true,
+    canCreate: false,
+    canEditAny: false,
+    canEditOwn: false,
+    canDeleteAny: false,
+    canDeleteOwn: false
+  });
+
+  // Adicionar novos estados para o modal de edição de permissões
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+  const [selectedOperator, setSelectedOperator] = useState<CashierOperator | null>(null);
+  const [updatingPermissions, setUpdatingPermissions] = useState(false);
+  
+  // Mapear os agentes para o formato de perfis da organização
+  useEffect(() => {
+    if (agentsData.length > 0) {
+      const profilesFromAgents = agentsData.map(agent => ({
+        id: agent.id,
+        email: agent.profile?.email || '',
+        full_name: agent.profile?.full_name || '',
+        avatar_url: agent.profile?.avatar_url || null,
+        role: agent.role
+      }));
+      
+      // Se já temos operadores, filtra os perfis já adicionados
+      if (operators.length > 0) {
+        loadAvailableProfiles(operators, profilesFromAgents);
+      } else {
+        setAvailableProfiles(profilesFromAgents);
+      }
+    }
+  }, [agentsData, operators]);
 
   const filteredCashiers = cashiers.filter(cashier =>
     cashier.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -224,12 +270,39 @@ export function FinancialCashiers() {
         setIsEditModalOpen(false);
       } else {
         // Criar novo caixa
-        const { error } = await supabase
+        const { data: newCashier, error } = await supabase
           .from('financial_cashiers')
-          .insert([cashierData]);
+          .insert([cashierData])
+          .select('id')
+          .single();
 
         if (error) {
           throw error;
+        }
+
+        // Adicionar o usuário atual como operador administrador do caixa
+        if (newCashier?.id && currentOrganizationMember?.profile_id) {
+          const operatorData = {
+            cashier_id: newCashier.id,
+            profile_id: currentOrganizationMember.profile_id,
+            is_active: true,
+            can_view: true,
+            can_create: true,
+            can_edit_any: true,
+            can_edit_own: true,
+            can_delete_any: true,
+            can_delete_own: true,
+            is_admin: true
+          };
+          
+          const { error: operatorError } = await supabase
+            .from('financial_cashier_operators')
+            .insert([operatorData]);
+            
+          if (operatorError) {
+            console.error('Erro ao adicionar operador automático:', operatorError);
+            // Continuar mesmo se houver erro ao adicionar o operador
+          }
         }
 
         invalidateCache();
@@ -257,7 +330,6 @@ export function FinancialCashiers() {
     setSelectedCashier(cashier);
     setIsOperatorsModalOpen(true);
     await loadCashierOperators(cashier.id);
-    await loadAvailableProfiles();
   };
 
   // Função para carregar operadores de um caixa
@@ -266,6 +338,8 @@ export function FinancialCashiers() {
     try {
       const data = await cashierOperators(cashierId);
       setOperators(data);
+      
+      // Perfis disponíveis serão atualizados pelo useEffect quando operators mudar
     } catch (error) {
       console.error('Erro ao carregar operadores:', error);
       toast.show({
@@ -278,19 +352,23 @@ export function FinancialCashiers() {
     }
   };
 
-  // Função para carregar perfis disponíveis
-  const loadAvailableProfiles = async () => {
-    try {
-      const profiles = await organizationProfiles();
-      setAvailableProfiles(profiles);
-    } catch (error) {
-      console.error('Erro ao carregar perfis:', error);
-      toast.show({
-        title: t('error'),
-        description: t('errorLoadingProfiles'),
-        variant: 'destructive'
-      });
-    }
+  // Função para filtrar perfis disponíveis baseado nos operadores atuais
+  const loadAvailableProfiles = (currentOperators: CashierOperator[] = [], allProfiles = agentsData.map(agent => ({
+    id: agent.id,
+    email: agent.profile?.email || '',
+    full_name: agent.profile?.full_name || '',
+    avatar_url: agent.profile?.avatar_url || null,
+    role: agent.role
+  }))) => {
+    // Obter IDs dos perfis que já são operadores
+    const currentOperatorProfileIds = currentOperators.map(op => op.profile_id);
+    
+    // Filtrar apenas os perfis que não são operadores
+    const filteredProfiles = allProfiles.filter(profile => 
+      !currentOperatorProfileIds.includes(profile.id)
+    );
+    
+    setAvailableProfiles(filteredProfiles);
   };
 
   // Função para adicionar um operador
@@ -299,14 +377,46 @@ export function FinancialCashiers() {
     
     setAddingOperator(true);
     try {
-      const result = await addCashierOperator(selectedCashier.id, selectedProfileId);
+      // Criar objeto de dados do operador com base nas permissões selecionadas
+      const operatorData = {
+        cashier_id: selectedCashier.id,
+        profile_id: selectedProfileId,
+        is_active: true,
+        is_admin: operatorPermissions.isAdmin,
+        can_view: operatorPermissions.isAdmin ? true : operatorPermissions.canView,
+        can_create: operatorPermissions.isAdmin ? true : operatorPermissions.canCreate,
+        can_edit_any: operatorPermissions.isAdmin ? true : operatorPermissions.canEditAny,
+        can_edit_own: operatorPermissions.isAdmin ? true : operatorPermissions.canEditOwn,
+        can_delete_any: operatorPermissions.isAdmin ? true : operatorPermissions.canDeleteAny,
+        can_delete_own: operatorPermissions.isAdmin ? true : operatorPermissions.canDeleteOwn
+      };
       
-      if (!result.success) {
-        throw result.error;
+      const { error } = await supabase
+        .from('financial_cashier_operators')
+        .insert([operatorData]);
+        
+      if (error) {
+        throw error;
       }
       
-      await loadCashierOperators(selectedCashier.id);
+      // Atualizar a lista de operadores
+      const updatedOperators = await cashierOperators(selectedCashier.id);
+      setOperators(updatedOperators);
+      
+      // Atualizar a lista de perfis disponíveis com base nos operadores atualizados
+      loadAvailableProfiles(updatedOperators);
+      
       setSelectedProfileId('');
+      // Resetar as permissões para o valor padrão
+      setOperatorPermissions({
+        isAdmin: false,
+        canView: true,
+        canCreate: false,
+        canEditAny: false,
+        canEditOwn: false,
+        canDeleteAny: false,
+        canDeleteOwn: false
+      });
       
       toast.show({
         title: t('success'),
@@ -336,7 +446,12 @@ export function FinancialCashiers() {
         throw result.error;
       }
       
-      await loadCashierOperators(selectedCashier.id);
+      // Atualizar a lista de operadores
+      const updatedOperators = await cashierOperators(selectedCashier.id);
+      setOperators(updatedOperators);
+      
+      // Atualizar a lista de perfis disponíveis com base nos operadores atualizados
+      loadAvailableProfiles(updatedOperators);
       
       toast.show({
         title: t('success'),
@@ -356,6 +471,75 @@ export function FinancialCashiers() {
   // Função para navegar para as transações do caixa
   const handleViewTransactions = (cashierId: string) => {
     navigate(`/app/financial/transactions?cashier=${cashierId}`);
+  };
+
+  // Função para abrir o modal de edição de permissões
+  const handleEditPermissions = async (operator: CashierOperator) => {
+    setSelectedOperator(operator);
+    
+    // Carregar as permissões atuais do operador
+    setOperatorPermissions({
+      isAdmin: operator.is_admin || false,
+      canView: operator.can_view || true,
+      canCreate: operator.can_create || false,
+      canEditAny: operator.can_edit_any || false,
+      canEditOwn: operator.can_edit_own || false,
+      canDeleteAny: operator.can_delete_any || false,
+      canDeleteOwn: operator.can_delete_own || false
+    });
+    
+    setIsPermissionsModalOpen(true);
+  };
+
+  // Função para salvar as permissões atualizadas
+  const handleSavePermissions = async () => {
+    if (!selectedOperator) return;
+    
+    setUpdatingPermissions(true);
+    try {
+      // Atualizar as permissões no banco de dados
+      const updateData = {
+        is_admin: operatorPermissions.isAdmin,
+        can_view: operatorPermissions.isAdmin ? true : operatorPermissions.canView,
+        can_create: operatorPermissions.isAdmin ? true : operatorPermissions.canCreate,
+        can_edit_any: operatorPermissions.isAdmin ? true : operatorPermissions.canEditAny,
+        can_edit_own: operatorPermissions.isAdmin ? true : operatorPermissions.canEditOwn,
+        can_delete_any: operatorPermissions.isAdmin ? true : operatorPermissions.canDeleteAny,
+        can_delete_own: operatorPermissions.isAdmin ? true : operatorPermissions.canDeleteOwn
+      };
+      
+      const { error } = await supabase
+        .from('financial_cashier_operators')
+        .update(updateData)
+        .eq('id', selectedOperator.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Recarregar os operadores após a atualização
+      if (selectedCashier) {
+        await loadCashierOperators(selectedCashier.id);
+      }
+      
+      setIsPermissionsModalOpen(false);
+      setSelectedOperator(null);
+      
+      toast.show({
+        title: t('success'),
+        description: t('permissionsUpdated'),
+        variant: 'success'
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar permissões:', error);
+      toast.show({
+        title: t('error'),
+        description: t('errorUpdatingPermissions'),
+        variant: 'destructive'
+      });
+    } finally {
+      setUpdatingPermissions(false);
+    }
   };
 
   return (
@@ -521,6 +705,9 @@ export function FinancialCashiers() {
             <DialogTitle className="text-foreground dark:text-foreground/90">
               {selectedCashier ? t('editCashier') : t('addCashier')}
             </DialogTitle>
+            <DialogDescription>
+              {selectedCashier ? t('editCashierDescription') : t('addCashierDescription')}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 gap-2">
@@ -587,10 +774,10 @@ export function FinancialCashiers() {
         <DialogContent className="max-w-md bg-background dark:bg-gray-800 dark:border-border/20">
           <DialogHeader>
             <DialogTitle className="text-foreground dark:text-foreground/90">{t('confirmDeleteTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('confirmDeleteCashier')}
+            </DialogDescription>
           </DialogHeader>
-          <div className="py-3 text-foreground dark:text-foreground/90">
-            <p>{t('confirmDeleteCashier')}</p>
-          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -621,11 +808,14 @@ export function FinancialCashiers() {
 
       {/* Modal de operadores */}
       <Dialog open={isOperatorsModalOpen} onOpenChange={setIsOperatorsModalOpen}>
-        <DialogContent className="max-w-3xl bg-background dark:bg-gray-800 dark:border-border/20">
+        <DialogContent className="max-w-3xl bg-background dark:bg-gray-800/95 dark:border-border/30 dark:text-foreground/90">
           <DialogHeader>
             <DialogTitle className="text-foreground dark:text-foreground/90">
               {selectedCashier && `${t('cashierOperators')}: ${selectedCashier.name}`}
             </DialogTitle>
+            <DialogDescription>
+              {t('manageOperatorsDescription')}
+            </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
@@ -635,7 +825,7 @@ export function FinancialCashiers() {
                 <div className="flex gap-2">
                   <select
                     id="profile-select"
-                    className="w-full p-2 rounded-md border border-border/40 dark:border-border/20 bg-background dark:bg-gray-900 text-foreground dark:text-foreground/90"
+                    className="w-full p-2 rounded-md border border-border/40 dark:border-border/30 bg-background dark:bg-gray-900 text-foreground dark:text-foreground/90"
                     value={selectedProfileId}
                     onChange={(e) => setSelectedProfileId(e.target.value)}
                     disabled={addingOperator}
@@ -647,6 +837,129 @@ export function FinancialCashiers() {
                       </option>
                     ))}
                   </select>
+                </div>
+                {availableProfiles.length === 0 && (
+                  <div className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                    {t('noAvailableProfiles')}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {selectedProfileId && (
+              <div className="mb-6 border p-4 rounded-md dark:border-border/30 bg-card/40 dark:bg-gray-700/30">
+                <h3 className="font-medium mb-3 text-foreground dark:text-foreground/90">{t('operatorPermissions')}</h3>
+                
+                <div className="flex items-center space-x-2 mb-4">
+                  <Switch
+                    id="is-admin"
+                    checked={operatorPermissions.isAdmin}
+                    onCheckedChange={(checked) => setOperatorPermissions({
+                      ...operatorPermissions,
+                      isAdmin: checked
+                    })}
+                    className="dark:bg-gray-800"
+                  />
+                  <Label htmlFor="is-admin" className="text-foreground dark:text-foreground/90 font-medium">
+                    {t('isAdministrator')}
+                  </Label>
+                </div>
+                
+                {!operatorPermissions.isAdmin && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="can-view"
+                        checked={operatorPermissions.canView}
+                        onCheckedChange={(checked) => setOperatorPermissions({
+                          ...operatorPermissions,
+                          canView: checked
+                        })}
+                        className="dark:bg-gray-800"
+                      />
+                      <Label htmlFor="can-view" className="text-foreground dark:text-foreground/90">
+                        {t('canView')}
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="can-create"
+                        checked={operatorPermissions.canCreate}
+                        onCheckedChange={(checked) => setOperatorPermissions({
+                          ...operatorPermissions,
+                          canCreate: checked
+                        })}
+                        className="dark:bg-gray-800"
+                      />
+                      <Label htmlFor="can-create" className="text-foreground dark:text-foreground/90">
+                        {t('canCreate')}
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="can-edit-any"
+                        checked={operatorPermissions.canEditAny}
+                        onCheckedChange={(checked) => setOperatorPermissions({
+                          ...operatorPermissions,
+                          canEditAny: checked
+                        })}
+                        className="dark:bg-gray-800"
+                      />
+                      <Label htmlFor="can-edit-any" className="text-foreground dark:text-foreground/90">
+                        {t('canEditAny')}
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="can-edit-own"
+                        checked={operatorPermissions.canEditOwn}
+                        onCheckedChange={(checked) => setOperatorPermissions({
+                          ...operatorPermissions,
+                          canEditOwn: checked
+                        })}
+                        className="dark:bg-gray-800"
+                      />
+                      <Label htmlFor="can-edit-own" className="text-foreground dark:text-foreground/90">
+                        {t('canEditOwn')}
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="can-delete-any"
+                        checked={operatorPermissions.canDeleteAny}
+                        onCheckedChange={(checked) => setOperatorPermissions({
+                          ...operatorPermissions,
+                          canDeleteAny: checked
+                        })}
+                        className="dark:bg-gray-800"
+                      />
+                      <Label htmlFor="can-delete-any" className="text-foreground dark:text-foreground/90">
+                        {t('canDeleteAny')}
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="can-delete-own"
+                        checked={operatorPermissions.canDeleteOwn}
+                        onCheckedChange={(checked) => setOperatorPermissions({
+                          ...operatorPermissions,
+                          canDeleteOwn: checked
+                        })}
+                        className="dark:bg-gray-800"
+                      />
+                      <Label htmlFor="can-delete-own" className="text-foreground dark:text-foreground/90">
+                        {t('canDeleteOwn')}
+                      </Label>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-4">
                   <Button
                     onClick={handleAddOperator}
                     disabled={!selectedProfileId || addingOperator}
@@ -663,9 +976,9 @@ export function FinancialCashiers() {
                   </Button>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="overflow-x-auto rounded-md border dark:border-border/20">
+            <div className="overflow-x-auto rounded-md border dark:border-border/30">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-muted/50 dark:hover:bg-muted/20">
@@ -730,6 +1043,16 @@ export function FinancialCashiers() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleEditPermissions(operator)}
+                              className="h-8 w-8 p-0 hover:bg-muted dark:hover:bg-muted/20"
+                              title={t('editPermissions')}
+                            >
+                              <span className="sr-only">{t('editPermissions')}</span>
+                              <Edit className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleRemoveOperator(operator.id)}
                               className="h-8 w-8 p-0 hover:bg-muted dark:hover:bg-muted/20"
                               title={t('remove')}
@@ -750,9 +1073,177 @@ export function FinancialCashiers() {
           <DialogFooter>
             <Button
               onClick={() => setIsOperatorsModalOpen(false)}
-              className="border-border/40 dark:border-border/20 hover:bg-muted dark:hover:bg-muted/20 text-foreground dark:text-foreground/90"
+              className="border-border/40 dark:border-border/30 hover:bg-muted dark:hover:bg-muted/20 text-foreground dark:text-foreground/90"
             >
               {t('close')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de edição de permissões */}
+      <Dialog open={isPermissionsModalOpen} onOpenChange={setIsPermissionsModalOpen}>
+        <DialogContent className="max-w-md bg-background dark:bg-gray-800/95 dark:border-border/30 dark:text-foreground/90">
+          <DialogHeader>
+            <DialogTitle className="text-foreground dark:text-foreground/90">
+              {t('editOperatorPermissions')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('editOperatorPermissionsDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {selectedOperator && (
+              <>
+                <div className="mb-4">
+                  <div className="text-sm font-medium text-muted-foreground dark:text-muted-foreground/80 mb-1">
+                    {t('operator')}:
+                  </div>
+                  <div className="font-semibold text-foreground dark:text-foreground/90">
+                    {selectedOperator.profile?.full_name || t('unknownUser')}
+                  </div>
+                  <div className="text-sm text-muted-foreground dark:text-muted-foreground/80">
+                    {selectedOperator.profile?.email || '-'}
+                  </div>
+                </div>
+
+                <div className="border p-4 rounded-md dark:border-border/30 bg-card/40 dark:bg-gray-700/30">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch
+                      id="edit-is-admin"
+                      checked={operatorPermissions.isAdmin}
+                      onCheckedChange={(checked) => setOperatorPermissions({
+                        ...operatorPermissions,
+                        isAdmin: checked
+                      })}
+                      className="dark:bg-gray-800"
+                    />
+                    <Label htmlFor="edit-is-admin" className="text-foreground dark:text-foreground/90 font-medium">
+                      {t('isAdministrator')}
+                    </Label>
+                  </div>
+                  
+                  {!operatorPermissions.isAdmin && (
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-can-view"
+                          checked={operatorPermissions.canView}
+                          onCheckedChange={(checked) => setOperatorPermissions({
+                            ...operatorPermissions,
+                            canView: checked
+                          })}
+                          className="dark:bg-gray-800"
+                        />
+                        <Label htmlFor="edit-can-view" className="text-foreground dark:text-foreground/90">
+                          {t('canView')}
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-can-create"
+                          checked={operatorPermissions.canCreate}
+                          onCheckedChange={(checked) => setOperatorPermissions({
+                            ...operatorPermissions,
+                            canCreate: checked
+                          })}
+                          className="dark:bg-gray-800"
+                        />
+                        <Label htmlFor="edit-can-create" className="text-foreground dark:text-foreground/90">
+                          {t('canCreate')}
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-can-edit-any"
+                          checked={operatorPermissions.canEditAny}
+                          onCheckedChange={(checked) => setOperatorPermissions({
+                            ...operatorPermissions,
+                            canEditAny: checked
+                          })}
+                          className="dark:bg-gray-800"
+                        />
+                        <Label htmlFor="edit-can-edit-any" className="text-foreground dark:text-foreground/90">
+                          {t('canEditAny')}
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-can-edit-own"
+                          checked={operatorPermissions.canEditOwn}
+                          onCheckedChange={(checked) => setOperatorPermissions({
+                            ...operatorPermissions,
+                            canEditOwn: checked
+                          })}
+                          className="dark:bg-gray-800"
+                        />
+                        <Label htmlFor="edit-can-edit-own" className="text-foreground dark:text-foreground/90">
+                          {t('canEditOwn')}
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-can-delete-any"
+                          checked={operatorPermissions.canDeleteAny}
+                          onCheckedChange={(checked) => setOperatorPermissions({
+                            ...operatorPermissions,
+                            canDeleteAny: checked
+                          })}
+                          className="dark:bg-gray-800"
+                        />
+                        <Label htmlFor="edit-can-delete-any" className="text-foreground dark:text-foreground/90">
+                          {t('canDeleteAny')}
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-can-delete-own"
+                          checked={operatorPermissions.canDeleteOwn}
+                          onCheckedChange={(checked) => setOperatorPermissions({
+                            ...operatorPermissions,
+                            canDeleteOwn: checked
+                          })}
+                          className="dark:bg-gray-800"
+                        />
+                        <Label htmlFor="edit-can-delete-own" className="text-foreground dark:text-foreground/90">
+                          {t('canDeleteOwn')}
+                        </Label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsPermissionsModalOpen(false)}
+              disabled={updatingPermissions}
+              className="border-border/40 dark:border-border/30 hover:bg-muted dark:hover:bg-muted/20 text-foreground dark:text-foreground/90"
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              onClick={handleSavePermissions}
+              disabled={updatingPermissions || !selectedOperator}
+              className="bg-primary hover:bg-primary/90 dark:bg-primary/90 dark:hover:bg-primary/80"
+            >
+              {updatingPermissions ? (
+                <div className="flex items-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-white/80" />
+                  <span>{t('saving')}</span>
+                </div>
+              ) : (
+                <span>{t('save')}</span>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -5,7 +5,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { Dialog, DialogContent } from '../ui/Dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/Dialog';
 import { useToast } from '../../hooks/useToast';
 import { format, parseISO, isValid } from 'date-fns';
 import { Edit, CheckCircle, TrendingUp, TrendingDown } from 'lucide-react';
@@ -187,7 +187,13 @@ const TransactionViewModal: React.FC<TransactionViewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto p-3">
+        <DialogTitle className="sr-only">
+          {transaction ? transaction.description : t('transactionDetails')}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          {transaction ? t('transactionDetailsDescription') : t('loadingTransaction')}
+        </DialogDescription>
         {isLoading ? (
           <div className="flex items-center justify-center">
             <div className="text-center">

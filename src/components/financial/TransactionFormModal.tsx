@@ -58,6 +58,7 @@ interface TransactionFormModalProps {
   onClose: () => void;
   transactionId?: string;
   defaultType?: 'income' | 'expense';
+  defaultCashierId?: string;
   onSuccess?: () => void;
 }
 
@@ -66,6 +67,7 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   onClose,
   transactionId,
   defaultType = 'expense',
+  defaultCashierId,
   onSuccess
 }) => {
   const { t } = useTranslation('financial');
@@ -119,9 +121,13 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
       setTransactionType(defaultType);
       if (!isEdit) {
         resetForm();
+        // Se tiver um caixa padrão definido, atribuir ao state
+        if (defaultCashierId) {
+          setCashierId(defaultCashierId);
+        }
       }
     }
-  }, [isOpen, defaultType, isEdit]);
+  }, [isOpen, defaultType, defaultCashierId, isEdit]);
 
   // Resetar categoria quando o tipo de transação mudar
   useEffect(() => {

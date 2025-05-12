@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuthContext } from '../contexts/AuthContext';
+import { useAgents } from './useQueryes';
 
 interface Cashier {
   id: string;
@@ -73,6 +74,10 @@ interface UseFinancialReturn {
 export function useFinancial(): UseFinancialReturn {
   const queryClient = useQueryClient();
   const { currentOrganizationMember } = useAuthContext();
+  
+  const { data: agentsData = [] } = useAgents(
+    currentOrganizationMember?.organization.id
+  );
 
   const {
     data: cashiers = [],
@@ -88,8 +93,9 @@ export function useFinancial(): UseFinancialReturn {
 
       const { data, error } = await supabase
         .from('financial_cashiers')
-        .select('*')
+        .select('*, members:financial_cashier_operators!inner(id, profile_id)')
         .eq('organization_id', currentOrganizationMember.organization.id)
+        .eq('members.profile_id', currentOrganizationMember.profile_id)
         .order('name', { ascending: true });
 
       if (error) {
@@ -201,16 +207,13 @@ export function useFinancial(): UseFinancialReturn {
       return [];
     }
 
-    const { data, error } = await supabase.rpc(
-      'get_organization_users',
-      { org_id: currentOrganizationMember.organization.id }
-    );
-
-    if (error) {
-      throw error;
-    }
-
-    return data || [];
+    return agentsData.map(agent => ({
+      id: agent.id,
+      email: agent.profile?.email || '',
+      full_name: agent.profile?.full_name || '',
+      avatar_url: agent.profile?.avatar_url || null,
+      role: agent.role
+    }));
   };
 
   const addCashierOperator = async (cashierId: string, profileId: string): Promise<{ success: boolean; error?: Error }> => {
