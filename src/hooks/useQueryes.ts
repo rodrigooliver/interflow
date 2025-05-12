@@ -1319,9 +1319,19 @@ export function useTasks(organizationId?: string, status?: 'pending' | 'in_progr
           customer:customers (
             id,
             name
+          ),
+          project:task_projects!inner(
+            id,
+            name,
+            members:task_project_members!inner(
+              id,
+              user_id
+            )
           )
         `)
-        .eq('organization_id', organizationId);
+        .eq('organization_id', organizationId)
+        .eq('is_archived', false)
+        .eq('project.members.user_id', userId);
 
       if (status) {
         query = query.eq('status', status);

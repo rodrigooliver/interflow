@@ -6,11 +6,12 @@ import { useAuthContext } from '../contexts/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import QuickSetupGuide from '../components/dashboard/QuickSetupGuide';
 import { ChatFlowModal } from '../components/chat/ChatFlowModal';
-import { useTeams, useTasks, useAppointments, useFunnels } from '../hooks/useQueryes';
+import { useTeams, useAppointments, useFunnels } from '../hooks/useQueryes';
 import { TaskModal } from '../components/tasks/TaskModal';
+import { TaskCard } from '../components/tasks/TaskCard';
 import { useDashboard } from '../hooks/useDashboard';
 import { supabase } from '../lib/supabase';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { ChatItem } from '../components/chat/ChatItem';
 
 interface StatCard {
@@ -367,6 +368,7 @@ export default function Dashboard() {
   const [showChatFlowModal, setShowChatFlowModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   
   // Estados para períodos específicos
   const [useSpecificPeriod, setUseSpecificPeriod] = useState(false);
@@ -419,24 +421,6 @@ export default function Dashboard() {
     specificYear
   });
 
-  // Verificar se todos os dados principais foram carregados
-  const isLoading = 
-    teamsLoading || 
-    funnelsLoading || 
-    customerCountLoading || 
-    activeChatsLoading || 
-    periodMessagesLoading || 
-    responseTimeLoading || 
-    recentChatsLoading || 
-    chartDataLoading || 
-    isDashboardLoading;
-
-  // Extrair dados do hook
-  const periodMessagesCount = periodMessagesData?.value || 0;
-  const messagesChange = (periodMessagesData?.change || { value: 0, type: 'increase' as const }) as Change;
-  const responseTime = responseTimeData?.value || 0;
-  const responseTimeChange = (responseTimeData?.change || { value: 0, type: 'increase' as const }) as Change;
-
   // Processar dados do gráfico
   const [chartData, setChartData] = useState<Array<{ name: string; [key: string]: string | number }>>([]);
   const [chartLoading, setChartLoading] = useState(true);
@@ -448,7 +432,44 @@ export default function Dashboard() {
     }
   }, [chartDataResponse, teams]);
 
-  const { data: tasks = [] } = useTasks(organizationId, 'pending', session?.user?.id);
+  // Carregar tarefas com todos os relacionamentos necessários para o TaskCard
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+    queryKey: ['enhanced-tasks', organizationId, 'pending', session?.user?.id],
+    queryFn: async () => {
+      if (!organizationId || !session?.user?.id) return [];
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          stage:task_stages(*),
+          customer:customers(*),
+          assignees:task_assignees(
+            *,
+            profile:profiles(*)
+          ),
+          labels:task_task_labels(
+            id,
+            label:task_labels(*)
+          ),
+          project:task_projects(*)
+        `)
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: true })
+        .limit(5);
+
+      if (error) throw error;
+
+      // Processar os resultados para formatá-los conforme esperado pelo TaskCard
+      return (data || []).map(task => ({
+        ...task,
+        labels: (task.labels || []).map((l: { label: { id: string; name: string; color: string } }) => l.label || {}),
+        checklist: task.checklist || []
+      }));
+    },
+    enabled: !!organizationId && !!session?.user?.id
+  });
 
   // Buscar próximos compromissos usando o hook useAppointments
   const { data: upcomingAppointments = [], isLoading: loadingAppointments } = useAppointments({
@@ -458,6 +479,22 @@ export default function Dashboard() {
     provider_id: currentOrganizationMember?.profile_id,
     status: ['scheduled', 'confirmed']
   });
+  
+  // Função para abrir o modal de edição de tarefa
+  const handleEditTask = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setShowTaskModal(true);
+  };
+  
+  // Função para fechar o modal de tarefa e limpar o ID selecionado
+  // Além disso, invalida o cache das tarefas para mostrar as últimas mudanças
+  const handleCloseTaskModal = () => {
+    setShowTaskModal(false);
+    setSelectedTaskId(null);
+    // Invalidar o cache das tarefas para forçar uma nova busca
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['enhanced-tasks'] });
+  };
   
   // Efeito para recarregar as equipes quando o organizationId mudar
   useEffect(() => {
@@ -488,6 +525,25 @@ export default function Dashboard() {
       };
     }
   }, [currentOrganizationMember, queryClient]);
+  
+  // Verificar se todos os dados principais foram carregados
+  const isLoading = 
+    teamsLoading || 
+    funnelsLoading || 
+    customerCountLoading || 
+    activeChatsLoading || 
+    periodMessagesLoading || 
+    responseTimeLoading || 
+    recentChatsLoading || 
+    chartDataLoading || 
+    isDashboardLoading ||
+    tasksLoading;
+
+  // Extrair dados do hook
+  const periodMessagesCount = periodMessagesData?.value || 0;
+  const messagesChange = (periodMessagesData?.change || { value: 0, type: 'increase' as const }) as Change;
+  const responseTime = responseTimeData?.value || 0;
+  const responseTimeChange = (responseTimeData?.change || { value: 0, type: 'increase' as const }) as Change;
 
   // Função para processar os dados do gráfico
   const processChartData = (data: Array<{ time_period: string; team_name: string; message_count: number }>, period: { startDate: Date; endDate: Date; groupBy: 'hour' | 'day' | 'week' | 'month' }) => {
@@ -1144,37 +1200,35 @@ export default function Dashboard() {
                 </Link>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 py-1 custom-scrollbar">
                 {tasks.map((task) => (
-                  <div 
+                  <TaskCard
                     key={task.id}
-                    className="flex items-center p-3 border border-gray-100 dark:border-gray-700 rounded-lg"
-                  >
-                    <div className={`h-4 w-4 rounded-full mr-3 ${
-                      task.priority === 'high' 
-                        ? 'bg-red-500' 
-                        : task.priority === 'medium' 
-                          ? 'bg-amber-500' 
-                          : 'bg-green-500'
-                    }`}></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {task.title}
-                      </p>
-                      {task.customer && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {task.customer.name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-gray-400 mr-1" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(task.due_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
+                    task={task}
+                    onEdit={() => handleEditTask(task.id)}
+                    onRemove={() => {}} // Não implementar remoção no dashboard
+                    onToggleArchived={() => {}} // Não implementar arquivamento no dashboard
+                    onUpdateStatus={(taskId, status) => {
+                      // Implementação básica para atualizar o status
+                      supabase
+                        .from('tasks')
+                        .update({ status })
+                        .eq('id', taskId)
+                        .then(() => {
+                          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                          queryClient.invalidateQueries({ queryKey: ['enhanced-tasks'] });
+                        });
+                    }}
+                  />
                 ))}
+                {tasks.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <Calendar className="h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {t('noTasks')}
+                    </p>
+                  </div>
+                )}
               </div>
               
               <div className="mt-6">
@@ -1363,9 +1417,10 @@ export default function Dashboard() {
           {/* Modal para criar nova tarefa */}
           {showTaskModal && (
             <TaskModal 
-              onClose={() => setShowTaskModal(false)}
+              onClose={handleCloseTaskModal}
               organizationId={organizationId}
-              mode="create"
+              mode={selectedTaskId ? 'edit' : 'create'}
+              taskId={selectedTaskId || undefined}
             />
           )}
         </>
