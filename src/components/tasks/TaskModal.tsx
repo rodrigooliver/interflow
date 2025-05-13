@@ -1,17 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, X, Plus, CheckSquare, Tag, User, Briefcase } from 'lucide-react';
+import { Loader2, X, Plus, CheckSquare, Tag, User, Briefcase, Search, Check, RefreshCw, MessageSquare } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, addBusinessDays } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
 import { useAgents } from '../../hooks/useQueryes';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { ChecklistItem, TaskProject } from '../../types/tasks';
-import { useTaskStages, useTaskLabels, useTaskProjects } from '../../hooks/useTasks';
+import { useTaskLabels, useTaskProjects } from '../../hooks/useTasks';
 import { v4 as uuidv4 } from 'uuid';
-import CustomerSelectModal from '../customers/CustomerSelectModal';
+import api from '../../lib/api';
+import { useNavigate } from 'react-router-dom';
+
+// Lazy load de CustomerSelectModal para não carregá-lo até que seja necessário
+const CustomerSelectModal = lazy(() => import('../customers/CustomerSelectModal'));
 
 // Interface estendida para incluir os estágios no projeto
 interface TaskProjectWithStages extends TaskProject {
@@ -43,6 +47,7 @@ interface TaskFormData {
   stage_id?: string;
   checklist: ChecklistItem[];
   project_id?: string;
+  chat_id?: string;
 }
 
 interface TaskModalProps {
@@ -52,18 +57,30 @@ interface TaskModalProps {
   mode: 'create' | 'edit';
   initialStageId?: string; // Usado ao criar uma nova tarefa a partir de uma coluna específica
   projectId?: string; // Projeto ao qual a tarefa pertence
+  chatId?: string; // Chat ao qual a tarefa está relacionada
 }
 
-export function TaskModal({ onClose, organizationId, taskId, mode, initialStageId, projectId }: TaskModalProps) {
+export function TaskModal({ onClose, organizationId, taskId, mode, initialStageId, projectId, chatId }: TaskModalProps) {
   const { t, i18n } = useTranslation('tasks');
   const queryClient = useQueryClient();
-  const { session } = useAuthContext();
-  const [isLoading, setIsLoading] = useState(false);
+  const { session, currentOrganizationMember } = useAuthContext();
+  const [isLoading, setIsLoading] = useState(mode === 'edit' || (mode === 'create' && chatId !== undefined));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [showLabelDropdown, setShowLabelDropdown] = useState(false);
+  const [showAssigneesDropdown, setShowAssigneesDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const navigate = useNavigate();
+  
+  // Refs para detectar cliques fora dos dropdowns
+  const labelsDropdownRef = useRef<HTMLDivElement>(null);
+  const assigneesDropdownRef = useRef<HTMLDivElement>(null);
+  // Ref para controlar se loadChatInfo já foi chamado para este chatId
+  const chatInfoLoadedRef = useRef<string | null>(null);
   
   // Novo estado para cliente selecionado e modal
   const [selectedCustomer, setSelectedCustomer] = useState<{id: string; name: string; profile_picture?: string} | null>(null);
@@ -79,26 +96,18 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     customer_id: undefined,
     stage_id: initialStageId,
     checklist: [],
-    project_id: projectId
+    project_id: projectId,
+    chat_id: chatId
   });
 
-  // Usar o hook useTaskStages apenas se tiver um projectId definido
-  const { data: stagesFromApi = [] } = useTaskStages(
-    organizationId, 
-    projectId ? formData.project_id : undefined
-  );
-  
   const { data: labels = [] } = useTaskLabels(organizationId);
   const { data: agents = [] } = useAgents(organizationId);
-  const { data: projects = [] } = useTaskProjects(organizationId) as { data: TaskProjectWithStages[] };
+  const { data: projects = [] } = useTaskProjects(organizationId) as { 
+    data: TaskProjectWithStages[]
+  };
   
   // Obter os estágios com base no projeto selecionado
   const stages = useMemo(() => {
-    // Se tem projectId definido, usa os estágios da API
-    if (projectId) {
-      return stagesFromApi;
-    }
-    
     // Se não tem projeto selecionado, retorna lista vazia
     if (!formData.project_id) {
       return [];
@@ -114,7 +123,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     
     // Caso contrário, retorna lista vazia
     return [];
-  }, [projectId, formData.project_id, stagesFromApi, projects]);
+  }, [formData.project_id, projects]);
 
   // Filtrar agentes baseado no projeto selecionado
   const filteredAgents = useMemo(() => {
@@ -137,6 +146,84 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     return agents.filter(agent => projectMemberIds.includes(agent.id));
   }, [agents, formData.project_id, projectId, projects]);
 
+  // Efeito para selecionar automaticamente o primeiro projeto e etapa
+  useEffect(() => {
+    if (mode === 'create' && !taskId && !formData.project_id && projects.length > 0) {
+      // Selecionar o primeiro projeto
+      const firstProject = projects[0];
+      
+      if (firstProject) {
+        // Atualizar o projeto
+        setFormData(prev => ({ 
+          ...prev, 
+          project_id: firstProject.id 
+        }));
+        
+        // Selecionar primeira etapa se disponível
+        if (firstProject.stages && firstProject.stages.length > 0) {
+          const firstStage = firstProject.stages[0];
+          
+          if (firstStage) {
+            setFormData(prev => ({ 
+              ...prev, 
+              stage_id: firstStage.id 
+            }));
+          }
+        }
+      }
+    }
+  }, [mode, taskId, formData.project_id, projects]);
+
+  // Efeito para carregar tarefa ou informações do chat
+  useEffect(() => {
+    if (mode === 'edit' && taskId) {
+      loadTask();
+    } else if (mode === 'create' && chatId && chatInfoLoadedRef.current !== chatId) {
+      chatInfoLoadedRef.current = chatId;
+      loadChatInfo();
+    } else if (mode === 'create' && !chatId) {
+      // Se não é um edit nem tem chatId, não precisa de carregamento
+      setIsLoading(false);
+    }
+  }, [mode, taskId, chatId]);
+
+  // Efeito para selecionar automaticamente o usuário atual como responsável
+  useEffect(() => {
+    if (mode === 'create' && !taskId && selectedAssignees.length === 0 && session?.user?.id) {
+      setSelectedAssignees([session.user.id]);
+    }
+  }, [mode, taskId, selectedAssignees.length, session?.user?.id]);
+
+  // Efeito para fechar os dropdowns quando clicar fora deles
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (labelsDropdownRef.current && !labelsDropdownRef.current.contains(event.target as Node)) {
+        setShowLabelDropdown(false);
+      }
+      if (assigneesDropdownRef.current && !assigneesDropdownRef.current.contains(event.target as Node)) {
+        setShowAssigneesDropdown(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filtrar agentes que correspondem ao termo de pesquisa
+  const filteredAndSearchedAgents = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return filteredAgents;
+    }
+    
+    const normalizedSearchTerm = searchTerm.toLowerCase().trim();
+    return filteredAgents.filter(agent => {
+      const agentName = agent.profile?.full_name || agent.id;
+      return agentName.toLowerCase().includes(normalizedSearchTerm);
+    });
+  }, [filteredAgents, searchTerm]);
+
   // Funções para o modal de cliente
   const handleOpenCustomerModal = () => {
     setIsCustomerModalOpen(true);
@@ -150,12 +237,6 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     }));
     setIsCustomerModalOpen(false);
   };
-
-  useEffect(() => {
-    if (mode === 'edit' && taskId) {
-      loadTask();
-    }
-  }, [mode, taskId]);
 
   const loadTask = async () => {
     setIsLoading(true);
@@ -200,7 +281,8 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
           customer_id: data.customer_id,
           stage_id: data.stage_id,
           checklist: checklist,
-          project_id: data.project_id
+          project_id: data.project_id,
+          chat_id: data.chat_id
         });
         
         // Carregar labels da tarefa
@@ -227,6 +309,198 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     } catch (error) {
       console.error('Error loading task:', error);
       toast.error(t('error.loading'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Nova função para gerar conteúdo da tarefa usando IA
+  const generateTaskContent = async () => {
+    if (!currentOrganizationMember || !chatId) return null;
+    
+    setIsGeneratingSummary(true);
+    
+    try {
+      const response = await api.post(
+        `/api/${currentOrganizationMember.organization.id}/chat/${chatId}/generate-task-content`,
+        { language: i18n.language }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || t('error.generateTaskContent'));
+      }
+
+      return response.data.data;
+    } catch (err) {
+      console.error('Erro ao gerar conteúdo da tarefa:', err);
+      toast.error(t('error.generateTaskContent', 'Erro ao gerar conteúdo da tarefa'));
+      return null;
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  // Nova função para carregar informações do chat
+  const loadChatInfo = async () => {
+    try {
+      if (!chatId || !currentOrganizationMember) return;
+      
+      setIsLoading(true);
+      
+      // Fazemos apenas uma consulta com relacionamento para obter o customer em uma única operação
+      const { data: chatData } = await supabase
+        .from('chats')
+        .select(`
+          customer_id,
+          customers:customer_id (
+            id,
+            name,
+            profile_picture
+          )
+        `)
+        .eq('id', chatId)
+        .single();
+      
+      // Se o chat tem um cliente associado, usamos as informações já obtidas
+      if (chatData?.customers) {
+        // TypeScript "hack" para garantir que possamos acessar os campos necessários com segurança
+        const customerObj = chatData.customers as unknown;
+        let customerId = '';
+        let customerName = '';
+        let profilePicture: string | undefined;
+        
+        // Verificar se é um array ou objeto e extrair os dados corretamente
+        if (Array.isArray(customerObj) && customerObj.length > 0) {
+          customerId = customerObj[0].id;
+          customerName = customerObj[0].name;
+          profilePicture = customerObj[0].profile_picture;
+        } else {
+          // Tratar como objeto
+          const customerData = customerObj as { id: string; name: string; profile_picture?: string };
+          customerId = customerData.id;
+          customerName = customerData.name;
+          profilePicture = customerData.profile_picture;
+        }
+        
+        // Definir o cliente selecionado
+        setSelectedCustomer({
+          id: customerId,
+          name: customerName,
+          profile_picture: profilePicture
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          customer_id: customerId
+        }));
+      }
+      
+      // Tentar gerar conteúdo de tarefa com IA
+      const generatedContent = await generateTaskContent();
+      
+      if (generatedContent) {
+        // Converter data sugerida para o formato adequado
+        let dueDate = '';
+        let dueTime = '';
+        
+        // Quando recebemos a data sugerida do backend
+        if (generatedContent.due_date) {
+          try {
+            // Validar se a data está no formato YYYY-MM-DD
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            
+            if (dateRegex.test(generatedContent.due_date)) {
+              const suggestedDate = new Date(generatedContent.due_date + 'T12:00:00');
+              
+              // Verificar se a data é válida
+              if (!isNaN(suggestedDate.getTime())) {
+                // Formatar para YYYY-MM-DD (garantindo formato correto)
+                dueDate = format(suggestedDate, 'yyyy-MM-dd');
+                dueTime = '12:00'; // Meio-dia por padrão
+              } else {
+                // Se a data for inválida, usar a data atual + 3 dias úteis
+                const fallbackDate = addBusinessDays(new Date(), 3);
+                dueDate = format(fallbackDate, 'yyyy-MM-dd');
+                dueTime = '12:00';
+                
+                // Adicionar aviso na descrição
+                if (generatedContent.description) {
+                  generatedContent.description += `\n\n**${t('dueDate.fallback', 'Nota')}:** ${t(
+                    'dueDate.fallbackMessage',
+                    'A data sugerida era inválida. Uma data padrão foi definida no lugar.'
+                  )}`;
+                }
+              }
+            } else {
+              // Se não estiver no formato correto, usar data padrão
+              const fallbackDate = addBusinessDays(new Date(), 3);
+              dueDate = format(fallbackDate, 'yyyy-MM-dd');
+              dueTime = '12:00';
+            }
+          } catch (error) {
+            console.error('Erro ao processar data sugerida:', error);
+            // Em caso de erro, não definir data
+          }
+        }
+        
+        // Criar itens de checklist a partir das subtarefas sugeridas
+        const checklist = generatedContent.subtasks && Array.isArray(generatedContent.subtasks)
+          ? generatedContent.subtasks.map((text: string) => ({
+              id: uuidv4(),
+              text,
+              completed: false
+            }))
+          : [];
+          
+        // Adicionar a justificativa da data à descrição, se existir
+        let fullDescription = generatedContent.description || '';
+
+        // Adicionar justificativa da data de vencimento, se existir
+        if (generatedContent.due_date_reason) {
+          fullDescription += `\n\n**${t('dueDate.reason', 'Justificativa da data sugerida')}:** ${generatedContent.due_date_reason}`;
+        }
+
+        // Adicionar justificativa da prioridade, se existir
+        if (generatedContent.priority_reason) {
+          fullDescription += `\n\n**${t('priority.reason', 'Justificativa da prioridade sugerida')}:** ${generatedContent.priority_reason}`;
+        }
+        
+        // Aplicar os dados gerados ao formulário
+        setFormData(prev => ({
+          ...prev,
+          title: generatedContent.title,
+          description: fullDescription,
+          due_date: dueDate,
+          due_time: dueTime,
+          // Mapear a prioridade sugerida para o formato esperado pelo formulário
+          priority: generatedContent.priority === 'high' ? 'high' : 
+                    generatedContent.priority === 'low' ? 'low' : 'medium',
+          checklist: checklist
+        }));
+      } else {
+        // Fallback se a IA falhar - criar uma descrição simplificada
+        const customerName = selectedCustomer?.name || '';
+        const ticketInfo = `#${chatId.substring(0, 8)}`;
+        
+        const title = customerName 
+          ? t('taskForCustomer', 'Tarefa para {{customerName}}', { customerName }) 
+          : t('taskForChat', 'Tarefa para chat {{ticketInfo}}', { ticketInfo });
+        
+        let description = t('taskFromChat', 'Tarefa criada a partir do chat {{ticketInfo}}', { ticketInfo });
+        
+        if (customerName) {
+          description += `\n\n**${t('customer', 'Cliente')}:** ${customerName}`;
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          title,
+          description
+        }));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar informações do chat:', error);
+      toast.error(t('error.loadChatInfo', 'Erro ao carregar informações do chat'));
     } finally {
       setIsLoading(false);
     }
@@ -279,7 +553,8 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         user_id: session?.user?.id,
         stage_id: formData.stage_id || null,
         checklist: formData.checklist,
-        project_id: formData.project_id || null
+        project_id: formData.project_id || null,
+        chat_id: chatId || null // Adicionar o ID do chat se disponível
       };
       
       let updatedTaskId = taskId; // Usar o taskId recebido como parâmetro
@@ -340,6 +615,26 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
             .from('task_task_labels')
             .insert(labelsData);
         }
+        
+        // Adicionar mensagem do sistema no chat apenas quando estiver criando uma nova tarefa
+        if (chatId && session?.user?.id && mode === 'create') {
+          await supabase
+            .from('messages')
+            .insert({
+              chat_id: chatId,
+              type: 'task',
+              sender_type: 'system',
+              sender_agent_id: session.user.id,
+              organization_id: organizationId,
+              created_at: new Date().toISOString(),
+              metadata: {
+                task_id: updatedTaskId,
+                task_title: formData.title,
+                task_status: formData.status,
+                task_priority: formData.priority
+              }
+            });
+        }
       }
       
       // Invalida o cache de tasks para forçar uma nova busca
@@ -396,8 +691,8 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         : [...prev, labelId]
     );
   };
-  
-  // Funções para gerenciar responsáveis
+
+  // Função para alternar a seleção de um responsável
   const toggleAssignee = (userId: string) => {
     setSelectedAssignees(prev => 
       prev.includes(userId)
@@ -406,13 +701,151 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     );
   };
 
+  // Função para regenerar o conteúdo da tarefa com IA
+  const handleRegenerateContent = async () => {
+    if (!chatId || !currentOrganizationMember) {
+      toast.error(t('error.regenerateContent', 'Não é possível regenerar conteúdo para esta tarefa'));
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    
+    try {
+      // Buscar dados atuais do chat para garantir que temos o customer_id
+      const { data: chatData } = await supabase
+        .from('chats')
+        .select('id, customer_id')
+        .eq('id', chatId)
+        .single();
+      
+      if (chatData?.customer_id) {
+        setFormData(prev => ({
+          ...prev,
+          customer_id: chatData.customer_id
+        }));
+      }
+      
+      // Gerar novo conteúdo
+      const generatedContent = await generateTaskContent();
+      
+      if (generatedContent) {
+        // Processamento similar ao da função loadChatInfo
+        let dueDate = '';
+        let dueTime = '';
+        
+        // Processar a data sugerida
+        if (generatedContent.due_date) {
+          try {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            
+            if (dateRegex.test(generatedContent.due_date)) {
+              const suggestedDate = new Date(generatedContent.due_date + 'T12:00:00');
+              
+              if (!isNaN(suggestedDate.getTime())) {
+                dueDate = format(suggestedDate, 'yyyy-MM-dd');
+                dueTime = '12:00';
+              } else {
+                const fallbackDate = addBusinessDays(new Date(), 3);
+                dueDate = format(fallbackDate, 'yyyy-MM-dd');
+                dueTime = '12:00';
+              }
+            } else {
+              const fallbackDate = addBusinessDays(new Date(), 3);
+              dueDate = format(fallbackDate, 'yyyy-MM-dd');
+              dueTime = '12:00';
+            }
+          } catch (error) {
+            console.error('Erro ao processar data sugerida:', error);
+          }
+        }
+        
+        // Criar itens de checklist
+        const checklist = generatedContent.subtasks && Array.isArray(generatedContent.subtasks)
+          ? generatedContent.subtasks.map((text: string) => ({
+              id: uuidv4(),
+              text,
+              completed: false
+            }))
+          : [];
+        
+        // Preparar a descrição completa
+        let fullDescription = generatedContent.description || '';
+        
+        if (generatedContent.due_date_reason) {
+          fullDescription += `\n\n**${t('dueDate.reason', 'Justificativa da data sugerida')}:** ${generatedContent.due_date_reason}`;
+        }
+        
+        if (generatedContent.priority_reason) {
+          fullDescription += `\n\n**${t('priority.reason', 'Justificativa da prioridade sugerida')}:** ${generatedContent.priority_reason}`;
+        }
+        
+        // Atualizar o formulário com o novo conteúdo gerado
+        setFormData(prev => ({
+          ...prev,
+          title: generatedContent.title,
+          description: fullDescription,
+          due_date: dueDate,
+          due_time: dueTime,
+          priority: generatedContent.priority === 'high' ? 'high' : 
+                    generatedContent.priority === 'low' ? 'low' : 'medium',
+          checklist: checklist
+        }));
+        
+        toast.success(t('success.regenerateContent', 'Conteúdo regenerado com sucesso'));
+      } else {
+        toast.error(t('error.generateContent', 'Não foi possível gerar novo conteúdo'));
+      }
+    } catch (error) {
+      console.error('Erro ao regenerar conteúdo:', error);
+      toast.error(t('error.regenerateContent', 'Erro ao regenerar conteúdo'));
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  // Adicionar função para navegar para a página do chat
+  const navigateToChatPage = () => {
+    if (formData.chat_id) {
+      navigate(`/app/chats/${formData.chat_id}`);
+    } else if (chatId) {
+      navigate(`/app/chats/${chatId}`);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {mode === 'create' ? t('addTask') : t('editTask')}
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+              {mode === 'create' ? t('addTask') : t('editTask')}
+              {isGeneratingSummary && (
+                <span className="ml-2 text-sm font-normal text-blue-600 dark:text-blue-400 inline-flex items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
+                  {t('generatingContent', 'Gerando conteúdo com IA...')}
+                </span>
+              )}
+            </h2>
+            {chatId && (
+              <div className="flex items-center mt-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('taskFromChatMessage', 'Tarefa baseada em conversa do chat')}
+                </p>
+                {mode === 'create' && (
+                  <button
+                    type="button"
+                    onClick={handleRegenerateContent}
+                    disabled={isGeneratingSummary}
+                    className="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    title={t('regenerateContent', 'Regenerar conteúdo com IA')}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                    {t('regenerate', 'Regenerar')}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -666,76 +1099,197 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                   </select>
                 </div>
 
-                {/* Responsáveis */}
-                <div>
+                {/* Responsáveis - select pesquisável múltiplo */}
+                <div ref={assigneesDropdownRef}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <User className="w-4 h-4 mr-1.5" />
                     {t('assignees.title')}
                   </label>
-                  <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2">
-                    {filteredAgents.map(agent => (
-                      <div key={agent.id} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id={`assignee-${agent.id}`}
-                          checked={selectedAssignees.includes(agent.id)}
-                          onChange={() => toggleAssignee(agent.id)}
-                          className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                        />
-                        <label 
-                          htmlFor={`assignee-${agent.id}`}
-                          className="text-sm text-gray-700 dark:text-gray-300 flex items-center"
-                        >
-                          {agent.profile?.avatar_url && (
-                            <img 
-                              src={agent.profile.avatar_url} 
-                              alt="" 
-                              className="w-5 h-5 rounded-full mr-2" 
-                            />
-                          )}
-                          {agent.profile?.full_name || agent.id}
-                        </label>
+                  
+                  <div className="relative">
+                    {/* Campo para mostrar os responsáveis selecionados */}
+                    <div 
+                      onClick={() => setShowAssigneesDropdown(!showAssigneesDropdown)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 cursor-pointer flex items-center justify-between"
+                    >
+                      <div className="flex flex-wrap gap-1">
+                        {selectedAssignees.length > 0 ? (
+                          selectedAssignees.map(userId => {
+                            const agent = filteredAgents.find(a => a.id === userId);
+                            return (
+                              <div 
+                                key={userId} 
+                                className="inline-flex items-center bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded px-2 py-1 mr-1 mb-1"
+                              >
+                                {agent?.profile?.avatar_url && (
+                                  <img 
+                                    src={agent.profile.avatar_url} 
+                                    alt="" 
+                                    className="w-4 h-4 rounded-full mr-1" 
+                                  />
+                                )}
+                                <span>{agent?.profile?.full_name || userId}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleAssignee(userId);
+                                  }}
+                                  className="ml-1 text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {t('assignees.title')}
+                          </span>
+                        )}
                       </div>
-                    ))}
-                    {filteredAgents.length === 0 && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                        {formData.project_id || projectId 
-                          ? t('assignees.noProjectMembers') 
-                          : t('assignees.noAgents')}
-                      </p>
+                      <div>
+                        <User className="w-5 h-5 text-gray-400" />
+                      </div>
+                    </div>
+                    
+                    {/* Dropdown para pesquisar e selecionar responsáveis */}
+                    {showAssigneesDropdown && (
+                      <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto">
+                        {/* Campo de pesquisa */}
+                        <div className="sticky top-0 p-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <input
+                              type="text"
+                              className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                              placeholder={t('assignees.searchPlaceholder', 'Pesquisar responsáveis...')}
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Lista de responsáveis */}
+                        <div className="py-1">
+                          {filteredAndSearchedAgents.length > 0 ? (
+                            filteredAndSearchedAgents.map(agent => (
+                              <div
+                                key={agent.id}
+                                onClick={() => toggleAssignee(agent.id)}
+                                className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                              >
+                                <div className="flex items-center flex-1">
+                                  {agent.profile?.avatar_url ? (
+                                    <img 
+                                      src={agent.profile.avatar_url} 
+                                      alt="" 
+                                      className="w-6 h-6 rounded-full mr-2" 
+                                    />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 mr-2 flex items-center justify-center">
+                                      <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                    </div>
+                                  )}
+                                  <span className="text-gray-700 dark:text-gray-300">
+                                    {agent.profile?.full_name || agent.id}
+                                  </span>
+                                </div>
+                                {selectedAssignees.includes(agent.id) && (
+                                  <Check className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                                )}
+                              </div>
+                            ))
+                          ) : searchTerm ? (
+                            <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                              {t('assignees.noResults', 'Nenhum resultado encontrado')}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                              {formData.project_id || projectId 
+                                ? t('assignees.noProjectMembers') 
+                                : t('assignees.noAgents')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Etiquetas */}
-                <div>
+                {/* Etiquetas - agora referenciando o ref */}
+                <div ref={labelsDropdownRef}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <Tag className="w-4 h-4 mr-1.5" />
                     {t('labels.title')}
                   </label>
-                  <div className="mt-2 flex flex-wrap gap-2 max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2">
-                    {labels.map(label => (
-                      <div 
-                        key={label.id}
-                        onClick={() => toggleLabel(label.id)}
-                        className={`px-2 py-1 rounded-full text-xs cursor-pointer transition-colors ${
-                          selectedLabels.includes(label.id) 
-                            ? 'opacity-100' 
-                            : 'opacity-50 hover:opacity-80'
-                        }`}
-                        style={{ 
-                          backgroundColor: `${label.color}20`, // 20% opacity
-                          color: label.color,
-                          border: `1px solid ${label.color}`
-                        }}
-                      >
-                        {label.name}
+                  
+                  <div className="mt-2 relative">
+                    {/* Exibir etiquetas selecionadas */}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {selectedLabels.map(labelId => {
+                        const label = labels.find(l => l.id === labelId);
+                        if (!label) return null;
+                        
+                        return (
+                          <div 
+                            key={label.id}
+                            className="px-2 py-1 rounded-full text-xs flex items-center"
+                            style={{ 
+                              backgroundColor: `${label.color}20`, // 20% opacity
+                              color: label.color,
+                              border: `1px solid ${label.color}`
+                            }}
+                          >
+                            <span>{label.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleLabel(label.id)}
+                              className="ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Botão para abrir dropdown */}
+                    <button
+                      type="button"
+                      onClick={() => setShowLabelDropdown(!showLabelDropdown)}
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {t('labels.addLabel')}
+                    </button>
+                    
+                    {/* Dropdown das etiquetas */}
+                    {showLabelDropdown && (
+                      <div className="absolute z-10 mt-2 w-full max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg dark:bg-gray-800 dark:border-gray-700">
+                        {labels.length > 0 ? (
+                          labels.map(label => (
+                            <div 
+                              key={label.id}
+                              onClick={() => toggleLabel(label.id)}
+                              className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center ${
+                                selectedLabels.includes(label.id) ? 'bg-gray-100 dark:bg-gray-700' : ''
+                              }`}
+                            >
+                              <span 
+                                className="w-3 h-3 rounded-full mr-2" 
+                                style={{ backgroundColor: label.color }}
+                              />
+                              <span>{label.name}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                            {t('labels.noLabels')}
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {labels.length === 0 && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                        {t('labels.noLabels')}
-                      </p>
                     )}
                   </div>
                 </div>
@@ -799,6 +1353,16 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
+              {mode === 'edit' && formData.chat_id && (
+                <button
+                  type="button"
+                  onClick={navigateToChatPage}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  {t('viewChat', 'Ver Atendimento')}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onClose}
@@ -827,11 +1391,21 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
       </div>
       
       {/* Modal de seleção de cliente */}
-      <CustomerSelectModal
-        isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-        onSelectCustomer={handleSelectCustomer}
-      />
+      {isCustomerModalOpen && (
+        <Suspense fallback={
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 flex justify-center items-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          </div>
+        }>
+          <CustomerSelectModal
+            isOpen={isCustomerModalOpen}
+            onClose={() => setIsCustomerModalOpen(false)}
+            onSelectCustomer={handleSelectCustomer}
+          />
+        </Suspense>
+      )}
     </div>
   );
 } 

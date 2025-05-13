@@ -137,6 +137,7 @@
     "color": "Color",
     "noLabels": "No hay etiquetas disponibles",
     "existingLabels": "Etiquetas existentes",
+    "addLabel": "Agregar etiqueta",
     "created": "Etiqueta creada exitosamente",
     "updated": "Etiqueta actualizada exitosamente",
     "deleted": "Etiqueta eliminada exitosamente",
@@ -152,7 +153,9 @@
     "assigned": "Tarea asignada exitosamente",
     "removed": "Asignación eliminada exitosamente",
     "assignError": "Error al asignar tarea",
-    "removeError": "Error al eliminar asignación"
+    "removeError": "Error al eliminar asignación",
+    "searchPlaceholder": "Buscar responsables...",
+    "noResults": "No se encontraron resultados"
   },
   "checklist": {
     "title": "Lista de verificación",

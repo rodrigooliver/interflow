@@ -76,6 +76,7 @@ ALTER TYPE message_type ADD VALUE 'user_join';
 ALTER TYPE message_type ADD VALUE 'template';
 ALTER TYPE message_type ADD VALUE 'team_transferred';
 ALTER TYPE message_type ADD VALUE 'instructions_model';
+ALTER TYPE message_type ADD VALUE 'task';
 
 -- Atualiza o comentário da coluna type
 COMMENT ON COLUMN messages.type IS 'Tipo da mensagem (text, image, video, audio, document, sticker, email, user_entered, user_left, user_transferred, user_closed, user_start)'; 

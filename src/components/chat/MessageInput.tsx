@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, Smile, Send, Mic, Loader2, Image, FileText, X, Sparkles, Plus, Play, Pause, RefreshCw } from 'lucide-react';
+import { Bold, Italic, Smile, Send, Mic, Loader2, Image, FileText, X, Sparkles, Plus, Play, Pause, RefreshCw, ListTodo } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -15,6 +15,7 @@ import axios from 'axios';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { toast } from 'react-hot-toast';
 import { MarkdownRenderer } from '../../components/ui/MarkdownRenderer';
+import { TaskModal } from '../tasks/TaskModal';
 
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
@@ -160,6 +161,9 @@ export function MessageInput({
   }[]>([]);
   
   const [cursorPosition, setCursorPosition] = useState<number | null>(null);
+  
+  // Adicionar estado para o modal de tarefa
+  const [showTaskModal, setShowTaskModal] = useState(false);
   
   // Função para detectar se o dispositivo é móvel
   // Usada para alterar o comportamento da tecla Enter (quebra de linha em vez de enviar)
@@ -1708,6 +1712,19 @@ export function MessageInput({
     }
   }, [droppedFiles]);
 
+  // Handler para o botão de tarefas
+  const handleTaskClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Desfocar o textarea para esconder o teclado virtual em dispositivos móveis
+    if (textareaRef.current) {
+      textareaRef.current.blur();
+    }
+    
+    // Abrir o modal de tarefa
+    setShowTaskModal(true);
+  };
+
   return (
     <div 
       className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700"
@@ -1828,6 +1845,19 @@ export function MessageInput({
               {!isMobileDevice() && (
                 <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
                   {isMac ? '⌘' : 'Ctrl'} J
+                </span>
+              )}
+            </button>
+            {/* Botão para adicionar tarefa */}
+            <button
+              onMouseDown={handleTaskClick}
+              className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+              title={t('task.create', 'Criar tarefa relacionada a este chat')}
+            >
+              <ListTodo className="w-5 h-5" />
+              {!isMobileDevice() && (
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                  {t('task.shortcut', 'Tarefa')}
                 </span>
               )}
             </button>
@@ -2053,6 +2083,16 @@ export function MessageInput({
           text={message}
           onClose={handleAIModalClose}
           onTextUpdate={(newText) => setMessage(newText)}
+          chatId={chatId}
+        />
+      )}
+
+      {/* Modal de tarefas */}
+      {showTaskModal && (
+        <TaskModal
+          onClose={() => setShowTaskModal(false)}
+          organizationId={organizationId}
+          mode="create"
           chatId={chatId}
         />
       )}

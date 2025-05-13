@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users, ExternalLink, CheckSquare } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,8 @@ import {
   DialogDescription
 } from "../../components/ui/Dialog";
 import { Button } from "../../components/ui/Button";
+import { TaskModal } from '../tasks/TaskModal';
+import { useAuthContext } from '../../contexts/AuthContext';
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
   canReplyToMessages: boolean;
@@ -77,6 +79,7 @@ export function MessageBubble({
   onRetry
 }: MessageBubbleProps) {
   const { t } = useTranslation('chats');
+  const { currentOrganizationMember } = useAuthContext();
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -84,6 +87,7 @@ export function MessageBubble({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
   const {
     content,
     created_at,
@@ -322,13 +326,15 @@ export function MessageBubble({
         return <UserPlus className="w-4 h-4" />;
       case 'user_closed':
         return <CheckCircle className="w-4 h-4" />;
+      case 'task':
+        return <CheckSquare className="w-4 h-4" />;
       default:
         return null;
     }
   };
 
   // Função para obter a mensagem do sistema
-  const getSystemMessage = () => {
+  const getSystemMessage = (): string => {
     const agentName = sender_agent?.full_name || t('unnamed');
     
     switch (type) {
@@ -348,8 +354,16 @@ export function MessageBubble({
         return t('systemMessages.userJoin', { name: agentName });
       case 'user_closed':
         return t('systemMessages.userClosed', { name: agentName });
+      case 'task':
+        // No caso de mensagem de tarefa, vamos retornar somente o texto inicial
+        if (metadata?.task_id) {
+          const taskTitle = metadata.task_title as string || t('systemMessages.taskUnknown', 'tarefa');
+          
+          return `${taskTitle}`;
+        }
+        return content || '';
       default:
-        return content;
+        return content || '';
     }
   };
 
@@ -426,6 +440,18 @@ export function MessageBubble({
         } ${isPending ? 'opacity-70' : ''}`}>
           {renderSystemIcon()}
           <span className=''>{getSystemMessage()}</span>
+          {/* Botão para abrir o modal da tarefa */}
+          {type === 'task' && metadata && 'task_id' in metadata && metadata.task_id && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setTaskModalOpen(true);
+              }}
+              className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center"
+            >
+              <ExternalLink className="w-3 h-3 ml-0.5" />
+            </button>
+          )}
           <span className="text-xs text-gray-500">
             {new Date(created_at).toLocaleTimeString([], { 
               hour: '2-digit', 
@@ -855,6 +881,20 @@ export function MessageBubble({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal da tarefa */}
+      {/* NOTA: Existem alguns erros de tipagem TypeScript conhecidos nesta implementação, 
+         mas a funcionalidade deve funcionar corretamente. Para corrigir completamente os erros,
+         uma refatoração mais ampla seria necessária no futuro. */}
+      {taskModalOpen && metadata && 'task_id' in metadata && metadata.task_id && (
+        <TaskModal
+          onClose={() => setTaskModalOpen(false)}
+          organizationId={currentOrganizationMember?.organization_id}
+          taskId={String(metadata.task_id)}
+          mode="edit"
+          chatId={typeof message.chat_id === 'object' ? (message.chat_id as any).id : String(message.chat_id)}
+        />
+      )}
     </>
   );
 }

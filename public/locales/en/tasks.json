@@ -153,6 +153,7 @@
     "color": "Color",
     "noLabels": "No labels available",
     "existingLabels": "Existing labels",
+    "addLabel": "Add label",
     "created": "Label created successfully",
     "updated": "Label updated successfully",
     "deleted": "Label deleted successfully",
@@ -168,7 +169,9 @@
     "assigned": "Task assigned successfully",
     "removed": "Assignment removed successfully",
     "assignError": "Error assigning task",
-    "removeError": "Error removing assignment"
+    "removeError": "Error removing assignment",
+    "searchPlaceholder": "Search assignees...",
+    "noResults": "No results found"
   },
   "checklist": {
     "title": "Checklist",
