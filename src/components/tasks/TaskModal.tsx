@@ -857,44 +857,53 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-              {mode === 'create' ? t('addTask') : t('editTask')}
-              {isGeneratingSummary && (
-                <span className="ml-2 text-sm font-normal text-blue-600 dark:text-blue-400 inline-flex items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
-                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
-                  {t('generatingContent', 'Gerando conteúdo com IA...')}
-                </span>
-              )}
-            </h2>
-            {chatId && (
-              <div className="flex items-center mt-1">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {t('taskFromChatMessage', 'Tarefa baseada em conversa do chat')}
-                </p>
-                {mode === 'create' && (
-                  <button
-                    type="button"
-                    onClick={handleRegenerateContent}
-                    disabled={isGeneratingSummary}
-                    className="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                    title={t('regenerateContent', 'Regenerar conteúdo com IA')}
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                    {t('regenerate', 'Regenerar')}
-                  </button>
-                )}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        {/* Cabeçalho fixo */}
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 z-10">
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder={mode === 'create' ? t('form.titlePlaceholderCreate', 'Nova tarefa...') : t('form.titlePlaceholderEdit', 'Título da tarefa...')}
+                  className="w-full text-lg font-medium bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-600 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                  required
+                />
+                <button
+                  onClick={onClose}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-            )}
+              {chatId && (
+                <div className="flex items-center">
+                   {isGeneratingSummary ? (
+                      <div className="px-2">
+                        <span className="text-sm font-normal text-blue-600 dark:text-blue-400 inline-flex items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                          <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
+                          {t('generatingContent', 'Gerando conteúdo com IA...')}
+                        </span>
+                      </div>
+                    ) : mode === 'create' && (
+                      <button
+                        type="button"
+                        onClick={handleRegenerateContent}
+                        disabled={isGeneratingSummary}
+                        className="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                        title={t('regenerateContent', 'Regenerar conteúdo com IA')}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                        {t('regenerate', 'Regenerar')}
+                      </button>
+                    )}
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X className="w-5 h-5" />
-          </button>
+         
         </div>
 
         {isLoading ? (
@@ -902,7 +911,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
             <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
             {showValidationErrors && (
               <div className="text-sm text-red-500 dark:text-red-400 mb-2">
                 <span className="text-red-500">*</span> {t('form.requiredFields')}
@@ -910,19 +919,6 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                {/* Título */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('title')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    required
-                  />
-                </div>
 
                 {/* Descrição */}
                 <div>
@@ -933,7 +929,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    rows={3}
+                    rows={10}
                   />
                 </div>
 
@@ -984,56 +980,84 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                 </div>
 
                 {/* Data e Hora de Vencimento */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg ">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     {t('form.dueDate')}
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="date"
-                      name="due_date"
-                      value={formData.due_date}
-                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                    <input
-                      type="time"
-                      name="due_time"
-                      value={formData.due_time}
-                      onChange={(e) => setFormData({ ...formData, due_time: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const now = new Date();
-                        setFormData(prev => ({
-                          ...prev,
-                          due_date: format(now, "yyyy-MM-dd"),
-                          due_time: format(now, "HH:mm")
-                        }));
-                      }}
-                      className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                    >
-                      {t('now')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        setFormData(prev => ({
-                          ...prev,
-                          due_date: format(tomorrow, "yyyy-MM-dd"),
-                          due_time: format(tomorrow, "HH:mm")
-                        }));
-                      }}
-                      className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                    >
-                      {t('tomorrow')}
-                    </button>
+                  <div className="space-y-3">
+                    {/* Campos de data e hora */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="due_date"
+                          value={formData.due_date}
+                          onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                          className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        />
+                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          name="due_time"
+                          value={formData.due_time}
+                          onChange={(e) => setFormData({ ...formData, due_time: e.target.value })}
+                          className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        />
+                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Botões de atalho */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const now = new Date();
+                          setFormData(prev => ({
+                            ...prev,
+                            due_date: format(now, "yyyy-MM-dd"),
+                            due_time: format(now, "HH:mm")
+                          }));
+                        }}
+                        className="inline-flex items-center px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                      >
+                        {t('now')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tomorrow = addBusinessDays(new Date(), 1);
+                          setFormData(prev => ({
+                            ...prev,
+                            due_date: format(tomorrow, "yyyy-MM-dd"),
+                            due_time: "09:00"
+                          }));
+                        }}
+                        className="inline-flex items-center px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                      >
+                        {t('tomorrow')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextWeek = addBusinessDays(new Date(), 5);
+                          setFormData(prev => ({
+                            ...prev,
+                            due_date: format(nextWeek, "yyyy-MM-dd"),
+                            due_time: "09:00"
+                          }));
+                        }}
+                        className="inline-flex items-center px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                      >
+                        {t('nextWeek', 'Próxima semana')}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1109,37 +1133,102 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
               </div>
 
               <div className="space-y-4">
-                {/* Prioridade */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('form.priority')}
-                  </label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskFormData['priority'] })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="low">{t('priorities.low')}</option>
-                    <option value="medium">{t('priorities.medium')}</option>
-                    <option value="high">{t('priorities.high')}</option>
-                  </select>
-                </div>
+                {/* Prioridade e Status */}
+                <div className="space-y-4">
+                  {/* Prioridade */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      {t('form.priority')}
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, priority: 'low' })}
+                        className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          formData.priority === 'low'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('priorities.low')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, priority: 'medium' })}
+                        className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          formData.priority === 'medium'
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('priorities.medium')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, priority: 'high' })}
+                        className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          formData.priority === 'high'
+                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('priorities.high')}
+                      </button>
+                    </div>
+                  </div>
 
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('form.status')}
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskFormData['status'] })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="pending">{t('statuses.pending')}</option>
-                    <option value="in_progress">{t('statuses.in_progress')}</option>
-                    <option value="completed">{t('statuses.completed')}</option>
-                    <option value="cancelled">{t('statuses.cancelled')}</option>
-                  </select>
+                  {/* Status */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      {t('form.status')}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: 'pending' })}
+                        className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          formData.status === 'pending'
+                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('statuses.pending')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: 'in_progress' })}
+                        className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          formData.status === 'in_progress'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('statuses.in_progress')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: 'completed' })}
+                        className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          formData.status === 'completed'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('statuses.completed')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: 'cancelled' })}
+                        className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          formData.status === 'cancelled'
+                            ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('statuses.cancelled')}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Responsáveis - select pesquisável múltiplo */}
@@ -1338,59 +1427,101 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                 </div>
 
                 {/* Checklist */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
                     <CheckSquare className="w-4 h-4 mr-1.5" />
                     {t('checklist.title')}
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                      ({formData.checklist.filter(item => item.completed).length}/{formData.checklist.length})
+                    </span>
                   </label>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <input
-                      type="text"
-                      value={newChecklistItem}
-                      onChange={(e) => setNewChecklistItem(e.target.value)}
-                      placeholder={t('checklist.addItem')}
-                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addChecklistItem();
-                        }
-                      }}
-                    />
+                  
+                  {/* Campo de adição de item */}
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        value={newChecklistItem}
+                        onChange={(e) => setNewChecklistItem(e.target.value)}
+                        placeholder={t('checklist.addItem')}
+                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addChecklistItem();
+                          }
+                        }}
+                      />
+                      <Plus className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    </div>
                     <button
                       type="button"
                       onClick={addChecklistItem}
-                      className="p-1.5 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                      className="p-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-shrink-0"
                     >
-                      <Plus className="w-4 h-4" />
+                      {t('checklist.add', 'Adicionar')}
                     </button>
                   </div>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {formData.checklist.map((item) => (
-                      <div key={item.id} className="flex items-center group">
-                        <input
-                          type="checkbox"
-                          checked={item.completed}
-                          onChange={() => toggleChecklistItem(item.id)}
-                          className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                        />
-                        <span className={`flex-1 text-sm ${
-                          item.completed 
-                            ? 'line-through text-gray-400 dark:text-gray-500' 
-                            : 'text-gray-700 dark:text-gray-300'
-                        }`}>
-                          {item.text}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeChecklistItem(item.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+
+                  {/* Lista de itens */}
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                    {formData.checklist.length === 0 ? (
+                      <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {t('checklist.empty', 'Nenhum item na checklist')}
                       </div>
-                    ))}
+                    ) : (
+                      formData.checklist.map((item) => (
+                        <div 
+                          key={item.id} 
+                          className={`flex items-center group rounded-md transition-colors duration-150 ${
+                            item.completed 
+                              ? 'bg-green-50 dark:bg-green-900/10' 
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                          }`}
+                        >
+                          <div className="relative flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={item.completed}
+                              onChange={() => toggleChecklistItem(item.id)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                            />
+                            {item.completed && (
+                              <Check className="absolute w-3 h-3 text-white transform translate-x-0.5 translate-y-0.5 pointer-events-none" />
+                            )}
+                          </div>
+                          <span className={`flex-1 ml-3 text-sm ${
+                            item.completed 
+                              ? 'line-through text-gray-400 dark:text-gray-500' 
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}>
+                            {item.text}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeChecklistItem(item.id)}
+                            className="p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
+
+                  {/* Barra de progresso */}
+                  {formData.checklist.length > 0 && (
+                    <div className="mt-4">
+                      <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                          style={{ 
+                            width: `${(formData.checklist.filter(item => item.completed).length / formData.checklist.length) * 100}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
