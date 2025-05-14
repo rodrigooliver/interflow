@@ -15,6 +15,7 @@ import { ProjectModal } from '../components/tasks/ProjectModal';
 import { ProjectMembersModal } from '../components/tasks/ProjectMembersModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
@@ -49,7 +50,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">{title}</h2>
+        <h2 className="text-xl text-red-600 dark:text-red-400 font-semibold mb-4">{title}</h2>
         <p className="text-gray-600 dark:text-gray-300 mb-6">
           {message}
         </p>
@@ -148,6 +149,83 @@ export default function Tasks() {
     showArchivedTasks // Mostrar ou não tarefas arquivadas
   );
 
+  // Subscription para atualizações na tabela tasks
+  useEffect(() => {
+    let tasksSubscription: RealtimeChannel;
+    let tasksDeleteSubscription: RealtimeChannel;
+
+    if (organizationId) {
+      // Subscription para eventos INSERT e UPDATE
+      tasksSubscription = supabase
+        .channel('tasks-changes')
+        .on('postgres_changes', {
+          event: 'INSERT' as const,
+          schema: 'public',
+          table: 'tasks',
+          filter: `project_id=eq.${selectedProjectId}`
+        }, (payload) => {
+          
+          // Invalida o cache para forçar uma nova busca
+          queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
+          
+          // Mensagem de notificação para o usuário
+          toast.success(t('realtime.taskCreated'));
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE' as const,
+          schema: 'public',
+          table: 'tasks',
+          filter: `project_id=eq.${selectedProjectId}`
+        }, (payload) => {
+          
+          // Invalida o cache para forçar uma nova busca
+          queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
+          
+          // Mensagem de notificação para o usuário
+          toast.success(t('realtime.taskUpdated'));
+        })
+        .subscribe();
+
+      // Subscription separada para eventos DELETE
+      tasksDeleteSubscription = supabase
+        .channel('tasks-delete')
+        .on('postgres_changes', {
+          event: 'DELETE' as const,
+          schema: 'public',
+          table: 'tasks',
+          // Sem filtro, porque eventos DELETE não têm project_id
+        }, (payload) => {
+          
+          // Verifica se o ID da tarefa excluída existe na lista atual
+          const deletedTaskId = payload.old?.id;
+          
+          if (deletedTaskId) {
+            // Verifica se a tarefa excluída está na lista atual
+            const taskExists = tasks.some(task => task.id === deletedTaskId);
+            
+            if (taskExists) {
+              // Só invalida o cache se a tarefa excluída estiver na lista atual
+              queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
+              toast.success(t('realtime.taskDeleted'));
+            } else {
+              console.log('Tarefa excluída não pertence ao projeto atual:', deletedTaskId);
+            }
+          }
+        })
+        .subscribe();
+    }
+
+    // Cleanup das subscriptions quando o componente for desmontado
+    return () => {
+      if (tasksSubscription) {
+        supabase.removeChannel(tasksSubscription);
+      }
+      if (tasksDeleteSubscription) {
+        supabase.removeChannel(tasksDeleteSubscription);
+      }
+    };
+  }, [organizationId, queryClient, t, selectedProjectId, tasks]);
+
   const isLoading = isProjectsLoading || isStagesLoading || isTasksLoading;
 
   // Inicializar o projeto a partir da URL
@@ -205,7 +283,6 @@ export default function Tasks() {
         id: selectedProject.id, 
         organizationId 
       });
-      
       // Se o projeto excluído era o selecionado, limpar a seleção
       if (selectedProjectId === selectedProject.id) {
         handleSelectProject(null);
@@ -264,9 +341,23 @@ export default function Tasks() {
 
       if (error) throw error;
       toast.success(t('success.deleted'));
-      
-      // Invalida o cache de tasks para forçar uma nova busca
-      await queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
+
+      if( selectedTask.chat_id) {
+        //Após excluir o task, verificar e exlcuir messages com task_id
+        const { error: deleteMessagesError } = await supabase
+          .from('messages')
+          .delete()
+          .eq('task_id', selectedTask.id)
+          .eq('chat_id', selectedTask.chat_id)
+          .eq('organization_id', organizationId);
+
+        if (deleteMessagesError) {
+          console.error('Error deleting messages:', deleteMessagesError);
+        }
+      }
+
+      // A invalidação do cache agora é tratada pela subscription em tempo real
+      // queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
     } catch (error) {
       console.error('Error deleting task:', error);
       toast.error(t('error.delete'));
@@ -355,28 +446,28 @@ export default function Tasks() {
   if (!selectedProjectId) {
     return (
       <div className="flex flex-col h-full">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        <div className="p-4 sm:p-6">
+          <h1 className="hidden sm:block text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
             {t('title')}
           </h1>
           
           <div className="flex flex-col items-center justify-center max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
                 {t('projects.selectOrCreate')}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {t('projects.noProjectSelected')}
               </p>
             </div>
             
             {isProjectsLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="flex justify-center items-center py-8 sm:py-12">
+                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>
             ) : projects.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 w-full mb-6 sm:mb-8">
                   {projects.map(project => (
                     <ProjectCard 
                       key={project.id} 
@@ -395,16 +486,16 @@ export default function Tasks() {
                 </button>
               </>
             ) : (
-              <div className="text-center py-8">
-                <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-lg mb-6 inline-flex">
-                  <FolderPlus className="w-16 h-16 text-blue-500 dark:text-blue-400" />
+              <div className="text-center py-6 sm:py-8">
+                <div className="bg-gray-100 dark:bg-gray-800 p-6 sm:p-8 rounded-lg mb-4 sm:mb-6 inline-flex">
+                  <FolderPlus className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 dark:text-blue-400" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
                   {t('projects.noProjects')}
                 </p>
                 <button
                   onClick={handleAddProject}
-                  className="flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 mx-auto"
+                  className="flex items-center px-4 py-2 sm:px-5 sm:py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 mx-auto"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   {t('projects.createFirstProject')}
@@ -434,10 +525,10 @@ export default function Tasks() {
   // Renderização normal quando um projeto está selecionado
   return (
     <div className="flex flex-col h-full">
-      <div className="p-6 pb-0">
-        <div className="flex flex-wrap justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+      <div className="p-4 sm:p-6 pb-0">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <h1 className="hidden sm:block text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {t('title')}
             </h1>
             
@@ -450,18 +541,18 @@ export default function Tasks() {
             />
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
             {/* Mostrar/ocultar arquivados */}
             <button
               onClick={() => setShowArchivedTasks(!showArchivedTasks)}
-              className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm ${
+              className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
                 showArchivedTasks 
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-800/30 dark:text-blue-400' 
                   : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
               }`}
             >
-              <Archive className="w-4 h-4" />
-              <span>{showArchivedTasks ? t('viewActive') : t('viewArchived')}</span>
+              <Archive className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">{showArchivedTasks ? t('viewActive') : t('viewArchived')}</span>
             </button>
             
             {/* Dropdown de gerenciamento do projeto atual */}
@@ -469,10 +560,10 @@ export default function Tasks() {
               <div className="relative group" ref={projectMenuRef}>
                 <button
                   onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
-                  className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <Settings className="w-4 h-4 mr-1" />
-                  <span>{t('projects.manageProject')}</span>
+                  <span className="hidden sm:inline">{t('projects.manageProject')}</span>
                   <ChevronDown className="w-3 h-3 ml-1" />
                 </button>
                 
@@ -548,10 +639,10 @@ export default function Tasks() {
                 setSelectedTask(null);
                 setShowTaskModal(true);
               }}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              {t('addTask')}
+              <Plus className="w-5 h-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('addTask')}</span>
             </button>
           </div>
         </div>

@@ -264,6 +264,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   // Estado para rastrear mensagens que estão sendo reenviadas
   const [retryingMessages, setRetryingMessages] = useState<string[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [deletingMessages, setDeletingMessages] = useState<string[]>([]);
 
   const [lastSubscriptionUpdate, setLastSubscriptionUpdate] = useState<Date | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -490,6 +491,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Sempre nos inscrevemos para atualizações de mensagens
       subscription = subscribeToMessages();
       
+      // Inscrever para exclusão de mensagens (sem filtro)
+      const deletionSubscription = subscribeToMessageDeletions();
+      
       // Inscrever para atualizações de colaboradores
       const collaboratorsSubscription = subscribeToCollaborators();
       
@@ -499,6 +503,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       return () => {
         if (subscription) {
           subscription.unsubscribe();
+        }
+        if (deletionSubscription) {
+          deletionSubscription.unsubscribe();
         }
         if (collaboratorsSubscription) {
           collaboratorsSubscription.unsubscribe();
@@ -872,10 +879,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           const updatedMessage = payload.new as Message;
           
           // Se a mensagem foi deletada, removê-la da lista
-          // if (updatedMessage.status === 'deleted') {
-          //   setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
-          //   return;
-          // }
+          if (updatedMessage.status === 'deleted') {
+            setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
+            // Remover da lista de mensagens em exclusão
+            setDeletingMessages(prev => prev.filter(id => id !== updatedMessage.id));
+            return;
+          }
           
           // Se a mensagem falhou, adicioná-la à lista de mensagens falhas
           if (updatedMessage.status === 'failed') {
@@ -1056,6 +1065,35 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             }, 300); // Atraso de 300ms para garantir que a UI tenha tempo de atualizar
           }
         }
+        else if (payload.eventType === 'DELETE') {
+          // Esta parte está sendo tratada pela subscription específica subscribeToMessageDeletions
+          // Comentando para evitar duplicação de comportamento
+          /* 
+          // Quando a mensagem é completamente removida do banco de dados
+          const deletedMessageId = payload.old.id;
+          console.log('deletedMessageId', deletedMessageId);
+          if (deletedMessageId) {
+            // Remover a mensagem da lista
+            setMessages(prev => prev.filter(msg => msg.id !== deletedMessageId));
+            
+            // Também remover das listas de mensagens otimistas e falhas, se existir
+            setOptimisticMessages(prev => prev.filter(msg => msg.id !== deletedMessageId));
+            
+            setFailedMessages(prev => {
+              const updated = prev.filter(msg => msg.id !== deletedMessageId);
+              // Atualizar o localStorage
+              saveFailedMessagesToStorage(updated);
+              return updated;
+            });
+            
+            // Remover da lista de mensagens em exclusão
+            setDeletingMessages(prev => prev.filter(id => id !== deletedMessageId));
+            
+            // Notificar o usuário que a mensagem foi excluída
+            toast.success(t('messageDeleted'));
+          }
+          */
+        }
       })
       .subscribe((status) => {
         // console.log('Subscription status:', status);
@@ -1066,6 +1104,118 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           }, 2000);
         }
       });
+    return subscription;
+  };
+
+  // Adicionar uma nova subscription específica para eventos DELETE sem filtro
+  const subscribeToMessageDeletions = () => {
+    const subscription = supabase
+      .channel('message_deletions')
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'messages'
+      }, (payload) => {
+        // Quando a mensagem é completamente removida do banco de dados
+        if (payload.old && payload.old.id) {
+          const deletedMessageId = payload.old.id;
+          
+          // Verificar se a mensagem existe na lista atual do chat
+          // Usando comparação com trim para evitar problemas com espaços
+          const messageExists = messages.some(msg => msg.id && msg.id.trim() === deletedMessageId.trim());
+          const optimisticMessageExists = optimisticMessages.some(msg => msg.id && msg.id.trim() === deletedMessageId.trim());
+          const failedMessageExists = failedMessages.some(msg => msg.id && msg.id.trim() === deletedMessageId.trim());
+          const isDeletingMessage = deletingMessages.some(id => id && id.trim() === deletedMessageId.trim());
+          
+          // Se a mensagem existir em qualquer uma das listas, processamos a exclusão
+          if (messageExists || optimisticMessageExists || failedMessageExists || isDeletingMessage) {
+            // Método forçado: remover qualquer mensagem com ID semelhante
+            const removeMsgWithSimilarId = (msg: any) => {
+              if (!msg.id) return true; // Manter mensagens sem ID
+              
+              // Normalizar os IDs para comparação
+              const normalizedDeletedId = deletedMessageId.trim().toLowerCase();
+              const normalizedMsgId = msg.id.toString().trim().toLowerCase();
+              
+              // Verificar se há correspondência (exata ou parcial)
+              const exactMatch = normalizedMsgId === normalizedDeletedId;
+              const msgContainsDeletedId = normalizedMsgId.includes(normalizedDeletedId);
+              const deletedIdContainsMsgId = normalizedDeletedId.includes(normalizedMsgId);
+              
+              // Se houver qualquer tipo de correspondência, remover a mensagem (não incluir no resultado filtrado)
+              // Caso contrário, manter a mensagem
+              return !(exactMatch || msgContainsDeletedId || deletedIdContainsMsgId);
+            };
+            
+            // Remover a mensagem da lista
+            setMessages(prev => prev.filter(removeMsgWithSimilarId));
+            
+            // Também remover das listas de mensagens otimistas e falhas, se existir
+            setOptimisticMessages(prev => prev.filter(removeMsgWithSimilarId));
+            
+            setFailedMessages(prev => {
+              const updated = prev.filter(removeMsgWithSimilarId);
+              // Atualizar o localStorage
+              saveFailedMessagesToStorage(updated);
+              return updated;
+            });
+            
+            // Remover da lista de mensagens em exclusão
+            setDeletingMessages(prev => prev.filter(id => {
+              if (!id) return true; // Manter IDs nulos/undefined
+              
+              const normalizedDeletedId = deletedMessageId.trim().toLowerCase();
+              const normalizedId = id.toString().trim().toLowerCase();
+              
+              // Verificar correspondências
+              const exactMatch = normalizedId === normalizedDeletedId;
+              const idContainsDeletedId = normalizedId.includes(normalizedDeletedId);
+              const deletedIdContainsId = normalizedDeletedId.includes(normalizedId);
+              
+              // Manter apenas os que NÃO correspondem
+              return !(exactMatch || idContainsDeletedId || deletedIdContainsId);
+            }));
+            
+            // Notificar o usuário que a mensagem foi excluída
+            toast.success(t('messageDeleted'));
+          } else {
+            // Última tentativa - forçar remoção se o ID parece com o ID excluído
+            let foundAndRemoved = false;
+            
+            // Verificar todas as mensagens para encontrar correspondências parciais
+            setMessages(prev => {
+              const newMessages = prev.filter(msg => {
+                if (!msg.id) return true; // Manter mensagens sem ID
+                
+                const normalizedDeletedId = deletedMessageId.trim().toLowerCase();
+                const normalizedMsgId = msg.id.toString().trim().toLowerCase();
+                
+                // Verificar correspondências
+                const exactMatch = normalizedMsgId === normalizedDeletedId;
+                const msgContainsDeletedId = normalizedMsgId.includes(normalizedDeletedId);
+                const deletedIdContainsMsgId = normalizedDeletedId.includes(normalizedMsgId);
+                
+                const isMatch = exactMatch || msgContainsDeletedId || deletedIdContainsMsgId;
+                
+                if (isMatch) {
+                  foundAndRemoved = true;
+                }
+                
+                // Manter mensagens que NÃO correspondem
+                return !isMatch;
+              });
+              return newMessages;
+            });
+            
+            // Se encontramos e removemos a mensagem, notificar o usuário
+            if (foundAndRemoved) {
+              toast.success(t('messageDeleted'));
+            }
+          }
+        }
+      })
+      .subscribe();
+    
     return subscription;
   };
 
@@ -2064,6 +2214,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         return;
       }
 
+      // Adicionar ID à lista de mensagens sendo excluídas para feedback visual
+      setDeletingMessages(prev => [...prev, message.id]);
+
       // Se não é otimista nem falha, proceder com a exclusão no servidor
       const response = await api.delete(`/api/${organizationId}/chat/${chatId}/message/${message.id}`);
 
@@ -2071,15 +2224,17 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         throw new Error(response.data.error || t('errors.deleteMessage'));
       }
 
-      // Atualizar o estado local removendo a mensagem
-      setMessages(prev => prev.filter(msg => msg.id !== message.id));
-      
-      toast.success(t('messageDeleted'));
+      // O processamento da exclusão é feito pelo listener de eventos
+      // O toast.success para mensagem deletada é mostrado no evento
+
     } catch (error: unknown) {
       const apiError = error as AxiosError;
       const errorMessage = apiError.response?.data?.error || apiError.message || t('errors.deleteMessage');
       toast.error(errorMessage);
       console.error('Error deleting message:', error);
+      
+      // Remover da lista de mensagens em exclusão em caso de erro
+      setDeletingMessages(prev => prev.filter(id => id !== message.id));
     }
   };
 
@@ -3112,6 +3267,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                             channelFeatures={channelFeatures}
                             onDeleteMessage={handleDeleteMessage}
                             onRetry={handleRetryMessage}
+                            isDeleting={deletingMessages.includes(message.id)}
                           />
                         ))}
                       </div>
@@ -3155,6 +3311,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                                 channelFeatures={channelFeatures}
                                 onDeleteMessage={chatId === chat?.id ? handleDeleteMessage : undefined}
                                 onRetry={chatId === chat?.id ? handleRetryMessage : undefined}
+                                isDeleting={deletingMessages.includes(message.id)}
                               />
                             ))}
                           </div>
@@ -3216,6 +3373,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                         channelFeatures={channelFeatures}
                         onRetry={handleRetryMessage}
                         onDeleteMessage={handleDeleteMessage}
+                        isDeleting={deletingMessages.includes(msg.id)}
                       />
                     ))}
                 </div>
@@ -3259,6 +3417,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                         channelFeatures={channelFeatures}
                         onRetry={handleRetryMessage}
                         onDeleteMessage={handleDeleteMessage}
+                        isDeleting={deletingMessages.includes(msg.id)}
                       />
                     ))}
                 </div>

@@ -437,7 +437,7 @@ export function TaskBoard({
   return (
     <div className="flex flex-col h-full">
       {showingArchived && (
-        <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 mb-2 rounded-md text-sm mx-4">
+        <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 sm:px-4 sm:py-2 mb-2 rounded-md text-xs sm:text-sm mx-2 sm:mx-4">
           {t('viewingArchivedTasks')}
         </div>
       )}
@@ -449,7 +449,7 @@ export function TaskBoard({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-6 p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
+        <div className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar snap-x snap-mandatory">
           {stages.map((stage) => {
             // Ordenar tarefas pelo stage_order
             const stageTasks = localTasks
@@ -463,29 +463,31 @@ export function TaskBoard({
                 items={stageTasks.map(t => t.id)}
                 strategy={rectSortingStrategy}
               >
-                <TaskColumn
-                  stage={stage}
-                  tasks={stageTasks}
-                  onEdit={() => onEditStage(stage)}
-                  onDelete={() => onDeleteStage(stage)}
-                  onAddTask={() => onAddTask(stage)}
-                  onEditTask={onEditTask}
-                  onRemoveTask={onRemoveTask}
-                  onToggleArchived={onToggleArchived}
-                  onUpdateTaskStatus={onUpdateTaskStatus}
-                />
+                <div className="snap-start snap-always">
+                  <TaskColumn
+                    stage={stage}
+                    tasks={stageTasks}
+                    onEdit={() => onEditStage(stage)}
+                    onDelete={() => onDeleteStage(stage)}
+                    onAddTask={() => onAddTask(stage)}
+                    onEditTask={onEditTask}
+                    onRemoveTask={onRemoveTask}
+                    onToggleArchived={onToggleArchived}
+                    onUpdateTaskStatus={onUpdateTaskStatus}
+                  />
+                </div>
               </SortableContext>
             );
           })}
           
           {/* Botão para adicionar nova etapa */}
-          <div className="flex-shrink-0 w-10 self-start mt-4">
+          <div className="flex-shrink-0 w-10 self-start mt-1 snap-start">
             <button
               onClick={() => setShowStageDialog(true)}
-              className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-blue-600 text-white rounded-md hover:bg-blue-700"
               title={t('stages.addStage')}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>

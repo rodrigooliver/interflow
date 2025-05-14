@@ -7,6 +7,7 @@ export interface TaskProject {
   organization_id: string;
   created_at: string;
   updated_at: string;
+  chat_id: string | null;
 }
 
 export type ProjectRole = 'reader' | 'editor' | 'admin';

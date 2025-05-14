@@ -15,6 +15,11 @@
   "archived": "Tarefa arquivada",
   "unarchived": "Tarefa restaurada",
   "markAsCompleted": "Concluir",
+  "realtime": {
+    "taskCreated": "Nova tarefa criada",
+    "taskUpdated": "Tarefa atualizada",
+    "taskDeleted": "Tarefa excluída"
+  },
   "projects": {
     "title": "Projetos",
     "select": "Selecionar projeto",

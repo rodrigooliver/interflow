@@ -16,6 +16,11 @@
   "unarchived": "Tarea restaurada",
   "markAsCompleted": "Completar",
   "loading": "Cargando tareas...",
+  "realtime": {
+    "taskCreated": "Nueva tarea creada",
+    "taskUpdated": "Tarea actualizada",
+    "taskDeleted": "Tarea eliminada"
+  },
   "projects": {
     "title": "Proyectos",
     "select": "Seleccionar proyecto",

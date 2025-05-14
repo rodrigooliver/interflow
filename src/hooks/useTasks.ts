@@ -223,7 +223,7 @@ export function useTasksByStage(organizationId?: string, projectId?: string, use
         .select(`
           *,
           stage:task_stages(*),
-          customer:customers(*),
+          customer:customers!tasks_customer_id_fkey(*),
           assignees:task_assignees(
             *,
             profile:profiles(*)
@@ -326,6 +326,8 @@ export function useCreateTaskStage() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['task-stages', variables.organizationId, variables.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['task-projects', variables.organizationId] });
       toast.success(t('stages.created'));
     },
     onError: (error) => {
@@ -399,6 +401,7 @@ export function useDeleteTaskStage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['task-stages', data.organizationId] });
       queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', data.organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['task-projects', data.organizationId] });
       toast.success(t('stages.deleted'));
     },
     onError: (error) => {

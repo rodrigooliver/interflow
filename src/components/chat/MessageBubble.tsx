@@ -59,6 +59,7 @@ interface MessageBubbleProps {
   onDeleteMessage?: (message: Message) => void;
   isPending?: boolean;
   onRetry?: (message: Message) => void;
+  isDeleting?: boolean;
 }
 
 export function MessageBubble({ 
@@ -76,7 +77,8 @@ export function MessageBubble({
   },
   onDeleteMessage,
   isPending = false,
-  onRetry
+  onRetry,
+  isDeleting = false
 }: MessageBubbleProps) {
   const { t } = useTranslation('chats');
   const { currentOrganizationMember } = useAuthContext();
@@ -84,7 +86,6 @@ export function MessageBubble({
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [expandedMetadataKeys, setExpandedMetadataKeys] = useState<string[]>([]);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -171,7 +172,6 @@ export function MessageBubble({
   const handleDelete = async () => {
     if (!onDeleteMessage || !canDeleteMessage()) return;
     
-    setIsDeleting(true);
     setError(null);
     
     try {
@@ -181,8 +181,6 @@ export function MessageBubble({
       setError(t("errors.deleteMessage"));
       console.error("Erro ao excluir mensagem:", err);
       // Não fechar o modal em caso de erro
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -476,6 +474,12 @@ export function MessageBubble({
               )}
             </div>
           )}
+          {isDeleting && (
+            <div className="absolute -top-6 right-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-red-300 dark:border-red-700">
+              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+              <span className="font-medium">{t('messageStatus.deleting', 'Excluindo...')}</span>
+            </div>
+          )}
           <div className="absolute right-0 top-0 mr-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -521,7 +525,7 @@ export function MessageBubble({
             isAgent
               ? 'bg-blue-600 text-gray-300'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-          } ${isPending ? 'opacity-80 border-2 border-dashed border-yellow-300 dark:border-yellow-500 animate-pulse' : ''}`}
+          } ${isPending ? 'opacity-80 border-2 border-dashed border-yellow-300 dark:border-yellow-500 animate-pulse' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}
         >
           {isPending && (
             <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
@@ -539,6 +543,12 @@ export function MessageBubble({
                   {t('actions.delete')}
                 </button>
               )}
+            </div>
+          )}
+          {isDeleting && (
+            <div className="absolute -top-6 right-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-red-300 dark:border-red-700">
+              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+              <span className="font-medium">{t('messageStatus.deleting', 'Excluindo...')}</span>
             </div>
           )}
           {message.response_to && (

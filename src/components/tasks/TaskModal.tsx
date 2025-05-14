@@ -47,7 +47,7 @@ interface TaskFormData {
   stage_id?: string;
   checklist: ChecklistItem[];
   project_id?: string;
-  chat_id?: string;
+  chat_id?: string | null;
 }
 
 interface TaskModalProps {
@@ -57,7 +57,7 @@ interface TaskModalProps {
   mode: 'create' | 'edit';
   initialStageId?: string; // Usado ao criar uma nova tarefa a partir de uma coluna específica
   projectId?: string; // Projeto ao qual a tarefa pertence
-  chatId?: string; // Chat ao qual a tarefa está relacionada
+  chatId?: string | null; // Chat ao qual a tarefa está relacionada
 }
 
 export function TaskModal({ onClose, organizationId, taskId, mode, initialStageId, projectId, chatId }: TaskModalProps) {
@@ -247,7 +247,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
           *,
           assignees:task_assignees(id, user_id),
           labels:task_task_labels(id, label_id),
-          customers(id, name, profile_picture)
+          customers!tasks_customer_id_fkey(id, name, profile_picture)
         `)
         .eq('id', taskId)
         .single();
@@ -554,8 +554,12 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         stage_id: formData.stage_id || null,
         checklist: formData.checklist,
         project_id: formData.project_id || null,
-        chat_id: chatId || null // Adicionar o ID do chat se disponível
+        chat_id: formData.chat_id
       };
+
+      if(chatId){
+        taskData.chat_id = chatId; // Adicionar o ID do chat se disponível
+      }
       
       let updatedTaskId = taskId; // Usar o taskId recebido como parâmetro
       
@@ -569,6 +573,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         updatedTaskId = data?.[0]?.id;
         toast.success(t('success.created'));
       } else {
+        
         const { error } = await supabase
           .from('tasks')
           .update(taskData)
@@ -626,6 +631,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
               sender_type: 'system',
               sender_agent_id: session.user.id,
               organization_id: organizationId,
+              task_id: updatedTaskId,
               created_at: new Date().toISOString(),
               metadata: {
                 task_id: updatedTaskId,
@@ -634,6 +640,12 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                 task_priority: formData.priority
               }
             });
+
+          //Atualizar last_task em customer
+          await supabase
+            .from('customers')
+            .update({ last_task: updatedTaskId })
+            .eq('id', selectedCustomer?.id);
         }
       }
       

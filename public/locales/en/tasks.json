@@ -15,6 +15,11 @@
   "archived": "Task archived",
   "unarchived": "Task restored",
   "markAsCompleted": "Complete",
+  "realtime": {
+    "taskCreated": "New task created",
+    "taskUpdated": "Task updated",
+    "taskDeleted": "Task deleted"
+  },
   "projects": {
     "title": "Projects",
     "select": "Select project",
