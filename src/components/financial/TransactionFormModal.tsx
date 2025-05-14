@@ -460,6 +460,10 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
             
           if (error) throw error;
         }
+
+        //Aguradar 1 segundo e invalidar o cahce de cashiers
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        invalidateCache();
         
         toast.show({
           title: t('success'),
