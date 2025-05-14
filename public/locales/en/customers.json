@@ -26,7 +26,8 @@
   "detailedInfo": "Detailed information",
   "tabs": {
     "general": "General",
-    "chats": "Conversations"
+    "chats": "Conversations",
+    "tasks": "Tasks"
   },
   "tags": {
     "title": "Tags",

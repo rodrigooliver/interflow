@@ -11,6 +11,12 @@ import { countryCodes } from '../../utils/countryCodes';
 import { ContactsFormSection, ContactFormData, formatContactValue } from './ContactsFormSection';
 import { useFunnels, useTags } from '../../hooks/useQueryes';
 import { CustomerChatsList } from '../../components/chat/CustomerChatsList';
+import { useTasksByCustomer } from '../../hooks/useTasks';
+import { TaskCard } from '../tasks/TaskCard';
+import { TaskModal } from '../tasks/TaskModal';
+import { TaskWithRelations } from '../../types/tasks';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 
 // Interface para contatos do cliente
 interface CustomerContact {
@@ -31,18 +37,22 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   // Log para depuração
   // console.log('CustomerEditModal - Cliente recebido:', customer);
   
-  const { t } = useTranslation(['customers', 'common', 'crm', 'chats']);
+  const { t } = useTranslation(['customers', 'common', 'crm', 'chats', 'tasks']);
   const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
   // Estado para controlar a tab ativa
-  const [activeTab, setActiveTab] = useState<'general' | 'chats'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'chats' | 'tasks'>('general');
   
   // Estado para armazenar os atendimentos do cliente
   const [chats, setChats] = useState<Chat[]>([]);
   const [loadingChats, setLoadingChats] = useState(false);
   const [chatsError, setChatsError] = useState('');
+  
+  // Estado para tarefas - modal
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   
   // Usando o hook useFunnels para carregar funis e estágios
   const { data: funnelsData, isLoading: loadingFunnels } = useFunnels(currentOrganizationMember?.organization.id);
@@ -715,6 +725,16 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
           >
             {t('customers:tabs.chats')}
           </button>
+          <button
+            className={`flex-1 py-3 px-4 text-center font-medium text-sm transition-colors ${
+              activeTab === 'tasks'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setActiveTab('tasks')}
+          >
+            {t('customers:tabs.tasks')}
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -1174,10 +1194,225 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                   />
                 </div>
               )}
+
+              {/* Tab de tarefas */}
+              {activeTab === 'tasks' && (
+                <CustomerTasksTab 
+                  customer={customer}
+                  organizationId={currentOrganizationMember?.organization.id || ''}
+                />
+              )}
             </>
           )}
         </div>
       </div>
+
+      {/* Modal para criar/editar tarefas */}
+      {showTaskModal && (
+        <TaskModal
+          onClose={() => {
+            setShowTaskModal(false);
+            setSelectedTaskId(null);
+          }}
+          organizationId={currentOrganizationMember?.organization.id}
+          taskId={selectedTaskId || undefined}
+          mode={selectedTaskId ? 'edit' : 'create'}
+          initialCustomerId={customer.id}
+        />
+      )}
+    </div>
+  );
+}
+
+// Componente separado para a aba de tarefas
+function CustomerTasksTab({ customer, organizationId }: { customer: Customer, organizationId: string }) {
+  const { t } = useTranslation(['tasks', 'common']);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
+  const [showDeleteTaskModal, setShowDeleteTaskModal] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Buscar tarefas do cliente usando o hook
+  const { data: tasks = [], isLoading: tasksLoading } = useTasksByCustomer(
+    organizationId,
+    customer.id,
+    false // não mostrar arquivadas por padrão
+  );
+
+  // Função para abrir modal de criação de tarefa
+  const handleAddTask = () => {
+    setSelectedTask(null);
+    setShowTaskModal(true);
+  };
+
+  // Função para abrir modal de edição de tarefa
+  const handleEditTask = (task: TaskWithRelations) => {
+    setSelectedTask(task);
+    setShowTaskModal(true);
+  };
+
+  // Função para tratar a exclusão de uma tarefa
+  const handleDeleteTask = async () => {
+    if (!selectedTask) return;
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', selectedTask.id);
+
+      if (error) throw error;
+      
+      // Atualizar a lista de tarefas
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-customer', organizationId, customer.id] });
+      
+      toast.success(t('success.deleted', { ns: 'tasks' }));
+      setShowDeleteTaskModal(false);
+      setSelectedTask(null);
+    } catch (error) {
+      console.error('Erro ao excluir tarefa:', error);
+      toast.error(t('error.delete', { ns: 'tasks' }));
+    }
+  };
+
+  // Função para arquivar/desarquivar tarefa
+  const handleToggleArchived = async (task: TaskWithRelations) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          is_archived: !task.is_archived,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', task.id);
+
+      if (error) throw error;
+      
+      // Atualizar a lista de tarefas
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-customer', organizationId, customer.id] });
+      
+      toast.success(task.is_archived ? t('unarchived', { ns: 'tasks' }) : t('archived', { ns: 'tasks' }));
+    } catch (error) {
+      console.error('Erro ao arquivar tarefa:', error);
+      toast.error(t('error.archiveToggle', { ns: 'tasks' }));
+    }
+  };
+
+  // Função para atualizar o status de uma tarefa
+  const handleUpdateTaskStatus = async (task: TaskWithRelations, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', task.id);
+
+      if (error) throw error;
+      
+      // Atualizar a lista de tarefas
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-customer', organizationId, customer.id] });
+      
+      // Mostrar mensagem de sucesso com base no status
+      const statusMessages: Record<string, string> = {
+        'completed': t('statuses.markedAsCompleted', { ns: 'tasks' }),
+        'pending': t('statuses.markedAsPending', { ns: 'tasks' }),
+        'in_progress': t('statuses.markedAsInProgress', { ns: 'tasks' }),
+        'cancelled': t('statuses.markedAsCancelled', { ns: 'tasks' })
+      };
+      
+      toast.success(statusMessages[status] || t('success.updated', { ns: 'tasks' }));
+    } catch (error) {
+      console.error('Erro ao atualizar status da tarefa:', error);
+      toast.error(t('error.updateStatus', { ns: 'tasks' }));
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={handleAddTask}
+          className="flex items-center px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          {t('addTask', { ns: 'tasks' })}
+        </button>
+      </div>
+
+      {tasksLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        </div>
+      ) : tasks.length === 0 ? (
+        <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <p className="text-gray-500 dark:text-gray-400">
+            {t('noTasksForCustomer', { ns: 'tasks' })}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tasks.map(task => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onEdit={() => handleEditTask(task)}
+              onRemove={() => {
+                setSelectedTask(task);
+                setShowDeleteTaskModal(true);
+              }}
+              onToggleArchived={() => handleToggleArchived(task)}
+              onUpdateStatus={(taskId, status) => {
+                handleUpdateTaskStatus(task, status);
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modal para criar/editar tarefas */}
+      {showTaskModal && (
+        <TaskModal
+          onClose={() => {
+            setShowTaskModal(false);
+            setSelectedTask(null);
+          }}
+          organizationId={organizationId}
+          taskId={selectedTask?.id}
+          mode={selectedTask ? 'edit' : 'create'}
+          initialCustomerId={customer.id}
+        />
+      )}
+
+      {/* Modal de confirmação para exclusão */}
+      {showDeleteTaskModal && selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl text-red-600 dark:text-red-400 font-semibold mb-4">{t('deleteTask', { ns: 'tasks' })}</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {t('form.confirmDeleteTask', { ns: 'tasks' })}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteTaskModal(false);
+                  setSelectedTask(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                {t('form.cancel', { ns: 'tasks' })}
+              </button>
+              <button
+                onClick={handleDeleteTask}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                {t('form.delete', { ns: 'tasks' })}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

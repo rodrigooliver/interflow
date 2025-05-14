@@ -58,9 +58,10 @@ interface TaskModalProps {
   initialStageId?: string; // Usado ao criar uma nova tarefa a partir de uma coluna específica
   projectId?: string; // Projeto ao qual a tarefa pertence
   chatId?: string | null; // Chat ao qual a tarefa está relacionada
+  initialCustomerId?: string; // Cliente pré-selecionado ao criar uma tarefa
 }
 
-export function TaskModal({ onClose, organizationId, taskId, mode, initialStageId, projectId, chatId }: TaskModalProps) {
+export function TaskModal({ onClose, organizationId, taskId, mode, initialStageId, projectId, chatId, initialCustomerId }: TaskModalProps) {
   const { t, i18n } = useTranslation('tasks');
   const queryClient = useQueryClient();
   const { session, currentOrganizationMember } = useAuthContext();
@@ -93,7 +94,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     due_time: '',
     priority: 'medium',
     status: 'pending',
-    customer_id: undefined,
+    customer_id: initialCustomerId,
     stage_id: initialStageId,
     checklist: [],
     project_id: projectId,
@@ -237,6 +238,36 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     }));
     setIsCustomerModalOpen(false);
   };
+
+  // Carregar o cliente se o initialCustomerId for fornecido
+  useEffect(() => {
+    if (mode === 'create' && initialCustomerId && !selectedCustomer) {
+      // Buscar informações do cliente
+      const fetchCustomer = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('customers')
+            .select('id, name, profile_picture')
+            .eq('id', initialCustomerId)
+            .single();
+          
+          if (error) throw error;
+          
+          if (data) {
+            setSelectedCustomer({
+              id: data.id,
+              name: data.name,
+              profile_picture: data.profile_picture
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao buscar cliente:', error);
+        }
+      };
+      
+      fetchCustomer();
+    }
+  }, [mode, initialCustomerId, selectedCustomer]);
 
   const loadTask = async () => {
     setIsLoading(true);

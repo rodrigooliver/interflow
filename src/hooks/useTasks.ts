@@ -269,6 +269,57 @@ export function useTasksByStage(organizationId?: string, projectId?: string, use
   });
 }
 
+// Hook para buscar tarefas por cliente
+export function useTasksByCustomer(organizationId?: string, customerId?: string, includeArchived: boolean = false) {
+  return useQuery({
+    queryKey: ['tasks-by-customer', organizationId, customerId, includeArchived],
+    queryFn: async () => {
+      if (!organizationId || !customerId) return [];
+
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          stage:task_stages(*),
+          customer:customers!tasks_customer_id_fkey(*),
+          assignees:task_assignees(
+            *,
+            profile:profiles(*)
+          ),
+          labels:task_task_labels(
+            id,
+            label:task_labels(*)
+          ),
+          project:task_projects(*)
+        `)
+        .eq('organization_id', organizationId)
+        .eq('customer_id', customerId);
+
+      // Se includeArchived for true, exibir apenas tarefas arquivadas
+      // Se includeArchived for false, exibir apenas tarefas não arquivadas
+      query = query.eq('is_archived', includeArchived);
+      
+      query = query.order('updated_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Processar os resultados para o formato necessário
+      return (data || []).map(task => ({
+        ...task,
+        // Converter checklist de JSON para array se necessário
+        checklist: Array.isArray(task.checklist) ? task.checklist : [],
+        // Processar os relacionamentos
+        assignees: task.assignees,
+        labels: task.labels?.map((labelRel: {label: TaskLabel}) => labelRel.label)
+      })) as TaskWithRelations[];
+    },
+    enabled: !!organizationId && !!customerId,
+    staleTime: 1 * 60 * 1000, // 1 minuto
+  });
+}
+
 // Hook para buscar etiquetas de tarefas
 export function useTaskLabels(organizationId?: string) {
   return useQuery({

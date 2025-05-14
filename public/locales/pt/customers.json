@@ -65,7 +65,8 @@
   "startConversation": "Iniciar conversa",
   "tabs": {
     "general": "Geral",
-    "chats": "Atendimentos"
+    "chats": "Atendimentos",
+    "tasks": "Tarefas"
   },
   "tags": {
     "addNew": "Nova tag",

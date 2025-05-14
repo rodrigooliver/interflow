@@ -119,12 +119,12 @@
   },
   "statuses": {
     "pending": "Pendente",
-    "in_progress": "Em progresso",
+    "in_progress": "Em andamento",
     "completed": "Concluída",
     "cancelled": "Cancelada",
     "markedAsCompleted": "Tarefa marcada como concluída",
     "markedAsPending": "Tarefa marcada como pendente",
-    "markedAsInProgress": "Tarefa marcada como em progresso",
+    "markedAsInProgress": "Tarefa marcada como em andamento",
     "markedAsCancelled": "Tarefa marcada como cancelada"
   },
   "filters": {
@@ -185,5 +185,7 @@
     "noStage": "Selecione uma etapa para a tarefa"
   },
   "now": "Agora",
-  "tomorrow": "Amanhã"
+  "tomorrow": "Amanhã",
+  "customerTasks": "Tarefas do Cliente",
+  "noTasksForCustomer": "Nenhuma tarefa cadastrada para este cliente"
 } 

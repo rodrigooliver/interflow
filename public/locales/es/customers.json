@@ -26,7 +26,8 @@
   "detailedInfo": "Información detallada",
   "tabs": {
     "general": "General",
-    "chats": "Conversaciones"
+    "chats": "Conversaciones",
+    "tasks": "Tareas"
   },
   "tags": {
     "title": "Etiquetas",
