@@ -1,4 +1,4 @@
-import { Pencil, X, MessageSquare } from 'lucide-react';
+import { Pencil, X, MessageSquare, CheckSquare } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Customer } from '../../types/database';
@@ -6,11 +6,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { ptBR, enUS, es } from 'date-fns/locale';
 import { CRMStage } from '../../types/crm';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { ChatMessages } from '../../components/chat/ChatMessages';
 import { getChannelIcon } from '../../utils/channel';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../../lib/supabase';
+
+// Importar TaskModal com lazy loading
+const TaskModal = lazy(() => import('../../components/tasks/TaskModal').then(mod => ({ default: mod.TaskModal })));
 
 // Interface para o chat do cliente
 interface CustomerChat {
@@ -52,6 +57,21 @@ interface CustomerTag {
   color: string;
 }
 
+// Interface para o item do checklist da tarefa
+interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+// Interface para a tarefa do cliente
+interface CustomerTask {
+  id: string;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  checklist: ChecklistItem[];
+}
+
 // Tipo composto para cliente com estágio
 type CustomerWithStage = Customer & {
   stage?: CRMStage;
@@ -64,6 +84,7 @@ type CustomerWithStage = Customer & {
   tags?: CustomerDbTag[] | CustomerTag[];
   chats?: CustomerChat[];
   sale_price?: number;
+  tasks?: CustomerTask;
 };
 
 const locales = {
@@ -83,10 +104,14 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
   const { t, i18n } = useTranslation(['common']);
   const { currentOrganizationMember } = useAuthContext();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   // Estado para controlar a exibição do modal de chat
   const [showChatModal, setShowChatModal] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  
+  // Estado para controlar a exibição do modal de tarefa
+  const [showTaskModal, setShowTaskModal] = useState(false);
   
   const {
     attributes,
@@ -220,6 +245,21 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
     setSelectedChatId(null);
   };
 
+  // Função para abrir o modal de edição de tarefa
+  const handleTaskClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (customer.tasks?.id) {
+      setShowTaskModal(true);
+    }
+  };
+
+  // Função para fechar o modal de tarefa e atualizar os dados
+  const handleCloseTaskModal = async () => {
+    setShowTaskModal(false);
+  };
+
   // Função para expandir o chat em uma nova página
   const handleExpandChat = (chatId: string) => {
     navigate(`/app/chats/${chatId}`);
@@ -274,7 +314,7 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
               {externalId}
             </code>
             {channelName && (
-              <span className="ml-1 text-xs bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">
+              <span className="ml-1 text-xs bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded truncate">
                 {channelName}
               </span>
             )}
@@ -297,6 +337,43 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
             <p className="text-gray-700 dark:text-gray-300 truncate">
                 {chatTitle ?? formattedLastMessage.content}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Exibição da última tarefa - agora clicável */}
+      {customer.tasks && (
+        <div 
+          className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+          onClick={handleTaskClick}
+        >
+          <div className="flex items-start">
+            <CheckSquare className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-gray-700 dark:text-gray-300 font-medium">{customer.tasks.title}</p>
+              <div className={`text-xs mt-1 px-1.5 py-0.5 rounded-full inline-flex ${
+                customer.tasks.status === 'in_progress' 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                  : customer.tasks.status === 'pending' 
+                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : customer.tasks.status === 'completed'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+              }`}>
+                {customer.tasks.status === 'in_progress' 
+                  ? t('common:inProgress', 'Em andamento') 
+                  : customer.tasks.status === 'pending' 
+                  ? t('common:pending', 'Pendente')
+                  : customer.tasks.status === 'completed'
+                  ? t('common:completed', 'Concluído')
+                  : t('common:cancelled', 'Cancelado')}
+              </div>
+              {customer.tasks.checklist && customer.tasks.checklist.length > 0 && (
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t('common:checklistItems', 'Itens')}: {customer.tasks.checklist.filter(item => item.completed).length}/{customer.tasks.checklist.length}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -381,6 +458,24 @@ export function KanbanCard({ customer, index, onEditCustomer, onRemove }: Kanban
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal para editar a tarefa */}
+      {showTaskModal && customer.tasks && currentOrganizationMember && (
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          </div>
+        }>
+          <TaskModal
+            onClose={handleCloseTaskModal}
+            organizationId={currentOrganizationMember.organization.id}
+            taskId={customer.tasks.id}
+            mode="edit"
+          />
+        </Suspense>
       )}
     </div>
   );

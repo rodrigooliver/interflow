@@ -26,14 +26,14 @@ type CustomerWithStage = Customer & {
 interface FunnelWithDefault {
   id: string;
   name: string;
-  stages: any[];
+  stages: CRMStage[];
   default?: boolean;
   organization_id: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
   description?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export default function CRMFunnel() {
@@ -130,7 +130,7 @@ export default function CRMFunnel() {
         .from('customers')
         .select(`
           *,
-          stage:stage_id(*),
+          stage:stage_id!inner(*),
           contacts:customer_contacts(*),
           tags:customer_tags(
             id,
@@ -159,9 +159,16 @@ export default function CRMFunnel() {
               name,
               type
             )
+          ),
+          tasks!customers_last_task_fkey(
+            id,
+            title,
+            status,
+            checklist
           )
         `)
         .eq('organization_id', currentOrganizationMember.organization.id)
+        .eq('stage.funnel_id', funnelId)
         .order('name');
 
       if (error) throw error;
@@ -501,6 +508,38 @@ export default function CRMFunnel() {
     // Redirecionar para o funil selecionado
     navigate(`/app/crm/${funnelId}`);
   };
+
+  // Efeito para cadastrar um subscription para atualizações na tabela de tarefas
+  useEffect(() => {
+    if (!currentOrganizationMember || !funnel) return;
+
+    // Escutar por alterações nas tarefas
+    const taskSubscription = supabase
+      .channel('tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        (payload) => {
+          console.log('Task update detected:', payload);
+          
+          // Quando uma tarefa for alterada, recarregar os clientes
+          // para garantir que os dados estão atualizados
+          if (funnel?.id) {
+            loadCustomers(funnel.id);
+          }
+        }
+      )
+      .subscribe();
+
+    // Limpar subscrição ao desmontar
+    return () => {
+      supabase.removeChannel(taskSubscription);
+    };
+  }, [currentOrganizationMember, funnel]);
 
   if (!currentOrganizationMember) {
     return (

@@ -18,11 +18,27 @@ import { Customer } from '../../types/database';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 
-// Tipo composto para cliente com estágio
+// Interface para o item do checklist da tarefa 
+interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+// Interface para a tarefa do cliente
+interface CustomerTask {
+  id: string;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  checklist: ChecklistItem[];
+}
+
+// Tipo CustomerWithStage a ser usado no quadro Kanban
 type CustomerWithStage = Customer & {
   stage?: CRMStage;
   stage_order?: number;
   sale_price?: number;
+  tasks?: CustomerTask;
 };
 
 interface KanbanBoardProps {

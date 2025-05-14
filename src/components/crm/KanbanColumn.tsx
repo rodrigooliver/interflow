@@ -44,6 +44,21 @@ interface CustomerChat {
   };
 }
 
+// Interface para o item do checklist da tarefa
+interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+// Interface para a tarefa do cliente
+interface CustomerTask {
+  id: string;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  checklist: ChecklistItem[];
+}
+
 // Definir o tipo CustomerWithStage para compatibilidade com KanbanCard
 type CustomerWithStage = Customer & {
   stage?: CRMStage;
@@ -56,6 +71,7 @@ type CustomerWithStage = Customer & {
   chats?: CustomerChat[];
   tags?: CustomerDbTag[] | CustomerTag[];
   sale_price?: number;
+  tasks?: CustomerTask;
 };
 
 interface KanbanColumnProps {

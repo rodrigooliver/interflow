@@ -736,7 +736,13 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                     id, 
                     name
                   ),
-                  attachments
+                  attachments,
+                  tasks:task_id(
+                    id,
+                    title,
+                    status,
+                    checklist
+                  )
                 `)
                 .eq('id', newMessage.response_message_id)
                 .single();
