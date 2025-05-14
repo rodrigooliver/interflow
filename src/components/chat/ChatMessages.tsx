@@ -1247,6 +1247,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               id,
               full_name
             )
+          ),
+          tasks:task_id(
+            id,
+            title,
+            status,
+            checklist
           )
         `)
         .eq('chat_id', chatId)

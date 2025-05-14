@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users, ExternalLink, CheckSquare } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users, ExternalLink, CheckSquare, Clock, Hourglass, XCircle } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,24 @@ import {
 import { Button } from "../../components/ui/Button";
 import { TaskModal } from '../tasks/TaskModal';
 import { useAuthContext } from '../../contexts/AuthContext';
+
+// Adicionar a propriedade tasks ao tipo Message
+interface MessageWithTasks extends Message {
+  tasks?: TaskObject;
+}
+
+// Interface para o objeto de tarefa que pode estar presente no metadata
+interface TaskObject {
+  id?: string;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  checklist?: Array<{
+    id: string;
+    text: string;
+    completed: boolean;
+  }>;
+}
+
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
   canReplyToMessages: boolean;
@@ -51,14 +69,14 @@ interface WhatsAppList {
 }
 
 interface MessageBubbleProps {
-  message: Message
+  message: MessageWithTasks
   chatStatus: string;
-  onReply?: (message: Message) => void;
+  onReply?: (message: MessageWithTasks) => void;
   isHighlighted?: boolean;
   channelFeatures?: ChannelFeatures;
-  onDeleteMessage?: (message: Message) => void;
+  onDeleteMessage?: (message: MessageWithTasks) => void;
   isPending?: boolean;
-  onRetry?: (message: Message) => void;
+  onRetry?: (message: MessageWithTasks) => void;
   isDeleting?: boolean;
 }
 
@@ -332,7 +350,7 @@ export function MessageBubble({
   };
 
   // Função para obter a mensagem do sistema
-  const getSystemMessage = (): string => {
+  const getSystemMessage = (): React.ReactNode => {
     const agentName = sender_agent?.full_name || t('unnamed');
     
     switch (type) {
@@ -353,13 +371,136 @@ export function MessageBubble({
       case 'user_closed':
         return t('systemMessages.userClosed', { name: agentName });
       case 'task':
-        // No caso de mensagem de tarefa, vamos retornar somente o texto inicial
-        if (metadata?.task_id) {
-          const taskTitle = metadata.task_title as string || t('systemMessages.taskUnknown', 'tarefa');
-          
-          return `${taskTitle}`;
+        // Verificar primeiro pelo objeto tasks na mensagem e depois por task_id no metadata
+        let task: TaskObject | null = null;
+        let taskId: string | null = null;
+        
+        if (message.tasks) {
+          // Novo formato com objeto tasks diretamente na mensagem
+          task = message.tasks as TaskObject;
+          taskId = task.id || null;
+        } else if (metadata?.task) {
+          // Formato alternativo com task no metadata
+          task = metadata.task as TaskObject;
+          taskId = task.id || null;
+        } else if (metadata?.task_id) {
+          // Formato antigo com task_id
+          taskId = String(metadata.task_id);
+          task = {
+            title: metadata.task_title as string || t('systemMessages.taskUnknown', 'tarefa'),
+            status: 'pending'
+          };
         }
-        return content || '';
+        
+        if (!task) {
+          return content || '';
+        }
+        
+        // Adicionar informações de status
+        const statusLabels: Record<string, string> = {
+          'pending': t('tasks:statuses.pending'),
+          'in_progress': t('tasks:statuses.in_progress'),
+          'completed': t('tasks:statuses.completed'),
+          'cancelled': t('tasks:statuses.cancelled')
+        };
+        
+        // Obter o status
+        const status = task.status || 'pending';
+        
+        // Calcular progresso da checklist se disponível
+        let checklistProgress = null;
+        if (task.checklist && task.checklist.length > 0) {
+          const items = task.checklist;
+          const completed = items.filter(item => item.completed).length;
+          const total = items.length;
+          const progress = Math.round((completed / total) * 100);
+          
+          checklistProgress = {
+            completed,
+            total,
+            progress
+          };
+        }
+        
+        // Estilos do status
+        const getStatusInfo = (status: string) => {
+          switch (status) {
+            case 'pending':
+              return {
+                icon: Clock,
+                bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+                textColor: 'text-blue-700 dark:text-blue-300'
+              };
+            case 'in_progress':
+              return {
+                icon: Hourglass,
+                bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+                textColor: 'text-amber-700 dark:text-amber-300'
+              };
+            case 'completed':
+              return {
+                icon: CheckCircle,
+                bgColor: 'bg-green-50 dark:bg-green-900/20',
+                textColor: 'text-green-700 dark:text-green-300'
+              };
+            case 'cancelled':
+              return {
+                icon: XCircle,
+                bgColor: 'bg-red-50 dark:bg-red-900/20',
+                textColor: 'text-red-700 dark:text-red-300'
+              };
+            default:
+              return {
+                icon: Clock,
+                bgColor: 'bg-gray-50 dark:bg-gray-800',
+                textColor: 'text-gray-700 dark:text-gray-300'
+              };
+          }
+        };
+        
+        const statusInfo = getStatusInfo(status);
+        const StatusIcon = statusInfo.icon;
+        const isCompleted = status === 'completed';
+        
+        return (
+          <div 
+            className="flex flex-col w-full cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              setTaskModalOpen(true);
+            }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className={`flex items-center px-2 py-0.5 rounded-full text-xs ${statusInfo.bgColor} ${statusInfo.textColor}`}>
+                <StatusIcon className="w-3 h-3 mr-1" />
+                <span>{statusLabels[status]}</span>
+              </div>
+              
+              {/* Barra de progresso ao lado do status */}
+              {checklistProgress && (
+                <div className="flex items-center ml-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-1.5">
+                    {checklistProgress.completed}/{checklistProgress.total}
+                  </span>
+                  <div className="w-16 sm:w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                    <div 
+                      className={`h-1.5 rounded-full ${
+                        checklistProgress.progress === 100 ? 'bg-green-500' : 
+                        checklistProgress.progress > 50 ? 'bg-blue-500' : 
+                        checklistProgress.progress > 0 ? 'bg-amber-500' : 'bg-gray-400'
+                      }`} 
+                      style={{ width: `${checklistProgress.progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <h3 className={`text-sm font-medium ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+              {task.title || t('systemMessages.taskUnknown', 'tarefa')}
+            </h3>
+          </div>
+        );
       default:
         return content || '';
     }
@@ -433,23 +574,12 @@ export function MessageBubble({
   if (isSystem) {
     messageContent = (
       <div className="flex justify-center my-2 relative group">
-        <div className={`flex items-center flex-row gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-600 dark:text-gray-300 ${
+        <div className={`flex items-center flex-row gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 text-sm text-gray-600 dark:text-gray-300 ${
           isHighlighted ? 'ring-2 ring-blue-500 dark:ring-blue-400 animate-pulse' : ''
         } ${isPending ? 'opacity-70' : ''}`}>
           {renderSystemIcon()}
-          <span className=''>{getSystemMessage()}</span>
-          {/* Botão para abrir o modal da tarefa */}
-          {type === 'task' && metadata && 'task_id' in metadata && metadata.task_id && (
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setTaskModalOpen(true);
-              }}
-              className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center"
-            >
-              <ExternalLink className="w-3 h-3 ml-0.5" />
-            </button>
-          )}
+          <div className='flex-1'>{getSystemMessage()}</div>
+          
           <span className="text-xs text-gray-500">
             {new Date(created_at).toLocaleTimeString([], { 
               hour: '2-digit', 
@@ -893,14 +1023,20 @@ export function MessageBubble({
       </Dialog>
 
       {/* Modal da tarefa */}
-      {/* NOTA: Existem alguns erros de tipagem TypeScript conhecidos nesta implementação, 
-         mas a funcionalidade deve funcionar corretamente. Para corrigir completamente os erros,
-         uma refatoração mais ampla seria necessária no futuro. */}
-      {taskModalOpen && metadata && 'task_id' in metadata && metadata.task_id && (
+      {taskModalOpen && (
         <TaskModal
           onClose={() => setTaskModalOpen(false)}
           organizationId={currentOrganizationMember?.organization_id}
-          taskId={String(metadata.task_id)}
+          taskId={
+            // Obter ID da tarefa do objeto na mensagem ou metadata
+            message.tasks && message.tasks.id
+              ? String(message.tasks.id)
+              : metadata && 'task' in metadata && (metadata.task as TaskObject).id
+                ? String((metadata.task as TaskObject).id)
+                : metadata && 'task_id' in metadata && metadata.task_id
+                  ? String(metadata.task_id)
+                  : ''
+          }
           mode="edit"
           chatId={typeof message.chat_id === 'object' ? (message.chat_id as any).id : String(message.chat_id)}
         />

@@ -15,6 +15,7 @@
   "archived": "Tarefa arquivada",
   "unarchived": "Tarefa restaurada",
   "markAsCompleted": "Concluir",
+  "startTask": "Iniciar",
   "realtime": {
     "taskCreated": "Nova tarefa criada",
     "taskUpdated": "Tarefa atualizada",

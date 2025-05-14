@@ -96,13 +96,18 @@ export function TaskCard({
   const hasChecklist = totalItems > 0;
   const progress = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
 
-  // Verificar se a tarefa pode ser marcada como concluída
-  const canBeCompleted = ['pending', 'in_progress'].includes(task.status);
+  // Verificar se a tarefa pode ser iniciada ou concluída
+  const canBeStarted = task.status === 'pending';
+  const canBeCompleted = task.status === 'in_progress';
 
-  // Função para marcar a tarefa como concluída
-  const handleMarkAsCompleted = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Evitar que o clique chegue ao card e abra detalhes
-    if (onUpdateStatus) {
+  // Função para atualizar o status com base no estado atual
+  const handleUpdateStatus = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onUpdateStatus) return;
+    
+    if (canBeStarted) {
+      onUpdateStatus(task.id, 'in_progress');
+    } else if (canBeCompleted) {
       onUpdateStatus(task.id, 'completed');
     }
   };
@@ -256,23 +261,33 @@ export function TaskCard({
         <div className="flex justify-between items-start mb-1.5 sm:mb-2 relative">
           {/* Status original (que ficará oculto quando o botão concluir estiver visível) */}
           <div className={`flex items-center px-2 py-0.5 rounded-full text-xs ${statusInfo.bgColor} ${statusInfo.textColor} ${
-            showCompleteButton && canBeCompleted && (onUpdateStatus !== undefined) ? 'invisible' : 'visible'
+            showCompleteButton && (canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) ? 'invisible' : 'visible'
           }`}>
             <StatusIcon className="w-3 h-3 mr-1" />
             <span>{statusInfo.label}</span>
           </div>
           
-          {/* Botão para marcar como concluída (sobreposto ao status) */}
-          {canBeCompleted && (onUpdateStatus !== undefined) && (
+          {/* Botão para iniciar ou concluir tarefa (sobreposto ao status) */}
+          {(canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) && (
             <button
-              onClick={handleMarkAsCompleted}
-              className={`absolute left-0 top-0 px-2 py-0.5 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 flex items-center transition-opacity duration-200 ${
+              onClick={handleUpdateStatus}
+              className={`absolute left-0 top-0 px-2 py-0.5 rounded-full text-xs ${
+                canBeStarted 
+                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50' 
+                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+              } flex items-center transition-opacity duration-200 ${
                 showCompleteButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-              title={t('tasks:markAsCompleted')}
+              } shadow-sm hover:shadow cursor-pointer transform hover:scale-105 transition-all duration-150`}
+              title={canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
             >
-              <Check className="w-3 h-3 mr-1" />
-              <span className="hidden xs:inline">{t('tasks:markAsCompleted')}</span>
+              {canBeStarted ? (
+                <Hourglass className="w-3 h-3 mr-1" />
+              ) : (
+                <Check className="w-3 h-3 mr-1" />
+              )}
+              <span className="hidden xs:inline">
+                {canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
+              </span>
             </button>
           )}
           
