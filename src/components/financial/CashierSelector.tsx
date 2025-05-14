@@ -14,26 +14,21 @@ interface CashierSelectorProps {
   selectedCashierId: string;
   onSelectCashier: (cashierId: string) => void;
   onAddCashier?: () => void;
+  className?: string;
 }
 
 export function CashierSelector({
   cashiers,
   selectedCashierId,
   onSelectCashier,
-  onAddCashier
+  onAddCashier,
+  className = ''
 }: CashierSelectorProps) {
   const { t } = useTranslation('financial');
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const selectedCashier = cashiers.find(c => c.id === selectedCashierId) || null;
-
-  // Selecionar automaticamente o primeiro caixa se não houver correspondência
-  useEffect(() => {
-    if ((!selectedCashier) && cashiers.length > 0) {
-      onSelectCashier(cashiers[0].id);
-    }
-  }, [selectedCashier, cashiers, onSelectCashier]);
 
   // Fechar o dropdown quando clicar fora dele
   useEffect(() => {
@@ -59,10 +54,10 @@ export function CashierSelector({
   // Caso não tenha caixas, mostrar mensagem
   if (cashiers.length === 0 && onAddCashier) {
     return (
-      <div className="relative">
+      <div className={`relative ${className}`}>
         <button
           onClick={onAddCashier}
-          className="flex items-center justify-between px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50"
+          className="flex items-center justify-between w-full px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50"
         >
           <div className="flex items-center">
             <PlusCircle className="w-4 h-4 mr-2" />
@@ -74,10 +69,10 @@ export function CashierSelector({
   }
   
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-300 min-w-[220px] hover:bg-gray-200 dark:hover:bg-gray-700"
+        className="flex items-center justify-between w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-300 min-w-[160px] sm:min-w-[220px] hover:bg-gray-200 dark:hover:bg-gray-700"
       >
         <div className="flex items-center">
           <Wallet className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />

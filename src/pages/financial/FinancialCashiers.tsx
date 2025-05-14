@@ -32,6 +32,7 @@ interface Cashier {
   name: string;
   description: string | null;
   is_active: boolean;
+  balance?: number;
   created_at: string;
   updated_at: string;
 }
@@ -585,6 +586,7 @@ export function FinancialCashiers() {
                     </div>
                   </TableHead>
                   <TableHead className="text-foreground dark:text-foreground/90 font-semibold">{t('description')}</TableHead>
+                  <TableHead className="text-foreground dark:text-foreground/90 font-semibold">{t('balance')}</TableHead>
                   <TableHead
                     className="cursor-pointer text-foreground dark:text-foreground/90 font-semibold"
                     onClick={() => handleSort()}
@@ -600,7 +602,7 @@ export function FinancialCashiers() {
               <TableBody>
                 {isLoading ? (
                   <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={4} className="text-center py-12">
+                    <TableCell colSpan={5} className="text-center py-12">
                       <div className="flex flex-col items-center justify-center space-y-4">
                         <div className="flex justify-center">
                           <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-white/80" />
@@ -613,7 +615,7 @@ export function FinancialCashiers() {
                   </TableRow>
                 ) : filteredCashiers.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={4} className="text-center py-12 text-muted-foreground dark:text-muted-foreground/80">
+                    <TableCell colSpan={5} className="text-center py-12 text-muted-foreground dark:text-muted-foreground/80">
                       {searchQuery ? t('noSearchResults') : t('noCashiers')}
                     </TableCell>
                   </TableRow>
@@ -622,6 +624,12 @@ export function FinancialCashiers() {
                     <TableRow key={cashier.id} className="hover:bg-muted/50 dark:hover:bg-muted/20">
                       <TableCell className="font-medium text-foreground dark:text-foreground/90">{cashier.name}</TableCell>
                       <TableCell className="text-foreground/80 dark:text-foreground/70">{cashier.description || '-'}</TableCell>
+                      <TableCell className="text-foreground/80 dark:text-foreground/70">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(cashier.balance || 0)}
+                      </TableCell>
                       <TableCell>
                         {cashier.is_active ? (
                           <div className="flex items-center text-green-600 dark:text-green-400">

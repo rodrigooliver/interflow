@@ -8,6 +8,7 @@ interface Cashier {
   name: string;
   description: string | null;
   is_active: boolean;
+  balance?: number;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +33,7 @@ interface Category {
   name: string;
   type: 'income' | 'expense';
   organization_id: string;
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -286,7 +288,7 @@ export function useFinancial(): UseFinancialReturn {
       
       const { data, error } = await supabase
         .from('financial_cashiers')
-        .select('id, name, description, is_active, created_at, updated_at')
+        .select('id, name, description, is_active, balance, created_at, updated_at')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('name');

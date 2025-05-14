@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFinancial } from '../../hooks/useFinancial';
-import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
+import CategoryForm, { CategoryFormData } from '../../components/financial/CategoryForm';
 import {
   Card,
   CardContent,
@@ -26,14 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/Dialog';
-import { Label } from '../../components/ui/Label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import {
   Plus,
@@ -41,27 +33,25 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  Save,
   ArrowDownCircle,
   ArrowUpCircle,
+  ChevronRight,
 } from 'lucide-react';
-
-interface CategoryFormData {
-  id?: string;
-  name: string;
-  type: 'income' | 'expense';
-}
 
 interface Category {
   id: string;
   name: string;
   type: 'income' | 'expense';
+  parent_id: string | null;
   created_at: string;
+}
+
+interface CategoryWithChildren extends Category {
+  children: CategoryWithChildren[];
 }
 
 const FinancialCategories: React.FC = () => {
   const { t } = useTranslation('financial');
-  const { currentOrganizationMember } = useAuthContext();
   const { categories, isLoading, invalidateCache } = useFinancial();
   const toast = useToast();
 
@@ -71,7 +61,6 @@ const FinancialCategories: React.FC = () => {
   // Estados para modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<CategoryFormData>({
     name: '',
@@ -84,9 +73,86 @@ const FinancialCategories: React.FC = () => {
       category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Agrupar por tipo
-  const incomeCategories = filteredCategories.filter(cat => cat.type === 'income');
-  const expenseCategories = filteredCategories.filter(cat => cat.type === 'expense');
+  // Função para construir a hierarquia de categorias
+  const buildCategoryHierarchy = (
+    cats: Category[],
+    parentId: string | null = null
+  ): CategoryWithChildren[] => {
+    return cats
+      .filter((cat) => cat.parent_id === parentId)
+      .map((cat) => ({
+        ...cat,
+        children: buildCategoryHierarchy(cats, cat.id),
+      }));
+  };
+
+  // Agrupar por tipo e construir hierarquia
+  const incomeCategories = buildCategoryHierarchy(
+    filteredCategories.filter((cat) => cat.type === 'income')
+  );
+  const expenseCategories = buildCategoryHierarchy(
+    filteredCategories.filter((cat) => cat.type === 'expense')
+  );
+
+  // Renderizar categoria com seu recuo e filhos
+  const renderCategory = (category: CategoryWithChildren, indentLevel = 0) => {
+    return (
+      <React.Fragment key={category.id}>
+        <TableRow className="border-b dark:border-gray-700/50 hover:bg-muted/50 dark:hover:bg-muted/20">
+          <TableCell className="font-medium text-foreground dark:text-foreground/90 py-3">
+            <div
+              className="flex items-center"
+              style={{ paddingLeft: `${indentLevel * 20}px` }}
+            >
+              {indentLevel > 0 && (
+                <ChevronRight className="h-4 w-4 mr-1 text-muted-foreground" />
+              )}
+              <div
+                className={`h-2 w-2 rounded-full mr-2 ${
+                  category.type === 'expense'
+                    ? 'bg-red-500 dark:bg-red-400'
+                    : 'bg-green-500 dark:bg-green-400'
+                }`}
+              ></div>
+              {category.name}
+            </div>
+          </TableCell>
+          <TableCell className="text-right py-3">
+            <div className="flex justify-end items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleOpenAddSubcategory(category)}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground dark:text-muted-foreground/80 dark:hover:text-foreground/90 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-full"
+                title={t('addSubcategory')}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleOpenModal(category)}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground dark:text-muted-foreground/80 dark:hover:text-foreground/90 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-full"
+                title={t('edit')}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleOpenDeleteModal(category)}
+                className="h-8 w-8 p-0 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
+                title={t('delete')}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>
+        {category.children.map((child) => renderCategory(child, indentLevel + 1))}
+      </React.Fragment>
+    );
+  };
 
   const handleOpenModal = (category?: Category) => {
     if (category) {
@@ -94,13 +160,33 @@ const FinancialCategories: React.FC = () => {
         id: category.id,
         name: category.name,
         type: category.type,
+        parent_id: category.parent_id,
       });
     } else {
       setCurrentCategory({
         name: '',
         type: 'expense',
+        parent_id: null,
       });
     }
+    setIsModalOpen(true);
+  };
+
+  const handleOpenAddSubcategory = (parentCategory: Category) => {
+    setCurrentCategory({
+      name: '',
+      type: parentCategory.type,
+      parent_id: parentCategory.id,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleAddCategoryByType = (type: 'income' | 'expense') => {
+    setCurrentCategory({
+      name: '',
+      type: type,
+      parent_id: null,
+    });
     setIsModalOpen(true);
   };
 
@@ -109,84 +195,13 @@ const FinancialCategories: React.FC = () => {
       id: category.id,
       name: category.name,
       type: category.type,
+      parent_id: category.parent_id,
     });
     setIsDeleteModalOpen(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCurrentCategory((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleTypeChange = (value: string) => {
-    setCurrentCategory((prev) => ({
-      ...prev,
-      type: value as 'income' | 'expense',
-    }));
-  };
-
-  const handleSaveCategory = async () => {
-    if (!currentCategory.name.trim()) {
-      toast.show({
-        title: t('validationError'),
-        description: t('categoryNameRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      
-      const categoryData = {
-        name: currentCategory.name.trim(),
-        type: currentCategory.type,
-        organization_id: currentOrganizationMember?.organization.id,
-      };
-
-      if (currentCategory.id) {
-        // Atualizar categoria existente
-        const { error } = await supabase
-          .from('financial_categories')
-          .update(categoryData)
-          .eq('id', currentCategory.id);
-
-        if (error) throw error;
-        
-        toast.show({
-          title: t('success'),
-          description: t('categoryUpdated'),
-        });
-      } else {
-        // Criar nova categoria
-        const { error } = await supabase
-          .from('financial_categories')
-          .insert(categoryData);
-
-        if (error) throw error;
-        
-        toast.show({
-          title: t('success'),
-          description: t('categoryCreated'),
-        });
-      }
-
-      // Invalidar cache para recarregar categorias
-      invalidateCache();
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Erro ao salvar categoria:', error);
-      toast.show({
-        title: t('error'),
-        description: t('errorSavingCategory'),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const handleModalSuccess = () => {
+    setIsModalOpen(false);
   };
 
   const handleDeleteCategory = async () => {
@@ -194,6 +209,24 @@ const FinancialCategories: React.FC = () => {
 
     try {
       setIsDeleting(true);
+      
+      // Verificar se a categoria tem filhos
+      const { data: childCategories, error: checkError } = await supabase
+        .from('financial_categories')
+        .select('id')
+        .eq('parent_id', currentCategory.id);
+        
+      if (checkError) throw checkError;
+      
+      if (childCategories && childCategories.length > 0) {
+        toast.show({
+          title: t('error'),
+          description: t('cannotDeleteCategoryWithChildren'),
+          variant: 'destructive',
+        });
+        setIsDeleting(false);
+        return;
+      }
       
       const { error } = await supabase
         .from('financial_categories')
@@ -221,6 +254,16 @@ const FinancialCategories: React.FC = () => {
       setIsDeleting(false);
     }
   };
+
+  // Contar o total de categorias, incluindo subcategorias
+  const countCategories = (cats: CategoryWithChildren[]): number => {
+    return cats.reduce((count, cat) => {
+      return count + 1 + countCategories(cat.children);
+    }, 0);
+  };
+
+  const totalIncomeCategories = countCategories(incomeCategories);
+  const totalExpenseCategories = countCategories(expenseCategories);
 
   return (
     <div className="container mx-auto p-6">
@@ -255,9 +298,18 @@ const FinancialCategories: React.FC = () => {
               <ArrowDownCircle className="h-5 w-5 mr-2 text-red-500 dark:text-red-400" />
               {t('expenseCategories')}
               <Badge className="ml-3 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400">
-                {expenseCategories.length}
+                {totalExpenseCategories}
               </Badge>
             </CardTitle>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleAddCategoryByType('expense')}
+              className="flex items-center h-8 text-sm text-muted-foreground hover:text-foreground dark:text-muted-foreground/80 dark:hover:text-foreground/90 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t('addCategory')}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -272,41 +324,7 @@ const FinancialCategories: React.FC = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableBody>
-                  {expenseCategories.map((category) => (
-                    <TableRow 
-                      key={category.id} 
-                      className="border-b dark:border-gray-700/50 hover:bg-muted/50 dark:hover:bg-muted/20"
-                    >
-                      <TableCell className="font-medium text-foreground dark:text-foreground/90 py-3">
-                        <div className="flex items-center">
-                          <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400 mr-2"></div>
-                          {category.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right py-3">
-                        <div className="flex justify-end items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenModal(category)}
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground dark:text-muted-foreground/80 dark:hover:text-foreground/90 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-full"
-                            title={t('edit')}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDeleteModal(category)}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
-                            title={t('delete')}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {expenseCategories.map((category) => renderCategory(category))}
                 </TableBody>
               </Table>
             </div>
@@ -327,9 +345,18 @@ const FinancialCategories: React.FC = () => {
               <ArrowUpCircle className="h-5 w-5 mr-2 text-green-500 dark:text-green-400" />
               {t('incomeCategories')}
               <Badge className="ml-3 bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400">
-                {incomeCategories.length}
+                {totalIncomeCategories}
               </Badge>
             </CardTitle>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleAddCategoryByType('income')}
+              className="flex items-center h-8 text-sm text-muted-foreground hover:text-foreground dark:text-muted-foreground/80 dark:hover:text-foreground/90 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t('addCategory')}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -344,41 +371,7 @@ const FinancialCategories: React.FC = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableBody>
-                  {incomeCategories.map((category) => (
-                    <TableRow 
-                      key={category.id} 
-                      className="border-b dark:border-gray-700/50 hover:bg-muted/50 dark:hover:bg-muted/20"
-                    >
-                      <TableCell className="font-medium text-foreground dark:text-foreground/90 py-3">
-                        <div className="flex items-center">
-                          <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-400 mr-2"></div>
-                          {category.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right py-3">
-                        <div className="flex justify-end items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenModal(category)}
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground dark:text-muted-foreground/80 dark:hover:text-foreground/90 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-full"
-                            title={t('edit')}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDeleteModal(category)}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
-                            title={t('delete')}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {incomeCategories.map((category) => renderCategory(category))}
                 </TableBody>
               </Table>
             </div>
@@ -394,7 +387,7 @@ const FinancialCategories: React.FC = () => {
 
       {/* Modal de criar/editar categoria */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-background ">
+        <DialogContent className="bg-background">
           <DialogHeader>
             <DialogTitle className="text-foreground dark:text-foreground/90">
               {currentCategory.id ? t('editCategory') : t('newCategory')}
@@ -405,74 +398,11 @@ const FinancialCategories: React.FC = () => {
                 : t('newCategoryDescription')}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-foreground dark:text-foreground/90">
-                {t('name')} *
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                value={currentCategory.name}
-                onChange={handleInputChange}
-                className="dark:bg-gray-700 dark:border-gray-600 dark:text-foreground/90"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="type" className="text-foreground dark:text-foreground/90">
-                {t('type')} *
-              </Label>
-              <Select
-                value={currentCategory.type}
-                onValueChange={handleTypeChange}
-              >
-                <SelectTrigger
-                  id="type"
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-foreground/90"
-                >
-                  <SelectValue placeholder={t('selectType')}>
-                    {currentCategory.type === 'expense' ? t('expense') : t('income')}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                  <SelectItem value="expense" className="dark:text-foreground/90">
-                    {t('expense')}
-                  </SelectItem>
-                  <SelectItem value="income" className="dark:text-foreground/90">
-                    {t('income')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsModalOpen(false)}
-              className="text-foreground dark:text-foreground/90 dark:border-gray-600 dark:hover:bg-gray-700"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSaveCategory}
-              disabled={isSaving}
-              className="bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90"
-            >
-              {isSaving ? (
-                <div className="flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2 text-white/80" />
-                  <span>{t('saving')}</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <Save className="h-4 w-4 mr-2" />
-                  <span>{t('save')}</span>
-                </div>
-              )}
-            </Button>
-          </DialogFooter>
+          <CategoryForm
+            initialData={currentCategory}
+            onSuccess={handleModalSuccess}
+            onCancel={() => setIsModalOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -93,9 +93,13 @@ const FinancialTransactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentTab, setCurrentTab] = useState('all');
+  const [currentTab, setCurrentTab] = useState('paid');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [counts, setCounts] = useState({
+    pending: 0,
+    overdue: 0
+  });
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
@@ -107,6 +111,7 @@ const FinancialTransactions: React.FC = () => {
   const [cashierFilter, setCashierFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const toast = useToast();
+  const initializedRef = useRef(false);
 
   const ITEMS_PER_PAGE = 10;
   const activeCashiers = cashiers.filter(c => c.is_active);
@@ -114,38 +119,51 @@ const FinancialTransactions: React.FC = () => {
 
   // Inicializar o filtro de caixa a partir da URL ou usar o primeiro disponível
   useEffect(() => {
-    if (activeCashiers.length > 0) {
-      const cashierId = searchParams.get('cashier');
+    // Garantir que a inicialização ocorra apenas uma vez
+    if (initializedRef.current) return;
+    if (activeCashiers.length === 0) return;
+    
+    const cashierId = searchParams.get('cashier');
+    
+    if (cashierId && activeCashiers.some(c => c.id === cashierId)) {
+      // Se o cashierId da URL existir e for válido, usar sem alterar a URL
+      setCashierFilter(cashierId);
+    } else {
+      // Caso contrário, definir para o primeiro caixa e atualizar a URL
+      const firstCashierId = activeCashiers[0].id;
+      setCashierFilter(firstCashierId);
       
-      if (cashierId && activeCashiers.some(c => c.id === cashierId)) {
-        // Se o cashierId da URL existir e for válido, usá-lo
-        setCashierFilter(cashierId);
-      } else {
-        // Caso contrário, usar o primeiro caixa disponível
-        handleSelectCashier(activeCashiers[0].id);
-      }
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('cashier', firstCashierId);
+      navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
     }
-  }, [searchParams, activeCashiers]);
+    
+    initializedRef.current = true;
+  }, [searchParams, activeCashiers, navigate, location.pathname]);
 
   // Função para atualizar o ID do caixa na URL e no state
   const handleSelectCashier = (cashierId: string) => {
+    if (cashierId === cashierFilter) return; // Evitar redefinir se for o mesmo caixa
+    
+    // Primeiro atualizar o state
     setCashierFilter(cashierId);
     
-    // Atualizar a URL
+    // Depois atualizar a URL
     const newParams = new URLSearchParams(searchParams);
     newParams.set('cashier', cashierId);
+    // Usar replace: true para não adicionar à história de navegação
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
   };
 
   const fetchTransactions = async () => {
     try {
-      setIsLoading(true);
-
-      // Verificar se há um caixa selecionado
-      if (!cashierFilter && activeCashiers.length > 0) {
-        setCashierFilter(activeCashiers[0].id);
-        return; // Sair e deixar o useEffect recarregar com o filtro atualizado
+      // Se não tiver cashierFilter definido, não fazer o fetch ainda
+      if (!cashierFilter) {
+        setIsLoading(false);
+        return;
       }
+      
+      setIsLoading(true);
 
       // Construir a query base
       let query = supabase
@@ -160,10 +178,8 @@ const FinancialTransactions: React.FC = () => {
         .eq('organization_id', currentOrganizationMember?.organization?.id)
         .eq('financial_cashiers.member.profile_id', currentOrganizationMember?.id);
 
-      // Filtro por caixa (sempre aplicado agora)
-      if (cashierFilter) {
-        query = query.eq('cashier_id', cashierFilter);
-      }
+      // Filtro por caixa (sempre aplicado)
+      query = query.eq('cashier_id', cashierFilter);
 
       // Adicionar filtros
       if (currentTab === 'income') {
@@ -212,11 +228,55 @@ const FinancialTransactions: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (currentOrganizationMember?.organization?.id && cashierFilter) {
-      fetchTransactions();
+  // Buscar contagens de pendentes e vencidos
+  const fetchCounts = async () => {
+    try {
+      if (!currentOrganizationMember?.organization?.id || !cashierFilter) {
+        return;
+      }
+      
+      // Buscar contagem de pendentes
+      const { count: pendingCount, error: pendingError } = await supabase
+        .from('financial_transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', currentOrganizationMember.organization.id)
+        .eq('cashier_id', cashierFilter)
+        .eq('status', 'pending');
+        
+      if (pendingError) {
+        console.error('Erro ao buscar contagem de pendentes:', pendingError);
+      }
+      
+      // Buscar contagem de vencidos
+      const { count: overdueCount, error: overdueError } = await supabase
+        .from('financial_transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', currentOrganizationMember.organization.id)
+        .eq('cashier_id', cashierFilter)
+        .eq('status', 'overdue');
+        
+      if (overdueError) {
+        console.error('Erro ao buscar contagem de vencidos:', overdueError);
+      }
+      
+      setCounts({
+        pending: pendingCount || 0,
+        overdue: overdueCount || 0
+      });
+    } catch (error) {
+      console.error('Erro ao buscar contagens:', error);
     }
-  }, [currentOrganizationMember, currentTab, page, categoryFilter, dateRange, cashierFilter]);
+  };
+
+  useEffect(() => {
+    const orgId = currentOrganizationMember?.organization?.id;
+    const profileId = currentOrganizationMember?.id;
+    
+    if (orgId && profileId && cashierFilter) {
+      fetchTransactions();
+      fetchCounts();
+    }
+  }, [currentOrganizationMember?.organization?.id, currentOrganizationMember?.id, currentTab, page, categoryFilter, dateRange, cashierFilter]);
 
   const handleSearch = () => {
     // Implementar busca por termo depois
@@ -244,6 +304,7 @@ const FinancialTransactions: React.FC = () => {
       setIsDeleteDialogOpen(false);
       setSelectedTransaction(null);
       fetchTransactions();
+      fetchCounts();
       
       // Mostrar mensagem de sucesso
       toast?.show?.({
@@ -335,6 +396,7 @@ const FinancialTransactions: React.FC = () => {
 
   const handleModalSuccess = () => {
     fetchTransactions();
+    fetchCounts();
   };
 
   const toggleFilters = () => {
@@ -342,29 +404,29 @@ const FinancialTransactions: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 dark:bg-gray-900">
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          
+    <div className="container mx-auto px-2 sm:px-4 md:px-6 pt-4 sm:pt-6 dark:bg-gray-900">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="w-full sm:w-auto">
           {/* Seletor de Caixas */}
           {activeCashiers.length > 0 ? (
             <CashierSelector
               cashiers={activeCashiers}
               selectedCashierId={cashierFilter}
               onSelectCashier={handleSelectCashier}
+              className="w-full sm:w-auto"
             />
           ) : (
-            <div className="text-sm text-gray-500 dark:text-gray-400 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
+            <div className="text-sm text-gray-500 dark:text-gray-400 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md w-full text-center sm:text-left">
               {t('noCashiers')}
             </div>
           )}
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap w-full sm:w-auto justify-between sm:justify-end items-center gap-2 sm:gap-4">
           {/* Botão de filtros */}
           <button
             onClick={toggleFilters}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+            className="flex items-center justify-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
           >
             <Filter className="w-4 h-4 mr-1" />
             <span>{t('filters')}</span>
@@ -375,17 +437,17 @@ const FinancialTransactions: React.FC = () => {
           <div className="flex gap-2">
             <Button 
               onClick={() => handleNewTransaction('income')}
-              className="flex items-center bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white"
+              className="flex items-center bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-xs sm:text-sm px-2 sm:px-3"
               disabled={hasNoCashiers}
             >
-              <TrendingUp className="mr-2 h-4 w-4" /> {t('newIncome')}
+              <TrendingUp className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> {t('newIncome')}
             </Button>
             <Button 
               onClick={() => handleNewTransaction('expense')}
-              className="flex items-center bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+              className="flex items-center bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white text-xs sm:text-sm px-2 sm:px-3"
               disabled={hasNoCashiers}
             >
-              <TrendingDown className="mr-2 h-4 w-4" /> {t('newExpense')}
+              <TrendingDown className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> {t('newExpense')}
             </Button>
           </div>
         </div>
@@ -411,12 +473,12 @@ const FinancialTransactions: React.FC = () => {
       {/* Painel de filtros - exibido apenas quando showFilters for true e há caixas disponíveis */}
       {showFilters && !hasNoCashiers && (
         <Card className="mb-6 dark:bg-gray-800 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-white">{t('filters')}</CardTitle>
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-gray-900 dark:text-white text-base">{t('filters')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
+          <CardContent className="px-4 py-3">
+            <div className="flex flex-col gap-3">
+              <div className="w-full">
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <Input
@@ -428,7 +490,7 @@ const FinancialTransactions: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="w-full md:w-64">
+              <div className="w-full">
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <SelectValue placeholder={t('categories')} />
@@ -454,8 +516,8 @@ const FinancialTransactions: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex gap-2">
-                <div className="w-full md:w-auto">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="w-full">
                   <Input
                     type="date"
                     placeholder={t('startDate')}
@@ -464,7 +526,7 @@ const FinancialTransactions: React.FC = () => {
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
-                <div className="w-full md:w-auto">
+                <div className="w-full">
                   <Input
                     type="date"
                     placeholder={t('endDate')}
@@ -474,7 +536,7 @@ const FinancialTransactions: React.FC = () => {
                   />
                 </div>
               </div>
-              <Button onClick={handleSearch} className="w-full md:w-auto dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
+              <Button onClick={handleSearch} className="w-full dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
                 <Filter className="mr-2 h-4 w-4" /> {t('filter')}
               </Button>
             </div>
@@ -484,30 +546,46 @@ const FinancialTransactions: React.FC = () => {
 
       {hasNoCashiers ? null : (
         <>
-          <Tabs defaultValue="all" className="mb-6" onValueChange={handleTabChange}>
-            <TabsList className="dark:bg-gray-800 dark:border-gray-700">
-              <TabsTrigger value="all" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('all')}</TabsTrigger>
-              <TabsTrigger value="income" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('incomePlural')}</TabsTrigger>
-              <TabsTrigger value="expense" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('expensePlural')}</TabsTrigger>
-              <TabsTrigger value="pending" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('pendingPlural')}</TabsTrigger>
-              <TabsTrigger value="overdue" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('overduePlural')}</TabsTrigger>
-              <TabsTrigger value="paid" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('paidOrReceived')}</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="overflow-x-auto">
+            <Tabs defaultValue="paid" className="mb-6" onValueChange={handleTabChange}>
+              <TabsList className="dark:bg-gray-800 dark:border-gray-700 flex flex-nowrap overflow-x-auto">
+                <TabsTrigger value="all" className="text-xs md:text-sm dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('all')}</TabsTrigger>
+                <TabsTrigger value="income" className="text-xs md:text-sm dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('incomePlural')}</TabsTrigger>
+                <TabsTrigger value="expense" className="text-xs md:text-sm dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('expensePlural')}</TabsTrigger>
+                <TabsTrigger value="pending" className="text-xs md:text-sm dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">
+                  {t('pendingPlural')}
+                  {counts.pending > 0 && (
+                    <span className="ml-1 px-1 py-0.5 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded-full">
+                      {counts.pending}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="overdue" className="text-xs md:text-sm dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">
+                  {t('overduePlural')}
+                  {counts.overdue > 0 && (
+                    <span className="ml-1 px-1 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-full">
+                      {counts.overdue}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="paid" className="text-xs md:text-sm dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">{t('paidOrReceived')}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
 
-          <div className="rounded-md border dark:border-gray-700">
+          <div className="overflow-x-auto rounded-md border dark:border-gray-700">
             <Table>
               <TableHeader>
                 <TableRow className="dark:bg-gray-800 dark:hover:bg-gray-800">
                   <TableHead className="dark:text-gray-300"></TableHead>
-                  <TableHead className="dark:text-gray-300">{t('description')}</TableHead>
-                  <TableHead className="dark:text-gray-300">{t('category')}</TableHead>
-                  <TableHead className="dark:text-gray-300">{t('amount')}</TableHead>
-                  <TableHead className="dark:text-gray-300">{t('dueDate')}</TableHead>
-                  <TableHead className="dark:text-gray-300">{t('paymentDate')}</TableHead>
-                  <TableHead className="dark:text-gray-300">{t('status')}</TableHead>
-                  <TableHead className="dark:text-gray-300">{t('customer')}</TableHead>
-                  <TableHead className="text-right dark:text-gray-300">{t('actions')}</TableHead>
+                  <TableHead className="dark:text-gray-300 whitespace-nowrap">{t('description')}</TableHead>
+                  <TableHead className="dark:text-gray-300 whitespace-nowrap hidden md:table-cell">{t('category')}</TableHead>
+                  <TableHead className="dark:text-gray-300 whitespace-nowrap">{t('amount')}</TableHead>
+                  <TableHead className="dark:text-gray-300 whitespace-nowrap hidden sm:table-cell">{t('dueDate')}</TableHead>
+                  <TableHead className="dark:text-gray-300 whitespace-nowrap hidden lg:table-cell">{t('paymentDate')}</TableHead>
+                  <TableHead className="dark:text-gray-300 whitespace-nowrap">{t('status')}</TableHead>
+                  <TableHead className="dark:text-gray-300 whitespace-nowrap hidden md:table-cell">{t('customer')}</TableHead>
+                  <TableHead className="text-right dark:text-gray-300 whitespace-nowrap">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -522,44 +600,44 @@ const FinancialTransactions: React.FC = () => {
                 ) : (
                   transactions.map((transaction) => (
                     <TableRow key={transaction.id} className="dark:bg-gray-800 dark:hover:bg-gray-700">
-                      <TableCell>
-                        <div className={`p-2 rounded-full inline-block ${transaction.transaction_type === 'income' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                      <TableCell className="p-2">
+                        <div className={`p-1.5 rounded-full inline-block ${transaction.transaction_type === 'income' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
                           {transaction.transaction_type === 'income' ? (
-                            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
                           ) : (
-                            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                            <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium max-w-xs truncate dark:text-gray-300">
+                      <TableCell className="font-medium max-w-[80px] sm:max-w-[150px] md:max-w-xs truncate dark:text-gray-300 p-2 sm:p-4">
                         {transaction.description}
                       </TableCell>
-                      <TableCell className="dark:text-gray-300">
+                      <TableCell className="dark:text-gray-300 hidden md:table-cell">
                         {transaction.financial_categories?.name || '-'}
                       </TableCell>
-                      <TableCell className={`${transaction.transaction_type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <TableCell className={`${transaction.transaction_type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} text-xs sm:text-sm whitespace-nowrap`}>
                         {formatCurrency(transaction.amount)}
                       </TableCell>
-                      <TableCell className="dark:text-gray-300">
+                      <TableCell className="dark:text-gray-300 hidden sm:table-cell text-xs sm:text-sm">
                         {formatDate(transaction.due_date)}
                       </TableCell>
-                      <TableCell className="dark:text-gray-300">
+                      <TableCell className="dark:text-gray-300 hidden lg:table-cell text-xs sm:text-sm">
                         {formatDate(transaction.payment_date)}
                       </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(transaction.status)}`}>
+                      <TableCell className="p-2">
+                        <span className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-xs ${getStatusBadgeClass(transaction.status)}`}>
                           {getStatusTranslation(transaction.status)}
                         </span>
                       </TableCell>
-                      <TableCell className="dark:text-gray-300">
+                      <TableCell className="dark:text-gray-300 hidden md:table-cell truncate max-w-[100px] lg:max-w-[150px]">
                         {transaction.customers?.name || '-'}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right p-1 sm:p-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="h-8 w-8 p-0 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <button className="h-7 w-7 p-0 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                               <span className="sr-only">{t('openMenu')}</span>
-                              <MoreHorizontal className="h-4 w-4 dark:text-gray-300" />
+                              <MoreHorizontal className="h-4 w-4 dark:text-gray-300 mx-auto" />
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="dark:bg-gray-800 dark:border-gray-700">
@@ -627,18 +705,18 @@ const FinancialTransactions: React.FC = () => {
 
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="dark:bg-gray-800 dark:border-gray-700">
+        <DialogContent className="dark:bg-gray-800 dark:border-gray-700 max-w-[90vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="dark:text-white">{t('confirmDeletion')}</DialogTitle>
             <DialogDescription className="dark:text-gray-300">
               {t('confirmDeletionMessage')}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 w-full sm:w-auto">
               {t('cancel')}
             </Button>
-            <Button variant="danger" onClick={handleDelete} className="dark:bg-red-600 dark:hover:bg-red-700">
+            <Button variant="danger" onClick={handleDelete} className="dark:bg-red-600 dark:hover:bg-red-700 w-full sm:w-auto">
               {t('delete')}
             </Button>
           </DialogFooter>
@@ -650,7 +728,10 @@ const FinancialTransactions: React.FC = () => {
         isOpen={isStatusDialogOpen}
         onClose={() => setIsStatusDialogOpen(false)}
         transaction={selectedTransaction}
-        onSuccess={fetchTransactions}
+        onSuccess={() => {
+          fetchTransactions();
+          fetchCounts();
+        }}
       />
 
       {/* Modal de Formulário */}

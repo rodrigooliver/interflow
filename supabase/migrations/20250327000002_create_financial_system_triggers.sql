@@ -203,4 +203,99 @@ USING (
 CREATE TRIGGER log_transaction_status_change
 AFTER UPDATE ON public.financial_transactions
 FOR EACH ROW
-EXECUTE FUNCTION public.log_transaction_status_change(); 
+EXECUTE FUNCTION public.log_transaction_status_change();
+
+-- Função para atualizar o saldo total do caixa (campo balance) com base em todas as transações
+CREATE OR REPLACE FUNCTION public.update_cashier_total_balance()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_cashier_id UUID;
+    v_total_balance DECIMAL(15, 2);
+BEGIN
+    -- Pegar o ID do caixa da transação
+    v_cashier_id := NEW.cashier_id;
+    
+    -- Se não tem caixa associado, não faz nada
+    IF v_cashier_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+    
+    -- Apenas processar se o status foi alterado para paid ou received
+    IF (TG_OP = 'UPDATE' AND (NEW.status = 'paid' OR NEW.status = 'received')) 
+       OR (TG_OP = 'INSERT' AND (NEW.status = 'paid' OR NEW.status = 'received')) THEN
+        
+        -- Calcular o saldo total para o caixa somando todas as transações pagas/recebidas
+        SELECT COALESCE(
+            SUM(
+                CASE 
+                    WHEN transaction_type = 'income' THEN amount 
+                    WHEN transaction_type = 'expense' THEN -amount 
+                    ELSE 0 
+                END
+            ), 0
+        ) INTO v_total_balance
+        FROM public.financial_transactions
+        WHERE cashier_id = v_cashier_id
+        AND (status = 'paid' OR status = 'received');
+        
+        -- Atualizar o saldo total no caixa
+        UPDATE public.financial_cashiers
+        SET balance = v_total_balance
+        WHERE id = v_cashier_id;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger para atualizar o saldo total do caixa
+CREATE TRIGGER update_cashier_total_balance
+AFTER INSERT OR UPDATE ON public.financial_transactions
+FOR EACH ROW
+WHEN (NEW.cashier_id IS NOT NULL AND (NEW.status = 'paid' OR NEW.status = 'received'))
+EXECUTE FUNCTION public.update_cashier_total_balance();
+
+-- Trigger para exclusão também, para recalcular o saldo ao remover uma transação
+CREATE OR REPLACE FUNCTION public.update_cashier_total_balance_after_delete()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_cashier_id UUID;
+    v_total_balance DECIMAL(15, 2);
+BEGIN
+    -- Pegar o ID do caixa da transação excluída
+    v_cashier_id := OLD.cashier_id;
+    
+    -- Se não tem caixa associado ou status não era paid/received, não faz nada
+    IF v_cashier_id IS NULL OR (OLD.status != 'paid' AND OLD.status != 'received') THEN
+        RETURN OLD;
+    END IF;
+    
+    -- Calcular o saldo total para o caixa somando todas as transações pagas/recebidas
+    SELECT COALESCE(
+        SUM(
+            CASE 
+                WHEN transaction_type = 'income' THEN amount 
+                WHEN transaction_type = 'expense' THEN -amount 
+                ELSE 0 
+            END
+        ), 0
+    ) INTO v_total_balance
+    FROM public.financial_transactions
+    WHERE cashier_id = v_cashier_id
+    AND (status = 'paid' OR status = 'received');
+    
+    -- Atualizar o saldo total no caixa
+    UPDATE public.financial_cashiers
+    SET balance = v_total_balance
+    WHERE id = v_cashier_id;
+    
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger para atualizar o saldo total do caixa após exclusão
+CREATE TRIGGER update_cashier_total_balance_after_delete
+AFTER DELETE ON public.financial_transactions
+FOR EACH ROW
+WHEN (OLD.cashier_id IS NOT NULL AND (OLD.status = 'paid' OR OLD.status = 'received'))
+EXECUTE FUNCTION public.update_cashier_total_balance_after_delete(); 
