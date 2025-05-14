@@ -164,7 +164,7 @@
     "noResults": "No se encontraron resultados"
   },
   "checklist": {
-    "title": "Lista de verificación",
+    "title": "Checklist",
     "addItem": "Agregar ítem",
     "progress": "{{count}}/{{total}} completados"
   },

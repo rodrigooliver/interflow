@@ -163,7 +163,7 @@
     "noResults": "Nenhum resultado encontrado"
   },
   "checklist": {
-    "title": "Lista de verificação",
+    "title": "Checklist",
     "addItem": "Adicionar item",
     "progress": "{{count}}/{{total}} concluídos"
   },

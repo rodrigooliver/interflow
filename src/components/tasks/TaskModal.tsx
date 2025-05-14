@@ -1464,7 +1464,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                   </div>
 
                   {/* Lista de itens */}
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2 pb-2">
                     {formData.checklist.length === 0 ? (
                       <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
                         {t('checklist.empty', 'Nenhum item na checklist')}
@@ -1511,7 +1511,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
 
                   {/* Barra de progresso */}
                   {formData.checklist.length > 0 && (
-                    <div className="mt-4">
+                    <div className="">
                       <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-blue-600 rounded-full transition-all duration-300"
