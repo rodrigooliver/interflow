@@ -95,8 +95,10 @@ export function KanbanBoard({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
+      // Adicionar um delay de 250ms antes de iniciar o arrastar para dispositivos móveis
       activationConstraint: {
-        distance: 8,
+        delay: 250,
+        tolerance: 8,
       },
     })
   );

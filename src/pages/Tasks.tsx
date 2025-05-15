@@ -567,13 +567,9 @@ export default function Tasks() {
   // Renderização normal quando um projeto está selecionado
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 sm:p-6 pb-0">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap justify-between items-start sm:items-center gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <h1 className="hidden sm:block text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-              {t('title')}
-            </h1>
-            
+      <div className="p-4 pb-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full justify-between">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
             {/* Seletor de Projetos */}
             <ProjectSelector
               projects={projects}
@@ -581,9 +577,19 @@ export default function Tasks() {
               onSelectProject={handleSelectProject}
               onAddProject={handleAddProject}
             />
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            
+            {/* Botão adicionar tarefa */}
+            <button
+              onClick={() => {
+                setSelectedTask(null);
+                setShowTaskModal(true);
+              }}
+              className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">{t('addTask')}</span>
+            </button>
+            
             {/* Mostrar/ocultar arquivados */}
             <button
               onClick={() => setShowArchivedTasks(!showArchivedTasks)}
@@ -674,18 +680,6 @@ export default function Tasks() {
                 )}
               </div>
             )}
-            
-            {/* Botão adicionar tarefa */}
-            <button
-              onClick={() => {
-                setSelectedTask(null);
-                setShowTaskModal(true);
-              }}
-              className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              <Plus className="w-5 h-5 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">{t('addTask')}</span>
-            </button>
           </div>
         </div>
       </div>

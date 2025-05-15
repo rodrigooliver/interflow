@@ -82,8 +82,10 @@ export function TaskBoard({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
+      // Adicionar um delay de 250ms antes de iniciar o arrastar para dispositivos móveis
       activationConstraint: {
-        distance: 8,
+        delay: 250,
+        tolerance: 8,
       },
     })
   );
@@ -449,7 +451,7 @@ export function TaskBoard({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar snap-x snap-mandatory">
+        <div className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
           {stages.map((stage) => {
             // Ordenar tarefas pelo stage_order
             const stageTasks = localTasks
@@ -463,7 +465,7 @@ export function TaskBoard({
                 items={stageTasks.map(t => t.id)}
                 strategy={rectSortingStrategy}
               >
-                <div className="snap-start snap-always">
+                <div className="pl-0 pr-0 first:pl-0 last:pr-0">
                   <TaskColumn
                     stage={stage}
                     tasks={stageTasks}
@@ -481,7 +483,7 @@ export function TaskBoard({
           })}
           
           {/* Botão para adicionar nova etapa */}
-          <div className="flex-shrink-0 w-10 self-start mt-1 snap-start">
+          <div className="flex-shrink-0 w-10 self-start mt-1 pl-1 pr-3">
             <button
               onClick={() => setShowStageDialog(true)}
               className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-blue-600 text-white rounded-md hover:bg-blue-700"
