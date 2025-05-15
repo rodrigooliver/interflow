@@ -567,7 +567,16 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 p-6 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
+      <div 
+        className="flex gap-6 p-6 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar"
+        style={{
+          /* Desativar lupa de seleção de texto e outras interações não desejadas em dispositivos móveis */
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none',
+          touchAction: 'pan-x pan-y',
+        }}
+      >
         {stages.map((stage) => {
           // Ordenar clientes pelo stage_order
           const stageCustomers = localCustomers
