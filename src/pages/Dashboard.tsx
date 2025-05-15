@@ -443,7 +443,7 @@ export default function Dashboard() {
         .select(`
           *,
           stage:task_stages(*),
-          customer:customers(*),
+          customer:customers!tasks_customer_id_fkey(*),
           assignees:task_assignees(
             *,
             profile:profiles(*)
@@ -455,7 +455,7 @@ export default function Dashboard() {
           project:task_projects(*)
         `)
         .eq('organization_id', organizationId)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'in_progress'])
         .order('due_date', { ascending: true })
         .limit(5);
 

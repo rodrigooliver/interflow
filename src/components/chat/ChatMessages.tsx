@@ -610,7 +610,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           const timeSinceLastUpdate = now.getTime() - lastUpdate.getTime();
           
           // Se passou mais de 30 segundos, recarregar completamente o chat
-          console.log('timeSinceLastUpdate', timeSinceLastUpdate);
+          // console.log('timeSinceLastUpdate', timeSinceLastUpdate);
           if (timeSinceLastUpdate > 30000) {
             // Ativar o loading inicial para mostrar o skeleton
             setInitialLoading(true);
