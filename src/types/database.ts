@@ -209,6 +209,10 @@ export interface Profile {
   created_at: string;
   is_superadmin: boolean;
   language: string;
+  is_seller: boolean;
+  is_support: boolean;
+  stripe_account_id?: string;
+  stripe_account_approved?: boolean;
 }
 
 // ==========================================

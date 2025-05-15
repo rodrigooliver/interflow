@@ -1,24 +1,48 @@
 {
   "title": "Perfil",
   "changePassword": "Cambiar Contraseña",
-  "passwordChanged": "¡Contraseña cambiada con éxito!",
+  "partnerPortal": "Portal de Socios",
+  "partnerStatus": "Estado del Socio",
+  "seller": "Vendedor",
+  "support": "Soporte",
+  "organizations": "Organizaciones",
+  "organizationsDescription": "Aquí puedes ver todas las organizaciones a las que estás vinculado como socio.",
+  "bankAccount": "Cuenta Bancaria",
+  "setupBankAccount": "Configurar Cuenta Bancaria",
+  "manageBankAccount": "Gestionar Cuenta Bancaria",
+  "configureAccount": "Configurar Cuenta",
+  "viewTransactions": "Ver Transacciones",
+  "manageAccount": "Gestionar Cuenta",
+  "onboardingExited": "Has cerrado el formulario de configuración de la cuenta bancaria. Puedes reabrirlo en cualquier momento.",
+  "partnerInstructions": "Instrucciones para Socios",
+  "partnerIntro": "En el portal de socios, puedes ganar comisiones refiriendo, vendiendo y brindando soporte, pero todo está estructurado en niveles:",
+  "indicatorTitle": "Referidor",
+  "indicatorDesc": "Todos comienzan como Referidores. Ganas de por vida un 10% del valor del plan que contrate tu referido.",
+  "sellerTitle": "Vendedor",
+  "sellerDesc": "Después de la capacitación y aprobación, puedes convertirte en Vendedor y ganar un 10% adicional por cada venta realizada.",
+  "supportTitle": "Soporte",
+  "supportDesc": "Después de la capacitación y aprobación para soporte, ganas un 10% adicional por cada cliente que atiendas en posventa.",
+  "indicationProcess": "Para referencias, debes presentar brevemente Interflow al cliente, y nuestros vendedores se pondrán en contacto con ellos. Si estás habilitado como vendedor, puedes realizar la venta directamente, así como brindar soporte posventa si estás habilitado.",
+  "paymentProcess": "Nuestro pago se realiza mediante split automático, donde la transferencia a tu cuenta ocurre automáticamente cuando el cliente realiza el pago, a través de Stripe Connect. Para comenzar a recibir, configura tu cuenta bancaria a continuación.",
+  "partnershipMessage": "¡Esperamos construir una excelente colaboración!",
   "form": {
     "avatar": "Foto de Perfil",
     "changeAvatar": "Cambiar Foto",
     "removeAvatar": "Eliminar Foto",
     "fullName": "Nombre Completo",
-    "email": "Correo",
+    "email": "Correo Electrónico",
     "whatsapp": "WhatsApp",
     "newPassword": "Nueva Contraseña",
     "confirmPassword": "Confirmar Nueva Contraseña",
     "passwordRequirements": "La contraseña debe tener al menos 6 caracteres",
-    "changePassword": "Cambiar Contraseña",
-    "changing": "Cambiando..."
+    "changing": "Cambiando...",
+    "changePassword": "Cambiar Contraseña"
   },
   "errors": {
     "avatarTooLarge": "La foto de perfil debe ser menor a 2MB",
     "invalidFileType": "Solo se permiten archivos de imagen",
     "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
     "passwordsDoNotMatch": "Las contraseñas no coinciden"
-  }
+  },
+  "passwordChanged": "Contraseña cambiada con éxito"
 }

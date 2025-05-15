@@ -29,6 +29,8 @@
     "@sentry/react": "^9.9.0",
     "@sentry/replay": "^7.116.0",
     "@sentry/tracing": "^7.120.3",
+    "@stripe/connect-js": "^3.3.23",
+    "@stripe/react-connect-js": "^3.3.22",
     "@stripe/stripe-js": "^2.4.0",
     "@supabase/supabase-js": "^2.39.7",
     "@tailwindcss/typography": "^0.5.16",

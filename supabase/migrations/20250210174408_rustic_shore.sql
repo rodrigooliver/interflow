@@ -27,13 +27,6 @@ CREATE POLICY "profiles_policy"
   USING (true)
   WITH CHECK (true);
 
--- Simplified policies for organizations
-CREATE POLICY "organizations_policy"
-  ON organizations
-  FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
 
 -- Simplified policies for organization_members
 CREATE POLICY "organization_members_policy"

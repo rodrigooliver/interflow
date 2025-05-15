@@ -1,24 +1,48 @@
 {
   "title": "Perfil",
   "changePassword": "Alterar Senha",
-  "passwordChanged": "Senha alterada com sucesso!",
+  "partnerPortal": "Portal do Parceiro",
+  "partnerStatus": "Status do Parceiro",
+  "seller": "Vendedor",
+  "support": "Suporte",
+  "organizations": "Organizações",
+  "organizationsDescription": "Aqui você pode ver todas as organizações que você está vinculado como parceiro.",
+  "bankAccount": "Conta Bancária",
+  "setupBankAccount": "Configurar Conta Bancária",
+  "manageBankAccount": "Gerenciar Conta Bancária",
+  "configureAccount": "Configurar Conta",
+  "viewTransactions": "Ver Transações",
+  "manageAccount": "Gerenciar Conta",
+  "onboardingExited": "Você fechou o formulário de configuração da conta bancária. Você pode reabrir a qualquer momento.",
+  "partnerInstructions": "Instruções para Parceiros",
+  "partnerIntro": "No portal do parceiro, você pode ganhar comissões indicando, vendendo e dando suporte, porém tudo é estruturado em níveis:",
+  "indicatorTitle": "Indicador",
+  "indicatorDesc": "Todos começam como Indicadores. Você ganha vitalício 10% do valor do plano que seu indicado contratar.",
+  "sellerTitle": "Vendedor",
+  "sellerDesc": "Após treinamento e aprovação, você pode se tornar Vendedor e ganhar mais 10% por cada venda realizada.",
+  "supportTitle": "Suporte",
+  "supportDesc": "Após treinamento e aprovação para suporte, você ganha mais 10% por cliente que atender no pós-venda.",
+  "indicationProcess": "Para indicação, você deve apresentar brevemente o Interflow ao cliente, e nossos vendedores entrarão em contato. Se você estiver habilitado como vendedor, poderá realizar a venda diretamente, assim como o suporte pós-venda se estiver habilitado.",
+  "paymentProcess": "Nosso repasse é feito através de split automático, onde a transferência para sua conta ocorre automaticamente quando o cliente efetua o pagamento, por meio do Stripe Connect. Para começar a receber, configure sua conta bancária abaixo.",
+  "partnershipMessage": "Esperamos construir uma excelente parceria!",
   "form": {
     "avatar": "Foto de Perfil",
     "changeAvatar": "Alterar Foto",
     "removeAvatar": "Remover Foto",
     "fullName": "Nome Completo",
-    "email": "Email",
+    "email": "E-mail",
     "whatsapp": "WhatsApp",
     "newPassword": "Nova Senha",
     "confirmPassword": "Confirmar Nova Senha",
     "passwordRequirements": "A senha deve ter pelo menos 6 caracteres",
-    "changePassword": "Alterar Senha",
-    "changing": "Alterando..."
+    "changing": "Alterando...",
+    "changePassword": "Alterar Senha"
   },
   "errors": {
     "avatarTooLarge": "A foto de perfil deve ter menos de 2MB",
     "invalidFileType": "Apenas arquivos de imagem são permitidos",
     "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
-    "passwordsDoNotMatch": "As senhas não coincidem"
-  }
+    "passwordsDoNotMatch": "As senhas não conferem"
+  },
+  "passwordChanged": "Senha alterada com sucesso"
 }

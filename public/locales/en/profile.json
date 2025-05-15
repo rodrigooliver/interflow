@@ -1,7 +1,30 @@
 {
   "title": "Profile",
   "changePassword": "Change Password",
-  "passwordChanged": "Password changed successfully!",
+  "partnerPortal": "Partner Portal",
+  "partnerStatus": "Partner Status",
+  "seller": "Seller",
+  "support": "Support",
+  "organizations": "Organizations",
+  "organizationsDescription": "Here you can see all organizations you are linked to as a partner.",
+  "bankAccount": "Bank Account",
+  "setupBankAccount": "Setup Bank Account",
+  "manageBankAccount": "Manage Bank Account",
+  "configureAccount": "Configure Account",
+  "viewTransactions": "View Transactions",
+  "manageAccount": "Manage Account",
+  "onboardingExited": "You closed the bank account setup form. You can reopen it at any time.",
+  "partnerInstructions": "Partner Instructions",
+  "partnerIntro": "In the partner portal, you can earn commissions by referring, selling and providing support, but everything is structured in levels:",
+  "indicatorTitle": "Referrer",
+  "indicatorDesc": "Everyone starts as a Referrer. You earn a lifetime 10% of the value of the plan that your referral contracts.",
+  "sellerTitle": "Seller",
+  "sellerDesc": "After training and approval, you can become a Seller and earn an additional 10% for each sale made.",
+  "supportTitle": "Support",
+  "supportDesc": "After training and approval for support, you earn an additional 10% for each customer you assist in post-sales.",
+  "indicationProcess": "For referrals, you should briefly introduce Interflow to the client, and our sellers will contact them. If you are qualified as a seller, you can make the sale directly, as well as provide post-sale support if you are qualified.",
+  "paymentProcess": "Our payment is made through automatic split, where the transfer to your account occurs automatically when the customer makes the payment, through Stripe Connect. To start receiving, configure your bank account below.",
+  "partnershipMessage": "We hope to build an excellent partnership!",
   "form": {
     "avatar": "Profile Picture",
     "changeAvatar": "Change Picture",
@@ -12,13 +35,14 @@
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
     "passwordRequirements": "Password must be at least 6 characters long",
-    "changePassword": "Change Password",
-    "changing": "Changing..."
+    "changing": "Changing...",
+    "changePassword": "Change Password"
   },
   "errors": {
     "avatarTooLarge": "Profile picture must be less than 2MB",
     "invalidFileType": "Only image files are allowed",
     "passwordTooShort": "Password must be at least 6 characters long",
     "passwordsDoNotMatch": "Passwords do not match"
-  }
+  },
+  "passwordChanged": "Password changed successfully"
 }
