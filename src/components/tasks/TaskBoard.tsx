@@ -451,16 +451,7 @@ export function TaskBoard({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div 
-          className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar"
-          style={{
-            /* Desativar lupa de seleção de texto e outras interações não desejadas em dispositivos móveis */
-            WebkitTouchCallout: 'none',
-            WebkitUserSelect: 'none',
-            userSelect: 'none',
-            touchAction: 'pan-x pan-y',
-          }}
-        >
+        <div className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
           {stages.map((stage) => {
             // Ordenar tarefas pelo stage_order
             const stageTasks = localTasks
