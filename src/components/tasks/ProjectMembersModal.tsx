@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, User, UserPlus, Check, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { X, User, UserPlus, Check, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { ProjectRole, ProjectMember } from '../../types/tasks';
 import { 
   useProjectMembers, 
@@ -33,6 +33,7 @@ export function ProjectMembersModal({ onClose, projectId, organizationId }: Proj
   const [selectedRole, setSelectedRole] = useState<ProjectRole>('editor');
   const [editingRole, setEditingRole] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Hooks para obter e manipular dados
   const { data: members = [], isLoading: isLoadingMembers } = useProjectMembers(projectId);
@@ -69,7 +70,15 @@ export function ProjectMembersModal({ onClose, projectId, organizationId }: Proj
   };
 
   // Função para remover um membro do projeto
-  const handleRemoveMember = (memberId: string) => {
+  const handleRemoveMember = (memberId: string, role: ProjectRole) => {
+    if (role === 'admin') {
+      setErrorMessage(t('projects.cannotRemoveAdmin'));
+      setTimeout(() => setErrorMessage(null), 3000);
+      setSelectedMember(null);
+      setConfirmDelete(false);
+      return;
+    }
+    
     removeMember.mutate({
       memberId,
       projectId
@@ -183,7 +192,7 @@ export function ProjectMembersModal({ onClose, projectId, organizationId }: Proj
                   ) : selectedMember?.id === member.id && confirmDelete ? (
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleRemoveMember(member.id)}
+                        onClick={() => handleRemoveMember(member.id, member.role)}
                         className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                         disabled={removeMember.isPending}
                       >
@@ -216,16 +225,18 @@ export function ProjectMembersModal({ onClose, projectId, organizationId }: Proj
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => {
-                          setSelectedMember(member);
-                          setConfirmDelete(true);
-                          setEditingRole(false);
-                        }}
-                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {member.role !== 'admin' && (
+                        <button
+                          onClick={() => {
+                            setSelectedMember(member);
+                            setConfirmDelete(true);
+                            setEditingRole(false);
+                          }}
+                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -233,6 +244,14 @@ export function ProjectMembersModal({ onClose, projectId, organizationId }: Proj
             </div>
           )}
         </div>
+
+        {/* Mensagem de erro */}
+        {errorMessage && (
+          <div className="mb-4 p-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-md flex items-center">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            {errorMessage}
+          </div>
+        )}
 
         {/* Modal para adicionar novos membros */}
         {showAddMember && (

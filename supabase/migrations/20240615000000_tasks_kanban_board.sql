@@ -407,54 +407,48 @@ USING (
   )
 );
 
--- Apenas administradores da organização podem criar projetos
-DROP POLICY IF EXISTS "Membros da organização podem inserir projetos" ON public.task_projects;
-CREATE POLICY "Administradores da organização podem criar projetos" 
+-- Qualquer membro da organização pode criar projetos
+DROP POLICY IF EXISTS "Administradores da organização podem criar projetos" ON public.task_projects;
+CREATE POLICY "Membros da organização podem criar projetos" 
 ON public.task_projects FOR INSERT 
 WITH CHECK (organization_id IN (
   SELECT organization_id FROM organization_members 
-  WHERE user_id = auth.uid() AND status = 'active' AND (role = 'admin' OR role = 'owner')
+  WHERE user_id = auth.uid() AND status = 'active'
 ));
 
--- Apenas administradores do projeto podem editar projetos
-DROP POLICY IF EXISTS "Membros da organização podem atualizar projetos" ON public.task_projects;
+-- Criar funções auxiliares para verificar permissões
+CREATE OR REPLACE FUNCTION public.user_is_project_admin(project_id uuid) 
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM task_project_members
+    WHERE task_project_members.project_id = project_id 
+    AND task_project_members.user_id = auth.uid()
+    AND task_project_members.role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.user_is_org_admin(org_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM organization_members
+    WHERE organization_members.organization_id = org_id
+    AND organization_members.user_id = auth.uid()
+    AND organization_members.status = 'active'
+    AND (organization_members.role = 'admin' OR organization_members.role = 'owner')
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Políticas de segurança usando as funções auxiliares
+DROP POLICY IF EXISTS "Administradores da organização podem atualizar projetos" ON public.task_projects;
 CREATE POLICY "Administradores podem atualizar projetos" 
 ON public.task_projects FOR UPDATE 
 USING (
-  id IN (
-    SELECT project_id FROM task_project_members
-    WHERE user_id = auth.uid() AND role = 'admin'
-  )
-  OR
-  organization_id IN (
-    SELECT organization_id FROM organization_members 
-    WHERE user_id = auth.uid() AND status = 'active' AND (role = 'admin' OR role = 'owner')
-  )
-)
-WITH CHECK (
-  id IN (
-    SELECT project_id FROM task_project_members
-    WHERE user_id = auth.uid() AND role = 'admin'
-  )
-  OR
-  organization_id IN (
-    SELECT organization_id FROM organization_members 
-    WHERE user_id = auth.uid() AND status = 'active' AND (role = 'admin' OR role = 'owner')
-  )
+  public.user_is_project_admin(id) OR public.user_is_org_admin(organization_id)
 );
 
--- Apenas administradores do projeto podem excluir projetos
-DROP POLICY IF EXISTS "Membros da organização podem excluir projetos" ON public.task_projects;
+DROP POLICY IF EXISTS "Administradores da organização podem excluir projetos" ON public.task_projects;
 CREATE POLICY "Administradores podem excluir projetos" 
 ON public.task_projects FOR DELETE 
 USING (
-  id IN (
-    SELECT project_id FROM task_project_members
-    WHERE user_id = auth.uid() AND role = 'admin'
-  )
-  OR
-  organization_id IN (
-    SELECT organization_id FROM organization_members 
-    WHERE user_id = auth.uid() AND status = 'active' AND (role = 'admin' OR role = 'owner')
-  )
+  public.user_is_project_admin(id) OR public.user_is_org_admin(organization_id)
 ); 

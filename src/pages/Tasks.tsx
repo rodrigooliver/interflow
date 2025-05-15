@@ -120,6 +120,14 @@ export default function Tasks() {
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
   const [selectedStage, setSelectedStage] = useState<TaskStage | null>(null);
   const [selectedProject, setSelectedProject] = useState<TaskProject | null>(null);
+  
+  // Inicializa o selectedProjectId com o valor do localStorage, se disponível
+  const getLocalStorageProjectId = () => {
+    if (!organizationId) return null;
+    const projectKey = `selectedProjectId_${organizationId}`;
+    return localStorage.getItem(projectKey);
+  };
+  
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showArchivedTasks, setShowArchivedTasks] = useState(false);
   
@@ -163,7 +171,7 @@ export default function Tasks() {
           schema: 'public',
           table: 'tasks',
           filter: `project_id=eq.${selectedProjectId}`
-        }, (payload) => {
+        }, () => {
           
           // Invalida o cache para forçar uma nova busca
           queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
@@ -176,7 +184,7 @@ export default function Tasks() {
           schema: 'public',
           table: 'tasks',
           filter: `project_id=eq.${selectedProjectId}`
-        }, (payload) => {
+        }, () => {
           
           // Invalida o cache para forçar uma nova busca
           queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
@@ -228,22 +236,52 @@ export default function Tasks() {
 
   const isLoading = isProjectsLoading || isStagesLoading || isTasksLoading;
 
-  // Inicializar o projeto a partir da URL
+  // Inicializar o projeto a partir da URL ou localStorage
   useEffect(() => {
+    if (!organizationId) return;
+
     // Verificar se há um projectId na URL
     const projectId = searchParams.get('projectId');
     
-    if (projectId && projectId !== selectedProjectId) {
-      // Verificar se o projeto existe antes de selecioná-lo
+    if (projectId) {
+      // Se há um projectId na URL, verificar se o projeto existe
       if (!isProjectsLoading && projects.some(p => p.id === projectId)) {
-        setSelectedProjectId(projectId);
+        // Atualizar o estado e o localStorage
+        handleSelectProject(projectId);
+      }
+    } else {
+      // Se não há projectId na URL, verificar o localStorage
+      const savedProjectId = getLocalStorageProjectId();
+      
+      // Verificar se o projeto salvo existe na lista de projetos
+      if (savedProjectId && !isProjectsLoading && projects.some(p => p.id === savedProjectId)) {
+        // Atualizar o estado e a URL
+        handleSelectProject(savedProjectId);
       }
     }
-  }, [searchParams, projects, isProjectsLoading, selectedProjectId]);
+  }, [searchParams, projects, isProjectsLoading, organizationId]);
 
-  // Função para atualizar o ID do projeto na URL e no state
+  // Função para atualizar o ID do projeto na URL, no state e no localStorage
   const handleSelectProject = (projectId: string | null) => {
     setSelectedProjectId(projectId);
+    
+    // Salvar no localStorage se tiver um ID de organização
+    if (organizationId) {
+      const projectKey = `selectedProjectId_${organizationId}`;
+      
+      if (projectId) {
+        localStorage.setItem(projectKey, projectId);
+        
+        // Salvar o nome do projeto no sessionStorage para uso no sidebar
+        const project = projects.find(p => p.id === projectId);
+        if (project) {
+          const projectNameKey = `projectName_${projectId}`;
+          sessionStorage.setItem(projectNameKey, project.name);
+        }
+      } else {
+        localStorage.removeItem(projectKey);
+      }
+    }
     
     // Atualizar a URL
     if (projectId) {
@@ -313,6 +351,10 @@ export default function Tasks() {
         onSuccess: (newProject) => {
           // Selecionar automaticamente o projeto recém-criado e atualizar a URL
           handleSelectProject(newProject.id);
+          
+          // Também atualizar o nome do projeto no sessionStorage
+          const projectNameKey = `projectName_${newProject.id}`;
+          sessionStorage.setItem(projectNameKey, newProject.name);
         }
       });
     }

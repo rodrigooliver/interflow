@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Location } from 'react-router-dom';
 import { MessageSquare, Users, Settings as SettingsIcon, LayoutDashboard, LogOut, Sun, Moon, X, Building2, UserPlus, UsersRound, Share2, Keyboard, GitFork, GitMerge, Tag, User, MessageSquareText, ChevronLeft, ChevronRight, CheckCircle, CreditCard, AlertTriangle, Calendar, ChevronDown, ListTodo, DollarSign, FileText, Stethoscope } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +47,24 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   const { isDark, setIsDark } = useDarkMode();
   const { t } = useTranslation(['navigation', 'common']);
   const { data: subscription } = useCurrentSubscription(currentOrganizationMember?.organization.id);
+  const organizationId = currentOrganizationMember?.organization.id;
+
+  // Estado para armazenar o ID do projeto padrão
+  const [defaultProjectId, setDefaultProjectId] = useState<string | null>(null);
+
+  // Efeito para carregar o ID do projeto padrão do localStorage
+  useEffect(() => {
+    if (organizationId) {
+      const projectKey = `selectedProjectId_${organizationId}`;
+      const savedProjectId = localStorage.getItem(projectKey);
+      
+      if (savedProjectId) {
+        setDefaultProjectId(savedProjectId);
+      } else {
+        setDefaultProjectId(null);
+      }
+    }
+  }, [organizationId, location.pathname]);
 
   // Verificar se é trial
   const isTrial = subscription?.status === 'trialing';
@@ -92,7 +110,12 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
         { to: '/app/medical/templates', label: t('navigation:documentTemplates') }
       ]
     },
-    { to: '/app/tasks', icon: ListTodo, label: t('navigation:tasks') },
+    // Link de tarefas - vai direto para o projeto padrão se existir
+    { 
+      to: defaultProjectId ? `/app/tasks?projectId=${defaultProjectId}` : '/app/tasks', 
+      icon: ListTodo, 
+      label: t('navigation:tasks')
+    },
     { to: '/app/financial', icon: DollarSign, label: t('navigation:financial') },
   ];
 

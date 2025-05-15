@@ -150,7 +150,40 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
   // Efeito para selecionar automaticamente o primeiro projeto e etapa
   useEffect(() => {
     if (mode === 'create' && !taskId && !formData.project_id && projects.length > 0) {
-      // Selecionar o primeiro projeto
+      // Verificar se existe um projeto padrão no localStorage
+      if (organizationId) {
+        const projectKey = `selectedProjectId_${organizationId}`;
+        const defaultProjectId = localStorage.getItem(projectKey);
+        
+        // Se existe um projeto padrão e ele está disponível na lista
+        if (defaultProjectId && projects.some(p => p.id === defaultProjectId)) {
+          // Selecionar o projeto padrão
+          const defaultProject = projects.find(p => p.id === defaultProjectId);
+          
+          if (defaultProject) {
+            // Atualizar o projeto
+            setFormData(prev => ({ 
+              ...prev, 
+              project_id: defaultProject.id 
+            }));
+            
+            // Selecionar primeira etapa do projeto padrão se disponível
+            if (defaultProject.stages && defaultProject.stages.length > 0) {
+              const firstStage = defaultProject.stages[0];
+              
+              if (firstStage) {
+                setFormData(prev => ({ 
+                  ...prev, 
+                  stage_id: firstStage.id 
+                }));
+              }
+            }
+            return;
+          }
+        }
+      }
+      
+      // Se não existe projeto padrão, selecionar o primeiro da lista
       const firstProject = projects[0];
       
       if (firstProject) {
@@ -173,7 +206,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         }
       }
     }
-  }, [mode, taskId, formData.project_id, projects]);
+  }, [mode, taskId, formData.project_id, projects, organizationId]);
 
   // Efeito para carregar tarefa ou informações do chat
   useEffect(() => {
@@ -680,6 +713,19 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         }
       }
       
+      // Salvar o projeto atual como padrão no localStorage
+      if (organizationId && formData.project_id) {
+        const projectKey = `selectedProjectId_${organizationId}`;
+        localStorage.setItem(projectKey, formData.project_id);
+        
+        // Salvar o nome do projeto no sessionStorage
+        const project = projects.find(p => p.id === formData.project_id);
+        if (project) {
+          const projectNameKey = `projectName_${formData.project_id}`;
+          sessionStorage.setItem(projectNameKey, project.name);
+        }
+      }
+      
       // Invalida o cache de tasks para forçar uma nova busca
       await queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -1072,12 +1118,23 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                       value={formData.project_id || ''}
                       onChange={(e) => {
                         const newProjectId = e.target.value || undefined;
+                        
+                        // Buscar o projeto selecionado para obter suas etapas
+                        const selectedProject = projects.find(p => p.id === newProjectId) as TaskProjectWithStages | undefined;
+                        
+                        // Verificar se o projeto tem etapas e selecionar a primeira
+                        let firstStageId: string | undefined = undefined;
+                        
+                        if (selectedProject?.stages && selectedProject.stages.length > 0) {
+                          firstStageId = selectedProject.stages[0].id;
+                        }
+                        
+                        // Atualizar o formulário com o novo projeto e a primeira etapa
                         setFormData(prev => ({ 
                           ...prev, 
                           project_id: newProjectId,
-                          // Resetar o estágio se o projeto mudar
-                          stage_id: undefined 
-                        }))
+                          stage_id: firstStageId // Selecionar a primeira etapa automaticamente
+                        }));
                       }}
                       className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white ${
                         showValidationErrors && !formData.project_id 
