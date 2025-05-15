@@ -157,8 +157,10 @@ export default function Prompts() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('prompts:prompt')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/5">
-                    {t('flows:triggers.startWhen')}
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/5 max-w-[250px]">
+                    <div className="truncate">
+                      {t('flows:triggers.startWhen')}
+                    </div>
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
                     {t('prompts:updated')}
@@ -206,8 +208,8 @@ export default function Prompts() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
+                        <td className="px-6 py-4 max-w-[250px]">
+                          <div className="flex items-center overflow-hidden">
                             {linkedFlow ? (
                               <TriggersList 
                                 triggers={linkedFlow.triggers}
@@ -357,7 +359,7 @@ export default function Prompts() {
           {selectedFlow && (
             <FlowTriggers
               flowId={selectedFlow.id}
-              triggers={selectedFlow.triggers}
+              triggersInitial={selectedFlow.triggers}
               onChange={handleSaveTriggers}
             />
           )}

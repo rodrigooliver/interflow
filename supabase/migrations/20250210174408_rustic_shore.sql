@@ -44,6 +44,13 @@ CREATE POLICY "subscription_plans_policy"
   USING (true)
   WITH CHECK (true);
 
+-- Organizations policy (SELECT only)
+CREATE POLICY "organizations_select_policy"
+  ON organizations
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
 -- Simplified policies for subscriptions
 CREATE POLICY "subscriptions_policy"
   ON subscriptions
