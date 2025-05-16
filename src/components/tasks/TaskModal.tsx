@@ -573,9 +573,13 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Verificar se tem projeto e etapa selecionados
-    if (!formData.project_id || !formData.stage_id) {
+    // Verificar se tem título, projeto e etapa selecionados
+    if (!formData.title.trim() || !formData.project_id || !formData.stage_id) {
       setShowValidationErrors(true);
+      
+      if (!formData.title.trim()) {
+        toast.error(t('error.noTitle', 'Título da tarefa é obrigatório'));
+      }
       
       if (!formData.project_id) {
         toast.error(t('error.noProject'));
@@ -729,6 +733,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
       // Invalida o cache de tasks para forçar uma nova busca
       await queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      await queryClient.invalidateQueries({ queryKey: ['enhanced-tasks'] });
       onClose();
     } catch (error) {
       console.error('Error submitting task:', error);
@@ -909,14 +914,26 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
           <div className="flex justify-between items-center gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder={mode === 'create' ? t('form.titlePlaceholderCreate', 'Nova tarefa...') : t('form.titlePlaceholderEdit', 'Título da tarefa...')}
-                  className="w-full text-lg font-medium bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-600 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-                  required
-                />
+                <div className="w-full">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder={mode === 'create' ? t('form.titlePlaceholderCreate', 'Nova tarefa...') : t('form.titlePlaceholderEdit', 'Título da tarefa...')}
+                      className={`w-full text-lg font-medium bg-transparent border rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all ${
+                        showValidationErrors && !formData.title.trim() 
+                          ? 'border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500' 
+                          : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-transparent'
+                      }`}
+                      required
+                    />
+                    <span className="text-red-500">*</span>
+                  </div>
+                  {showValidationErrors && !formData.title.trim() && (
+                    <p className="text-xs text-red-500 mt-1">{t('error.noTitle', 'Título da tarefa é obrigatório')}</p>
+                  )}
+                </div>
                 <button
                   onClick={onClose}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
