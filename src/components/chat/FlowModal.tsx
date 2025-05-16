@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Pause } from 'lucide-react';
+import { Loader2, Pause, Search } from 'lucide-react';
 import { useFlows } from '../../hooks/useQueryes';
 import { Flow } from '../../types/database';
 import api from '../../lib/api';
@@ -39,6 +39,17 @@ export function FlowModal({
   const [startingFlowId, setStartingFlowId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const { data: flows = [], isLoading } = useFlows(organizationId);
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const filteredFlows = React.useMemo(() => {
+    if (!searchQuery.trim()) return flows;
+    const query = searchQuery.toLowerCase();
+    return flows.filter(
+      flow => 
+        flow.name.toLowerCase().includes(query) || 
+        (flow.description && flow.description.toLowerCase().includes(query))
+    );
+  }, [flows, searchQuery]);
 
   const handleStartFlow = async (flow: Flow) => {
     if (!chatId || !organizationId) return;
@@ -112,12 +123,12 @@ export function FlowModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] flex flex-col">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           {t('flows.title')}
         </h3>
         {!currentFlowSessionId && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {t('flows.description')}
           </p>
         )}
@@ -154,34 +165,56 @@ export function FlowModal({
             {t('flows.noFlows')}
           </div>
         ) : (
-          <div className="space-y-2">
+          <>
+            <div className="relative mb-4">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder={t('flows.search')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              />
+            </div>
+
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm mb-4">
                 {error}
               </div>
             )}
-            {flows.map((flow) => (
-              <button
-                key={flow.id}
-                onClick={() => handleStartFlow(flow)}
-                disabled={startingFlowId !== null}
-                className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {flow.name}
+
+            <div className="space-y-2 overflow-y-auto pr-1 min-h-[10rem] max-h-[calc(70vh-12rem)] flex-grow">
+              {filteredFlows.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  {t('flows.noResults')}
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {flow.description || t('flows.noDescription')}
-                </div>
-                {startingFlowId === flow.id && (
-                  <div className="mt-2 flex items-center text-sm text-blue-600">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    {t('loading')}
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+              ) : (
+                filteredFlows.map((flow) => (
+                  <button
+                    key={flow.id}
+                    onClick={() => handleStartFlow(flow)}
+                    disabled={startingFlowId !== null}
+                    className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {flow.name}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {flow.description || t('flows.noDescription')}
+                    </div>
+                    {startingFlowId === flow.id && (
+                      <div className="mt-2 flex items-center text-sm text-blue-600">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        {t('loading')}
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </>
         )}
 
         <div className="mt-6 flex justify-end">

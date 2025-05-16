@@ -358,7 +358,9 @@
     "pause": "Pause Flow",
     "pauseShort": "Pause",
     "pauseFlow": "Pause Flow",
-    "paused": "Flow paused successfully!"
+    "paused": "Flow paused successfully!",
+    "search": "Search flows...",
+    "noResults": "No matching flows found"
   },
   "messageDeleted": "Message deleted successfully",
   "deleteConfirmation": {

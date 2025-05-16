@@ -357,7 +357,9 @@
     "pause": "Pausar Flujo",
     "pauseShort": "Pausar",
     "pauseFlow": "Pausar Flujo",
-    "paused": "¡Flujo pausado con éxito!"
+    "paused": "¡Flujo pausado con éxito!",
+    "search": "Buscar flujos...",
+    "noResults": "No se encontraron flujos coincidentes"
   },
   "messageDeleted": "Mensaje eliminado con éxito",
   "deleteConfirmation": {

@@ -362,7 +362,9 @@
     "pause": "Pausar Fluxo",
     "pauseShort": "Pausar",
     "pauseFlow": "Pausar Fluxo",
-    "paused": "Fluxo pausado com sucesso!"
+    "paused": "Fluxo pausado com sucesso!",
+    "search": "Buscar fluxos...",
+    "noResults": "Nenhum fluxo encontrado"
   },
   "messageDeleted": "Mensagem excluída com sucesso",
   "deleteConfirmation": {
