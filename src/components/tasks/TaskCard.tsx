@@ -21,9 +21,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { ptBR, enUS, es } from 'date-fns/locale';
 import { TaskWithRelations } from '../../types/tasks';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { CustomerEditModal } from '../customers/CustomerEditModal';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../../lib/supabase';
+import { toast } from 'react-hot-toast';
 
 const locales = {
   pt: ptBR,
@@ -37,6 +39,7 @@ interface TaskCardProps {
   onRemove: () => void;
   onToggleArchived: () => void;
   onUpdateStatus?: (taskId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => void;
+  isLastInColumn?: boolean;
 }
 
 export function TaskCard({ 
@@ -44,14 +47,19 @@ export function TaskCard({
   onEdit, 
   onRemove, 
   onToggleArchived,
-  onUpdateStatus 
+  onUpdateStatus,
+  isLastInColumn = false
 }: TaskCardProps) {
   const { t, i18n } = useTranslation(['tasks', 'common']);
   const [showDetails, setShowDetails] = useState(false);
   const [showCompleteButton, setShowCompleteButton] = useState(false);
   const [isArchiveLoading, setIsArchiveLoading] = useState(false);
   const [showCustomerEditModal, setShowCustomerEditModal] = useState(false);
+  const [contentOverflows, setContentOverflows] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [updatingChecklistItem, setUpdatingChecklistItem] = useState<string | null>(null);
 
   const {
     attributes,
@@ -67,10 +75,37 @@ export function TaskCard({
     }
   });
 
+  // Efeito para verificar se o conteúdo transborda e precisa de scroll
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (contentRef.current && cardRef.current) {
+        const cardHeight = cardRef.current.clientHeight;
+        const contentHeight = contentRef.current.scrollHeight;
+        const shouldScroll = contentHeight > cardHeight || isLastInColumn;
+        setContentOverflows(shouldScroll);
+      }
+    };
+
+    // Verificar quando o componente é montado e quando os detalhes são mostrados/escondidos
+    checkOverflow();
+    
+    // Adicionar verificação após um breve atraso para garantir que o DOM foi atualizado
+    const timeoutId = setTimeout(checkOverflow, 100);
+    
+    // Adicionar listener para redimensionamento da janela
+    window.addEventListener('resize', checkOverflow);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkOverflow);
+    };
+  }, [showDetails, isLastInColumn, task.description?.length]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    maxHeight: contentOverflows || isLastInColumn ? '350px' : 'none',
   };
 
   // Verificar se a tarefa está concluída
@@ -145,6 +180,44 @@ export function TaskCard({
     
     // Fechar o modal
     setShowCustomerEditModal(false);
+  };
+
+  // Nova função para alternar o estado de um item da checklist
+  const toggleChecklistItem = async (e: React.MouseEvent, itemId: string) => {
+    e.stopPropagation(); // Impedir que abra os detalhes do cartão
+    
+    try {
+      setUpdatingChecklistItem(itemId);
+      
+      // Encontra o item atual e inverte seu status
+      const updatedChecklist = task.checklist.map(item => {
+        if (item.id === itemId) {
+          return { ...item, completed: !item.completed };
+        }
+        return item;
+      });
+      
+      // Atualiza a tarefa no banco de dados
+      const { error } = await supabase
+        .from('tasks')
+        .update({ checklist: updatedChecklist })
+        .eq('id', task.id);
+        
+      if (error) throw error;
+      
+      // Atualiza o cache para refletir as mudanças
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      
+      // Atualiza localmente para uma experiência mais responsiva
+      toast.success(t('tasks:checklist.itemUpdated', 'Item atualizado'));
+      
+    } catch (error) {
+      console.error('Erro ao atualizar item da checklist:', error);
+      toast.error(t('tasks:checklist.updateError', 'Erro ao atualizar item'));
+    } finally {
+      setUpdatingChecklistItem(null);
+    }
   };
 
   // Funções para obter informações de estilo com base no status
@@ -231,11 +304,18 @@ export function TaskCard({
   return (
     <>
       <div
-        ref={setNodeRef}
+        ref={(node) => {
+          // Combinar as referências
+          setNodeRef(node);
+          if (cardRef) {
+            cardRef.current = node;
+          }
+        }}
         style={style}
         {...attributes}
         {...listeners}
-        className={`bg-white dark:bg-gray-800 p-2.5 sm:p-3 rounded-md shadow-sm border relative overflow-hidden
+        className={`bg-white dark:bg-gray-800 p-2.5 sm:p-3 rounded-md shadow-sm border relative 
+        ${contentOverflows || isLastInColumn ? 'overflow-hidden' : ''}
         ${isOverdue ? 'border-red-300 dark:border-red-700' : statusInfo.borderColor} 
         ${task.is_archived ? 'opacity-60' : ''} 
         ${isCompleted ? 'opacity-70' : ''}
@@ -257,261 +337,276 @@ export function TaskCard({
           'bg-gray-500 dark:bg-gray-600'
         }`}></div>
 
-        {/* Status badge no topo com botão concluir sobreposto */}
-        <div className="flex justify-between items-start mb-1.5 sm:mb-2 relative">
-          {/* Status original (que ficará oculto quando o botão concluir estiver visível) */}
-          <div className={`flex items-center px-2 py-0.5 rounded-full text-xs ${statusInfo.bgColor} ${statusInfo.textColor} ${
-            showCompleteButton && (canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) ? 'invisible' : 'visible'
-          }`}>
-            <StatusIcon className="w-3 h-3 mr-1" />
-            <span>{statusInfo.label}</span>
-          </div>
-          
-          {/* Botão para iniciar ou concluir tarefa (sobreposto ao status) */}
-          {(canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) && (
-            <button
-              onClick={handleUpdateStatus}
-              className={`absolute left-0 top-0 px-2 py-0.5 rounded-full text-xs ${
-                canBeStarted 
-                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50' 
-                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
-              } flex items-center transition-opacity duration-200 ${
-                showCompleteButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              } shadow-sm hover:shadow cursor-pointer transform hover:scale-105 transition-all duration-150`}
-              title={canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
-            >
-              {canBeStarted ? (
-                <Hourglass className="w-3 h-3 mr-1" />
-              ) : (
-                <Check className="w-3 h-3 mr-1" />
-              )}
-              <span className="hidden xs:inline">
-                {canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
-              </span>
-            </button>
-          )}
-          
-          <div className="flex items-center space-x-2">
-            {/* Indicador de prioridade */}
-            {renderPriorityBadge(task.priority)}
-            
-            {/* Botões de ação */}
-            <div className="flex space-x-1 flex-shrink-0">
-              <button
-                onClick={handleToggleArchived}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
-                title={task.is_archived ? t('unarchived') : t('archived')}
-                disabled={isArchiveLoading}
-              >
-                {isArchiveLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                ) : task.is_archived ? (
-                  <ArchiveRestore className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                ) : (
-                  <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                )}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
-              >
-                <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove();
-                }}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
-              >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-between items-start mt-1 sm:mt-2">
-          <div className="flex-1 min-w-0">
-            <h3 className={`text-sm sm:text-base font-medium text-gray-900 dark:text-white ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
-              {task.title}
-              {task.is_archived && (
-                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 italic">
-                  ({t('archived')})
-                </span>
-              )}
-            </h3>
-          </div>
-        </div>
-
-        {/* Mostrar resumo da tarefa quando não está expandida */}
-        <div className={`mt-1.5 sm:mt-2 space-y-1.5 sm:space-y-2 ${isCompleted ? 'text-gray-500 dark:text-gray-400' : ''}`}>
-          {/* Due Date */}
-          {formattedDueDate && (
-            <div className={`flex items-center text-xs ${
-              isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'
+        <div className="flex flex-col h-full">
+          {/* Status badge no topo com botão concluir sobreposto */}
+          <div className="flex justify-between items-start mb-1.5 sm:mb-2 relative">
+            {/* Status original (que ficará oculto quando o botão concluir estiver visível) */}
+            <div className={`flex items-center px-2 py-0.5 rounded-full text-xs ${statusInfo.bgColor} ${statusInfo.textColor} ${
+              showCompleteButton && (canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) ? 'invisible' : 'visible'
             }`}>
-              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
-              <span className="truncate">{formattedDueDate}</span>
-              {isOverdue && (
-                <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 text-red-500 dark:text-red-400 flex-shrink-0" />
-              )}
+              <StatusIcon className="w-3 h-3 mr-1" />
+              <span>{statusInfo.label}</span>
             </div>
-          )}
-
-          {/* Checklist Progress */}
-          {hasChecklist && (
-            <div className="flex flex-col space-y-1">
-              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
-                <span>
-                  {t('tasks:checklist.progress', { count: checkedItems, total: totalItems })}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                <div 
-                  className={`h-1.5 rounded-full ${
-                    progress === 100 ? 'bg-green-500' : 
-                    progress > 50 ? 'bg-blue-500' : 
-                    progress > 0 ? 'bg-amber-500' : 'bg-gray-400'
-                  }`} 
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Tags e Atribuições */}
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {/* Labels/Tags */}
-            {task.labels && task.labels.length > 0 && (
-              <div className="flex items-center space-x-1">
-                <Tag className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {task.labels.length}
-                </span>
-              </div>
-            )}
-
-            {/* Assignees count */}
-            {task.assignees && task.assignees.length > 0 && (
-              <div className="flex items-center space-x-1">
-                <User className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {task.assignees.length}
-                </span>
-              </div>
-            )}
-
-            {/* Customer if exists */}
-            {task.customer && (
-              <div 
-                className={`ml-auto text-xs px-1.5 py-0.5 rounded cursor-pointer ${
-                  isCompleted 
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400' 
-                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-                }`}
-                onClick={handleOpenCustomerEditModal}
-                title={t('customers:edit.title')}
+            
+            {/* Botão para iniciar ou concluir tarefa (sobreposto ao status) */}
+            {(canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) && (
+              <button
+                onClick={handleUpdateStatus}
+                className={`absolute left-0 top-0 px-2 py-0.5 rounded-full text-xs ${
+                  canBeStarted 
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50' 
+                    : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+                } flex items-center transition-opacity duration-200 ${
+                  showCompleteButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                } shadow-sm hover:shadow cursor-pointer transform hover:scale-105 transition-all duration-150`}
+                title={canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
               >
-                {task.customer.name}
-              </div>
+                {canBeStarted ? (
+                  <Hourglass className="w-3 h-3 mr-1" />
+                ) : (
+                  <Check className="w-3 h-3 mr-1" />
+                )}
+                <span className="hidden xs:inline">
+                  {canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
+                </span>
+              </button>
             )}
+            
+            <div className="flex items-center space-x-2">
+              {/* Indicador de prioridade */}
+              {renderPriorityBadge(task.priority)}
+              
+              {/* Botões de ação */}
+              <div className="flex space-x-1 flex-shrink-0">
+                <button
+                  onClick={handleToggleArchived}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
+                  title={task.is_archived ? t('unarchived') : t('archived')}
+                  disabled={isArchiveLoading}
+                >
+                  {isArchiveLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                  ) : task.is_archived ? (
+                    <ArchiveRestore className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  ) : (
+                    <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
+                >
+                  <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove();
+                  }}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
+                >
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Detalhes expandidos */}
-          {showDetails && (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
-              {/* Descrição */}
-              {task.description && (
-                <div className={`text-sm ${isCompleted ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                  {task.description}
-                </div>
-              )}
-
-              {/* Lista de itens de checklist */}
-              {hasChecklist && (
-                <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('tasks:checklist.title')}
-                  </div>
-                  {checklistItems.map((item, index) => (
-                    <div key={item.id || index} className="flex items-start space-x-2">
-                      <div className={`mt-0.5 w-3.5 h-3.5 rounded-sm flex-shrink-0 flex items-center justify-center
-                        ${item.completed 
-                          ? 'bg-green-500 text-white' 
-                          : 'border border-gray-300 dark:border-gray-600'}`} 
-                      >
-                        {item.completed && (
-                          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className={`text-xs ${
-                        item.completed 
-                          ? 'text-gray-400 dark:text-gray-500 line-through' 
-                          : 'text-gray-700 dark:text-gray-300'
-                      }`}>
-                        {item.text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Etiquetas detalhadas */}
-              {task.labels && task.labels.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {task.labels.map(label => (
-                    <div 
-                      key={label.id}
-                      className={`px-1.5 py-0.5 rounded-full text-xs ${isCompleted ? 'opacity-60' : ''}`}
-                      style={{ 
-                        backgroundColor: isCompleted ? '#f3f4f6' : `${label.color}20`, // mudança para cinza claro se concluído
-                        color: isCompleted ? '#9ca3af' : label.color,
-                        border: isCompleted ? '1px solid #e5e7eb' : `1px solid ${label.color}`
-                      }}
-                    >
-                      {label.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Responsáveis */}
-              {task.assignees && task.assignees.length > 0 && (
-                <div className="flex flex-wrap items-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
-                    {t('tasks:assignees.title')}:
+          <div className="flex justify-between items-start mt-1 sm:mt-2">
+            <div className="flex-1 min-w-0">
+              <h3 className={`text-sm sm:text-base font-medium text-gray-900 dark:text-white ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
+                {task.title}
+                {task.is_archived && (
+                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                    ({t('archived')})
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    {task.assignees.map(assignee => (
-                      <div 
-                        key={assignee.id}
-                        className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5 text-xs dark:text-gray-300"
-                      >
-                        {assignee.profile?.avatar_url ? (
-                          <img 
-                            src={assignee.profile.avatar_url} 
-                            alt={assignee.profile.full_name || ''}
-                            className="w-4 h-4 rounded-full mr-1"
-                          />
-                        ) : (
-                          <User className="w-3 h-3 mr-1" />
-                        )}
-                        <span className="truncate max-w-[100px] dark:text-gray-300">
-                          {assignee.profile?.full_name || assignee.user_id}
+                )}
+              </h3>
+            </div>
+          </div>
+
+          {/* Conteúdo com scroll quando necessário */}
+          <div 
+            ref={contentRef}
+            className={`flex-1 mt-1.5 sm:mt-2 space-y-1.5 sm:space-y-2 ${isCompleted ? 'text-gray-500 dark:text-gray-400' : ''} 
+              ${contentOverflows || isLastInColumn ? 'overflow-y-auto custom-scrollbar' : ''}`}
+          >
+            {/* Due Date */}
+            {formattedDueDate && (
+              <div className={`flex items-center text-xs ${
+                isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                <span className="truncate">{formattedDueDate}</span>
+                {isOverdue && (
+                  <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 text-red-500 dark:text-red-400 flex-shrink-0" />
+                )}
+              </div>
+            )}
+
+            {/* Checklist Progress */}
+            {hasChecklist && (
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                  <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
+                  <span>
+                    {t('tasks:checklist.progress', { count: checkedItems, total: totalItems })}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div 
+                    className={`h-1.5 rounded-full ${
+                      progress === 100 ? 'bg-green-500' : 
+                      progress > 50 ? 'bg-blue-500' : 
+                      progress > 0 ? 'bg-amber-500' : 'bg-gray-400'
+                    }`} 
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Tags e Atribuições */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {/* Labels/Tags */}
+              {task.labels && task.labels.length > 0 && (
+                <div className="flex items-center space-x-1">
+                  <Tag className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {task.labels.length}
+                  </span>
+                </div>
+              )}
+
+              {/* Assignees count */}
+              {task.assignees && task.assignees.length > 0 && (
+                <div className="flex items-center space-x-1">
+                  <User className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {task.assignees.length}
+                  </span>
+                </div>
+              )}
+
+              {/* Customer if exists */}
+              {task.customer && (
+                <div 
+                  className={`ml-auto text-xs px-1.5 py-0.5 rounded cursor-pointer ${
+                    isCompleted 
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400' 
+                      : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                  }`}
+                  onClick={handleOpenCustomerEditModal}
+                  title={t('customers:edit.title')}
+                >
+                  {task.customer.name}
+                </div>
+              )}
+            </div>
+
+            {/* Detalhes expandidos */}
+            {showDetails && (
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                {/* Descrição */}
+                {task.description && (
+                  <div className={`text-sm ${isCompleted ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                    {task.description}
+                  </div>
+                )}
+
+                {/* Lista de itens de checklist */}
+                {hasChecklist && (
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('tasks:checklist.title')}
+                    </div>
+                    {checklistItems.map((item, index) => (
+                      <div key={item.id || index} className="flex items-start space-x-2 group">
+                        <div 
+                          className={`mt-0.5 w-3.5 h-3.5 rounded-sm flex-shrink-0 flex items-center justify-center
+                            ${updatingChecklistItem === item.id ? 'bg-gray-300 dark:bg-gray-600 animate-pulse' : 
+                            item.completed 
+                            ? 'bg-green-500 text-white' 
+                            : 'border border-gray-300 dark:border-gray-600'}
+                            cursor-pointer hover:shadow-sm hover:border-blue-400 dark:hover:border-blue-500`} 
+                          onClick={(e) => toggleChecklistItem(e, item.id)}
+                        >
+                          {updatingChecklistItem === item.id ? (
+                            <Loader2 className="w-2 h-2 animate-spin text-gray-600 dark:text-gray-300" />
+                          ) : item.completed && (
+                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <span 
+                          className={`text-xs ${
+                            item.completed 
+                              ? 'text-gray-400 dark:text-gray-500 line-through' 
+                              : 'text-gray-700 dark:text-gray-300'
+                          } cursor-pointer group-hover:text-blue-600 dark:group-hover:text-blue-400`}
+                          onClick={(e) => toggleChecklistItem(e, item.id)}
+                        >
+                          {item.text}
                         </span>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+
+                {/* Etiquetas detalhadas */}
+                {task.labels && task.labels.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {task.labels.map(label => (
+                      <div 
+                        key={label.id}
+                        className={`px-1.5 py-0.5 rounded-full text-xs ${isCompleted ? 'opacity-60' : ''}`}
+                        style={{ 
+                          backgroundColor: isCompleted ? '#f3f4f6' : `${label.color}20`, // mudança para cinza claro se concluído
+                          color: isCompleted ? '#9ca3af' : label.color,
+                          border: isCompleted ? '1px solid #e5e7eb' : `1px solid ${label.color}`
+                        }}
+                      >
+                        {label.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Responsáveis */}
+                {task.assignees && task.assignees.length > 0 && (
+                  <div className="flex flex-wrap items-center">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+                      {t('tasks:assignees.title')}:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {task.assignees.map(assignee => (
+                        <div 
+                          key={assignee.id}
+                          className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5 text-xs dark:text-gray-300"
+                        >
+                          {assignee.profile?.avatar_url ? (
+                            <img 
+                              src={assignee.profile.avatar_url} 
+                              alt={assignee.profile.full_name || ''}
+                              className="w-4 h-4 rounded-full mr-1"
+                            />
+                          ) : (
+                            <User className="w-3 h-3 mr-1" />
+                          )}
+                          <span className="truncate max-w-[100px] dark:text-gray-300">
+                            {assignee.profile?.full_name || assignee.user_id}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
