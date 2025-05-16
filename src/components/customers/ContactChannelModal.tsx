@@ -33,6 +33,7 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
   const [error, setError] = useState('');
   const [startingChat, setStartingChat] = useState(false);
   const [validatingNumber, setValidatingNumber] = useState(false);
+  const [formattedContact, setFormattedContact] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentOrganizationMember && session?.user) {
@@ -40,6 +41,24 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
       loadUserTeams();
     }
   }, [currentOrganizationMember, session?.user]);
+
+  // Efeito para inicializar o valor formatado com base no tipo de contato
+  useEffect(() => {
+    // Formatar inicialmente o valor do contato para exibição
+    let initialFormattedValue = contactValue;
+    
+    if (contactType === 'whatsapp' || contactType === 'phone') {
+      // Remover caracteres não numéricos para números de telefone/WhatsApp
+      const cleanNumber = contactValue.replace(/\D/g, '');
+      
+      // Usar o formato limpo para exibição inicial
+      if (cleanNumber !== contactValue) {
+        initialFormattedValue = cleanNumber;
+      }
+    }
+    
+    setFormattedContact(initialFormattedValue);
+  }, [contactType, contactValue]);
 
   async function loadChannels() {
     try {
@@ -156,6 +175,9 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
           formattedValue = cleanNumber;
         }
       }
+      
+      // Atualizar o estado do contato formatado
+      setFormattedContact(formattedValue);
 
       let customerId: string;
 
@@ -211,6 +233,7 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
         .eq('organization_id', currentOrganizationMember.organization.id)
         .eq('channel_id', channel.id)
         .eq('customer_id', customerId)
+        .in('external_id', [formattedValue, alternativeFormattedValue])
         .in('status', ['in_progress', 'pending', 'await_closing']);
 
       if (activeChatsError) throw activeChatsError;
@@ -376,6 +399,16 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
         </div>
 
         <div className="p-6">
+          {formattedContact && formattedContact !== contactValue && (
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <code className="text-xs bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-blue-800 dark:text-blue-200 break-all">
+                  {formattedContact}
+                </code>
+              </div>
+            </div>
+          )}
+          
           {error ? (
             <div className="text-red-600 dark:text-red-400">{error}</div>
           ) : loading || startingChat || validatingNumber ? (
@@ -401,6 +434,19 @@ export function ContactChannelModal({ contactType, contactValue, customer, onClo
                 <button
                   key={channel.id}
                   onClick={() => handleSelectChannel(channel)}
+                  onMouseEnter={() => {
+                    // Pré-visualizar o formato do ID quando o mouse passar sobre o canal
+                    let previewValue = contactValue;
+                    if (contactType === 'whatsapp' || contactType === 'phone') {
+                      const cleanNumber = contactValue.replace(/\D/g, '');
+                      if (channel.type === 'whatsapp_evo') {
+                        previewValue = `${cleanNumber}@s.whatsapp.net`;
+                      } else if (channel.type === 'whatsapp_official' || channel.type === 'whatsapp_wapi' || channel.type === 'whatsapp_zapi') {
+                        previewValue = cleanNumber;
+                      }
+                    }
+                    setFormattedContact(previewValue);
+                  }}
                   disabled={startingChat || validatingNumber}
                   className="w-full flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
