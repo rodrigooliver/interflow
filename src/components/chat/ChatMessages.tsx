@@ -1285,7 +1285,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       const newMessages = data || [];
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
 
-      // console.log('newMessages', newMessages);
+      console.log('newMessages', [...newMessages]);
         
       if (append) {
         setMessages(prev => [...newMessages.reverse(), ...prev]);

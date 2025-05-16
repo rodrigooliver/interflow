@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, Users, MessageCircle, BarChart2, Calendar, TrendingUp, Clock, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, Users, MessageCircle, BarChart2, Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -1242,87 +1242,6 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {t('performanceMetrics')}
-                </h2>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  <TrendingUp className="w-4 h-4 inline mr-1" />
-                  {t('thisMonth')}
-                </div>
-              </div>
-              
-              <div className="space-y-6">
-                {[
-                  { 
-                    label: t('satisfactionRate'), 
-                    value: 92, 
-                    change: 3, 
-                    changeType: 'increase',
-                    color: 'bg-green-500' 
-                  },
-                  { 
-                    label: t('firstResponseTime'), 
-                    value: 65, 
-                    change: 12, 
-                    changeType: 'decrease',
-                    color: 'bg-blue-500' 
-                  },
-                  { 
-                    label: t('resolutionRate'), 
-                    value: 78, 
-                    change: 5, 
-                    changeType: 'increase',
-                    color: 'bg-purple-500' 
-                  }
-                ].map((metric, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {metric.label}
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-lg font-bold text-gray-900 dark:text-white mr-2">
-                          {metric.value}%
-                        </span>
-                        <span className={`text-xs font-medium ${
-                          metric.changeType === 'increase' 
-                            ? 'text-green-500' 
-                            : 'text-red-500'
-                        }`}>
-                          {metric.changeType === 'increase' ? '↑' : '↓'} {metric.change}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
-                      <div 
-                        className={`h-2 rounded-full ${metric.color}`}
-                        style={{ width: `${metric.value}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800/30">
-                <div className="flex">
-                  <AlertCircle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                      {t('attentionNeeded')}
-                    </p>
-                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                      {t('attentionNeededDescription')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Nova seção de compromissos */}
-          <div className="mt-8">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
