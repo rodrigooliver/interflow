@@ -1288,7 +1288,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // console.log('newMessages', [...newMessages]);
         
       if (append) {
-        setMessages(prev => [...newMessages.reverse(), ...prev]);
+        setMessages(prev => [...newMessages, ...prev]);
       } else {
         setMessages(newMessages.reverse());
         
@@ -2677,7 +2677,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
       
       if (append) {
-        setMessages(prev => [...newMessages.reverse(), ...prev]);
+        setMessages(prev => [...newMessages, ...prev]);
       } else {
         setMessages(newMessages.reverse());
         

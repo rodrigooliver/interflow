@@ -920,7 +920,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder={mode === 'create' ? t('form.titlePlaceholderCreate', 'Nova tarefa...') : t('form.titlePlaceholderEdit', 'Título da tarefa...')}
+                      placeholder={mode === 'create' ? t('form.titlePlaceholderCreate', 'Escreva aqui o título...') : t('form.titlePlaceholderEdit', 'Título da tarefa...')}
                       className={`w-full text-lg font-medium bg-transparent border rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all ${
                         showValidationErrors && !formData.title.trim() 
                           ? 'border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500' 

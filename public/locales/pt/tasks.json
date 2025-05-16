@@ -68,6 +68,7 @@
   },
   "form": {
     "title": "Título",
+    "titlePlaceholderCreate": "Digite o título da tarefa",
     "description": "Descrição",
     "dueDate": "Data de vencimento",
     "priority": "Prioridade",
