@@ -27,7 +27,8 @@
   "tabs": {
     "general": "General",
     "chats": "Conversations",
-    "tasks": "Tasks"
+    "tasks": "Tasks",
+    "schedules": "Appointments"
   },
   "tags": {
     "title": "Tags",

@@ -27,7 +27,8 @@
   "tabs": {
     "general": "General",
     "chats": "Conversaciones",
-    "tasks": "Tareas"
+    "tasks": "Tareas",
+    "schedules": "Citas"
   },
   "tags": {
     "title": "Etiquetas",

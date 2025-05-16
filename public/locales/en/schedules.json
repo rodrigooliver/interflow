@@ -96,6 +96,8 @@
   "event": "Event",
   "noAppointments": "No appointments",
   "noAppointmentsMessage": "You don't have any appointments yet. Create a new appointment to get started.",
+  "noAppointmentsForCustomer": "No appointments found for this customer",
+  "addAppointment": "Add Appointment",
   "noMatchingAppointments": "No matching appointments",
   "noMatchingAppointmentsMessage": "There are no appointments matching the selected filters.",
   "clearFilters": "Clear Filters",

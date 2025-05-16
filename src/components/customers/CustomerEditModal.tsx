@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Loader2, Plus } from 'lucide-react';
+import { X, Loader2, Plus, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { Customer, ContactType, Chat } from '../../types/database';
@@ -27,6 +27,19 @@ interface CustomerContact {
   customer_id: string;
 }
 
+// Interface para agendamentos
+interface Appointment {
+  id: string;
+  title: string;
+  description: string | null;
+  start_time: string;
+  end_time: string;
+  customer_id: string;
+  created_by: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  created_at: string;
+}
+
 interface CustomerEditModalProps {
   customer: Customer;
   onClose: () => void;
@@ -37,13 +50,13 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   // Log para depuração
   // console.log('CustomerEditModal - Cliente recebido:', customer);
   
-  const { t } = useTranslation(['customers', 'common', 'crm', 'chats', 'tasks']);
+  const { t } = useTranslation(['customers', 'common', 'crm', 'chats', 'tasks', 'schedules', 'appointments']);
   const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
   // Estado para controlar a tab ativa
-  const [activeTab, setActiveTab] = useState<'general' | 'chats' | 'tasks'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'chats' | 'tasks' | 'schedules'>('general');
   
   // Estado para armazenar os atendimentos do cliente
   const [chats, setChats] = useState<Chat[]>([]);
@@ -704,7 +717,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         </div>
 
         {/* Tabs de navegação */}
-        <div className="flex border-b dark:border-gray-700">
+        <div className="flex border-b dark:border-gray-700 overflow-x-auto">
           <button
             className={`flex-1 py-3 px-4 text-center font-medium text-sm transition-colors ${
               activeTab === 'general'
@@ -734,6 +747,16 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
             onClick={() => setActiveTab('tasks')}
           >
             {t('customers:tabs.tasks')}
+          </button>
+          <button
+            className={`flex-1 py-3 px-4 text-center font-medium text-sm transition-colors ${
+              activeTab === 'schedules'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setActiveTab('schedules')}
+          >
+            {t('customers:tabs.schedules')}
           </button>
         </div>
 
@@ -1202,6 +1225,14 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                   organizationId={currentOrganizationMember?.organization.id || ''}
                 />
               )}
+
+              {/* Tab de agendamentos */}
+              {activeTab === 'schedules' && (
+                <CustomerAppointmentsTab 
+                  customer={customer}
+                  organizationId={currentOrganizationMember?.organization.id || ''}
+                />
+              )}
             </>
           )}
         </div>
@@ -1411,6 +1442,165 @@ function CustomerTasksTab({ customer, organizationId }: { customer: Customer, or
               </button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Componente separado para a aba de agendamentos
+function CustomerAppointmentsTab({ customer, organizationId }: { customer: Customer, organizationId: string }) {
+  const { t } = useTranslation(['schedules', 'common']);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function loadAppointments() {
+      if (!customer.id || !organizationId) return;
+      
+      setIsLoading(true);
+      setError('');
+      
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .order('start_time', { ascending: false });
+          
+        if (fetchError) throw fetchError;
+        
+        setAppointments(data || []);
+      } catch (err) {
+        console.error('Erro ao carregar agendamentos:', err);
+        setError(t('error.loading', { ns: 'schedules' }));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadAppointments();
+  }, [customer.id, organizationId, t]);
+
+  // Formatação de data
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric'
+    });
+  };
+
+  // Formatação de hora
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Função para obter a cor do status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'completed':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'no_show':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
+  };
+
+  // Função para traduzir o status
+  const translateStatus = (status: string) => {
+    return t(`statuses.${status}`, { ns: 'schedules' });
+  };
+
+  return (
+    <div className="p-6">
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={() => {
+            // Implementar lógica para adicionar agendamento
+            toast(t('createAppointmentFeature', { ns: 'schedules' }));
+          }}
+          className="flex items-center px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          <Calendar className="w-4 h-4 mr-1" />
+          {t('addAppointment', { ns: 'schedules' })}
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md text-red-600 dark:text-red-400">
+          {error}
+        </div>
+      ) : appointments.length === 0 ? (
+        <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <p className="text-gray-500 dark:text-gray-400">
+            {t('noAppointmentsForCustomer', { ns: 'schedules' })}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {appointments.map(appointment => (
+            <div 
+              key={appointment.id} 
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2">
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-1">
+                    {appointment.title}
+                  </h3>
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 dark:text-gray-400 mb-2 gap-2">
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      <span>{formatDate(appointment.start_time)}</span>
+                    </div>
+                    <div className="hidden sm:block text-gray-300 dark:text-gray-600">|</div>
+                    <div>
+                      {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
+                    </div>
+                  </div>
+                  
+                  {appointment.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                      {appointment.description}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex flex-row md:flex-col items-start md:items-end gap-2">
+                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(appointment.status)}`}>
+                    {translateStatus(appointment.status)}
+                  </span>
+                  
+                  <button
+                    onClick={() => {
+                      // Implementar lógica para editar agendamento
+                      toast(t('editAppointmentFeature', { ns: 'schedules' }));
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    {t('edit', { ns: 'common' })}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

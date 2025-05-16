@@ -66,7 +66,8 @@
   "tabs": {
     "general": "Geral",
     "chats": "Atendimentos",
-    "tasks": "Tarefas"
+    "tasks": "Tarefas",
+    "schedules": "Agendamentos"
   },
   "tags": {
     "addNew": "Nova tag",

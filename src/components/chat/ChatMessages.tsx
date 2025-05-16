@@ -1285,7 +1285,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       const newMessages = data || [];
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
 
-      console.log('newMessages', [...newMessages]);
+      // console.log('newMessages', [...newMessages]);
         
       if (append) {
         setMessages(prev => [...newMessages.reverse(), ...prev]);
@@ -2905,11 +2905,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           </div>
           
           {/* Botões de ação */}
-          <div className="flex-shrink-0 justify-self-end flex items-center space-x-2">
+          <div className="flex-shrink-0 justify-self-end flex items-center space-x-1">
             {/* Botão para visualizar todas as mensagens do cliente */}
             {chat?.customer?.id && chat?.channel_details?.id && (
               <button
-                className={`p-2 ${
+                className={`p-2 group ${
                   isViewingAllCustomerMessages 
                     ? 'bg-blue-600 hover:bg-blue-700' 
                     : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
@@ -2917,7 +2917,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   isViewingAllCustomerMessages 
                     ? 'text-white' 
                     : 'text-gray-700 dark:text-gray-300'
-                } rounded-md transition-colors flex items-center justify-center md:px-3`}
+                } rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden`}
                 onClick={(e) => {
                   e.preventDefault();
                   if (isViewingAllCustomerMessages) {
@@ -2927,23 +2927,19 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   }
                 }}
                 disabled={isLoadingHistory || isLoadingCurrentChat}
-                title={isViewingAllCustomerMessages ? t('viewCurrentChat') : t('viewAllCustomerMessages')}
               >
                 {isLoadingHistory || isLoadingCurrentChat ? (
-                  <>
-                    <svg className="animate-spin w-5 h-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="hidden md:inline ml-2">{t('loading')}</span>
-                  </>
+                  <svg className="animate-spin w-5 h-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
                 ) : (
-                  <>
+                  <div className="flex items-center">
                     <History className="w-5 h-5" />
-                    <span className="hidden md:inline ml-2">
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
                       {isViewingAllCustomerMessages ? t('viewCurrentChat') : t('viewAllCustomerMessages')}
                     </span>
-                  </>
+                  </div>
                 )}
               </button>
             )}
@@ -2951,22 +2947,22 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {/* Botão de Play para Fluxos */}
             {(chat?.status === 'pending' || chat?.status === 'in_progress') && (
               <button
-                className={`p-2 ${
+                className={`p-2 group ${
                   chat?.flow_session_id 
                     ? 'bg-yellow-500 hover:bg-yellow-600' 
                     : 'bg-purple-600 hover:bg-purple-700'
-                } text-white rounded-md transition-colors flex items-center justify-center`}
+                } text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden`}
                 onClick={() => setShowFlowModal(true)}
-                title={chat?.flow_session_id ? `${t('flows.pauseFlow')} ${chat?.flow_session?.[0]?.flow?.name}` : t('flows.startFlow')}
               >
                 {chat?.flow_session_id ? (
-                  <>
+                  <div className="flex items-center">
                     <Pause className="w-5 h-5" />
-                    <span className="hidden xs:inline md:hidden ml-2">{t('flows.pauseShort')}</span>
-                    <span className="hidden md:inline ml-2">{t('flows.pauseFlow')}</span>
-                  </>
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                      {t('flows.pauseFlow')}
+                    </span>
+                  </div>
                 ) : (
-                  <>
+                  <div className="flex items-center">
                     <svg 
                       className="w-5 h-5" 
                       fill="none" 
@@ -2987,9 +2983,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                         d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
                       />
                     </svg>
-                    <span className="hidden xs:inline md:hidden ml-2">{t('flows.startShort')}</span>
-                    <span className="hidden md:inline ml-2">{t('flows.startFlow')}</span>
-                  </>
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                      {t('flows.startFlow')}
+                    </span>
+                  </div>
                 )}
               </button>
             )}
@@ -2998,46 +2995,37 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {chat?.status === 'in_progress' && isCollaborator && !isAssignedAgent && (
               <>
                 <button
-                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  className="p-2 group bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
                   onClick={handleTransferToMe}
                   disabled={isTransferring}
-                  title={t('collaborator.transfer')}
                 >
                   {isTransferring ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
-                      <span className="hidden md:inline ml-2">{t('loading')}</span>
-                    </>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                   ) : (
-                    <>
+                    <div className="flex items-center">
                       <RefreshCw className="w-5 h-5" />
-                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.transferShort')}</span>
-                      <span className="hidden md:inline ml-2">{t('collaborator.transfer')}</span>
-                    </>
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                        {t('collaborator.transfer')}
+                      </span>
+                    </div>
                   )}
                 </button>
                 
                 <button
-                  className="p-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  className="p-2 group bg-gray-600 hover:bg-gray-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
                   onClick={handleLeaveCollaboration}
                   disabled={isLeavingCollaboration}
-                  title={t('collaborator.leave')}
                 >
                   {isLeavingCollaboration ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
-                      <span className="hidden md:inline ml-2">{t('loading')}</span>
-                    </>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                   ) : (
-                    <>
+                    <div className="flex items-center">
                       <svg 
                         className="w-5 h-5" 
                         fill="none" 
@@ -3052,9 +3040,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                           d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
                         />
                       </svg>
-                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.leaveShort')}</span>
-                      <span className="hidden md:inline ml-2">{t('collaborator.leave')}</span>
-                    </>
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                        {t('collaborator.leave')}
+                      </span>
+                    </div>
                   )}
                 </button>
               </>
@@ -3064,49 +3053,42 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {chat?.status === 'in_progress' && !isAssignedAgent && !isCollaborator && (
               <>
                 <button
-                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  className="p-2 group bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
                   onClick={handleBecomeCollaborator}
                   disabled={isAddingCollaborator}
-                  title={t('collaborator.join')}
                 >
                   {isAddingCollaborator ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="hidden xs:inline md:hidden ml-2">{t('loading')}</span>
-                      <span className="hidden md:inline ml-2">{t('loading')}</span>
-                    </>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                   ) : (
-                    <>
+                    <div className="flex items-center">
                       <UserPlus className="w-5 h-5" />
-                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.joinShort')}</span>
-                      <span className="hidden md:inline ml-2">{t('collaborator.join')}</span>
-                    </>
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                        {t('collaborator.join')}
+                      </span>
+                    </div>
                   )}
                 </button>
                 
                 <button
-                  className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  className="p-2 group bg-green-600 hover:bg-green-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
                   onClick={handleTransferToMe}
                   disabled={isTransferring}
                 >
                   {isTransferring ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="hidden xs:inline">{t('loading')}</span>
-                      <span className="xs:hidden inline">{t('loading')}</span>
-                    </>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                   ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      <span className="hidden xs:inline">{t('collaborator.transfer')}</span>
-                      <span className="xs:hidden inline">{t('collaborator.transferShort')}</span>
-                    </>
+                    <div className="flex items-center">
+                      <RefreshCw className="w-5 h-5" />
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                        {t('collaborator.transfer')}
+                      </span>
+                    </div>
                   )}
                 </button>
               </>
@@ -3116,20 +3098,16 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {chat?.status === 'in_progress' && isAssignedAgent && (
               <>
                 <button
-                  className="md:px-4 md:py-2 p-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  className="p-2 group bg-gray-600 hover:bg-gray-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
                   onClick={handleLeaveChat}
                   disabled={showLeaveModal}
-                  aria-label={t('collaborator.leaveAttendance')}
                 >
                   {showLeaveModal ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      <span className="hidden md:inline">{t('loading')}</span>
-                    </>
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <>
+                    <div className="flex items-center">
                       <svg 
-                        className="w-5 h-5 md:hidden" 
+                        className="w-5 h-5" 
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24" 
@@ -3142,32 +3120,36 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                           d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
                         />
                       </svg>
-                      <span className="hidden xs:inline md:hidden ml-2">{t('collaborator.leaveShort')}</span>
-                      <span className="hidden md:inline">{t('collaborator.leaveAttendance')}</span>
-                    </>
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                        {t('collaborator.leaveAttendance')}
+                      </span>
+                    </div>
                   )}
                 </button>
 
                 <button
-                  className="md:px-4 md:py-2 p-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center"
+                  className="p-2 group bg-green-600 hover:bg-green-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
                   onClick={() => setShowResolutionModal(true)}
-                  aria-label={t('resolve')}
                 >
-                  <span className="hidden md:inline">{t('resolve')}</span>
-                  <svg 
-                    className="w-5 h-5 md:hidden" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M5 13l4 4L19 7" 
-                    />
-                  </svg>
+                  <div className="flex items-center">
+                    <svg 
+                      className="w-5 h-5" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M5 13l4 4L19 7" 
+                      />
+                    </svg>
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                      {t('resolve')}
+                    </span>
+                  </div>
                 </button>
               </>
             )}

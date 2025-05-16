@@ -96,6 +96,7 @@
   "event": "Evento",
   "noAppointments": "No hay citas",
   "noAppointmentsMessage": "Aún no tienes citas. Crea una nueva cita para comenzar.",
+  "noAppointmentsForCustomer": "No se encontraron citas para este cliente",
   "noMatchingAppointments": "No hay citas coincidentes",
   "noMatchingAppointmentsMessage": "No hay citas que coincidan con los filtros seleccionados.",
   "clearFilters": "Limpiar Filtros",
@@ -320,5 +321,6 @@
   "multipleTimesHelp": "Puedes agregar múltiples horarios para enviar recordatorios para la misma cita.",
   "configureTimingFor": "Configurar horarios para {{name}}",
   "timeBeforeDescription": "Establece cuándo se enviará el recordatorio antes de la cita",
-  "notificationActive": "Notificación activa"
+  "notificationActive": "Notificación activa",
+  "addAppointment": "Agregar Cita"
 } 

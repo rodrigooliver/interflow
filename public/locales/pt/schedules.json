@@ -96,6 +96,7 @@
   "event": "Evento",
   "noAppointments": "Nenhum agendamento",
   "noAppointmentsMessage": "Você ainda não possui agendamentos. Crie um novo agendamento para começar.",
+  "noAppointmentsForCustomer": "Nenhum agendamento encontrado para este cliente",
   "noMatchingAppointments": "Nenhum agendamento encontrado",
   "noMatchingAppointmentsMessage": "Não existem agendamentos que correspondam aos filtros selecionados. Tente ajustar os filtros ou criar um novo agendamento.",
   "clearFilters": "Limpar Filtros",
@@ -321,5 +322,6 @@
   "multipleTimesHelp": "Você pode adicionar múltiplos horários para enviar lembretes para a mesma consulta.",
   "configureTimingFor": "Configurar horários para {{name}}",
   "timeBeforeDescription": "Defina quando o lembrete será enviado antes da consulta",
-  "notificationActive": "Notificação ativa"
+  "notificationActive": "Notificação ativa",
+  "addAppointment": "Adicionar Agendamento"
 } 
