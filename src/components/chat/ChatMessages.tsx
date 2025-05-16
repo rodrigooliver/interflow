@@ -349,8 +349,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
   // Função para verificar se o componente está sendo montado pela primeira vez
   const isInitialRender = useCallback(() => {
+    // Usar um ID único para a renderização atual
     if (initialRenderRef.current) {
-      initialRenderRef.current = false;
+      // Importante: não alteramos o valor até que o efeito seja realmente executado
+      // para evitar que o Strict Mode cause execuções duplicadas
       return true;
     }
     return false;
@@ -444,6 +446,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
+    let isInitialRenderValue = initialRenderRef.current;
 
     // Verificar se o chatId mudou realmente
     const isChatIdChanged = chatId !== previousChatIdRef.current;
@@ -460,7 +463,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
     if (chatId) {
       // Só mostrar loading e recarregar mensagens se o chatId realmente mudou ou se for o primeiro carregamento
-      if (isChatIdChanged || isInitialRender()) {
+      if (isChatIdChanged || isInitialRenderValue) {
         // console.log('ChatMessages: Carregando mensagens para novo chat ou primeiro carregamento');
         setLoading(true);
         setInitialLoading(true);
@@ -474,6 +477,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         
         // Verificar se há um messageId na URL
         const messageId = searchParams.get('messageId');
+        
+        // Importante: agora podemos marcar que não é mais a renderização inicial
+        if (isInitialRenderValue) {
+          initialRenderRef.current = false;
+        }
+        
         if (messageId) {
           setHighlightedMessageId(messageId);
           loadSpecificMessage(messageId);
@@ -1225,8 +1234,20 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     return subscription;
   };
 
-  const loadMessages = async (pageNumber = 1, append = false, forceReset = false) => {
+  // Referência para controlar requisições em andamento
+  const loadingRequestRef = useRef<Record<string, boolean>>({});
+  
+  const loadMessages = async (pageNumber = 1, append = false, forceReset = false): Promise<void> => {
     try {
+      // Evitar múltiplas requisições simultâneas para a mesma página
+      const requestKey = `${chatId}_${pageNumber}_${append}_${forceReset}`;
+      if (loadingRequestRef.current[requestKey]) {
+        return;
+      }
+      
+      // Marcar essa requisição como em andamento
+      loadingRequestRef.current[requestKey] = true;
+      
       if (append) {
         setIsLoadingMore(true);
       }
@@ -1235,7 +1256,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Se forceReset for true, ignoramos newMessagesCount completamente
       const offset = forceReset ? (pageNumber - 1) * MESSAGES_PER_PAGE : (pageNumber - 1) * MESSAGES_PER_PAGE + newMessagesCount;
       
-      // console.log(`loadMessages - pageNumber: ${pageNumber}, newMessagesCount: ${newMessagesCount}, forceReset: ${forceReset}, offset calculado: ${offset}`);
+      // Calcular e usar o offset para buscar mensagens
       
       const { data, error } = await supabase
         .from('messages')
@@ -1267,6 +1288,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         .range(offset, offset + MESSAGES_PER_PAGE - 1);
         
       if (error) throw error;
+
       
       // Verificar mensagens recebidas para remover otimistas correspondentes
       if (data && data.length > 0) {
@@ -1281,16 +1303,21 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           }
         });
       }
-      
-      const newMessages = data || [];
-      setHasMore(newMessages.length === MESSAGES_PER_PAGE);
 
-      // console.log('newMessages', [...newMessages]);
-        
+      const newMessages = data ? [...data] : [];
+      setHasMore(newMessages.length === MESSAGES_PER_PAGE);
+      
+      // Clone as mensagens para não modificar o array original
+      const processedMessages = [...newMessages];
+      
       if (append) {
-        setMessages(prev => [...newMessages, ...prev]);
+        // No modo append, invertemos e adicionamos ao início da lista atual
+        const reversedMessages = processedMessages.reverse();
+        setMessages(prev => [...reversedMessages, ...prev]);
       } else {
-        setMessages(newMessages.reverse());
+        // No carregamento inicial, apenas invertemos
+        const reversedMessages = processedMessages.reverse();
+        setMessages(reversedMessages);
         
         // Se for o primeiro carregamento e temos mensagens, rolar para o fim
         if (pageNumber === 1 && newMessages.length > 0) {
@@ -1308,12 +1335,29 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       if (!append) {
         setIsLoadingMore(false);
       }
+      
+      // Limpar o estado da requisição
+      const requestKey = `${chatId}_${pageNumber}_${append}_${forceReset}`;
+      loadingRequestRef.current[requestKey] = false;
     }
     return;
   };
 
+
+
+  // Referência para controlar requisição de chat em andamento
+  const loadingChatRef = useRef<boolean>(false);
+  
   const loadChat = async () => {
     try {
+      // Evitar requisições duplicadas
+      if (loadingChatRef.current) {
+        return;
+      }
+      
+      // Marcar como em andamento
+      loadingChatRef.current = true;
+      
       const { data, error } = await supabase
         .from('chats')
         .select(`
@@ -1370,6 +1414,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     } finally {
       setHeaderLoading(false);
       setFooterLoading(false);
+      
+      // Limpar o estado da requisição
+      loadingChatRef.current = false;
     }
   };
 
@@ -1387,7 +1434,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           initialScrollDoneRef.current = true;
         }
       }
-    }, 0);
+    }, 50);
   };
 
   const formatMessageDate = (date: string) => {
@@ -1705,6 +1752,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         setPage(newPage);
         
         // Decidir qual função de carregamento usar com base no modo de visualização
+        // Importante: ambas as funções devem tratar as mensagens de forma idêntica
         const loadMorePromise = isViewingAllCustomerMessages 
           ? loadAllCustomerMessages(newPage, true)
           : loadMessages(newPage, true);
@@ -2624,7 +2672,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   }, [isNearBottom]);
 
   // Função para carregar todas as mensagens do cliente em todos os chats
-  const loadAllCustomerMessages = async (pageNumber = 1, append = false) => {
+  const loadAllCustomerMessages = async (pageNumber = 1, append = false): Promise<void> => {
     if (!chat?.customer?.id || !chat?.channel_details?.id) {
       toast.error(t('errors.customerOrChannelNotFound'));
       return;
@@ -2676,18 +2724,26 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Verificar se há mais mensagens para carregar
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
       
+      // Clone as mensagens para não modificar o array original
+      const processedMessages = [...newMessages];
+      
+      // IMPORTANTE: Tratamento idêntico ao da função loadMessages para garantir consistência
       if (append) {
-        setMessages(prev => [...newMessages, ...prev]);
+        // No modo append, invertemos e adicionamos ao início da lista atual
+        const reversedMessages = processedMessages.reverse();
+        setMessages(prev => [...reversedMessages, ...prev]);
       } else {
-        setMessages(newMessages.reverse());
+        // No carregamento inicial, apenas invertemos
+        const reversedMessages = processedMessages.reverse();
+        setMessages(reversedMessages);
         
         // Se for o primeiro carregamento e temos mensagens, rolar para o fim
         if (pageNumber === 1 && newMessages.length > 0) {
           initialScrollDoneRef.current = false; // Resetar para permitir o scroll inicial
           // Rolar para o final após o carregamento
-          setTimeout(() => {
-            scrollToBottom();
-          }, 0);
+          scrollToBottom();
+          // setTimeout(() => {
+          // }, 0);
         }
       }
       

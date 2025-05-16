@@ -29,55 +29,41 @@ CREATE INDEX tasks_organization_id_idx ON tasks(organization_id);
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
 -- Policy for viewing tasks
-CREATE POLICY "Users can view their own tasks"
+DROP POLICY IF EXISTS "Users can view their own tasks" ON tasks;
+CREATE POLICY "Membros do projeto podem visualizar tarefas"
     ON tasks FOR SELECT
     USING (
-        auth.uid() = user_id OR
-        EXISTS (
-            SELECT 1 FROM organization_members
-            WHERE organization_members.organization_id = tasks.organization_id
-            AND organization_members.user_id = auth.uid()
-            AND organization_members.role IN ('admin', 'manager')
+        project_id IN (
+            SELECT project_id FROM task_project_members
+            WHERE user_id = auth.uid()
         )
     );
 
 -- Policy for inserting tasks
-CREATE POLICY "Users can insert their own tasks"
+DROP POLICY IF EXISTS "Users can insert their own tasks" ON tasks;
+CREATE POLICY "Editores e admins podem cadastrar tarefas"
     ON tasks FOR INSERT
     WITH CHECK (
-        auth.uid() = user_id OR
-        EXISTS (
-            SELECT 1 FROM organization_members
-            WHERE organization_members.organization_id = tasks.organization_id
-            AND organization_members.user_id = auth.uid()
-            AND organization_members.role IN ('admin', 'manager')
-        )
+        public.user_is_project_editor_or_admin(project_id)
     );
 
 -- Policy for updating tasks
-CREATE POLICY "Users can update their own tasks"
+DROP POLICY IF EXISTS "Users can update their own tasks" ON tasks;
+CREATE POLICY "Editores e admins podem atualizar tarefas"
     ON tasks FOR UPDATE
     USING (
-        auth.uid() = user_id OR
-        EXISTS (
-            SELECT 1 FROM organization_members
-            WHERE organization_members.organization_id = tasks.organization_id
-            AND organization_members.user_id = auth.uid()
-            AND organization_members.role IN ('admin', 'manager')
-        )
+        public.user_is_project_editor_or_admin(project_id)
+    )
+    WITH CHECK (
+        public.user_is_project_editor_or_admin(project_id)
     );
 
 -- Policy for deleting tasks
-CREATE POLICY "Users can delete their own tasks"
+DROP POLICY IF EXISTS "Users can delete their own tasks" ON tasks;
+CREATE POLICY "Editores e admins podem excluir tarefas"
     ON tasks FOR DELETE
     USING (
-        auth.uid() = user_id OR
-        EXISTS (
-            SELECT 1 FROM organization_members
-            WHERE organization_members.organization_id = tasks.organization_id
-            AND organization_members.user_id = auth.uid()
-            AND organization_members.role IN ('admin', 'manager')
-        )
+        public.user_is_project_editor_or_admin(project_id)
     );
 
 -- Create function to update updated_at timestamp

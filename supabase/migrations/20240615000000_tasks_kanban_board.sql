@@ -215,6 +215,17 @@ RETURNS boolean AS $$
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
+-- Função para verificar se um usuário é editor ou admin de um projeto
+CREATE OR REPLACE FUNCTION public.user_is_project_editor_or_admin(project_id uuid) 
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM task_project_members
+    WHERE task_project_members.project_id = project_id 
+    AND task_project_members.user_id = auth.uid()
+    AND task_project_members.role IN ('editor', 'admin')
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
 -- Políticas para task_stages
 CREATE POLICY "Membros da organização podem visualizar estágios" 
 ON public.task_stages FOR SELECT 
