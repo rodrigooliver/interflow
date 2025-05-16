@@ -491,7 +491,7 @@ export function TaskCard({
                     {task.assignees.map(assignee => (
                       <div 
                         key={assignee.id}
-                        className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5 text-xs"
+                        className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5 text-xs dark:text-gray-300"
                       >
                         {assignee.profile?.avatar_url ? (
                           <img 
@@ -502,7 +502,7 @@ export function TaskCard({
                         ) : (
                           <User className="w-3 h-3 mr-1" />
                         )}
-                        <span className="truncate max-w-[100px]">
+                        <span className="truncate max-w-[100px] dark:text-gray-300">
                           {assignee.profile?.full_name || assignee.user_id}
                         </span>
                       </div>

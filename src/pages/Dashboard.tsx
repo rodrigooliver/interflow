@@ -444,7 +444,7 @@ export default function Dashboard() {
           *,
           stage:task_stages(*),
           customer:customers!tasks_customer_id_fkey(*),
-          assignees:task_assignees(
+          assignees:task_assignees!inner(
             *,
             profile:profiles(*)
           ),
@@ -456,6 +456,7 @@ export default function Dashboard() {
         `)
         .eq('organization_id', organizationId)
         .in('status', ['pending', 'in_progress'])
+        .eq('assignees.user_id', session?.user?.id)
         .order('due_date', { ascending: true })
         .limit(5);
 
@@ -1187,8 +1188,8 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+              <div className="flex justify-between items-center mb-3">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {t('upcomingTasks')}
                 </h2>
@@ -1231,7 +1232,7 @@ export default function Dashboard() {
                 )}
               </div>
               
-              <div className="mt-6">
+              <div className="4">
                 <button 
                   onClick={() => setShowTaskModal(true)}
                   className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
