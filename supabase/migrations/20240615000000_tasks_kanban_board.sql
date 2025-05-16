@@ -182,6 +182,38 @@ ALTER TABLE public.task_stages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.task_assignees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.task_labels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.task_task_labels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_project_members ENABLE ROW LEVEL SECURITY;
+
+-- Criar funções auxiliares para verificar permissões
+CREATE OR REPLACE FUNCTION public.user_is_project_admin(project_id uuid) 
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM task_project_members
+    WHERE task_project_members.project_id = project_id 
+    AND task_project_members.user_id = auth.uid()
+    AND task_project_members.role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.user_is_org_admin(org_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM organization_members
+    WHERE organization_members.organization_id = org_id
+    AND organization_members.user_id = auth.uid()
+    AND organization_members.status = 'active'
+    AND (organization_members.role = 'admin' OR organization_members.role = 'owner')
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Função para verificar se um projeto não tem membros
+CREATE OR REPLACE FUNCTION public.project_has_no_members(project_id uuid)
+RETURNS boolean AS $$
+  SELECT NOT EXISTS (
+    SELECT 1 FROM task_project_members
+    WHERE task_project_members.project_id = project_id
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
 
 -- Políticas para task_stages
 CREATE POLICY "Membros da organização podem visualizar estágios" 
@@ -336,8 +368,6 @@ USING (task_id IN (
 ));
 
 -- Criar políticas de segurança para a tabela de membros do projeto
-ALTER TABLE public.task_project_members ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Membros da organização podem visualizar membros do projeto" 
 ON public.task_project_members FOR SELECT 
 USING (project_id IN (
@@ -346,53 +376,30 @@ USING (project_id IN (
   WHERE om.user_id = auth.uid() AND om.status = 'active'
 ));
 
-CREATE POLICY "Administradores do projeto podem gerenciar membros" 
+CREATE POLICY "Administradores do projeto podem cadastrar membros" 
 ON public.task_project_members FOR INSERT 
 WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM task_projects tp
-    JOIN organization_members om ON tp.organization_id = om.organization_id
-    WHERE tp.id = project_id
-    AND om.user_id = auth.uid()
-    AND om.status = 'active'
-    AND om.role IN ('admin', 'owner')
-  )
+  public.user_is_project_admin(project_id) OR 
+  public.user_is_org_admin((SELECT organization_id FROM task_projects WHERE id = project_id)) OR
+  public.project_has_no_members(project_id)
 );
 
 CREATE POLICY "Administradores do projeto podem atualizar membros" 
 ON public.task_project_members FOR UPDATE 
 USING (
-  EXISTS (
-    SELECT 1 FROM task_projects tp
-    JOIN organization_members om ON tp.organization_id = om.organization_id
-    WHERE tp.id = project_id
-    AND om.user_id = auth.uid()
-    AND om.status = 'active'
-    AND om.role IN ('admin', 'owner')
-  )
+  public.user_is_project_admin(project_id) OR 
+  public.user_is_org_admin((SELECT organization_id FROM task_projects WHERE id = project_id))
 )
 WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM task_projects tp
-    JOIN organization_members om ON tp.organization_id = om.organization_id
-    WHERE tp.id = project_id
-    AND om.user_id = auth.uid()
-    AND om.status = 'active'
-    AND om.role IN ('admin', 'owner')
-  )
+  public.user_is_project_admin(project_id) OR 
+  public.user_is_org_admin((SELECT organization_id FROM task_projects WHERE id = project_id))
 );
 
 CREATE POLICY "Administradores do projeto podem excluir membros" 
 ON public.task_project_members FOR DELETE 
 USING (
-  EXISTS (
-    SELECT 1 FROM task_projects tp
-    JOIN organization_members om ON tp.organization_id = om.organization_id
-    WHERE tp.id = project_id
-    AND om.user_id = auth.uid()
-    AND om.status = 'active'
-    AND om.role IN ('admin', 'owner')
-  )
+  public.user_is_project_admin(project_id) OR 
+  public.user_is_org_admin((SELECT organization_id FROM task_projects WHERE id = project_id))
 );
 
 -- Modificar as políticas de projetos para considerar as permissões
@@ -415,28 +422,6 @@ WITH CHECK (organization_id IN (
   SELECT organization_id FROM organization_members 
   WHERE user_id = auth.uid() AND status = 'active'
 ));
-
--- Criar funções auxiliares para verificar permissões
-CREATE OR REPLACE FUNCTION public.user_is_project_admin(project_id uuid) 
-RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM task_project_members
-    WHERE task_project_members.project_id = project_id 
-    AND task_project_members.user_id = auth.uid()
-    AND task_project_members.role = 'admin'
-  );
-$$ LANGUAGE sql SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION public.user_is_org_admin(org_id uuid)
-RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM organization_members
-    WHERE organization_members.organization_id = org_id
-    AND organization_members.user_id = auth.uid()
-    AND organization_members.status = 'active'
-    AND (organization_members.role = 'admin' OR organization_members.role = 'owner')
-  );
-$$ LANGUAGE sql SECURITY DEFINER;
 
 -- Políticas de segurança usando as funções auxiliares
 DROP POLICY IF EXISTS "Administradores da organização podem atualizar projetos" ON public.task_projects;
