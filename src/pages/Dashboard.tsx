@@ -444,7 +444,7 @@ export default function Dashboard() {
           *,
           stage:task_stages(*),
           customer:customers!tasks_customer_id_fkey(*),
-          assignees:task_assignees!inner(
+          assignees:task_assignees(
             *,
             profile:profiles(*)
           ),
@@ -456,9 +456,8 @@ export default function Dashboard() {
         `)
         .eq('organization_id', organizationId)
         .in('status', ['pending', 'in_progress'])
-        .eq('assignees.user_id', session?.user?.id)
         .order('due_date', { ascending: true })
-        .limit(5);
+        .limit(10);
 
       if (error) throw error;
 
