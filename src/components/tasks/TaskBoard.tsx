@@ -439,7 +439,7 @@ export function TaskBoard({
   return (
     <div className="flex flex-col h-full">
       {showingArchived && (
-        <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 sm:px-4 sm:py-2 mb-2 rounded-md text-xs sm:text-sm mx-2 sm:mx-4">
+        <div className="mt-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 sm:px-4 sm:py-2 -mb-1 rounded-md text-xs sm:text-sm mx-2 sm:mx-4">
           {t('viewingArchivedTasks')}
         </div>
       )}

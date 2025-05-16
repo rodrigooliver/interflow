@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Archive, ChevronDown, Settings, FolderPlus, Folder } from 'lucide-react';
+import { Plus, ChevronDown, Settings, FolderPlus, Folder, Filter, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthContext } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -100,11 +100,19 @@ const ProjectCard: React.FC<{
   );
 };
 
+// Interface para os filtros de tarefas
+interface TaskFilters {
+  assignedToMe: boolean;
+  overdue: boolean;
+  showArchived: boolean;
+}
+
 export default function Tasks() {
   const { t } = useTranslation('tasks');
   const { currentOrganizationMember } = useAuthContext();
   const queryClient = useQueryClient();
   const organizationId = currentOrganizationMember?.organization.id;
+  const currentUserId = currentOrganizationMember?.user_id;
   
   // Estados do modal
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -129,7 +137,16 @@ export default function Tasks() {
   };
   
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [showArchivedTasks, setShowArchivedTasks] = useState(false);
+  
+  // Estados para os filtros
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [filters, setFilters] = useState<TaskFilters>({
+    assignedToMe: false,
+    overdue: false,
+    showArchived: false
+  });
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
   
   // Router hooks
   const navigate = useNavigate();
@@ -153,8 +170,9 @@ export default function Tasks() {
   const { data: tasks = [], isLoading: isTasksLoading } = useTasksByStage(
     organizationId,
     selectedProjectId as string | undefined,
-    undefined, // Não filtrar por usuário
-    showArchivedTasks // Mostrar ou não tarefas arquivadas
+    filters.assignedToMe ? currentUserId : undefined,
+    filters.showArchived, // Mostrar ou não tarefas arquivadas
+    filters.overdue // Filtrar por tarefas vencidas
   );
 
   // Subscription para atualizações na tabela tasks
@@ -484,6 +502,75 @@ export default function Tasks() {
     };
   }, []);
 
+  // Carregar filtros do localStorage quando o projeto mudar
+  useEffect(() => {
+    if (selectedProjectId && organizationId) {
+      const filterKey = `taskFilters_${organizationId}_${selectedProjectId}`;
+      const savedFilters = localStorage.getItem(filterKey);
+      
+      if (savedFilters) {
+        try {
+          const parsedFilters = JSON.parse(savedFilters) as TaskFilters;
+          setFilters(parsedFilters);
+        } catch (e) {
+          console.error('Erro ao carregar filtros salvos:', e);
+        }
+      } else {
+        // Resetar para os padrões se não houver filtros salvos
+        setFilters({
+          assignedToMe: false,
+          overdue: false,
+          showArchived: false
+        });
+      }
+    }
+  }, [selectedProjectId, organizationId]);
+
+  // Verificar se há filtros ativos
+  useEffect(() => {
+    const activeFilterCount = Object.values(filters).filter(Boolean).length;
+    setHasActiveFilters(activeFilterCount > 0);
+  }, [filters]);
+
+  // Salvar filtros no localStorage quando mudarem
+  useEffect(() => {
+    if (selectedProjectId && organizationId) {
+      const filterKey = `taskFilters_${organizationId}_${selectedProjectId}`;
+      localStorage.setItem(filterKey, JSON.stringify(filters));
+    }
+  }, [filters, selectedProjectId, organizationId]);
+
+  // Fechar o dropdown de filtros ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Função para alternar um filtro
+  const toggleFilter = (filterName: keyof TaskFilters) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: !prev[filterName]
+    }));
+  };
+
+  // Função para limpar todos os filtros
+  const clearAllFilters = () => {
+    setFilters({
+      assignedToMe: false,
+      overdue: false,
+      showArchived: false
+    });
+  };
+
   // Renderização da tela de seleção/criação de projeto
   if (!selectedProjectId) {
     return (
@@ -590,18 +677,90 @@ export default function Tasks() {
               <span className="hidden sm:inline">{t('addTask')}</span>
             </button>
             
-            {/* Mostrar/ocultar arquivados */}
-            <button
-              onClick={() => setShowArchivedTasks(!showArchivedTasks)}
-              className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
-                showArchivedTasks 
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-800/30 dark:text-blue-400' 
-                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-              }`}
-            >
-              <Archive className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">{showArchivedTasks ? t('viewActive') : t('viewArchived')}</span>
-            </button>
+            {/* Dropdown de filtros */}
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
+                  hasActiveFilters 
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-800/30 dark:text-blue-400' 
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <Filter className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">{t('filters.title')}</span>
+                {hasActiveFilters && (
+                  <span className="ml-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {Object.values(filters).filter(Boolean).length}
+                  </span>
+                )}
+                <ChevronDown className="w-3 h-3 ml-1" />
+              </button>
+              
+              {isFilterDropdownOpen && (
+                <div className="absolute z-10 left-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 min-w-[250px]">
+                  <div className="p-3">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-medium text-gray-800 dark:text-gray-200">
+                        {t('filters.title')}
+                      </h3>
+                      {hasActiveFilters && (
+                        <button 
+                          onClick={clearAllFilters}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        >
+                          {t('filters.clearAll')}
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {/* Filtro: Atribuídos a mim */}
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="filter-assigned-to-me"
+                          checked={filters.assignedToMe}
+                          onChange={() => toggleFilter('assignedToMe')}
+                          className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="filter-assigned-to-me" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                          {t('filters.assignedToMe')}
+                        </label>
+                      </div>
+                      
+                      {/* Filtro: Vencidos */}
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="filter-overdue"
+                          checked={filters.overdue}
+                          onChange={() => toggleFilter('overdue')}
+                          className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="filter-overdue" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                          {t('filters.overdue')}
+                        </label>
+                      </div>
+                      
+                      {/* Filtro: Arquivados */}
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="filter-archived"
+                          checked={filters.showArchived}
+                          onChange={() => toggleFilter('showArchived')}
+                          className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="filter-archived" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                          {t('filters.showArchived')}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             
             {/* Dropdown de gerenciamento do projeto atual */}
             {selectedProjectId && (
@@ -717,7 +876,7 @@ export default function Tasks() {
             onToggleArchived={handleToggleArchived}
             onUpdateTaskStatus={handleUpdateTaskStatus}
             organizationId={organizationId || ''}
-            showingArchived={showArchivedTasks}
+            showingArchived={filters.showArchived}
             projectId={selectedProjectId as string | undefined}
           />
         )}

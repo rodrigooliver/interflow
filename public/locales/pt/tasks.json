@@ -132,7 +132,13 @@
     "pending": "Pendentes",
     "in_progress": "Em progresso",
     "completed": "Concluídas",
-    "cancelled": "Canceladas"
+    "cancelled": "Canceladas",
+    "title": "Filtros",
+    "active": "Filtros ativos",
+    "clearAll": "Limpar todos",
+    "assignedToMe": "Atribuídas a mim",
+    "overdue": "Vencidas",
+    "showArchived": "Mostrar arquivadas"
   },
   "labels": {
     "title": "Etiquetas",

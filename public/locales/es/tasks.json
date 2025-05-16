@@ -131,9 +131,15 @@
   "filters": {
     "all": "Todas",
     "pending": "Pendientes",
-    "in_progress": "En Progreso",
+    "in_progress": "En progreso",
     "completed": "Completadas",
-    "cancelled": "Canceladas"
+    "cancelled": "Canceladas",
+    "title": "Filtros",
+    "active": "Filtros activos",
+    "clearAll": "Limpiar todos",
+    "assignedToMe": "Asignadas a mí",
+    "overdue": "Vencidas",
+    "showArchived": "Mostrar archivadas"
   },
   "labels": {
     "title": "Etiquetas",

@@ -112,7 +112,13 @@
     "pending": "Pending",
     "in_progress": "In Progress",
     "completed": "Completed",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "title": "Filters",
+    "active": "Active filters",
+    "clearAll": "Clear all",
+    "assignedToMe": "Assigned to me",
+    "overdue": "Overdue",
+    "showArchived": "Show archived"
   },
   "success": {
     "created": "Task created successfully",

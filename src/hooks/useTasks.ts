@@ -212,9 +212,15 @@ export function useTaskStages(organizationId?: string, projectId?: string) {
 }
 
 // Hook para buscar tarefas por estágio
-export function useTasksByStage(organizationId?: string, projectId?: string, userId?: string, includeArchived: boolean = false) {
+export function useTasksByStage(
+  organizationId?: string, 
+  projectId?: string, 
+  userId?: string, 
+  includeArchived: boolean = false,
+  filterOverdue: boolean = false
+) {
   return useQuery({
-    queryKey: ['tasks-by-stage', organizationId, projectId, userId, includeArchived],
+    queryKey: ['tasks-by-stage', organizationId, projectId, userId, includeArchived, filterOverdue],
     queryFn: async () => {
       if (!organizationId) return [];
 
@@ -224,7 +230,7 @@ export function useTasksByStage(organizationId?: string, projectId?: string, use
           *,
           stage:task_stages(*),
           customer:customers!tasks_customer_id_fkey(*),
-          assignees:task_assignees(
+          assignees:task_assignees${userId ? '!inner' : ''}(
             *,
             profile:profiles(*)
           ),
@@ -245,7 +251,16 @@ export function useTasksByStage(organizationId?: string, projectId?: string, use
       }
 
       if (userId) {
-        query = query.eq('user_id', userId);
+        query = query.eq('assignees.user_id', userId);
+      }
+      
+      // Filtrar tarefas vencidas - onde a data de vencimento é menor que hoje e o status não é completed ou cancelled
+      if (filterOverdue) {
+        const today = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        query = query
+          .lt('due_date', today)
+          .not('status', 'in', '(completed,cancelled)')
+          .not('due_date', 'is', null);
       }
 
       query = query.order('stage_order', { ascending: true });
