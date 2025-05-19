@@ -323,6 +323,16 @@
         "name": "Crear Tarea",
         "nameInsert": "Crear Tarea",
         "description": "Crear una tarea cuando... (ejemplo: el cliente dice 'crea una tarea para mí')"
+      },
+      "unknownResponse": {
+        "name": "Cuando el Agente No Sabe",
+        "nameInsert": "Cuando el Agente No Sabe",
+        "description": "Define cómo manejar información que el agente IA no conoce",
+        "options": {
+          "pauseAgent": "Pausar agente inmediatamente",
+          "saveQuestion": "Guardar pregunta para revisión",
+          "tryToAnswer": "Intentar responder de todos modos"
+        }
       }
     },
     "editSystemAction": "Editar Acción del Sistema",

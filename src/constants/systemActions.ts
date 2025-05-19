@@ -3,7 +3,7 @@ export interface SystemActionType {
   title?: string | null | undefined;
   name: string;
   description: string;
-  type: 'endChat' | 'changeCustomerName' | 'updateCustomerCustomData' | 'transferToTeam'  | 'schedule'  | 'changeFunnel' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext' ;
+  type: 'endChat' | 'changeCustomerName' | 'updateCustomerCustomData' | 'transferToTeam'  | 'schedule'  | 'changeFunnel' | 'createTask' | 'dateReturn' | 'saveQuestionsNotInContext' | 'unknownResponse';
   config?: {
     schedule?: string | null;
     funnels?: Array<{
@@ -29,6 +29,11 @@ export interface SystemActionType {
       selected: boolean;
       description?: string;
     }>;
+    unknownResponse?: {
+      pauseAgent: boolean;
+      saveQuestion: boolean;
+      tryToAnswer: boolean;
+    };
   };
 }
 
@@ -70,6 +75,18 @@ export const SYSTEM_ACTIONS: SystemActionType[] = [
       funnels: [],
       sourceStages: [],
       targetStages: []
+    }
+  },
+  {
+    name: 'Quando não souber responder',
+    description: 'Define como lidar com informações desconhecidas',
+    type: 'unknownResponse',
+    config: {
+      unknownResponse: {
+        pauseAgent: false,
+        saveQuestion: true,
+        tryToAnswer: true
+      }
     }
   },
   // {

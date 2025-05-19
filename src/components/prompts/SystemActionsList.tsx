@@ -8,7 +8,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { Modal } from '../ui/Modal';
 
 // Lista de tipos de ações que podem ser adicionadas apenas uma vez
-const UNIQUE_ACTION_TYPES = ['changeCustomerName', 'transferToTeam'];
+const UNIQUE_ACTION_TYPES = ['changeCustomerName', 'transferToTeam', 'unknownResponse'];
 
 interface SystemActionsListProps {
   actions: SystemActionType[];
@@ -133,6 +133,31 @@ const SystemActionsList: React.FC<SystemActionsListProps> = ({ actions, onRemove
                             {field.name}
                           </span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {action.type === 'unknownResponse' && action.config?.unknownResponse && (
+                    <div className="mt-2">
+                      <div className="flex flex-col gap-1">
+                        {action.config.unknownResponse.pauseAgent && (
+                          <span className="inline-flex items-center text-xs text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            {t('prompts:form.systemActionTypes.unknownResponse.options.pauseAgent')}
+                          </span>
+                        )}
+                        {action.config.unknownResponse.saveQuestion && (
+                          <span className="inline-flex items-center text-xs text-blue-600 dark:text-blue-400">
+                            <Database className="w-3 h-3 mr-1" />
+                            {t('prompts:form.systemActionTypes.unknownResponse.options.saveQuestion')}
+                          </span>
+                        )}
+                        {action.config.unknownResponse.tryToAnswer && (
+                          <span className="inline-flex items-center text-xs text-green-600 dark:text-green-400">
+                            <Plus className="w-3 h-3 mr-1" />
+                            {t('prompts:form.systemActionTypes.unknownResponse.options.tryToAnswer')}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}

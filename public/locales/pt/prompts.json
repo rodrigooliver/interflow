@@ -138,6 +138,16 @@
         "name": "Criar Tarefa",
         "nameInsert": "Criar Tarefa",
         "description": "Criar uma tarefa quando... (exemplo: o cliente diz 'crie uma tarefa para mim')"
+      },
+      "unknownResponse": {
+        "name": "Quando não souber responder",
+        "nameInsert": "Quando não souber responder",
+        "description": "Define como lidar com informações que o agente IA não sabe",
+        "options": {
+          "pauseAgent": "Pausar agente imediatamente",
+          "saveQuestion": "Salvar questionamento para revisão",
+          "tryToAnswer": "Tentar responder mesmo assim"
+        }
       }
     },
     "customActions": "Ações Personalizadas",

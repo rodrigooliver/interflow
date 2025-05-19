@@ -322,6 +322,16 @@
         "name": "Create Task",
         "nameInsert": "Create Task",
         "description": "Create a task when... (example: customer says 'create a task for me')"
+      },
+      "unknownResponse": {
+        "name": "When Agent Doesn't Know",
+        "nameInsert": "When Agent Doesn't Know",
+        "description": "Define how to handle information the AI agent doesn't know",
+        "options": {
+          "pauseAgent": "Pause agent immediately",
+          "saveQuestion": "Save question for review",
+          "tryToAnswer": "Try to answer anyway"
+        }
       }
     },
     "editSystemAction": "Edit System Action",

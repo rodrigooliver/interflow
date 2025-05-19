@@ -523,6 +523,24 @@ export interface Prompt {
   is_default?: boolean;
 }
 
+/**
+ * Representa informações que o agente IA não conhece e precisam ser adicionadas ao contexto
+ * Vinculadas a prompts específicos
+ */
+export interface PromptUnknown {
+  id: string;
+  prompt_id: Prompt;
+  chat_id?: Chat;
+  question: string;
+  content: string;
+  category?: string;
+  priority: 'high' | 'medium' | 'low';
+  status: 'pending' | 'added' | 'rejected';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ==========================================
 // INTEGRATION AND FILE INTERFACES
 // ==========================================

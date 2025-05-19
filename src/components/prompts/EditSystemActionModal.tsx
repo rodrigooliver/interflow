@@ -184,7 +184,12 @@ const EditSystemActionModal: React.FC<EditSystemActionModalProps> = ({
           schedule: action.config?.schedule || '',
           customFields: action.config?.customFields || [],
           sourceStages: action.config?.sourceStages || [],
-          targetStages: action.config?.targetStages || []
+          targetStages: action.config?.targetStages || [],
+          unknownResponse: action.config?.unknownResponse || {
+            pauseAgent: false,
+            saveQuestion: true,
+            tryToAnswer: true
+          }
         }
       });
     }
@@ -298,6 +303,24 @@ const EditSystemActionModal: React.FC<EditSystemActionModalProps> = ({
       return stage?.description || '';
     }
     return '';
+  };
+
+  // Manipulador para alterações nas opções de resposta desconhecida
+  const handleUnknownResponseChange = (key: 'pauseAgent' | 'saveQuestion' | 'tryToAnswer', value: boolean) => {
+    setFormData({
+      ...formData,
+      config: {
+        ...formData.config,
+        unknownResponse: {
+          ...(formData.config?.unknownResponse || {
+            pauseAgent: false,
+            saveQuestion: false,
+            tryToAnswer: false
+          }),
+          [key]: value
+        }
+      }
+    });
   };
 
   return (
@@ -511,6 +534,54 @@ const EditSystemActionModal: React.FC<EditSystemActionModalProps> = ({
                       {t('customers:customFields.noFields')}
                     </p>
                   )}
+                </div>
+              )}
+
+              {formData.type === 'unknownResponse' && (
+                <div className="border border-gray-200 dark:border-gray-700 rounded-md p-4">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    {t('prompts:form.systemActionTypes.unknownResponse.name')}
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="pauseAgent"
+                        checked={formData.config?.unknownResponse?.pauseAgent || false}
+                        onChange={(e) => handleUnknownResponseChange('pauseAgent', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="pauseAgent" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {t('prompts:form.systemActionTypes.unknownResponse.options.pauseAgent')}
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="saveQuestion"
+                        checked={formData.config?.unknownResponse?.saveQuestion !== false}
+                        onChange={(e) => handleUnknownResponseChange('saveQuestion', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="saveQuestion" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {t('prompts:form.systemActionTypes.unknownResponse.options.saveQuestion')}
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="tryToAnswer"
+                        checked={formData.config?.unknownResponse?.tryToAnswer !== false}
+                        onChange={(e) => handleUnknownResponseChange('tryToAnswer', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="tryToAnswer" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {t('prompts:form.systemActionTypes.unknownResponse.options.tryToAnswer')}
+                      </label>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
