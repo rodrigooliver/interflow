@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, ChevronRight, AlertTriangle, File, Plus } from 'lucide-react';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, ChevronRight, AlertTriangle, File, Plus, Wand2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
@@ -23,6 +23,7 @@ import { TriggersList } from '../flow/TriggersList';
 import MediaList from './MediaList';
 import ExtraContextModal from './ExtraContextModal';
 import ExtraContextList from './ExtraContextList';
+import api from '../../lib/api';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -226,6 +227,266 @@ interface PromptFormData {
   content_addons: ExtraContext[];
 }
 
+// Interface para as props do modal de geração de prompt
+interface GeneratePromptModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onGenerate: (promptText: string) => void;
+  organizationId: string;
+}
+
+// Componente para o modal de geração de prompt
+const GeneratePromptModal = ({ isOpen, onClose, onGenerate, organizationId }: GeneratePromptModalProps) => {
+  const { t } = useTranslation(['prompts', 'common']);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    attendantName: '',
+    businessName: '',
+    businessDescription: '',
+    industry: '',
+    targetAudience: '',
+    tone: 'professional',
+    specificNeeds: ''
+  });
+  
+  const tones = [
+    { value: 'professional', label: t('prompts:tones.professional', 'Profissional') },
+    { value: 'friendly', label: t('prompts:tones.friendly', 'Amigável') },
+    { value: 'casual', label: t('prompts:tones.casual', 'Casual') },
+    { value: 'formal', label: t('prompts:tones.formal', 'Formal') },
+    { value: 'enthusiastic', label: t('prompts:tones.enthusiastic', 'Entusiasmado') }
+  ];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+
+    try {
+      const response = await api.post(
+        `/api/${organizationId}/prompts/generate-prompt`,
+        formData
+      );
+
+      if (response.data.success) {
+        setSuccess(true);
+        onGenerate(response.data.data.text);
+      } else {
+        setError(response.data.error || t('prompts:generatePrompt.generalError'));
+      }
+    } catch (error: unknown) {
+      console.error('Erro ao gerar prompt:', error);
+      
+      // Definir interface para erro de API
+      interface ApiError {
+        response?: {
+          data?: {
+            error?: string;
+          };
+        };
+      }
+      
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const apiError = error as ApiError;
+        setError(apiError.response?.data?.error || t('prompts:generatePrompt.generalError'));
+      } else {
+        setError(t('prompts:generatePrompt.generalError'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+            {t('prompts:generatePrompt.title', 'Gerar Atendente Virtual')}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 focus:outline-none"
+          >
+            <span className="sr-only">{t('common:close')}</span>
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md mb-4">
+                <p className="text-sm text-blue-700 dark:text-blue-400">
+                  {t('prompts:generatePrompt.attendantDescription', 'Configure os detalhes do seu atendente virtual. O sistema irá gerar um prompt especializado para simular um atendente humano.')}
+                </p>
+              </div>
+            
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:generatePrompt.attendantName', 'Nome do Atendente Virtual')}
+                </label>
+                <input
+                  type="text"
+                  name="attendantName"
+                  value={formData.attendantName}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder={t('prompts:generatePrompt.attendantNamePlaceholder', 'Ex: Ana, Carlos, etc. (deixe em branco para sugerir um nome)')}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('prompts:generatePrompt.attendantNameHelp', 'O nome que o atendente virtual usará ao interagir com os clientes')}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:generatePrompt.businessName', 'Nome da Empresa')}
+                </label>
+                <input
+                  type="text"
+                  name="businessName"
+                  value={formData.businessName}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder={t('prompts:generatePrompt.businessNamePlaceholder', 'Ex: Empresa ABC')}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:generatePrompt.businessDescription', 'Descrição da Empresa/Serviços')} *
+                </label>
+                <textarea
+                  name="businessDescription"
+                  value={formData.businessDescription}
+                  onChange={handleChange}
+                  required
+                  rows={3}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder={t('prompts:generatePrompt.businessDescriptionPlaceholder', 'Descreva os produtos/serviços oferecidos e como o atendente deve explicá-los')}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:generatePrompt.industry', 'Setor de Atuação')} *
+                </label>
+                <input
+                  type="text"
+                  name="industry"
+                  value={formData.industry}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder={t('prompts:generatePrompt.industryPlaceholder', 'Ex: E-commerce, Saúde, Educação, Suporte Técnico')}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:generatePrompt.targetAudience', 'Público-Alvo dos Atendimentos')}
+                </label>
+                <input
+                  type="text"
+                  name="targetAudience"
+                  value={formData.targetAudience}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder={t('prompts:generatePrompt.targetAudiencePlaceholder', 'Ex: Profissionais de TI, Consumidores finais, Pacientes')}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:generatePrompt.tone', 'Tom de Comunicação do Atendente')}
+                </label>
+                <select
+                  name="tone"
+                  value={formData.tone}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  {tones.map(tone => (
+                    <option key={tone.value} value={tone.value}>
+                      {tone.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:generatePrompt.specificNeeds', 'Instruções Específicas de Atendimento')}
+                </label>
+                <textarea
+                  name="specificNeeds"
+                  value={formData.specificNeeds}
+                  onChange={handleChange}
+                  rows={2}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder={t('prompts:generatePrompt.specificNeedsPlaceholder', 'Ex: Protocolos específicos de atendimento, abordagens para situações particulares, etc.')}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {t('common:cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                    {t('prompts:generatePrompt.generating', 'Gerando Atendente...')}
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="-ml-1 mr-2 h-4 w-4" />
+                    {t('prompts:generatePrompt.generate', 'Gerar Atendente Virtual')}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PromptFormMain: React.FC = () => {
   const { t } = useTranslation(['prompts', 'common', 'flows']);
   const navigate = useNavigate();
@@ -298,6 +559,7 @@ const PromptFormMain: React.FC = () => {
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [showContextModal, setShowContextModal] = useState(false);
   const [editingContext, setEditingContext] = useState<ExtraContext | undefined>();
+  const [showGeneratePromptModal, setShowGeneratePromptModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -655,6 +917,17 @@ const PromptFormMain: React.FC = () => {
     } else {
       navigate('/app/prompts');
     }
+  };
+
+  // Função para lidar com o resultado da geração de prompt
+  const handleGeneratedPrompt = (promptText: string) => {
+    // Sempre atualiza o estado local do conteúdo do editor
+    setFormData({
+      ...formData,
+      content: promptText
+    });
+    
+    setShowGeneratePromptModal(false);
   };
 
   return (
@@ -1284,6 +1557,16 @@ const PromptFormMain: React.FC = () => {
                       </div> */}
                       
                       <div className="mb-4">
+                        <div className="flex justify-between items-center -mb-4">
+                          <button
+                              type="button"
+                              onClick={() => setShowGeneratePromptModal(true)}
+                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            >
+                              <Wand2 className="w-4 h-4 mr-1" />
+                              {t('prompts:generatePrompt.button', 'Gerar Atendente Virtual')}
+                            </button>
+                        </div>
                         <ContentEditor 
                           content={formData.content} 
                           onChange={(content) => setFormData({ ...formData, content })} 
@@ -1623,6 +1906,16 @@ const PromptFormMain: React.FC = () => {
         }}
         initialContext={editingContext}
       />
+
+      {/* Modal para geração de prompt */}
+      {currentOrganizationMember && (
+        <GeneratePromptModal
+          isOpen={showGeneratePromptModal}
+          onClose={() => setShowGeneratePromptModal(false)}
+          onGenerate={handleGeneratedPrompt}
+          organizationId={currentOrganizationMember.organization.id}
+        />
+      )}
     </div>
   );
 };

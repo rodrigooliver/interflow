@@ -441,8 +441,8 @@
   },
   "togglePreview": "Alternar visualização",
   "toggleFullscreen": "Alternar tela cheia",
-  "extraContexts": "Contextos Extras",
-  "addExtraContext": "Adicionar Contexto Extra",
+  "extraContexts": "Contextos Adicionais",
+  "addExtraContext": "Adicionar Contexto",
   "editExtraContext": "Editar Contexto Extra",
   "noExtraContexts": "Nenhum contexto extra adicionado",
   "selectTemplate": "Selecione um modelo",
@@ -470,5 +470,36 @@
       "defaultDescription": "Contexto personalizado criado manualmente"
     }
   },
-  "description": "Descrição"
+  "description": "Descrição",
+  "generatePrompt": {
+    "title": "Gerar Atendente Virtual",
+    "button": "Gerar Atendente Virtual",
+    "businessName": "Nome da Empresa",
+    "businessNamePlaceholder": "Ex: Empresa ABC",
+    "businessDescription": "Descrição da Empresa/Serviços",
+    "businessDescriptionPlaceholder": "Descreva os produtos/serviços oferecidos e como o atendente deve explicá-los",
+    "industry": "Área de Atendimento",
+    "industryPlaceholder": "Ex: Vendas, Suporte Técnico, SAC, Atendimento Médico",
+    "targetAudience": "Perfil dos Clientes Atendidos",
+    "targetAudiencePlaceholder": "Ex: Clientes em potencial, Clientes atuais, Pacientes, Usuários de tecnologia",
+    "tone": "Tom de Comunicação do Atendente",
+    "specificNeeds": "Instruções Específicas de Atendimento",
+    "specificNeedsPlaceholder": "Ex: Protocolos específicos de atendimento, abordagens para situações particulares, etc.",
+    "attendantName": "Nome do Atendente Virtual",
+    "attendantNamePlaceholder": "Ex: Ana, Carlos, etc. (deixe em branco para sugerir um nome)",
+    "attendantNameHelp": "O nome que o atendente virtual usará ao interagir com os clientes",
+    "attendantDescription": "Configure os detalhes do seu atendente virtual. O sistema irá gerar um prompt especializado para simular um atendente humano.",
+    "generating": "Gerando Atendente...",
+    "generate": "Gerar Atendente Virtual",
+    "success": "Atendente virtual gerado com sucesso!",
+    "generalError": "Erro ao gerar o atendente virtual. Tente novamente.",
+    "autoUpdate": "Atualizar automaticamente o prompt"
+  },
+  "tones": {
+    "professional": "Profissional",
+    "friendly": "Amigável",
+    "casual": "Casual",
+    "formal": "Formal",
+    "enthusiastic": "Entusiasmado"
+  }
 }
