@@ -472,5 +472,37 @@
       "defaultDescription": "Manually created custom context"
     }
   },
-  "description": "Description"
+  "description": "Description",
+  "generatePrompt": {
+    "title": "Generate Virtual Assistant",
+    "button": "Generate Virtual Assistant",
+    "businessName": "Company Name",
+    "businessNamePlaceholder": "Ex: ABC Company",
+    "businessDescription": "Company/Services Description",
+    "businessDescriptionPlaceholder": "Describe the products/services offered and how the assistant should explain them",
+    "industry": "Industry",
+    "industryPlaceholder": "Ex: E-commerce, Healthcare, Education, Technical Support",
+    "targetAudience": "Target Audience",
+    "targetAudiencePlaceholder": "Ex: Potential customers, Current customers, Patients, Technology users",
+    "tone": "Communication Tone",
+    "specificNeeds": "Additional Information",
+    "specificNeedsPlaceholder": "Add useful information like: social media, address, business hours, service policies, contact channels, etc.",
+    "specificNeedsHelp": "Important information that the virtual assistant should know to properly assist customers",
+    "attendantName": "Virtual Assistant Name",
+    "attendantNamePlaceholder": "Ex: Anna, Charles, etc. (leave blank to suggest a name)",
+    "attendantNameHelp": "The name the virtual assistant will use when interacting with customers",
+    "attendantDescription": "Configure the details of your virtual assistant. The system will generate a specialized prompt to simulate a human assistant.",
+    "generating": "Generating Assistant...",
+    "generate": "Generate Virtual Assistant",
+    "success": "Virtual assistant generated successfully!",
+    "generalError": "Error generating the virtual assistant. Please try again.",
+    "autoUpdate": "Automatically update prompt"
+  },
+  "tones": {
+    "professional": "Professional",
+    "friendly": "Friendly",
+    "casual": "Casual",
+    "formal": "Formal",
+    "enthusiastic": "Enthusiastic"
+  }
 }

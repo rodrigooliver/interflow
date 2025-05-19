@@ -240,7 +240,6 @@ const GeneratePromptModal = ({ isOpen, onClose, onGenerate, organizationId }: Ge
   const { t } = useTranslation(['prompts', 'common']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
     attendantName: '',
     businessName: '',
@@ -273,7 +272,6 @@ const GeneratePromptModal = ({ isOpen, onClose, onGenerate, organizationId }: Ge
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess(false);
 
     try {
       const response = await api.post(
@@ -282,7 +280,6 @@ const GeneratePromptModal = ({ isOpen, onClose, onGenerate, organizationId }: Ge
       );
 
       if (response.data.success) {
-        setSuccess(true);
         onGenerate(response.data.data.text);
       } else {
         setError(response.data.error || t('prompts:generatePrompt.generalError'));
@@ -440,16 +437,19 @@ const GeneratePromptModal = ({ isOpen, onClose, onGenerate, organizationId }: Ge
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('prompts:generatePrompt.specificNeeds', 'Instruções Específicas de Atendimento')}
+                  {t('prompts:generatePrompt.specificNeeds', 'Informações Adicionais')}
                 </label>
                 <textarea
                   name="specificNeeds"
                   value={formData.specificNeeds}
                   onChange={handleChange}
-                  rows={2}
+                  rows={3}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder={t('prompts:generatePrompt.specificNeedsPlaceholder', 'Ex: Protocolos específicos de atendimento, abordagens para situações particulares, etc.')}
+                  placeholder={t('prompts:generatePrompt.specificNeedsPlaceholder', 'Adicione informações úteis como: redes sociais, endereço, horário de funcionamento, políticas de atendimento, canais de contato, etc.')}
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('prompts:generatePrompt.specificNeedsHelp', 'Informações importantes que o atendente virtual deve conhecer para auxiliar os clientes adequadamente')}
+                </p>
               </div>
             </div>
 
@@ -1557,7 +1557,7 @@ const PromptFormMain: React.FC = () => {
                       </div> */}
                       
                       <div className="mb-4">
-                        <div className="flex justify-between items-center -mb-4">
+                        <div className="flex justify-between items-center -mb-2">
                           <button
                               type="button"
                               onClick={() => setShowGeneratePromptModal(true)}

@@ -93,7 +93,8 @@
       "general": "Configuración General",
       "context": "Contexto",
       "tools": "Acciones",
-      "test": "Probar"
+      "test": "Probar",
+      "files": "Archivos"
     },
     "contextDescription": "Configura el contexto que se enviará al modelo. Este contexto define el comportamiento y el entorno del modelo durante la conversación.",
     "noTools": "No hay acciones configuradas",
@@ -196,6 +197,14 @@
         },
         "customFields": {
           "selectedFields": "Campos seleccionados"
+        },
+        "changeFunnel": {
+          "sourceStages": "Etapas de Origen (Cliente debe estar en una de estas)",
+          "targetStages": "Etapas de Destino (IA puede mover a)",
+          "editSourceDescriptions": "Editar descripciones de las etapas de origen",
+          "editTargetDescriptions": "Editar descripciones de las etapas de destino",
+          "sourceStagesDescription": "El cambio de embudo solo se aplicará a clientes que estén en una de estas etapas",
+          "targetStagesDescription": "Etapas a las que la IA podrá mover a los clientes (define descripciones claras)"
         }
       },
       "validation": {
@@ -254,7 +263,8 @@
       "directOperation": "Operación Directa",
       "mappedOperation": "Operación Mapeada",
       "operationMapping": "Mapeo de Operaciones",
-      "appointmentId": "ID de Cita en formato YYYY-MM-DD-HH:MM"
+      "appointmentId": "ID de Cita en formato YYYY-MM-DD-HH:MM",
+      "aiSettings": "Configuración de IA"
     },
     "aiSettings": "Configuración de IA",
     "systemActionTypes": {
@@ -463,5 +473,37 @@
       "defaultDescription": "Contexto personalizado creado manualmente"
     }
   },
-  "description": "Descripción"
+  "description": "Descripción",
+  "generatePrompt": {
+    "title": "Generar Asistente Virtual",
+    "button": "Generar Asistente Virtual",
+    "businessName": "Nombre de la Empresa",
+    "businessNamePlaceholder": "Ej: Empresa ABC",
+    "businessDescription": "Descripción de la Empresa/Servicios",
+    "businessDescriptionPlaceholder": "Describe los productos/servicios ofrecidos y cómo el asistente debe explicarlos",
+    "industry": "Sector de Actividad",
+    "industryPlaceholder": "Ej: E-commerce, Salud, Educación, Soporte Técnico",
+    "targetAudience": "Público Objetivo de las Atenciones",
+    "targetAudiencePlaceholder": "Ej: Clientes potenciales, Clientes actuales, Pacientes, Usuarios de tecnología",
+    "tone": "Tono de Comunicación del Asistente",
+    "specificNeeds": "Información Adicional",
+    "specificNeedsPlaceholder": "Añade información útil como: redes sociales, dirección, horario de funcionamiento, políticas de atención, canales de contacto, etc.",
+    "specificNeedsHelp": "Información importante que el asistente virtual debe conocer para ayudar adecuadamente a los clientes",
+    "attendantName": "Nombre del Asistente Virtual",
+    "attendantNamePlaceholder": "Ej: Ana, Carlos, etc. (deja en blanco para sugerir un nombre)",
+    "attendantNameHelp": "El nombre que el asistente virtual usará al interactuar con los clientes",
+    "attendantDescription": "Configura los detalles de tu asistente virtual. El sistema generará un prompt especializado para simular un asistente humano.",
+    "generating": "Generando Asistente...",
+    "generate": "Generar Asistente Virtual",
+    "success": "¡Asistente virtual generado con éxito!",
+    "generalError": "Error al generar el asistente virtual. Inténtalo de nuevo.",
+    "autoUpdate": "Actualizar automáticamente el prompt"
+  },
+  "tones": {
+    "professional": "Profesional",
+    "friendly": "Amigable",
+    "casual": "Casual",
+    "formal": "Formal",
+    "enthusiastic": "Entusiasta"
+  }
 }
