@@ -22,30 +22,63 @@ interface SelectedSlot {
   action: 'select' | 'click' | 'doubleClick';
 }
 
+// Função para carregar filtros do localStorage
+const loadFiltersFromStorage = (organizationId: string | undefined) => {
+  if (!organizationId) return null;
+  
+  try {
+    const storageKey = `appointmentsFilters_${organizationId}`;
+    const savedFilters = localStorage.getItem(storageKey);
+    if (savedFilters) {
+      return JSON.parse(savedFilters);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar filtros do localStorage:', error);
+  }
+  return null;
+};
+
 const AppointmentsPage: React.FC = () => {
   const { t } = useTranslation(['schedules', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const [searchParams] = useSearchParams();
   const organizationId = currentOrganizationMember?.organization?.id;
   const currentProviderId = currentOrganizationMember?.profile_id;
-  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+  
+  // Carregar filtros salvos
+  const savedFilters = useMemo(() => loadFiltersFromStorage(organizationId), [organizationId]);
+  
+  // Inicializar estados com valores salvos, se disponíveis
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(
+    savedFilters?.selectedScheduleId || null
+  );
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateAppointmentModal, setShowCreateAppointmentModal] = useState(false);
   const [showEditAppointmentModal, setShowEditAppointmentModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
-  const [isListView, setIsListView] = useState(true);
+  const [isListView, setIsListView] = useState(
+    savedFilters?.isListView !== undefined ? savedFilters.isListView : true
+  );
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
-  const [showAllSchedules, setShowAllSchedules] = useState(false);
-  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
-  const [selectedStatuses, setSelectedStatuses] = useState<Appointment['status'][]>(['scheduled', 'confirmed']);
+  const [showAllSchedules, setShowAllSchedules] = useState(
+    savedFilters?.showAllSchedules !== undefined ? savedFilters.showAllSchedules : false
+  );
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
+    savedFilters?.selectedProviderId || null
+  );
+  const [selectedStatuses, setSelectedStatuses] = useState<Appointment['status'][]>(
+    savedFilters?.selectedStatuses || ['scheduled', 'confirmed']
+  );
   const [loadingAppointmentId, setLoadingAppointmentId] = useState<string | null>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState<{
     appointmentId: string;
     newStatus: Appointment['status'];
   } | null>(null);
-  const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [showPendingOnly, setShowPendingOnly] = useState(
+    savedFilters?.showPendingOnly !== undefined ? savedFilters.showPendingOnly : false
+  );
   const [showCustomerEditModal, setShowCustomerEditModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const navigate = useNavigate();
@@ -92,14 +125,42 @@ const AppointmentsPage: React.FC = () => {
     return appointments.filter(appointment => appointment.status === 'scheduled').length;
   }, [appointments]);
   
+  // Chave para o localStorage
+  const storageKey = `appointmentsFilters_${organizationId || 'default'}`;
+
+  // Salvar os filtros no localStorage quando mudarem
+  useEffect(() => {
+    if (!organizationId) return;
+    
+    try {
+      const filtersToSave = {
+        isListView,
+        showAllSchedules,
+        selectedScheduleId,
+        selectedProviderId,
+        selectedStatuses,
+        showPendingOnly
+      };
+      
+      localStorage.setItem(storageKey, JSON.stringify(filtersToSave));
+    } catch (error) {
+      console.error('Erro ao salvar filtros no localStorage:', error);
+    }
+  }, [organizationId, storageKey, isListView, showAllSchedules, selectedScheduleId, selectedProviderId, selectedStatuses, showPendingOnly]);
+  
   // Atualizar os status selecionados quando mudar o filtro de pendentes
   useEffect(() => {
+    // Evita sobrescrever os status selecionados se estiver carregando do localStorage
+    if (savedFilters?.selectedStatuses && !showPendingOnly) {
+      return;
+    }
+    
     if (showPendingOnly) {
       setSelectedStatuses(['scheduled']);
     } else {
       setSelectedStatuses(['scheduled', 'confirmed']);
     }
-  }, [showPendingOnly]);
+  }, [showPendingOnly, savedFilters]);
   
   // Função para lidar com o clique no botão de pendentes
   const handlePendingClick = () => {
@@ -113,6 +174,12 @@ const AppointmentsPage: React.FC = () => {
     }
     // Fecha a janela de filtro
     setIsFilterExpanded(false);
+  };
+
+  // Função para selecionar a opção "Todos" no filtro de agendas
+  const handleSelectAllSchedules = () => {
+    setShowAllSchedules(true);
+    setSelectedScheduleId(null);
   };
   
   // Configurar subscrições em tempo real para agendamentos
@@ -174,10 +241,10 @@ const AppointmentsPage: React.FC = () => {
   
   // Selecionar a primeira agenda por padrão quando os dados são carregados
   React.useEffect(() => {
-    if (schedules?.length && !selectedScheduleId) {
+    if (schedules?.length && !selectedScheduleId && !showAllSchedules) {
       setSelectedScheduleId(schedules[0].id);
     }
-  }, [schedules, selectedScheduleId]);
+  }, [schedules, selectedScheduleId, showAllSchedules]);
   
   // Encontrar a agenda selecionada
   const selectedSchedule = selectedScheduleId 
@@ -249,6 +316,11 @@ const AppointmentsPage: React.FC = () => {
       // Se o novo status não incluir 'scheduled' ou incluir outros status, desativa o modo pendente
       if (!newStatuses.includes('scheduled') || newStatuses.length > 1) {
         setShowPendingOnly(false);
+      }
+      
+      // Caso não haja nenhum status selecionado, selecione pelo menos "scheduled"
+      if (newStatuses.length === 0) {
+        return ['scheduled'];
       }
       
       return newStatuses;
@@ -562,6 +634,16 @@ const AppointmentsPage: React.FC = () => {
                   {t('schedules:filterBySchedule')}
                 </h3>
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleSelectAllSchedules}
+                    className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm ${
+                      showAllSchedules 
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 font-medium'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {t('common:all')}
+                  </button>
                   {schedules?.map(schedule => (
                     <button
                       key={schedule.id}
@@ -571,13 +653,10 @@ const AppointmentsPage: React.FC = () => {
                           setShowAllSchedules(false);
                         }
                       }}
-                      disabled={showAllSchedules}
                       className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm ${
-                        showAllSchedules 
-                          ? 'opacity-60 cursor-not-allowed bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                          : selectedScheduleId === schedule.id
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 font-medium'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        !showAllSchedules && selectedScheduleId === schedule.id
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 font-medium'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       <div 
@@ -716,7 +795,7 @@ const AppointmentsPage: React.FC = () => {
                     <div key={date}>
                       <div className="sticky top-0 bg-white dark:bg-gray-800 py-2 mb-3 border-b border-gray-200 dark:border-gray-700">
                         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                          {format(new Date(date), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                          {format(new Date(`${date}T12:00:00`), "EEEE, d 'de' MMMM", { locale: ptBR })}
                         </h3>
                       </div>
                       <div className="space-y-4">
@@ -875,6 +954,51 @@ const AppointmentsPage: React.FC = () => {
                                 }`}>
                                   {appointment.service?.title || t('schedules:untitledService')}
                                 </p>
+                                {showAllSchedules && schedules && (
+                                  <div className="flex items-center mt-1 mb-2">
+                                    {(() => {
+                                      // A propriedade schedule_id é do tipo Schedule (objeto) e não string
+                                      const scheduleId = typeof appointment.schedule_id === 'string' 
+                                        ? appointment.schedule_id 
+                                        : appointment.schedule_id?.id;
+                                          
+                                      // Se já temos o objeto schedule_id com as informações, usamos ele diretamente
+                                      if (typeof appointment.schedule_id !== 'string' && appointment.schedule_id) {
+                                        return (
+                                          <>
+                                            <div 
+                                              className="w-2 h-2 rounded-full mr-1.5 flex-shrink-0" 
+                                              style={{ backgroundColor: appointment.schedule_id.color }}
+                                            ></div>
+                                            <p className={`text-xs text-gray-500 dark:text-gray-400 ${
+                                              appointment.status === 'canceled' ? 'line-through' : ''
+                                            }`}>
+                                              {appointment.schedule_id.title}
+                                            </p>
+                                          </>
+                                        );
+                                      }
+                                      
+                                      // Caso contrário, procuramos nos schedules
+                                      const appointmentSchedule = schedules.find(s => s.id === scheduleId);
+                                      if (!appointmentSchedule) return null;
+                                      
+                                      return (
+                                        <>
+                                          <div 
+                                            className="w-2 h-2 rounded-full mr-1.5 flex-shrink-0" 
+                                            style={{ backgroundColor: appointmentSchedule.color }}
+                                          ></div>
+                                          <p className={`text-xs text-gray-500 dark:text-gray-400 ${
+                                            appointment.status === 'canceled' ? 'line-through' : ''
+                                          }`}>
+                                            {appointmentSchedule.title}
+                                          </p>
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
                                 {appointment.notes && (
                                   <div className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                     <p className={`line-clamp-2 ${
@@ -1132,7 +1256,7 @@ const AppointmentsPage: React.FC = () => {
       )}
       
       {/* Modal de edição de agendamento */}
-      {showEditAppointmentModal && selectedAppointment && selectedScheduleId && (
+      {showEditAppointmentModal && selectedAppointment && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
           onClick={() => {
@@ -1162,7 +1286,7 @@ const AppointmentsPage: React.FC = () => {
             </div>
             <div className="p-2 md:p-6">
               <AppointmentForm 
-                scheduleId={selectedScheduleId}
+                scheduleId={selectedAppointment.schedule_id?.id || selectedAppointment.schedule_id?.toString() || selectedScheduleId || ''}
                 appointment={selectedAppointment}
                 onSuccess={handleAppointmentUpdated}
                 onCancel={() => {
