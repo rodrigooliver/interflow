@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, ChevronRight, AlertTriangle, File, Plus, Wand2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Type, Info, MessageSquare, Thermometer, Cpu, ChevronDown, Wrench, Settings, GitBranch, Trash2, ExternalLink, ChevronUp, Clock, Play, ChevronRight, AlertTriangle, File, Plus, Wand2, HelpCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useOpenAIModels, useOpenAIIntegrations } from '../../hooks/useQueryes';
@@ -24,6 +24,7 @@ import MediaList from './MediaList';
 import ExtraContextModal from './ExtraContextModal';
 import ExtraContextList from './ExtraContextList';
 import api from '../../lib/api';
+import PromptUnknownModal from './PromptUnknownModal';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -560,6 +561,7 @@ const PromptFormMain: React.FC = () => {
   const [showContextModal, setShowContextModal] = useState(false);
   const [editingContext, setEditingContext] = useState<ExtraContext | undefined>();
   const [showGeneratePromptModal, setShowGeneratePromptModal] = useState(false);
+  const [showUnknownQuestionsModal, setShowUnknownQuestionsModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -928,6 +930,17 @@ const PromptFormMain: React.FC = () => {
     });
     
     setShowGeneratePromptModal(false);
+  };
+
+  // Adicionar uma nova função para lidar com a adição de texto ao contexto
+  const handleAddToFormContext = (response: string) => {
+    // Adicionar um divisor e o texto no final do contexto atual
+    const updatedContent = formData.content.trim() + '\n\n---\n\n' + response;
+    
+    setFormData({
+      ...formData,
+      content: updatedContent
+    });
   };
 
   return (
@@ -1558,7 +1571,8 @@ const PromptFormMain: React.FC = () => {
                       
                       <div className="mb-4">
                         <div className="flex justify-between items-center -mb-2">
-                          <button
+                          <div className="flex items-center space-x-2">
+                            <button
                               type="button"
                               onClick={() => setShowGeneratePromptModal(true)}
                               className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -1566,6 +1580,18 @@ const PromptFormMain: React.FC = () => {
                               <Wand2 className="w-4 h-4 mr-1" />
                               {t('prompts:generatePrompt.button', 'Gerar Atendente Virtual')}
                             </button>
+                            
+                            {id && (
+                              <button
+                                type="button"
+                                onClick={() => setShowUnknownQuestionsModal(true)}
+                                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+                              >
+                                <HelpCircle className="w-4 h-4 mr-1" />
+                                {t('prompts:unknowns.buttonLabel', 'Perguntas Sem Contexto')}
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <ContentEditor 
                           content={formData.content} 
@@ -1914,6 +1940,17 @@ const PromptFormMain: React.FC = () => {
           onClose={() => setShowGeneratePromptModal(false)}
           onGenerate={handleGeneratedPrompt}
           organizationId={currentOrganizationMember.organization.id}
+        />
+      )}
+
+      {/* Modal para perguntas sem contexto */}
+      {id && currentOrganizationMember && (
+        <PromptUnknownModal
+          isOpen={showUnknownQuestionsModal}
+          onClose={() => setShowUnknownQuestionsModal(false)}
+          promptId={id}
+          organizationId={currentOrganizationMember.organization.id}
+          onAddToFormContext={handleAddToFormContext}
         />
       )}
     </div>

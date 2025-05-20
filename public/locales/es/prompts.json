@@ -325,9 +325,9 @@
         "description": "Crear una tarea cuando... (ejemplo: el cliente dice 'crea una tarea para mí')"
       },
       "unknownResponse": {
-        "name": "Cuando el Agente No Sabe",
-        "nameInsert": "Cuando el Agente No Sabe",
-        "description": "Define cómo manejar información que el agente IA no conoce",
+        "name": "Cuando no hay respuesta en el contexto",
+        "nameInsert": "Cuando no hay respuesta en el contexto",
+        "description": "Define cómo manejar preguntas que no están en el contexto",
         "options": {
           "pauseAgent": "Pausar agente inmediatamente",
           "saveQuestion": "Guardar pregunta para revisión",
@@ -515,5 +515,32 @@
     "casual": "Casual",
     "formal": "Formal",
     "enthusiastic": "Entusiasta"
+  },
+  "unknowns": {
+    "title": "Preguntas Sin Contexto",
+    "loadError": "Error al cargar preguntas desconocidas",
+    "updateError": "Error al actualizar la pregunta",
+    "suggestResponseError": "Error al sugerir respuesta",
+    "empty": "Sin preguntas pendientes",
+    "emptyDescription": "No hay preguntas sin contexto pendientes para este prompt",
+    "priority": {
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Baja"
+    },
+    "viewChat": "Ver conversación",
+    "viewChatButton": "Ver Conversación",
+    "count": "Pregunta {{current}} de {{total}}",
+    "question": "Pregunta",
+    "existingContent": "Contenido Actual",
+    "notes": "Notas",
+    "response": "Respuesta para agregar al contexto",
+    "responsePlaceholder": "Escribe la respuesta que se agregará al contexto...",
+    "suggestResponse": "Sugerir respuesta con IA",
+    "suggesting": "Sugiriendo...",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "reject": "Rechazar",
+    "addToContext": "Agregar al Contexto"
   }
 }

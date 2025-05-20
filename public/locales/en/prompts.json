@@ -324,9 +324,9 @@
         "description": "Create a task when... (example: customer says 'create a task for me')"
       },
       "unknownResponse": {
-        "name": "When Agent Doesn't Know",
-        "nameInsert": "When Agent Doesn't Know",
-        "description": "Define how to handle information the AI agent doesn't know",
+        "name": "When there is no answer in the context",
+        "nameInsert": "When there is no answer in the context",
+        "description": "Define how to handle questions that are not in the context",
         "options": {
           "pauseAgent": "Pause agent immediately",
           "saveQuestion": "Save question for review",
@@ -514,5 +514,32 @@
     "casual": "Casual",
     "formal": "Formal",
     "enthusiastic": "Enthusiastic"
+  },
+  "unknowns": {
+    "title": "Questions Without Context",
+    "loadError": "Error loading unknown questions",
+    "updateError": "Error updating question",
+    "suggestResponseError": "Error suggesting response",
+    "empty": "No pending questions",
+    "emptyDescription": "There are no pending questions without context for this prompt",
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "viewChat": "View conversation",
+    "viewChatButton": "View Conversation",
+    "count": "Question {{current}} of {{total}}",
+    "question": "Question",
+    "existingContent": "Current Content",
+    "notes": "Notes",
+    "response": "Response to add to context",
+    "responsePlaceholder": "Write the response that will be added to the context...",
+    "suggestResponse": "Suggest response with AI",
+    "suggesting": "Suggesting...",
+    "previous": "Previous",
+    "next": "Next",
+    "reject": "Reject",
+    "addToContext": "Add to Context"
   }
 }
