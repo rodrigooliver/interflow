@@ -138,6 +138,7 @@
   "service": "Service",
   "selectService": "Select a service",
   "selectCustomer": "Select a customer",
+  "selectScheduleError": "Select a schedule to continue",
   "startTime": "Start time",
   "endTime": "End time",
   "notes": "Notes",

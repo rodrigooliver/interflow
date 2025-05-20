@@ -263,7 +263,16 @@ const AppointmentsPage: React.FC = () => {
   
   // Função para criar um novo agendamento
   const handleCreateAppointment = () => {
-    setShowCreateAppointmentModal(true);
+    // Se não houver agenda selecionada, selecionar a primeira disponível
+    if (!selectedScheduleId && schedules && schedules.length > 0) {
+      setSelectedScheduleId(schedules[0].id);
+      // Atrasar a abertura do modal para garantir que o selectedScheduleId seja atualizado
+      setTimeout(() => {
+        setShowCreateAppointmentModal(true);
+      }, 100);
+    } else {
+      setShowCreateAppointmentModal(true);
+    }
   };
   
   // Função para lidar com o sucesso da criação da agenda
@@ -461,9 +470,17 @@ const AppointmentsPage: React.FC = () => {
   useEffect(() => {
     const shouldCreate = searchParams.get('create') === 'true';
     if (shouldCreate) {
-      setShowCreateAppointmentModal(true);
+      // Se não houver agenda selecionada, selecionar a primeira disponível
+      if (!selectedScheduleId && schedules && schedules.length > 0) {
+        setSelectedScheduleId(schedules[0].id);
+      }
+      
+      // Atrasar a abertura do modal para garantir que o selectedScheduleId seja atualizado
+      setTimeout(() => {
+        setShowCreateAppointmentModal(true);
+      }, 100);
     }
-  }, [searchParams]);
+  }, [searchParams, selectedScheduleId, schedules]);
   
   // Exibir mensagem de carregamento ou de nenhuma agenda
   if (isLoadingSchedules) {
@@ -1211,7 +1228,7 @@ const AppointmentsPage: React.FC = () => {
       )}
       
       {/* Modal de criação de agendamento */}
-      {showCreateAppointmentModal && selectedScheduleId && (
+      {showCreateAppointmentModal && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
           onClick={() => {
@@ -1241,7 +1258,7 @@ const AppointmentsPage: React.FC = () => {
             </div>
             <div className="p-2 md:p-6">
               <AppointmentForm 
-                scheduleId={selectedScheduleId}
+                scheduleId={selectedScheduleId || undefined}
                 initialDate={selectedSlot ? selectedSlot.start : undefined}
                 initialEndDate={selectedSlot ? selectedSlot.end : undefined}
                 onSuccess={handleAppointmentCreated}

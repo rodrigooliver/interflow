@@ -6,13 +6,14 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Calendar, Clock, User, Calendar as CalendarIcon, MessageSquare, Video, Bell, AlertTriangle, CheckCircle2, Scissors, Users } from 'lucide-react';
 import { format } from 'date-fns';
-import { useScheduleProviders, useScheduleServices, useCustomers } from '../../hooks/useQueryes';
+import { useScheduleProviders, useScheduleServices, useCustomers, useSchedules } from '../../hooks/useQueryes';
 
 interface AppointmentFormProps {
   appointment?: Appointment;
-  scheduleId: string;
+  scheduleId?: string; // Agora é opcional
   initialDate?: Date;
   initialEndDate?: Date;
+  initialCustomerId?: string; // Novo parâmetro para pré-selecionar cliente
   onSuccess: (appointment: Appointment) => void;
   onCancel: () => void;
 }
@@ -22,6 +23,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   scheduleId,
   initialDate,
   initialEndDate,
+  initialCustomerId,
   onSuccess, 
   onCancel 
 }) => {
@@ -33,17 +35,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
-  // Buscar dados necessários
-  const { data: providers } = useScheduleProviders(scheduleId);
-  const { data: services } = useScheduleServices(scheduleId);
-  const { data: customers } = useCustomers(organizationId);
+  // Buscar agendas disponíveis
+  const { data: schedules } = useSchedules(organizationId);
   
   // Estado do formulário
   const [formData, setFormData] = useState<AppointmentFormData>({
-    schedule_id: scheduleId,
+    schedule_id: scheduleId || '',
     provider_id: appointment?.provider_id || '',
     service_id: appointment?.service_id || '',
-    customer_id: appointment?.customer_id || '',
+    customer_id: appointment?.customer_id || initialCustomerId || '',
     status: appointment?.status || 'scheduled',
     date: appointment?.date || (initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')),
     start_time: appointment?.start_time || (initialDate ? format(initialDate, 'HH:mm:ss') : '09:00:00'),
@@ -55,6 +55,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     reminder_types: ['email'],
   });
   
+  // Buscar dados específicos da agenda selecionada
+  const { data: providers } = useScheduleProviders(formData.schedule_id);
+  const { data: services } = useScheduleServices(formData.schedule_id);
+  const { data: customers } = useCustomers(organizationId);
+  
   // Estado para controlar a animação de destaque do campo de horário de término
   const [highlightEndTime, setHighlightEndTime] = useState(false);
   
@@ -63,6 +68,18 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     by_arrival_time: boolean;
     capacity: number;
   } | null>(null);
+
+  // Função para lidar com a mudança da agenda
+  const handleScheduleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newScheduleId = e.target.value;
+    setFormData(prev => ({ 
+      ...prev, 
+      schedule_id: newScheduleId,
+      // Resetar valores que dependem da agenda
+      provider_id: '',
+      service_id: ''
+    }));
+  };
 
   // Efeito para atualizar o horário de término quando o serviço ou hora de início mudar
   useEffect(() => {
@@ -249,6 +266,13 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     setError(null);
     setSuccess(null);
 
+    // Validar campo de agenda
+    if (!formData.schedule_id) {
+      setError(t('schedules:selectScheduleError'));
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const appointmentData = {
         schedule_id: formData.schedule_id,
@@ -357,6 +381,38 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          {/* Seleção de Agenda - mostrar apenas quando for um novo agendamento */}
+          {!appointment && (
+            <div>
+              <label htmlFor="schedule_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <CalendarIcon className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                {t('schedules:schedule')} *
+              </label>
+              <div className="relative">
+                <select
+                  id="schedule_id"
+                  name="schedule_id"
+                  value={formData.schedule_id}
+                  onChange={handleScheduleChange}
+                  required
+                  className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
+                >
+                  <option value="" disabled>{t('schedules:selectSchedule')}</option>
+                  {schedules?.map(schedule => (
+                    <option key={schedule.id} value={schedule.id}>
+                      {schedule.title}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Seleção de Profissional */}
           <div>
             <label htmlFor="provider_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
@@ -370,7 +426,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 value={formData.provider_id}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
+                disabled={!formData.schedule_id}
+                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="" disabled>{t('schedules:selectProvider')}</option>
                 {providers?.map(provider => (

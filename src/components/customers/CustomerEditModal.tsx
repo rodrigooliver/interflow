@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Loader2, Plus, Calendar } from 'lucide-react';
+import { X, Loader2, Plus, Calendar, CalendarDays } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
-import { Customer, ContactType, Chat } from '../../types/database';
+import { Customer, ContactType, Chat, Schedule, Appointment } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { updateCustomerTags } from '../../services/customerService';
 import * as Tooltip from '@radix-ui/react-tooltip';
@@ -17,6 +17,11 @@ import { TaskModal } from '../tasks/TaskModal';
 import { TaskWithRelations } from '../../types/tasks';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import AppointmentCard from '../schedules/AppointmentCard';
+import AppointmentForm from '../schedules/AppointmentForm';
 
 // Interface para contatos do cliente
 interface CustomerContact {
@@ -25,19 +30,6 @@ interface CustomerContact {
   value: string;
   label: string | null;
   customer_id: string;
-}
-
-// Interface para agendamentos
-interface Appointment {
-  id: string;
-  title: string;
-  description: string | null;
-  start_time: string;
-  end_time: string;
-  customer_id: string;
-  created_by: string;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
-  created_at: string;
 }
 
 interface CustomerEditModalProps {
@@ -1454,24 +1446,47 @@ function CustomerAppointmentsTab({ customer, organizationId }: { customer: Custo
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showEditAppointmentModal, setShowEditAppointmentModal] = useState(false);
+  const [showCreateAppointmentModal, setShowCreateAppointmentModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const navigate = useNavigate();
 
+  // Carregar agendamentos e agendas disponíveis
   useEffect(() => {
-    async function loadAppointments() {
+    async function loadData() {
       if (!customer.id || !organizationId) return;
       
       setIsLoading(true);
       setError('');
       
       try {
-        const { data, error: fetchError } = await supabase
+        // Carregar agendamentos com mais detalhes
+        const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
-          .select('*')
+          .select(`
+            *,
+            customer:customers!appointments_customer_id_fkey(*),
+            service:schedule_services(*),
+            provider:profiles(*),
+            schedule:schedules(*)
+          `)
           .eq('customer_id', customer.id)
+          .order('date', { ascending: false })
           .order('start_time', { ascending: false });
           
-        if (fetchError) throw fetchError;
+        if (appointmentsError) throw appointmentsError;
         
-        setAppointments(data || []);
+        // Carregar agendas para exibir informações completas
+        const { data: schedulesData, error: schedulesError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('organization_id', organizationId);
+          
+        if (schedulesError) throw schedulesError;
+        
+        setAppointments(appointmentsData || []);
+        setSchedules(schedulesData || []);
       } catch (err) {
         console.error('Erro ao carregar agendamentos:', err);
         setError(t('error.loading', { ns: 'schedules' }));
@@ -1480,60 +1495,74 @@ function CustomerAppointmentsTab({ customer, organizationId }: { customer: Custo
       }
     }
     
-    loadAppointments();
+    loadData();
   }, [customer.id, organizationId, t]);
 
-  // Formatação de data
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric'
-    });
+  // Função para lidar com a edição de um agendamento
+  const handleEditAppointment = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setShowEditAppointmentModal(true);
   };
 
-  // Formatação de hora
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Função para obter a cor do status
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-      case 'no_show':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+  // Função para recarregar dados
+  const loadData = async () => {
+    if (!customer.id || !organizationId) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Carregar agendamentos com mais detalhes
+      const { data: appointmentsData, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          customer:customers!appointments_customer_id_fkey(*),
+          service:schedule_services(*),
+          provider:profiles(*),
+          schedule:schedules(*)
+        `)
+        .eq('customer_id', customer.id)
+        .order('date', { ascending: false })
+        .order('start_time', { ascending: false });
+        
+      if (appointmentsError) throw appointmentsError;
+      
+      setAppointments(appointmentsData || []);
+    } catch (err) {
+      console.error('Erro ao recarregar agendamentos:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Função para traduzir o status
-  const translateStatus = (status: string) => {
-    return t(`statuses.${status}`, { ns: 'schedules' });
+  // Função para navegar para a página de chat
+  const handleGoToChat = (chatId: Chat | undefined) => {
+    if(!chatId) return;
+    navigate(`/app/chat/${chatId}`);
   };
+
+  // Função para agrupar agendamentos por data
+  const groupedAppointments = React.useMemo(() => {
+    if (!appointments) return {};
+    
+    return appointments.reduce((acc, appointment) => {
+      const date = appointment.date;
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(appointment);
+      return acc;
+    }, {} as Record<string, typeof appointments>);
+  }, [appointments]);
 
   return (
     <div className="p-6">
       <div className="mb-4 flex justify-end">
         <button
-          onClick={() => {
-            // Implementar lógica para adicionar agendamento
-            toast(t('createAppointmentFeature', { ns: 'schedules' }));
-          }}
-          className="flex items-center px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          onClick={() => setShowCreateAppointmentModal(true)}
+          className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          <Calendar className="w-4 h-4 mr-1" />
+          <CalendarDays className="w-4 h-4 mr-1" />
           {t('addAppointment', { ns: 'schedules' })}
         </button>
       </div>
@@ -1553,54 +1582,120 @@ function CustomerAppointmentsTab({ customer, organizationId }: { customer: Custo
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {appointments.map(appointment => (
-            <div 
-              key={appointment.id} 
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 dark:text-white mb-1">
-                    {appointment.title}
-                  </h3>
-                  
-                  <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 dark:text-gray-400 mb-2 gap-2">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      <span>{formatDate(appointment.start_time)}</span>
-                    </div>
-                    <div className="hidden sm:block text-gray-300 dark:text-gray-600">|</div>
-                    <div>
-                      {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
-                    </div>
-                  </div>
-                  
-                  {appointment.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                      {appointment.description}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="flex flex-row md:flex-col items-start md:items-end gap-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(appointment.status)}`}>
-                    {translateStatus(appointment.status)}
-                  </span>
-                  
-                  <button
-                    onClick={() => {
-                      // Implementar lógica para editar agendamento
-                      toast(t('editAppointmentFeature', { ns: 'schedules' }));
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                  >
-                    {t('edit', { ns: 'common' })}
-                  </button>
-                </div>
+        <div className="space-y-6">
+          {Object.entries(groupedAppointments).map(([date, dateAppointments]) => (
+            <div key={date}>
+              <div className="sticky top-0 bg-white dark:bg-gray-800 py-2 mb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  {format(new Date(`${date}T12:00:00`), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {dateAppointments.map((appointment) => (
+                  <React.Suspense key={appointment.id} fallback={<div className="animate-pulse h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>}>
+                    <AppointmentCard
+                      appointment={appointment}
+                      onEdit={handleEditAppointment}
+                      onCustomerEdit={() => {/* Não é necessário, já estamos no modal do cliente */}}
+                      onChatOpen={handleGoToChat}
+                      showScheduleName={true}
+                      schedules={schedules}
+                      hideCustomerEditButton={true}
+                    />
+                  </React.Suspense>
+                ))}
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal de criação de agendamento */}
+      {showCreateAppointmentModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+          onClick={() => setShowCreateAppointmentModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+                <Calendar className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                {t('schedules:newAppointment')}
+              </h2>
+              <button 
+                onClick={() => setShowCreateAppointmentModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-2 md:p-6">
+              <AppointmentForm 
+                initialCustomerId={customer.id}
+                onSuccess={() => {
+                  setShowCreateAppointmentModal(false);
+                  loadData();
+                }}
+                onCancel={() => setShowCreateAppointmentModal(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edição de agendamento */}
+      {showEditAppointmentModal && selectedAppointment && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+          onClick={() => {
+            setShowEditAppointmentModal(false);
+            setSelectedAppointment(null);
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+                <Calendar className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                {t('schedules:editAppointment')}
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowEditAppointmentModal(false);
+                  setSelectedAppointment(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-2 md:p-6">
+              <AppointmentForm 
+                scheduleId={
+                  typeof selectedAppointment.schedule_id === 'string'
+                    ? selectedAppointment.schedule_id
+                    : selectedAppointment.schedule_id?.id || ''
+                }
+                appointment={selectedAppointment}
+                onSuccess={() => {
+                  setShowEditAppointmentModal(false);
+                  setSelectedAppointment(null);
+                  loadData();
+                }}
+                onCancel={() => {
+                  setShowEditAppointmentModal(false);
+                  setSelectedAppointment(null);
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

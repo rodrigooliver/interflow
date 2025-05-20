@@ -137,6 +137,7 @@
   "service": "Serviço",
   "selectService": "Selecione um serviço",
   "selectCustomer": "Selecione um cliente",
+  "selectScheduleError": "Selecione uma agenda para continuar",
   "startTime": "Horário de início",
   "endTime": "Horário de término",
   "notes": "Observações",
