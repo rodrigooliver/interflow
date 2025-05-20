@@ -1,19 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppointmentFormData } from '../../types/schedules'; 
 import { Appointment } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Calendar, Clock, User, Calendar as CalendarIcon, MessageSquare, Video, Bell, AlertTriangle, CheckCircle2, Scissors, Users } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  User, 
+  Calendar as CalendarIcon, 
+  MessageSquare, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Scissors, 
+  Users,
+  Loader2,
+  X
+} from 'lucide-react';
 import { format } from 'date-fns';
-import { useScheduleProviders, useScheduleServices, useCustomers, useSchedules } from '../../hooks/useQueryes';
+import { useScheduleProviders, useScheduleServices, useSchedules } from '../../hooks/useQueryes';
+
+// Lazy load o modal de seleção de cliente
+const CustomerSelectModal = lazy(() => import('../customers/CustomerSelectModal'));
 
 interface AppointmentFormProps {
   appointment?: Appointment;
-  scheduleId?: string; // Agora é opcional
+  scheduleId?: string; // Opcional
   initialDate?: Date;
   initialEndDate?: Date;
-  initialCustomerId?: string; // Novo parâmetro para pré-selecionar cliente
+  initialCustomerId?: string; // Para pré-selecionar cliente
   onSuccess: (appointment: Appointment) => void;
   onCancel: () => void;
 }
@@ -58,7 +73,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   // Buscar dados específicos da agenda selecionada
   const { data: providers } = useScheduleProviders(formData.schedule_id);
   const { data: services } = useScheduleServices(formData.schedule_id);
-  const { data: customers } = useCustomers(organizationId);
   
   // Estado para controlar a animação de destaque do campo de horário de término
   const [highlightEndTime, setHighlightEndTime] = useState(false);
@@ -68,6 +82,60 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     by_arrival_time: boolean;
     capacity: number;
   } | null>(null);
+  
+  // Estado para validação de formulário
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  
+  // Novo estado para cliente selecionado e modal
+  const [selectedCustomer, setSelectedCustomer] = useState<{id: string; name: string; profile_picture?: string} | null>(null);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  
+  // Funções para o modal de cliente
+  const handleOpenCustomerModal = () => {
+    setIsCustomerModalOpen(true);
+  };
+  
+  const handleSelectCustomer = (customer: {id: string; name: string; profile_picture?: string}) => {
+    setSelectedCustomer(customer);
+    setFormData(prev => ({
+      ...prev,
+      customer_id: customer.id
+    }));
+    setIsCustomerModalOpen(false);
+  };
+  
+  // Carregar o cliente se o initialCustomerId for fornecido
+  useEffect(() => {
+    if ((initialCustomerId || formData.customer_id) && !selectedCustomer) {
+      // Buscar informações do cliente
+      const fetchCustomer = async () => {
+        try {
+          const customerId = initialCustomerId || formData.customer_id;
+          if (!customerId) return;
+          
+          const { data, error } = await supabase
+            .from('customers')
+            .select('id, name, profile_picture')
+            .eq('id', customerId)
+            .single();
+          
+          if (error) throw error;
+          
+          if (data) {
+            setSelectedCustomer({
+              id: data.id,
+              name: data.name,
+              profile_picture: data.profile_picture
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao buscar cliente:', error);
+        }
+      };
+      
+      fetchCustomer();
+    }
+  }, [initialCustomerId, formData.customer_id, selectedCustomer]);
 
   // Função para lidar com a mudança da agenda
   const handleScheduleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -121,8 +189,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           }
         }
         
-        console.log(`Duração do serviço: ${selectedService.duration}, calculado: ${durationInMinutes} minutos`);
-        
         if (durationInMinutes > 0) {
           // Converter o horário de início para um objeto Date
           const [hours, minutes, seconds] = formData.start_time.split(':').map(Number);
@@ -134,8 +200,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           const endHours = endDate.getHours().toString().padStart(2, '0');
           const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
           const endTime = `${endHours}:${endMinutes}:00`;
-          
-          console.log(`Calculando horário de término: serviço com duração de ${durationInMinutes} minutos, início ${formData.start_time}, término ${endTime}`);
           
           // Atualizar o horário de término e ativar o destaque
           if (endTime !== formData.end_time) {
@@ -163,100 +227,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const serviceId = e.target.value;
     setFormData(prev => ({ ...prev, service_id: serviceId }));
-    
-    if (serviceId && formData.start_time) {
-      const selectedService = services?.find(s => s.id === serviceId);
-      if (selectedService) {
-        // Atualizar informações do serviço selecionado
-        setSelectedServiceInfo({
-          by_arrival_time: selectedService.by_arrival_time || false,
-          capacity: selectedService.capacity || 1
-        });
-        
-        // Converter o formato de duração HH:MM:SS para minutos
-        let durationInMinutes = 0;
-        
-        // Verificar se está no formato HH:MM:SS
-        const timeFormatMatch = selectedService.duration.match(/(\d{2}):(\d{2}):(\d{2})/);
-        if (timeFormatMatch) {
-          const hours = parseInt(timeFormatMatch[1]);
-          const minutes = parseInt(timeFormatMatch[2]);
-          durationInMinutes = hours * 60 + minutes;
-        } else {
-          // Verificar se é em minutos
-          const minutesMatch = selectedService.duration.match(/(\d+)\s*min/i);
-          if (minutesMatch) {
-            durationInMinutes = parseInt(minutesMatch[1]);
-          } else {
-            // Verificar se é em horas
-            const hoursMatch = selectedService.duration.match(/(\d+)\s*h/i);
-            if (hoursMatch) {
-              durationInMinutes = parseInt(hoursMatch[1]) * 60;
-            } else {
-              // Tentar extrair apenas o número
-              const numberMatch = selectedService.duration.match(/^(\d+)/);
-              if (numberMatch) {
-                durationInMinutes = parseInt(numberMatch[1]);
-              }
-            }
-          }
-        }
-        
-        if (durationInMinutes > 0) {
-          // Converter o horário de início para um objeto Date
-          const [hours, minutes, seconds] = formData.start_time.split(':').map(Number);
-          const startDate = new Date();
-          startDate.setHours(hours || 0, minutes || 0, seconds || 0);
-          
-          // Adicionar a duração do serviço para obter o horário de término
-          const endDate = new Date(startDate.getTime() + durationInMinutes * 60000);
-          const endHours = endDate.getHours().toString().padStart(2, '0');
-          const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
-          const endTime = `${endHours}:${endMinutes}:00`;
-          
-          // Atualizar o horário de término e ativar o destaque
-          setFormData(prev => ({ 
-            ...prev, 
-            end_time: endTime,
-            // Atualizar time_slot se for por ordem de chegada
-            time_slot: selectedService.by_arrival_time 
-              ? `${formData.start_time.substring(0, 5)}-${endTime.substring(0, 5)}`
-              : formData.start_time.substring(0, 5)
-          }));
-          setHighlightEndTime(true);
-          
-          // Desativar o destaque após 1.5 segundos
-          setTimeout(() => {
-            setHighlightEndTime(false);
-          }, 1500);
-        }
-      }
-    }
   };
 
   // Manipular mudanças nos campos
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Manipular mudanças em checkboxes
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
-  };
-
-  // Manipular mudanças nos tipos de lembretes
-  const handleReminderTypeChange = (type: 'email' | 'sms' | 'whatsapp', checked: boolean) => {
-    setFormData(prev => {
-      const currentTypes = prev.reminder_types || [];
-      if (checked && !currentTypes.includes(type)) {
-        return { ...prev, reminder_types: [...currentTypes, type] };
-      } else if (!checked && currentTypes.includes(type)) {
-        return { ...prev, reminder_types: currentTypes.filter(t => t !== type) };
-      }
-      return prev;
-    });
   };
 
   // Enviar formulário
@@ -266,10 +242,25 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     setError(null);
     setSuccess(null);
 
-    // Validar campo de agenda
+    // Validação de campos obrigatórios
     if (!formData.schedule_id) {
       setError(t('schedules:selectScheduleError'));
       setIsLoading(false);
+      setShowValidationErrors(true);
+      return;
+    }
+
+    if (!formData.provider_id) {
+      setError(t('schedules:selectProviderError', 'Selecione um profissional'));
+      setIsLoading(false);
+      setShowValidationErrors(true);
+      return;
+    }
+
+    if (!formData.service_id) {
+      setError(t('schedules:selectServiceError', 'Selecione um serviço'));
+      setIsLoading(false);
+      setShowValidationErrors(true);
       return;
     }
 
@@ -285,11 +276,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         end_time: formData.end_time,
         time_slot: formData.time_slot || null,
         notes: formData.notes || null,
-        has_videoconference: formData.create_videoconference || false,
+        has_videoconference: false, // Removido temporariamente
         organization_id: organizationId,
       };
-
-      console.log('appointmentData', appointmentData);
 
       if (appointment?.id) {
         // Atualizar agendamento existente
@@ -302,15 +291,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
         if (error) throw error;
         
-        // Configurar lembretes se necessário
+        // Configurar lembretes se necessário (comentado temporariamente)
+        /*
         if (formData.send_reminders && formData.reminder_types?.length) {
           // Aqui iríamos criar ou atualizar os lembretes
-          // Implementação simplificada: apenas registramos os lembretes
           console.log('Configurar lembretes:', {
             appointment_id: data.id,
             types: formData.reminder_types
           });
         }
+        */
         
         setSuccess(t('schedules:appointmentUpdatedSuccess'));
         setTimeout(() => {
@@ -326,15 +316,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
         if (error) throw error;
         
-        // Configurar lembretes se necessário
+        // Configurar lembretes se necessário (comentado temporariamente)
+        /*
         if (formData.send_reminders && formData.reminder_types?.length) {
           // Aqui iríamos criar os lembretes
-          // Implementação simplificada: apenas registramos os lembretes
           console.log('Configurar lembretes:', {
             appointment_id: data.id,
             types: formData.reminder_types
           });
         }
+        */
         
         setSuccess(t('schedules:appointmentCreatedSuccess'));
         setTimeout(() => {
@@ -352,7 +343,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-1 sm:p-1 md:p-2 rounded-lg shadow-md max-w-2xl mx-auto">
+    <div className="bg-white dark:bg-gray-800 max-w-2xl mx-auto">
       {/* <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center">
         <CalendarIcon className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
         {appointment ? t('schedules:editAppointment') : t('schedules:newAppointment')}
@@ -360,9 +351,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       
       {/* Feedback de mensagens */}
       {error && (
-        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-md text-red-700 dark:text-red-400">
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-md text-red-700 dark:text-red-400">
           <div className="flex items-center mb-1">
-            <AlertTriangle className="h-5 w-5 mr-2" />
+            <AlertTriangle className="h-4 w-4 mr-2" />
             <span className="font-medium">{t('common:error')}</span>
           </div>
           <p className="text-sm">{error}</p>
@@ -370,377 +361,362 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       )}
       
       {success && (
-        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-800 rounded-md text-green-700 dark:text-green-400">
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-800 rounded-md text-green-700 dark:text-green-400">
           <div className="flex items-center mb-1">
-            <CheckCircle2 className="h-5 w-5 mr-2" />
+            <CheckCircle2 className="h-4 w-4 mr-2" />
             <span className="font-medium">{t('common:success')}</span>
           </div>
           <p className="text-sm">{success}</p>
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          {/* Seleção de Agenda - mostrar apenas quando for um novo agendamento */}
-          {!appointment && (
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Coluna Esquerda */}
+          <div className="space-y-4">
+            {/* Seleção de Agenda - mostrar apenas quando for um novo agendamento */}
+            {!appointment && (
+              <div>
+                <label htmlFor="schedule_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                  <CalendarIcon className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                  {t('schedules:schedule')} <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    id="schedule_id"
+                    name="schedule_id"
+                    value={formData.schedule_id}
+                    onChange={handleScheduleChange}
+                    required
+                    className={`w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      showValidationErrors && !formData.schedule_id
+                        ? 'border-red-300 dark:border-red-600'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
+                    <option value="" disabled>{t('schedules:selectSchedule')}</option>
+                    {schedules?.map(schedule => (
+                      <option key={schedule.id} value={schedule.id}>
+                        {schedule.title}
+                      </option>
+                    ))}
+                  </select>
+                  {showValidationErrors && !formData.schedule_id && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {t('schedules:selectScheduleError', 'Selecione uma agenda')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Seleção de Profissional */}
             <div>
-              <label htmlFor="schedule_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <CalendarIcon className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-                {t('schedules:schedule')} *
+              <label htmlFor="provider_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <User className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                {t('schedules:provider')} <span className="text-red-500 ml-1">*</span>
               </label>
               <div className="relative">
                 <select
-                  id="schedule_id"
-                  name="schedule_id"
-                  value={formData.schedule_id}
-                  onChange={handleScheduleChange}
+                  id="provider_id"
+                  name="provider_id"
+                  value={formData.provider_id}
+                  onChange={handleChange}
                   required
-                  className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
+                  disabled={!formData.schedule_id}
+                  className={`w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                    showValidationErrors && !formData.provider_id
+                      ? 'border-red-300 dark:border-red-600'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
                 >
-                  <option value="" disabled>{t('schedules:selectSchedule')}</option>
-                  {schedules?.map(schedule => (
-                    <option key={schedule.id} value={schedule.id}>
-                      {schedule.title}
+                  <option value="" disabled>{t('schedules:selectProvider')}</option>
+                  {providers?.map(provider => (
+                    <option key={provider.id} value={provider.profile_id}>
+                      {provider.name}
                     </option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
-                </div>
+                {showValidationErrors && !formData.provider_id && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {t('schedules:selectProviderError', 'Selecione um profissional')}
+                  </p>
+                )}
               </div>
             </div>
-          )}
-          
-          {/* Seleção de Profissional */}
-          <div>
-            <label htmlFor="provider_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <User className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:provider')} *
-            </label>
-            <div className="relative">
-              <select
-                id="provider_id"
-                name="provider_id"
-                value={formData.provider_id}
-                onChange={handleChange}
-                required
-                disabled={!formData.schedule_id}
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <option value="" disabled>{t('schedules:selectProvider')}</option>
-                {providers?.map(provider => (
-                  <option key={provider.id} value={provider.profile_id}>
-                    {provider.name}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          {/* Seleção de Serviço */}
-          <div>
-            <label htmlFor="service_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <Scissors className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:service')} *
-            </label>
-            <select
-              id="service_id"
-              name="service_id"
-              value={formData.service_id}
-              onChange={handleServiceChange}
-              required
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm"
-            >
-              <option value="">{t('schedules:selectService')}</option>
-              {services?.map(service => (
-                <option key={service.id} value={service.id}>
-                  {service.title} - {service.duration}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Seleção de Cliente */}
-          <div>
-            <label htmlFor="customer_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <User className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:customer')}
-            </label>
-            <div className="relative">
-              <select
-                id="customer_id"
-                name="customer_id"
-                value={formData.customer_id || ''}
-                onChange={handleChange}
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
-              >
-                <option value="">{t('schedules:selectCustomer')}</option>
-                {customers?.map(customer => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          {/* Status do Agendamento */}
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <CalendarIcon className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:status')} *
-            </label>
-            <div className="relative">
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                required
-                className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-colors pr-10 text-base sm:text-sm"
-              >
-                <option value="scheduled">{t('schedules:statusScheduled')}</option>
-                <option value="confirmed">{t('schedules:statusConfirmed')}</option>
-                <option value="completed">{t('schedules:statusCompleted')}</option>
-                <option value="canceled">{t('schedules:statusCanceled')}</option>
-                <option value="no_show">{t('schedules:statusNoShow')}</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          {/* Data do Agendamento */}
-          <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <Calendar className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:date')} *
-            </label>
-            <input 
-              id="date"
-              type="date" 
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              required
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm"
-            />
-          </div>
-          
-          {/* Horário de Início */}
-          <div>
-            <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <Clock className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:startTime')} *
-            </label>
-            <input 
-              id="start_time"
-              type="time" 
-              name="start_time"
-              value={formData.start_time.substring(0, 5)}
-              onChange={handleChange}
-              required
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm"
-            />
-          </div>
-          
-          {/* Horário de Término */}
-          <div>
-            <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <Clock className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:endTime')} *
-            </label>
-            <input 
-              id="end_time"
-              type="time" 
-              name="end_time"
-              value={formData.end_time.substring(0, 5)}
-              onChange={handleChange}
-              required
-              className={`w-full p-2.5 border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base sm:text-sm ${
-                highlightEndTime 
-                  ? 'animate-highlight border-blue-400 dark:border-blue-600' 
-                  : 'border-gray-300 dark:border-gray-700'
-              }`}
-            />
-          </div>
-          
-          {/* Observações */}
-          <div className="sm:col-span-2">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-              <MessageSquare className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-              {t('schedules:notes')}
-            </label>
-            <textarea 
-              id="notes"
-              name="notes"
-              value={formData.notes || ''}
-              onChange={handleChange}
-              rows={3}
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none text-base sm:text-sm"
-              placeholder={t('schedules:notesPlaceholder')}
-            />
-          </div>
-          
-          {/* Alerta de atendimento por ordem de chegada */}
-          {selectedServiceInfo?.by_arrival_time && (
-            <div className="sm:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg border border-blue-100 dark:border-blue-800 mb-4">
-              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center">
-                <Users className="h-4 w-4 mr-1.5" />
-                {t('schedules:arrivalTimeServiceAlert')}
-              </h3>
-              <p className="text-sm text-blue-700 dark:text-blue-400">
-                {t('schedules:arrivalTimeServiceDescription', { 
-                  timeSlot: formData.time_slot, 
-                  capacity: selectedServiceInfo.capacity 
-                })}
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-500 mt-2">
-                {t('schedules:arrivalTimeServiceNote')}
-              </p>
-            </div>
-          )}
-          
-          {/* Videoconferência */}
-          <div className="flex items-start sm:col-span-2">
-            <div className="flex items-center h-5">
-              <input 
-                type="checkbox" 
-                id="create_videoconference" 
-                name="create_videoconference"
-                checked={formData.create_videoconference}
-                onChange={handleCheckboxChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-              />
-            </div>
-            <div className="ml-3">
-              <label htmlFor="create_videoconference" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex items-center">
-                <Video className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-                {t('schedules:createVideoconference')}
+            
+            {/* Seleção de Serviço */}
+            <div>
+              <label htmlFor="service_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <Scissors className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                {t('schedules:service')} <span className="text-red-500 ml-1">*</span>
               </label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {t('schedules:createVideoconferenceDescription')}
-              </p>
-            </div>
-          </div>
-          
-          {/* Lembretes */}
-          <div className="sm:col-span-2">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 flex items-center">
-                <Bell className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
-                {t('schedules:reminders')}
-              </h3>
-              
-              <div className="flex items-start mb-3">
-                <div className="flex items-center h-5">
-                  <input 
-                    type="checkbox" 
-                    id="send_reminders" 
-                    name="send_reminders"
-                    checked={formData.send_reminders}
-                    onChange={handleCheckboxChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                  />
-                </div>
-                <div className="ml-3">
-                  <label htmlFor="send_reminders" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                    {t('schedules:sendReminders')}
-                  </label>
-                </div>
-              </div>
-              
-              {formData.send_reminders && (
-                <div className="pl-7 space-y-2">
-                  <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      id="reminder_email" 
-                      checked={formData.reminder_types?.includes('email') || false}
-                      onChange={(e) => handleReminderTypeChange('email', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                    />
-                    <label htmlFor="reminder_email" className="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                      {t('schedules:reminderEmail')}
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      id="reminder_sms" 
-                      checked={formData.reminder_types?.includes('sms') || false}
-                      onChange={(e) => handleReminderTypeChange('sms', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                    />
-                    <label htmlFor="reminder_sms" className="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                      {t('schedules:reminderSMS')}
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      id="reminder_whatsapp" 
-                      checked={formData.reminder_types?.includes('whatsapp') || false}
-                      onChange={(e) => handleReminderTypeChange('whatsapp', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                    />
-                    <label htmlFor="reminder_whatsapp" className="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                      {t('schedules:reminderWhatsApp')}
-                    </label>
-                  </div>
-                </div>
+              <select
+                id="service_id"
+                name="service_id"
+                value={formData.service_id}
+                onChange={handleServiceChange}
+                required
+                className={`w-full p-2.5 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                  showValidationErrors && !formData.service_id
+                    ? 'border-red-300 dark:border-red-600'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
+              >
+                <option value="">{t('schedules:selectService')}</option>
+                {services?.map(service => (
+                  <option key={service.id} value={service.id}>
+                    {service.title} - {service.duration}
+                  </option>
+                ))}
+              </select>
+              {showValidationErrors && !formData.service_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {t('schedules:selectServiceError', 'Selecione um serviço')}
+                </p>
               )}
             </div>
+            
+            {/* Seleção de Cliente */}
+            <div>
+              <label htmlFor="customer_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <User className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                {t('schedules:customer')}
+              </label>
+              <div className="mt-1">
+                {selectedCustomer ? (
+                  <div className="flex items-center w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center dark:bg-gray-700">
+                      {selectedCustomer.profile_picture ? (
+                        <img
+                          src={selectedCustomer.profile_picture}
+                          alt={selectedCustomer.name}
+                          className="rounded-full w-8 h-8 object-cover"
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      )}
+                    </div>
+                    <div className="ml-3 flex-grow">
+                      <p className="text-sm font-medium">{selectedCustomer.name}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                      onClick={() => {
+                        setSelectedCustomer(null);
+                        setFormData(prev => ({...prev, customer_id: ''}));
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                    onClick={handleOpenCustomerModal}
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    {t('schedules:selectCustomer')}
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Observações */}
+            <div>
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+                <MessageSquare className="h-4 w-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                {t('schedules:notes')}
+              </label>
+              <textarea 
+                id="notes"
+                name="notes"
+                value={formData.notes || ''}
+                onChange={handleChange}
+                rows={3}
+                className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                placeholder={t('schedules:notesPlaceholder')}
+              />
+            </div>
+          </div>
+          
+          {/* Coluna Direita */}
+          <div className="space-y-4">
+            {/* Status do Agendamento */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, status: 'scheduled' }))}
+                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    formData.status === 'scheduled'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('schedules:statusScheduled')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, status: 'confirmed' }))}
+                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    formData.status === 'confirmed'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('schedules:statusConfirmed')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, status: 'completed' }))}
+                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    formData.status === 'completed'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('schedules:statusCompleted')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, status: 'canceled' }))}
+                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    formData.status === 'canceled'
+                      ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('schedules:statusCanceled')}
+                </button>
+              </div>
+            </div>
+            
+            {/* Data e Horário */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+              
+              {/* Data do Agendamento */}
+              <div className="mb-3">
+                <label htmlFor="date" className="block text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  {t('schedules:date')} <span className="text-red-500 ml-1">*</span>
+                </label>
+                <input 
+                  id="date"
+                  type="date" 
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+              
+              {/* Horários */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Horário de Início */}
+                <div>
+                  <label htmlFor="start_time" className="block text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {t('schedules:startTime')} <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <input 
+                    id="start_time"
+                    type="time" 
+                    name="start_time"
+                    value={formData.start_time.substring(0, 5)}
+                    onChange={handleChange}
+                    required
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                
+                {/* Horário de Término */}
+                <div>
+                  <label htmlFor="end_time" className="block text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {t('schedules:endTime')} <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <input 
+                    id="end_time"
+                    type="time" 
+                    name="end_time"
+                    value={formData.end_time.substring(0, 5)}
+                    onChange={handleChange}
+                    required
+                    className={`w-full p-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      highlightEndTime 
+                        ? 'animate-highlight border-blue-400 dark:border-blue-600' 
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Alerta de atendimento por ordem de chegada */}
+            {selectedServiceInfo?.by_arrival_time && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
+                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center">
+                  <Users className="h-4 w-4 mr-1.5" />
+                  {t('schedules:arrivalTimeServiceAlert')}
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-400">
+                  {t('schedules:arrivalTimeServiceDescription', { 
+                    timeSlot: formData.time_slot, 
+                    capacity: selectedServiceInfo.capacity 
+                  })}
+                </p>
+              </div>
+            )}
           </div>
         </div>
         
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-4 sm:pt-5">
+        {/* Botões de Ação */}
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-5 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
+            className="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
           >
             {t('common:cancel')}
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors shadow-sm flex items-center justify-center"
+            className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors shadow-sm flex items-center justify-center"
           >
             {isLoading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                 {appointment?.id ? t('common:saving') : t('common:creating')}
               </>
             ) : (
-              <>
-                {appointment?.id ? t('common:save') : t('common:create')}
-              </>
+              appointment?.id ? t('common:save') : t('common:create')
             )}
           </button>
         </div>
       </form>
+      
+      {/* Modal de seleção de cliente */}
+      {isCustomerModalOpen && (
+        <Suspense fallback={
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 flex justify-center items-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          </div>
+        }>
+          <CustomerSelectModal
+            isOpen={isCustomerModalOpen}
+            onClose={() => setIsCustomerModalOpen(false)}
+            onSelectCustomer={handleSelectCustomer}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
