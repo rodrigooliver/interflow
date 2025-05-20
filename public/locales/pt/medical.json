@@ -6,7 +6,7 @@
   "startByCreatingConsultation": "Comece criando uma nova consulta",
   "createFirstConsultation": "Criar Primeira Consulta",
   "editConsultation": "Editar Consulta",
-  "selectPatient": "Selecionar Paciente",
+  "selectPatient": "Buscar",
   "cancelConsultationConfirmation": "Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser desfeita.",
   "viewPatientAppointments": "Ver consultas do paciente",
   "viewSpecificPatient": "Ver paciente específico",

@@ -6,7 +6,7 @@
   "startByCreatingConsultation": "Start by creating a new consultation",
   "createFirstConsultation": "Create First Consultation",
   "editConsultation": "Edit Consultation",
-  "selectPatient": "Select Patient",
+  "selectPatient": "Search",
   "cancelConsultationConfirmation": "Are you sure you want to cancel this consultation? This action cannot be undone.",
   "viewPatientAppointments": "View patient appointments",
   "viewSpecificPatient": "View specific patient",

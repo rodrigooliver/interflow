@@ -50,8 +50,14 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
   const { currentOrganizationMember } = useAuthContext();
   const organizationId = currentOrganizationMember?.organization_id;
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const currentSearchTermRef = useRef(searchTerm);
   
   const ITEMS_PER_PAGE = 10;
+
+  // Atualiza a referência quando searchTerm muda
+  useEffect(() => {
+    currentSearchTermRef.current = searchTerm;
+  }, [searchTerm]);
 
   // Ref para o último item da lista para implementar rolagem infinita
   const lastCustomerElementRef = useCallback((node: HTMLDivElement | null) => {
@@ -152,12 +158,12 @@ const CustomerSelectModal: React.FC<CustomerSelectModalProps> = ({
     }
   }, [isOpen, fetchCustomers, searchTerm, isFirstLoad]);
   
-  // Buscar mais clientes quando a página muda
+  // Buscar mais clientes quando a página muda - removido searchTerm das dependências
   useEffect(() => {
     if (page > 0) {
-      fetchCustomers(searchTerm, page);
+      fetchCustomers(currentSearchTermRef.current, page);
     }
-  }, [page, searchTerm, fetchCustomers]);
+  }, [page, fetchCustomers]);
   
   // Configurar debounce para pesquisa
   const debouncedSearch = useCallback(
