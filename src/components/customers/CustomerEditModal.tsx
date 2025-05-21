@@ -752,7 +752,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto mb-16 sm:mb-0">
           {isLoadingCustomerData ? (
             <div className="flex flex-col items-center justify-center h-full p-6">
               <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />

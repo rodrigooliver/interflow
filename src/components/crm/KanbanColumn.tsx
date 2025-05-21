@@ -150,14 +150,14 @@ export function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-800/50 rounded-lg flex flex-col h-full max-h-[calc(100vh-8rem)] ${
+      className={`flex-shrink-0 w-80 bg-gray-100 dark:bg-gray-800/50 rounded-lg flex flex-col h-full max-h-[calc(100vh-7rem)] ${
         isOver ? 'bg-blue-50/50 dark:bg-blue-900/5' : ''
       }`}
       data-is-empty={isEmpty}
       data-id={stage.id}
       data-column-type="stage"
     >
-      <div className="p-4 flex flex-col h-full overflow-hidden">
+      <div className="p-3 flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-start mb-4">
           <div className="flex flex-col">
             <div className="flex items-center">

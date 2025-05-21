@@ -62,7 +62,7 @@ const AppointmentsPage: React.FC = () => {
   );
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [showAllSchedules, setShowAllSchedules] = useState(
-    savedFilters?.showAllSchedules !== undefined ? savedFilters.showAllSchedules : false
+    savedFilters?.showAllSchedules !== undefined ? savedFilters.showAllSchedules : true
   );
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
     savedFilters?.selectedProviderId || null
@@ -552,18 +552,15 @@ const AppointmentsPage: React.FC = () => {
   
   return (
     <div className="h-full flex flex-col p-4 md:p-5 bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div className="hidden md:block">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-3 lg:gap-4 mb-4 md:mb-5 lg:mb-6">
+        <div className="hidden md:block flex-shrink-0 md:mr-4">
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white flex items-center">
-            <CalendarDays className="h-6 w-6 md:h-8 md:w-8 mr-2 text-blue-600 dark:text-blue-400" />
-            <span>{t('schedules:schedules')}</span>
+            <CalendarDays className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 mr-2 text-blue-600 dark:text-blue-400" />
+            <span className="whitespace-nowrap">{t('schedules:schedules')}</span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm md:text-base">
-            {t('schedules:manageYourSchedules')}
-          </p>
         </div>
-        <div className="flex gap-2 self-end md:self-auto w-full md:w-auto justify-end">
-          <div className="flex items-center mr-2 md:mr-3">
+        <div className="flex flex-wrap md:flex-nowrap gap-1.5 md:gap-2 self-end md:self-auto w-full md:w-auto justify-end">
+          <div className="flex items-center mr-1 md:mr-1.5">
             <button
               onClick={() => setIsListView(!isListView)}
               className={`inline-flex items-center px-2 md:px-3 py-2 border rounded-lg shadow-sm text-sm font-medium transition-colors ${
@@ -574,7 +571,7 @@ const AppointmentsPage: React.FC = () => {
               title={t('schedules:listMode')}
             >
               <svg 
-                className={`h-4 w-4 ${isListView ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+                className={`h-4 w-4 md:h-5 md:w-5 ${isListView ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -589,7 +586,7 @@ const AppointmentsPage: React.FC = () => {
                   }
                 />
               </svg>
-              <span className="hidden md:inline ml-2">{t('schedules:listMode')}</span>
+              <span className="hidden xl:inline-block ml-2">{t('schedules:listMode')}</span>
             </button>
           </div>
           <button
@@ -599,11 +596,12 @@ const AppointmentsPage: React.FC = () => {
                 ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
                 : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
             } focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900`}
+            title={t('schedules:pendingApproval')}
           >
-            <Clock className={`h-4 w-4 ${showPendingOnly ? 'text-yellow-500 dark:text-yellow-400' : 'text-gray-500 dark:text-gray-400'}`} />
-            <span className="hidden md:inline ml-2">{t('schedules:pendingApproval')}</span>
+            <Clock className={`h-4 w-4 md:h-5 md:w-5 ${showPendingOnly ? 'text-yellow-500 dark:text-yellow-400' : 'text-gray-500 dark:text-gray-400'}`} />
+            <span className="hidden xl:inline-block ml-2">{t('schedules:pendingApproval')}</span>
             {pendingAppointmentsCount > 0 && (
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+              <span className={`ml-1.5 md:ml-2 px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
                 showPendingOnly
                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
                   : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
@@ -619,23 +617,26 @@ const AppointmentsPage: React.FC = () => {
                 ? 'border-blue-500 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                 : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
             } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900`}
+            title={t('common:filter')}
           >
-            <Filter className={`h-4 w-4 ${isFilterExpanded ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
-            <span className="hidden md:inline ml-2">{t('common:filter')}</span>
+            <Filter className={`h-4 w-4 md:h-5 md:w-5 ${isFilterExpanded ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+            <span className="hidden xl:inline-block ml-2">{t('common:filter')}</span>
           </button>
           <button
             onClick={handleGoToSchedulesList}
             className="inline-flex items-center px-2 md:px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
+            title={t('schedules:manageSchedules')}
           >
-            <CalendarDays className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            <span className="hidden md:inline ml-2">{t('schedules:manageSchedules')}</span>
+            <CalendarDays className="h-4 w-4 md:h-5 md:w-5 text-gray-500 dark:text-gray-400" />
+            <span className="hidden xl:inline-block ml-2">{t('schedules:manageSchedules')}</span>
           </button>
           <button
             onClick={handleCreateAppointment}
             className="inline-flex items-center px-2 md:px-3 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors"
+            title={t('schedules:newAppointment')}
           >
-            <Plus className="h-4 w-4" />
-            <span className="hidden md:inline ml-2">{t('schedules:newAppointment')}</span>
+            <Plus className="h-4 w-4 md:h-5 md:w-5" />
+            <span className="hidden xl:inline-block ml-2">{t('schedules:newAppointment')}</span>
           </button>
         </div>
       </div>
@@ -763,7 +764,7 @@ const AppointmentsPage: React.FC = () => {
       )}
       
       {/* Área do calendário ou lista */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 flex-1 min-h-0 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 flex-1 min-h-0 overflow-hidden mb-16 sm:mb-0">
         {isLoadingAppointments ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 dark:border-blue-400 border-t-transparent"></div>

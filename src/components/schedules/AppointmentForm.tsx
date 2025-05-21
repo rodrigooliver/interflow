@@ -545,7 +545,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           {/* Coluna Direita */}
           <div className="space-y-4">
             {/* Status do Agendamento */}
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -595,7 +595,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
             
             {/* Data e Horário */}
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               
               {/* Data do Agendamento */}
               <div className="mb-3">
@@ -675,7 +675,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         </div>
         
         {/* Botões de Ação */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-5 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 pt-3 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onCancel}

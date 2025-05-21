@@ -567,7 +567,7 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 p-6 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
+      <div className="flex gap-6 p-3 overflow-x-auto h-full flex-1 w-full pb-16 md:pb-0 custom-scrollbar">
         {stages.map((stage) => {
           // Ordenar clientes pelo stage_order
           const stageCustomers = localCustomers

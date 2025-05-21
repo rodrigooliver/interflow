@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, ChevronDown, Check, Star, StarOff, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronDown, Check, Star, StarOff, Pencil, Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CustomerAddModal } from '../customers/CustomerAddModal';
 import { CRMFunnel, CRMStage } from '../../types/crm';
@@ -40,6 +40,7 @@ export function FunnelHeader({
   const [showFunnelSelector, setShowFunnelSelector] = useState(false);
   const [isMakingDefault, setIsMakingDefault] = useState(false);
   const [showEditFunnelModal, setShowEditFunnelModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   // Estado local para controlar quais funis são padrão
   const [localDefaultFunnelId, setLocalDefaultFunnelId] = useState<string | null>(
     allFunnels.find(f => f.default)?.id || null
@@ -62,6 +63,8 @@ export function FunnelHeader({
     if (onSelectFunnel) {
       onSelectFunnel(funnelId);
     }
+    setShowFunnelSelector(false);
+    setShowMobileMenu(false);
   };
   
   const handleMakeDefault = async (funnelId: string, e: React.MouseEvent) => {
@@ -97,26 +100,33 @@ export function FunnelHeader({
     if (onSelectFunnel && funnel) {
       onSelectFunnel(funnel.id);
     }
+    setShowEditFunnelModal(false);
+  };
+
+  const toggleMobileMenu = () => {
+    setShowMobileMenu(!showMobileMenu);
   };
 
   return (
     <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Seção do título e seletor de funil */}
         <div className="flex items-center">
           <button
             onClick={onBack}
-            className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            className="mr-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            aria-label={t('common:back')}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           
           {/* Seletor de Funis */}
-          <div className="relative">
+          <div className="relative flex-1 mr-2">
             <button
               onClick={() => setShowFunnelSelector(!showFunnelSelector)}
-              className="flex items-center space-x-2 text-lg font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-1.5 rounded transition-colors duration-150"
+              className="flex items-center space-x-2 text-base sm:text-lg font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 px-2 sm:px-3 py-1.5 rounded transition-colors duration-150 max-w-[200px] sm:max-w-none"
             >
-              <span>{funnelName}</span>
+              <span className="truncate">{funnelName}</span>
               {isFunnelDefault(funnel.id) && <Star className="w-4 h-4 text-yellow-500 ml-1 flex-shrink-0" />}
               <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 ${showFunnelSelector ? 'transform rotate-180' : ''}`} />
             </button>
@@ -129,7 +139,7 @@ export function FunnelHeader({
                   onClick={() => setShowFunnelSelector(false)}
                 />
                 
-                <div className="absolute z-20 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black dark:ring-gray-700 ring-opacity-5 overflow-hidden transform origin-top scale-100 opacity-100 transition-all duration-200 ease-out">
+                <div className="absolute z-20 mt-2 w-[calc(100vw-32px)] sm:w-72 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black dark:ring-gray-700 ring-opacity-5 overflow-hidden transform origin-top scale-100 opacity-100 transition-all duration-200 ease-out">
                   <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {t('crm:funnels.selectFunnel')}
@@ -172,8 +182,28 @@ export function FunnelHeader({
               </>
             )}
           </div>
+
+          {/* Botão de editar para mobile */}
+          <button
+            onClick={() => setShowEditFunnelModal(true)}
+            className="inline-flex sm:hidden items-center p-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
+            title={t('crm:funnels.editFunnel')}
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+          
+          {/* Botão do menu mobile */}
+          <button
+            onClick={toggleMobileMenu}
+            className="inline-flex sm:hidden items-center p-1.5 ml-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
+            aria-label="Menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
         </div>
-        <div className="flex items-center space-x-2">
+
+        {/* Desktop actions */}
+        <div className="hidden sm:flex items-center space-x-2">
           <button
             onClick={() => setShowAddCustomerModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
@@ -196,6 +226,42 @@ export function FunnelHeader({
             <Pencil className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Mobile menu */}
+        {showMobileMenu && (
+          <>
+            <div 
+              className="fixed inset-0 z-10 sm:hidden" 
+              onClick={() => setShowMobileMenu(false)}
+            />
+            <div className="sm:hidden absolute right-4 top-[4.5rem] z-20 w-56 mt-2 origin-top-right bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <div className="py-1" role="none">
+                <button
+                  onClick={() => {
+                    setShowAddCustomerModal(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="flex w-full items-center text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  role="menuitem"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('customers:addCustomer')}
+                </button>
+                <button
+                  onClick={() => {
+                    onAddStage();
+                    setShowMobileMenu(false);
+                  }}
+                  className="flex w-full items-center text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  role="menuitem"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('crm:stages.addStage')}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Customer Add Modal */}
