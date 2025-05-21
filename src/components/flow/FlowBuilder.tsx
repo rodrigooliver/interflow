@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -26,6 +26,7 @@ import { StartNode } from './nodes/StartNode';
 import { OpenAINode } from './nodes/OpenAINode';
 import { AgenteIANode } from './nodes/AgenteIANode';
 import { UpdateCustomerNode } from './nodes/UpdateCustomerNode';
+import { RequestNode } from './nodes/RequestNode';
 import { Trash2, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlowEditor } from '../../contexts/FlowEditorContext';
@@ -44,6 +45,7 @@ const nodeTypes: NodeTypes = {
   openai: OpenAINode,
   agenteia: AgenteIANode,
   update_customer: UpdateCustomerNode,
+  request: RequestNode,
 };
 
 export function FlowBuilder() {
@@ -81,6 +83,7 @@ export function FlowBuilder() {
       openai: t('nodes.openai.title') + ` ${nodeCount}`,
       agenteia: t('nodes.agenteia.title') + ` ${nodeCount}`,
       update_customer: t('nodes.updateCustomer.title') + ` ${nodeCount}`,
+      request: t('nodes.request.title') + ` ${nodeCount}`,
     };
 
     return typeLabels[type] || t('nodes.labels.generic') + ` ${nodeCount}`;
@@ -204,6 +207,20 @@ export function FlowBuilder() {
         return updatedNodes;
     });
   }, [setNodes, reactFlowInstance, onSaveFlow]);
+
+  // Adiciona um ouvinte para o evento nodeDataChanged
+  useEffect(() => {
+    const handleNodeDataChanged = (event: CustomEvent) => {
+      const { nodeId, data } = event.detail;
+      onNodeUpdate(nodeId, data);
+    };
+
+    document.addEventListener('nodeDataChanged', handleNodeDataChanged as EventListener);
+    
+    return () => {
+      document.removeEventListener('nodeDataChanged', handleNodeDataChanged as EventListener);
+    };
+  }, [onNodeUpdate]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();

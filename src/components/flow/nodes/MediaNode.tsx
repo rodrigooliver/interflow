@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { Music, Image, Video, FileText, Upload, X, Loader2, Trash2, Link, ExternalLink } from 'lucide-react';
+import { Music, Image, Video, FileText, Upload, X, Loader2, ExternalLink, Edit } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import api from '../../../lib/api';
@@ -64,7 +64,6 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
   const [url, setUrl] = useState(data.mediaUrl || '');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(!data.mediaUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,7 +77,7 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
       const pathParts = urlObj.pathname.split('/');
       return pathParts[pathParts.length - 1];
     } catch {
-      return 'arquivo';
+      return url;
     }
   };
 
@@ -98,38 +97,9 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
     }
   };
 
-  const handleDeleteFile = async () => {
-    if (!data.fileId) return;
-    
-    setDeleting(true);
-    setError('');
-    
-    try {
-      // Chamar a API para excluir o arquivo usando o ID
-      const response = await api.delete(`/api/${currentOrganizationMember?.organization.id}/flow/${flowId}/file`, {
-        data: { fileId: data.fileId }
-      });
-      
-      if (response.data.success) {
-        // Limpar a URL e o ID do arquivo nos dados do nó
-        setUrl('');
-        updateNodeData(id, { ...data, mediaUrl: '', fileId: undefined });
-        setShowUrlInput(true);
-      } else {
-        throw new Error(response.data.error || 'Falha ao excluir arquivo');
-      }
-    } catch (err: unknown) {
-      console.error('Erro ao excluir arquivo:', err);
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.error || apiError.message || t('chats:attachments.errors.deleteFailed'));
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   const handleShowUrlInput = () => {
     setShowUrlInput(true);
-    setUrl('');
+    setUrl(data.mediaUrl || '');
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,25 +197,13 @@ export function MediaNode({ id, type, data, isConnectable }: MediaNodeProps) {
               >
                 <ExternalLink className="w-4 h-4" />
               </a>
-              {!data.fileId && (
-                <button 
-                  onClick={handleShowUrlInput}
-                  className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                  title={t('nodes.useExternalUrl')}
-                >
-                  <Link className="w-4 h-4" />
-                </button>
-              )}
-              {data.fileId && (
-                <button 
-                  onClick={handleDeleteFile}
-                  disabled={deleting}
-                  className="p-1 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
-                  title={t('nodes.deleteFile')}
-                >
-                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                </button>
-              )}
+              <button 
+                onClick={handleShowUrlInput}
+                className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                title={t('nodes.editUrl')}
+              >
+                <Edit className="w-4 h-4" />
+              </button>
             </div>
           </div>
         )}

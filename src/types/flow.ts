@@ -11,7 +11,8 @@ export type NodeType =
   | 'update_customer'
   | 'start'
   | 'openai'
-  | 'agenteia';
+  | 'agenteia'
+  | 'request';
 
 export interface Variable {
   id: string;

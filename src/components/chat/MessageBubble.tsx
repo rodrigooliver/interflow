@@ -132,7 +132,7 @@ export function MessageBubble({
     return (
       <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}>
         <div 
-          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-3 relative ${
+          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-2.5 relative ${
             isAgent
               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
               : 'bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400'
@@ -506,21 +506,145 @@ export function MessageBubble({
     }
   };
 
+  // Função para extrair nome de arquivo mais descritivo da URL quando possível
+  const extractFileNameFromUrl = (url: string, defaultName: string): string => {
+    if (!url) return defaultName;
+    
+    // Nomes genéricos que devem ser substituídos se houver informações melhores
+    const genericNames = ['attachment', 'file', 'document', 'download'];
+    
+    // Se o nome não for genérico, retorná-lo como está
+    if (defaultName && !genericNames.includes(defaultName.toLowerCase())) {
+      return defaultName;
+    }
+    
+    try {
+      // Tentar extrair o nome do arquivo da query string
+      const urlObj = new URL(url);
+      const queryParams = urlObj.search.substring(1).split('&');
+      
+      // Verifica se o último segmento da query contém uma extensão de arquivo
+      for (const param of queryParams) {
+        // Caso específico como ?boleto.pdf no exemplo
+        if (param.includes('.')) {
+          const possibleFileName = param.split('=')[0];
+          if (possibleFileName.includes('.')) {
+            return possibleFileName;
+          }
+        }
+        
+        // Caso normal como file=boleto.pdf
+        const [key, value] = param.split('=');
+        if (value && value.includes('.')) {
+          return decodeURIComponent(value);
+        }
+      }
+      
+      // Tentar extrair do pathname
+      const pathSegments = urlObj.pathname.split('/');
+      const lastSegment = pathSegments[pathSegments.length - 1];
+      
+      // Verificar se o último segmento tem um formato de arquivo
+      if (lastSegment && lastSegment.includes('.')) {
+        return lastSegment;
+      }
+      
+      // Para URLs como /pdf/pnry8rkwxtovucpv?boleto.pdf
+      // Verificar se o tipo do documento está no caminho
+      const fileTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'jpg', 'jpeg', 'png', 'gif'];
+      for (const segment of pathSegments) {
+        if (fileTypes.includes(segment.toLowerCase())) {
+          // Tenta construir um nome descritivo
+          return `${segment}-${lastSegment}.${segment}`;
+        }
+      }
+      
+      // Se não encontrou nos caminhos fáceis, verificar o caminho completo
+      const fullPath = urlObj.pathname + urlObj.search;
+      const extensionMatch = fullPath.match(/\.(pdf|doc|docx|xls|xlsx|csv|txt|jpg|jpeg|png|gif)(\?|$)/i);
+      
+      if (extensionMatch) {
+        // Tenta extrair um nome mais significativo incluindo a extensão
+        return `${lastSegment}.${extensionMatch[1]}`;
+      }
+    } catch (e) {
+      console.error("Erro ao analisar URL:", e);
+    }
+    
+    // Retornar nome padrão se não conseguir extrair nada melhor
+    return defaultName;
+  };
+
+  // Função para inferir o tipo MIME pelo nome do arquivo ou extensão
+  const inferMimeType = (fileName: string, defaultType: string = 'application/octet-stream'): string => {
+    if (!fileName || !fileName.includes('.')) return defaultType;
+    
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    if (!extension) return defaultType;
+    
+    const mimeTypes: Record<string, string> = {
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'csv': 'text/csv',
+      'txt': 'text/plain',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'mp3': 'audio/mpeg',
+      'mp4': 'video/mp4',
+      'wav': 'audio/wav',
+      'zip': 'application/zip',
+      'rar': 'application/x-rar-compressed',
+      'tar': 'application/x-tar',
+      'html': 'text/html',
+      'json': 'application/json'
+    };
+    
+    return mimeTypes[extension] || defaultType;
+  };
+
   // Função para renderizar anexos
-  const renderAttachment = (attachment: { url: string; type: string; name: string }) => {
-    if (attachment.type.startsWith('image') || attachment.type.startsWith('image/')) {
+  const renderAttachment = (attachment: { url: string; type: string; name?: string; file_name?: string; mime_type?: string | null }) => {
+    // Normalizar campos
+    const attachmentName = attachment.name || attachment.file_name || 'attachment';
+    const attachmentType = attachment.mime_type || attachment.type || '';
+    
+    // Extrair nome mais descritivo da URL quando o nome for genérico
+    const betterName = extractFileNameFromUrl(attachment.url, attachmentName);
+    
+    // Inferir tipo MIME se não estiver definido ou for genérico
+    const betterType = attachmentType === 'document' || !attachmentType ? 
+      inferMimeType(betterName, 'application/pdf') : attachmentType;
+    
+    // Determinar ícone baseado no tipo
+    const FileIcon = FileText;
+    let fileClass = "text-gray-500 dark:text-gray-400";
+    
+    if (betterType.startsWith('application/pdf')) {
+      fileClass = "text-red-500 dark:text-red-400";
+    } else if (betterType.includes('sheet') || betterType.includes('excel') || betterType.includes('csv')) {
+      fileClass = "text-green-500 dark:text-green-400";
+    } else if (betterType.includes('word') || betterType.includes('document')) {
+      fileClass = "text-blue-500 dark:text-blue-400";
+    }
+
+    if (betterType.startsWith('image') || betterType.startsWith('image/')) {
       return (
-        <div className="mt-2 max-w-full">
+        <div className="max-w-full">
           <div 
             onClick={() => {
-              setSelectedImage(attachment);
+              setSelectedImage({ url: attachment.url, name: betterName });
               setImageModalOpen(true);
             }}
             className="cursor-pointer hover:opacity-90 transition-opacity"
           >
             <img
               src={attachment.url}
-              alt={attachment.name}
+              alt={betterName}
               className="max-w-full w-auto rounded-lg h-[200px] object-contain"
             />
           </div>
@@ -528,13 +652,13 @@ export function MessageBubble({
       );
     }
 
-    if (attachment.type.startsWith('audio') || attachment.type.startsWith('audio/')) {
+    if (betterType.startsWith('audio') || betterType.startsWith('audio/')) {
       return (
         <div className="w-[300px]">
           <div className="bg-gray-200 dark:bg-gray-800/50 rounded-full p-2">
             <AudioPlayer
               src={attachment.url}
-              fileName={attachment.name}
+              fileName={betterName}
             />
           </div>
           {content && (
@@ -552,16 +676,16 @@ export function MessageBubble({
     }
 
     return (
-      <div className="mt-2 max-w-full">
+      <div className="max-w-full">
         <a
           href={attachment.url}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors overflow-hidden max-w-[200px] md:max-w-[300px]"
         >
-          <FileText className="w-4 h-4 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+          <FileIcon className={`w-4 h-4 flex-shrink-0 ${fileClass}`} />
           <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1 min-w-0">
-            {attachment.name}
+            {betterName}
           </span>
         </a>
       </div>
@@ -651,7 +775,7 @@ export function MessageBubble({
         onDoubleClick={handleReply}
       >
         <div
-          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-3 relative ${
+          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-2.5 relative ${
             isAgent
               ? 'bg-blue-600 text-gray-300'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'

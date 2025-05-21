@@ -446,7 +446,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
   useEffect(() => {
     let subscription: ReturnType<typeof supabase.channel>;
-    let isInitialRenderValue = initialRenderRef.current;
+    const isInitialRenderValue = initialRenderRef.current;
 
     // Verificar se o chatId mudou realmente
     const isChatIdChanged = chatId !== previousChatIdRef.current;
@@ -793,6 +793,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           });
           
           // Agora tratamos a remoção da mensagem otimista
+          // console.log('tempId', tempId);
           if (tempId) {
             // console.log(`Encontrada mensagem real com tempId ${tempId}, removendo mensagem otimista após breve atraso`);
             
@@ -901,24 +902,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             return;
           }
           
-          // Se a mensagem falhou, adicioná-la à lista de mensagens falhas
+          // Se a mensagem falhou, não fazemos nada. As mensagens falhas existentes permanecerão na lista.
           if (updatedMessage.status === 'failed') {
-            // console.log(`Mensagem ${updatedMessage.id} falhou. Adicionando à lista de mensagens falhas.`);
-            
-            // Adicionar à lista de mensagens falhas (se ainda não estiver lá)
-            setFailedMessages(prev => {
-              // Verificar se a mensagem já está na lista
-              if (!prev.some(msg => msg.id === updatedMessage.id)) {
-                const updatedMessages = [...prev, {
-                  ...updatedMessage as unknown as OptimisticMessage,
-                  isPending: false
-                }];
-                // Salvar no localStorage
-                saveFailedMessagesToStorage(updatedMessages);
-                return updatedMessages;
-              }
-              return prev;
-            });
+            // console.log(`Mensagem ${updatedMessage.id} falhou. Não adicionando à lista de mensagens falhas.`);
+            // Não adicionamos à lista de mensagens falhas, apenas mantemos as que já existem
+            // console.log('Mensagem falhou, mas não será adicionada à lista de mensagens falhas');
           }
           
           // Se for mensagem do sistema, buscar informações adicionais do agente
@@ -1057,6 +1045,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   // console.log(`Mensagem falha com ID ${tempId} encontrada, removendo durante UPDATE`);
                   const filtered = prev.filter(msg => msg.id !== tempId);
                   // Atualizar o localStorage
+                  // console.log('setFailedMessages - filtered', filtered);
                   saveFailedMessagesToStorage(filtered);
                   return filtered;
                 }
@@ -2004,7 +1993,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         table: 'chats',
         filter: `id=eq.${chatId}`
       }, (payload) => {
-        // console.log('Chat atualizado:', payload);x
+        // console.log('Chat atualizado:', payload);
         
         if (payload.eventType === 'UPDATE') {
           const updatedChat = payload.new as Chat;
@@ -2081,6 +2070,30 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             });
           }
           
+          // Verificar se houve mudança no flow_session_id
+          if (updatedChat.flow_session_id !== previousChat.flow_session_id) {
+            // console.log(`Flow Session ID alterado: de ${previousChat.flow_session_id || 'null'} para ${updatedChat.flow_session_id || 'null'}`);
+            
+            // Se o fluxo foi pausado
+            if (previousChat.flow_session_id && !updatedChat.flow_session_id) {
+              toast.success(t('flows.flowPaused'));
+            }
+            
+            // Se o fluxo foi iniciado
+            if (!previousChat.flow_session_id && updatedChat.flow_session_id) {
+              toast.success(t('flows.flowStarted'));
+            }
+            
+            // Atualizar apenas o campo flow_session_id
+            setChat(prevChat => {
+              if (!prevChat) return null;
+              return {
+                ...prevChat,
+                flow_session_id: updatedChat.flow_session_id
+              };
+            });
+          }
+          
           // Atualizar outros campos importantes sem substituir relacionamentos
           setChat(prevChat => {
             if (!prevChat) return null;
@@ -2088,7 +2101,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               ...prevChat,
               title: updatedChat.title || prevChat.title,
               start_time: updatedChat.start_time || prevChat.start_time,
-              last_customer_message_at: updatedChat.last_customer_message_at || prevChat.last_customer_message_at
+              last_customer_message_at: updatedChat.last_customer_message_at || prevChat.last_customer_message_at,
+              flow_session_id: updatedChat.flow_session_id
             };
           });
         }
@@ -2309,14 +2323,14 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     // Verificar se já existe uma mensagem otimista com esse ID
     const existingOptimisticMessage = optimisticMessages.find(msg => msg.id === message.id);
     if (existingOptimisticMessage) {
-      console.log(`Mensagem otimista com ID ${message.id} já existe e não será duplicada`);
+      // console.log(`Mensagem otimista com ID ${message.id} já existe e não será duplicada`);
       return;
     }
     
     // Verificar se já existe uma mensagem real com esse ID
     const existingRealMessage = messages.find(msg => msg.id === message.id);
     if (existingRealMessage) {
-      console.log(`Mensagem real com ID ${message.id} já existe, não adicionando versão otimista`);
+      // console.log(`Mensagem real com ID ${message.id} já existe, não adicionando versão otimista`);
       return;
     }
     
@@ -2385,7 +2399,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Usar o chatId como parte da chave para separar mensagens de diferentes chats
       const storageKey = `failed_messages_${chatId}`;
       localStorage.setItem(storageKey, JSON.stringify(messages));
-      console.log(`Salvas ${messages.length} mensagens falhas no localStorage para o chat ${chatId}`);
+      // console.log(`Salvas ${messages.length} mensagens falhas no localStorage para o chat ${chatId}`);
     } catch (error) {
       console.error('Erro ao salvar mensagens falhas no localStorage:', error);
     }
@@ -2442,7 +2456,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             const matchingOptimistic = optimisticMessages.find(optMsg => optMsg.id === tempId);
             
             if (matchingOptimistic) {
-              console.log(`useEffect: Encontrada mensagem otimista ${matchingOptimistic.id} correspondente à mensagem real ${realMsg.id} com tempId ${tempId}`);
+              // console.log(`useEffect: Encontrada mensagem otimista ${matchingOptimistic.id} correspondente à mensagem real ${realMsg.id} com tempId ${tempId}`);
               messagesToRemove.push(matchingOptimistic.id);
             }
           }
@@ -2565,23 +2579,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       
       // console.log(`Mensagem ${message.id} reenviada com sucesso. Esperando confirmação do servidor.`);
     } catch (error) {
-      console.error(`Erro ao reenviar mensagem ${message.id}:`, error);
+      // console.error(`Erro ao reenviar mensagem ${message.id}:`, error);
       
-      // Manter na lista de mensagens falhas
-      setFailedMessages(prev => {
-        // Verificar se a mensagem já está na lista
-        if (!prev.some(msg => msg.id === message.id)) {
-          const updatedMessages = [...prev, {
-            ...message as unknown as OptimisticMessage,
-            isPending: false,
-            status: 'failed'
-          }];
-          // Salvar no localStorage
-          saveFailedMessagesToStorage(updatedMessages);
-          return updatedMessages;
-        }
-        return prev;
-      });
+      // Não adicionar à lista de mensagens falhas, apenas manter as que já existem
+      // console.log(`Não adicionando mensagem ${message.id} à lista de mensagens falhas após tentativa de reenvio`);
       
       // Atualizar a mensagem otimista para mostrar erro
       setOptimisticMessages(prev => 
@@ -2615,27 +2616,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         )
       );
       
-      // Se for falha, adicionar à lista de mensagens falhas
+      // Se for falha, não adicionamos à lista, apenas mantemos as mensagens falhas existentes
       if (status === 'failed') {
-        setFailedMessages(prev => {
-          // Verificar se já existe na lista
-          if (!prev.some(msg => msg.id === id)) {
-            // Encontrar a mensagem otimista para adicionar à lista de falhas
-            const failedMsg = optimisticMessages.find(msg => msg.id === id);
-            if (failedMsg) {
-              const updatedMessages = [...prev, {
-                ...failedMsg,
-                isPending: false,
-                status: 'failed',
-                error_message
-              }];
-              // Salvar no localStorage
-              saveFailedMessagesToStorage(updatedMessages);
-              return updatedMessages;
-            }
-          }
-          return prev;
-        });
+        // console.log(`Mensagem ${id} falhou, mas não será adicionada à lista de mensagens falhas`);
       }
     };
 

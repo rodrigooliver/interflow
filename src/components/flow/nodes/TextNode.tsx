@@ -1,11 +1,12 @@
-import React, { useState, useCallback, useMemo, ReactNode } from 'react';
+import React, { useState, useCallback, useMemo, ReactNode, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, X, AlertCircle } from 'lucide-react';
+import { MessageSquare, X, AlertCircle, Sparkles } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import { Variable } from '../../../types/flow';
 import { createPortal } from 'react-dom';
+import { VariableSelectorModal } from '../../flow/VariableSelectorModal';
 
 interface ListSection {
   title: string;
@@ -68,9 +69,22 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, ex
     footerText: '',
     sections: []
   });
+  const [showVariableSelector, setShowVariableSelector] = useState(false);
   
-  const handleInsertVariable = (variable: Variable) => {
-    const variableTag = `{{${variable.name}}}`;
+  // Quando o modal de variáveis está aberto, bloqueamos o scroll
+  useEffect(() => {
+    if (showVariableSelector) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showVariableSelector]);
+  
+  const handleInsertVariable = (variableName: string) => {
     const textarea = document.getElementById('text-editor') as HTMLTextAreaElement;
     
     if (textarea) {
@@ -79,17 +93,30 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, ex
       const textBefore = editedText.substring(0, start);
       const textAfter = editedText.substring(end);
       
-      setEditedText(textBefore + variableTag + textAfter);
+      setEditedText(textBefore + variableName + textAfter);
       
       // Foco no textarea após a inserção
       setTimeout(() => {
         textarea.focus();
-        textarea.selectionStart = start + variableTag.length;
-        textarea.selectionEnd = start + variableTag.length;
+        textarea.selectionStart = start + variableName.length;
+        textarea.selectionEnd = start + variableName.length;
       }, 0);
     } else {
-      setEditedText(editedText + variableTag);
+      setEditedText(editedText + variableName);
     }
+  };
+  
+  // Manteremos os handlers apenas para dar suporte ao futuro uso da posição do cursor
+  const handleTextareaClick = () => {};
+  
+  const handleTextareaKeyUp = () => {};
+
+  const openVariableSelector = () => {
+    setShowVariableSelector(true);
+  };
+  
+  const closeVariableSelector = () => {
+    setShowVariableSelector(false);
   };
   
   const handleSave = () => {
@@ -101,7 +128,7 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, ex
   
   return (
     <Portal>
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-40">
         {/* Overlay semi-transparente */}
         <div 
           className="absolute inset-0 bg-gray-500 bg-opacity-50"
@@ -126,43 +153,38 @@ function TextEditorModal({ isOpen, onClose, text, variables, splitParagraphs, ex
           </div>
           
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="mb-4">
-              <label htmlFor="text-editor" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('flows:nodes.messagePlaceholder')}
-              </label>
+            <div className="mb-4 relative">
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="text-editor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('flows:nodes.messagePlaceholder')}
+                </label>
+                <button
+                  type="button"
+                  onClick={openVariableSelector}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1" />
+                  {t('flows:variables.insertVariable')}
+                </button>
+              </div>
               <textarea
                 id="text-editor"
                 value={editedText}
                 onChange={(e) => setEditedText(e.target.value)}
+                onClick={handleTextareaClick}
+                onKeyUp={handleTextareaKeyUp}
                 rows={8}
                 className="block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder={t('flows:nodes.messagePlaceholder')}
               />
-            </div>
-            
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('flows:variables.title')}
-                </h4>
-              </div>
               
-              {variables.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {variables.map((variable, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleInsertVariable(variable)}
-                      className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                    >
-                      {variable.name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {t('flows:variables.noVariables')}
-                </p>
+              {showVariableSelector && (
+                <VariableSelectorModal
+                  isOpen={showVariableSelector}
+                  onClose={closeVariableSelector}
+                  variables={variables}
+                  onSelectVariable={handleInsertVariable}
+                />
               )}
             </div>
             

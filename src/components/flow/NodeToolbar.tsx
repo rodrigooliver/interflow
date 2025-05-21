@@ -10,7 +10,8 @@ import {
   Variable, 
   GitFork, 
   MessageCircle,
-  UserCog
+  UserCog,
+  Globe
 } from 'lucide-react';
 import { NodeType } from '../../types/flow';
 
@@ -39,6 +40,11 @@ const AgenteIALogo = () => (
     alt="Agente IA Logo" 
     className="w-5 h-5 mr-3 transition-all dark:invert dark:brightness-200 flex-shrink-0"
   />
+);
+
+// Ícone do RequestNode
+const RequestIcon = () => (
+  <Globe className="w-5 h-5 mr-3 text-indigo-500 flex-shrink-0" />
 );
 
 export function NodeToolbar() {
@@ -75,6 +81,7 @@ export function NodeToolbar() {
       nodes: [
         { type: 'openai', label: t('nodes.openai.title'), icon: OpenAILogo },
         { type: 'agenteia', label: t('nodes.agenteia.title'), icon: AgenteIALogo },
+        { type: 'request', label: t('nodes.request.title'), icon: RequestIcon },
       ]
     }
   ];
