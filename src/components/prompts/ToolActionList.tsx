@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ToolAction } from '../../types/prompts';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import ToolActionModal from './ToolActionModal';
-
+import { Flow } from '../../types/database';
 interface ParameterDefinition {
   type: string;
   description?: string;
@@ -15,12 +15,14 @@ interface ToolActionFormProps {
   actions: ToolAction[];
   onActionsChange: (actions: ToolAction[]) => void;
   parameters?: Record<string, ParameterDefinition>;
+  linkedFlow?: Flow;
 }
 
 const ToolActionList: React.FC<ToolActionFormProps> = ({ 
   actions, 
   onActionsChange, 
-  parameters = {}
+  parameters = {},
+  linkedFlow
 }) => {
   const { t } = useTranslation(['prompts', 'common']);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -237,6 +239,7 @@ const ToolActionList: React.FC<ToolActionFormProps> = ({
         onSave={handleSaveAction}
         action={editingAction || undefined}
         parameters={parameters}
+        linkedFlow={linkedFlow}
       />
     </div>
   );

@@ -49,7 +49,24 @@
   "noFlowsDescription": "Fluxos permitem automatizar interações com seus clientes. Crie seu primeiro fluxo para começar.",
   "createFirstFlow": "Criar primeiro fluxo",
   "nodes": {
-    "audio": "Áudio",
+    "start": {
+      "title": "Início"
+    },
+    "text": {
+      "title": "Texto"
+    },
+    "document": {
+      "title": "Documento"
+    },
+    "image": {
+      "title": "Imagem"
+    },
+    "video": {  
+      "title": "Vídeo"
+    },
+    "audio": {
+      "title": "Áudio"
+    },
     "condition": {
       "addCondition": "Adicionar Condição",
       "addSubCondition": "Adicionar Subcondição",
@@ -113,8 +130,6 @@
     },
     "delaySeconds": "segundos",
     "deleteFile": "Excluir arquivo",
-    "document": "Documento",
-    "image": "Imagem",
     "input": {
       "freeText": "Texto recebido",
       "multipleChoice": "Opções recebidas",
@@ -128,6 +143,13 @@
       "title": "Aguardar Resposta"
     },
     "inputPlaceholder": "Digite a pergunta...",
+    "jumpTo": {
+      "title": "Pular para",
+      "targetNode": "Nó de destino",
+      "selectNode": "Selecionar nó",
+      "selectTarget": "Selecionar nó de destino",
+      "noNodesAvailable": "Nenhum nó disponível"
+    },
     "mediaUrlPlaceholder": "URL do arquivo",
     "messagePlaceholder": "Digite sua mensagem...",
     "openFile": "Abrir arquivo",
@@ -282,7 +304,6 @@
     "sendVideo": {
       "title": "Enviar Vídeo"
     },
-    "start": "Início",
     "updateCustomer": {
       "field": "Campo para Atualizar",
       "fields": {
@@ -316,8 +337,7 @@
       "selectVariable": "Selecione uma variável",
       "title": "Alterar Variável",
       "valuePlaceholder": "Valor"
-    },
-    "video": "Vídeo"
+    }
   },
   "publish": "Publicar",
   "published": "Publicado",

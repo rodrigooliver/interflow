@@ -23,15 +23,6 @@ const Portal = ({ children }: { children: React.ReactNode }) => {
   return createPortal(children, document.body);
 };
 
-// Logo do Agente IA
-const AgenteIALogo = () => (
-  <img 
-    src="/images/logos/agenteia.svg" 
-    alt="Agente IA Logo" 
-    className="w-5 h-5 mr-2 transition-all dark:invert dark:brightness-200"
-  />
-);
-
 export function AgenteIANode({ id, data, isConnectable }: AgenteIANodeProps) {
   const { t } = useTranslation('flows');
   const { prompts, variables, updateNodeData } = useFlowEditor();
@@ -72,7 +63,11 @@ export function AgenteIANode({ id, data, isConnectable }: AgenteIANodeProps) {
         className="flex items-center p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md"
       >
         <div className="flex items-center space-x-2">
-          <AgenteIALogo />
+          <img 
+            src="/images/logos/agenteia.svg" 
+            alt="Agente IA Logo" 
+            className="w-5 h-5 mr-2 transition-all dark:invert dark:brightness-200"
+          />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {data.label || t('nodes.agenteia.defaultLabel')}
           </span>
@@ -114,14 +109,14 @@ export function AgenteIANode({ id, data, isConnectable }: AgenteIANodeProps) {
                   
                   <BaseNode 
                     id={id} 
-                    data={data} 
+                    data={data}
+                    type="agenteia"
                     onLabelChange={(newLabel) => {
                       const event = new CustomEvent('nodeDataChanged', {
                         detail: { nodeId: id, data: { ...data, label: newLabel } }
                       });
                       document.dispatchEvent(event);
                     }}
-                    icon={<AgenteIALogo />}
                   />
                 </div>
 

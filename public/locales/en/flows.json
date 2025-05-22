@@ -198,6 +198,13 @@
       "noMatchingOption": "No matching option"
     },
     "inputPlaceholder": "Type the question...",
+    "jumpTo": {
+      "title": "Jump To",
+      "targetNode": "Target node",
+      "selectNode": "Select node",
+      "selectTarget": "Select target node",
+      "noNodesAvailable": "No nodes available"
+    },
     "options": {
       "title": "Options",
       "textPlaceholder": "Option text",

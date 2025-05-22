@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, ReactNode, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, X, AlertCircle, Sparkles } from 'lucide-react';
+import { X, AlertCircle, Sparkles } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import { Variable } from '../../../types/flow';
@@ -548,12 +548,12 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
       <BaseNode 
         id={id} 
         data={data}
-        icon={<MessageSquare className="w-4 h-4 text-gray-500" />}
+        type="text"
         onLabelChange={handleLabelChange}
       />
       
       <div 
-        className="p-3 border-t border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
+        className="border-t border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
         onClick={() => setShowEditModal(true)}
       >
         {splitParagraphs && messageCount > 1 && (
@@ -580,7 +580,7 @@ export function TextNode({ id, data, isConnectable }: TextNodeProps) {
           </div>
         )}
         
-        <div className="max-h-[100px] overflow-hidden">
+        <div className="max-h-[100px] overflow-hidden bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md p-2">
           {text ? (
             <RenderTextWithVariables text={text} />
           ) : (

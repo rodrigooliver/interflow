@@ -25,6 +25,7 @@ import ExtraContextModal from './ExtraContextModal';
 import ExtraContextList from './ExtraContextList';
 import api from '../../lib/api';
 import PromptUnknownModal from './PromptUnknownModal';
+import { Flow } from '../../types/database.ts';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
@@ -226,6 +227,7 @@ interface PromptFormData {
     name: string;
   }>;
   content_addons: ExtraContext[];
+  flows?: Flow[];
 }
 
 // Interface para as props do modal de geração de prompt
@@ -549,7 +551,7 @@ const PromptFormMain: React.FC = () => {
   });
   const [showToolModal, setShowToolModal] = useState(false);
   const [editingTool, setEditingTool] = useState<{ tool: Tool, index: number } | null>(null);
-  const [linkedFlow, setLinkedFlow] = useState<{ id: string; name: string; triggers: Trigger[] } | null>(null);
+  const [linkedFlow, setLinkedFlow] = useState<Flow | null>(null);
   const [creatingFlow, setCreatingFlow] = useState(false);
   const [resettingFlow, setResettingFlow] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -609,8 +611,7 @@ const PromptFormMain: React.FC = () => {
           *,
           integration:integration_id(*),
           flows:flows!created_by_prompt(
-            id,
-            name,
+            *,
             triggers:flow_triggers(*)
           )
         `)
@@ -627,7 +628,7 @@ const PromptFormMain: React.FC = () => {
           actions: data.actions || [],
           config: data.config || {},
           media: data.media || [],
-          content_addons: data.content_addons || []
+          content_addons: data.content_addons || [],
         });
         
         // Set up integration, model, temperature, is_default if they exist
@@ -655,11 +656,7 @@ const PromptFormMain: React.FC = () => {
         // Configurar o fluxo vinculado e seus triggers
         if (data.flows && data.flows.length > 0) {
           const flow = data.flows[0];
-          setLinkedFlow({
-            id: flow.id,
-            name: flow.name,
-            triggers: flow.triggers || []
-          });
+          setLinkedFlow(flow);
           setTriggers(flow.triggers || []);
         } else {
           setLinkedFlow(null);
@@ -1895,6 +1892,7 @@ const PromptFormMain: React.FC = () => {
           initialTool={editingTool?.tool} 
           destinations={formData.destinations}
           onDestinationsChange={handleDestinationsChange}
+          linkedFlow={linkedFlow || undefined}
         />
       </Modal>
 

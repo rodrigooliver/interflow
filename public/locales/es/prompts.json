@@ -68,6 +68,7 @@
     "viewAsList": "Ver como Lista",
     "viewAsJson": "Ver como JSON",
     "noParameters": "No hay parámetros definidos",
+    "toolNameHelp": "El nombre se formateará automáticamente como un slug de función (minúsculas y guiones bajos).",
     "toolsDescription": "Configura las acciones que el modelo puede ejecutar. Puedes personalizar tus propias acciones o utilizar acciones predefinidas del sistema. Las acciones permiten que el modelo realice tareas específicas durante la conversación. Solo los modelos GPT-4, GPT-4o y GPT-3.5-Turbo admiten acciones.",
     "toolsInfo": "Información sobre acciones",
     "toolsInfoDescription": "Las acciones permiten que el modelo llame a funciones específicas. Puedes crear acciones personalizadas o utilizar acciones predefinidas del sistema.",
@@ -87,7 +88,27 @@
       "description": "Configura los disparadores para que este agente IA pueda ser activado"
     },
     "examples": {
-      "title": "Ejemplos"
+      "title": "Ejemplos",
+      "variables": {
+        "name": {
+          "label": "Nombre"
+        },
+        "email": {
+          "label": "Correo electrónico"
+        },
+        "language": {
+          "label": "Idioma"
+        },
+        "age": {
+          "label": "Edad"
+        },
+        "options": {
+          "label": "Opciones"
+        },
+        "sales_stage": {
+          "label": "Etapa de Ventas"
+        }
+      }
     },
     "tabs": {
       "general": "Configuración General",

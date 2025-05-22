@@ -90,13 +90,28 @@ interface ScheduleActionConfig {
   selectedField?: string;
 }
 
-type ActionConfig = CustomerActionConfig | ChatActionConfig | FlowActionConfig | ScheduleActionConfig | Record<string, unknown>;
+// Nova interface para configuração de ação de nó de fluxo
+interface FlowNodeActionConfig {
+  flowId?: string;
+  nodeId?: string;
+  variables?: {
+    flowVariable: string;
+    promptVariable: string;
+  }[];
+  nodeMapping?: {
+    variable?: string;
+    mapping?: Record<string, string>;
+  };
+  selectedField?: string;
+}
+
+type ActionConfig = CustomerActionConfig | ChatActionConfig | FlowActionConfig | ScheduleActionConfig | FlowNodeActionConfig | Record<string, unknown>;
 
 // Definindo o tipo para ações que serão executadas quando uma ferramenta for chamada
 export interface ToolAction {
   id: string;
   name: string;
-  type: '' | 'update_customer' | 'update_chat' | 'start_flow' | 'check_schedule' | 'custom';
+  type: '' | 'update_customer' | 'update_chat' | 'start_flow' | 'check_schedule' | 'custom' | 'go_to_flow_node';
   description?: string;
   config?: ActionConfig;
   filters?: Array<{

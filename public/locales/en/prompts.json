@@ -68,6 +68,7 @@
     "viewAsList": "View as List",
     "viewAsJson": "View as JSON",
     "noParameters": "No parameters defined",
+    "toolNameHelp": "The name will be automatically formatted as a function slug (lowercase and underscores).",
     "toolsDescription": "Configure the actions that the model can execute. You can customize your own actions or use system-ready actions. Actions allow the model to perform specific tasks during the conversation. Only GPT-4, GPT-4o and GPT-3.5-Turbo models support actions.",
     "toolsInfo": "Information about actions",
     "toolsInfoDescription": "Actions allow the model to call specific functions. You can create custom actions or use system-ready actions.",
@@ -87,7 +88,27 @@
       "description": "Configure triggers so this AI agent can be activated"
     },
     "examples": {
-      "title": "Examples"
+      "title": "Examples",
+      "variables": {
+        "name": {
+          "label": "Name"
+        },
+        "email": {
+          "label": "Email"
+        },
+        "language": {
+          "label": "Language"
+        },
+        "age": {
+          "label": "Age"
+        },
+        "options": {
+          "label": "Options"
+        },
+        "sales_stage": {
+          "label": "Sales Stage"
+        }
+      }
     },
     "tabs": {
       "general": "General Settings",

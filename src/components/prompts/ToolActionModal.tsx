@@ -2,9 +2,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { ToolAction, ActionFilter } from '../../types/prompts';
-import { Schedule } from '../../types/database';
-import { useFunnels, useTeams, useFlows, useSchedules } from '../../hooks/useQueryes';
+import { useFunnels, useTeams } from '../../hooks/useQueryes';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { Flow } from '../../types/database';
 
 // Definir interface para os parâmetros
 interface ParameterDefinition {
@@ -49,14 +49,6 @@ interface ChatActionConfig {
   };
 }
 
-interface FlowActionConfig {
-  flowId?: string;
-  flowMapping?: {
-    variable?: string;
-    mapping?: Record<string, string>;
-  };
-}
-
 interface ScheduleActionConfig {
   scheduleId?: string;
   dayVariable?: string;
@@ -69,10 +61,32 @@ interface ScheduleActionConfig {
     variable?: string;
     mapping?: Record<string, 'checkAvailability' | 'createAppointment' | 'checkAppointment' | 'deleteAppointment'>;
   };
+  serviceMapping?: Record<string, string>;
+}
+
+// Nova interface para a configuração da ação de nó do fluxo
+interface FlowNodeActionConfig {
+  flowId?: string;
+  nodeId?: string;
+  variables?: {
+    flowVariable: string;
+    promptVariable: string;
+  }[];
+  nodeMapping?: {
+    variable?: string;
+    mapping?: Record<string, string>;
+  };
+  selectedField?: string;
 }
 
 // Tipo união para todas as configurações possíveis
-type ActionConfig = CustomerActionConfig | ChatActionConfig | FlowActionConfig | ScheduleActionConfig | Record<string, unknown>;
+type ActionConfig = CustomerActionConfig | ChatActionConfig | ScheduleActionConfig | FlowNodeActionConfig | Record<string, unknown>;
+
+
+interface FlowNode {
+  id: string;
+  name?: string;
+}
 
 interface ToolActionModalProps {
   isOpen: boolean;
@@ -80,6 +94,7 @@ interface ToolActionModalProps {
   onSave: (action: ToolAction) => void;
   action?: ToolAction;
   parameters?: Record<string, ParameterDefinition>;
+  linkedFlow?: Flow;
 }
 
 const ToolActionModal: React.FC<ToolActionModalProps> = ({
@@ -87,14 +102,13 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
   onClose,
   onSave,
   action,
-  parameters = {}
+  parameters = {},
+  linkedFlow
 }) => {
   const { t } = useTranslation(['prompts', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const { data: funnels = [] } = useFunnels(currentOrganizationMember?.organization.id);
   const { data: teams = [] } = useTeams(currentOrganizationMember?.organization.id);
-  const { data: flows = [] } = useFlows(currentOrganizationMember?.organization.id);
-  const { data: schedules = [] } = useSchedules(currentOrganizationMember?.organization.id) as { data: Schedule[] };
   const [editingAction, setEditingAction] = React.useState<ToolAction & { config: ActionConfig }>({
     id: action?.id || '',
     name: action?.name || '',
@@ -103,13 +117,15 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
     filters: action?.filters || []
   });
 
+  console.log(linkedFlow)
+
   const [manualInputs, setManualInputs] = React.useState<Record<string, boolean>>({
     name: false,
     title: false,
     notes: false
   });
 
-  const [selectedField, setSelectedField] = React.useState<string>(action?.config?.selectedField || '');
+  const [selectedField, setSelectedField] = React.useState<string>(typeof action?.config?.selectedField === 'string' ? action?.config?.selectedField : '');
 
   const toggleManualInput = (field: string) => {
     setManualInputs({
@@ -127,14 +143,14 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
         config: action.config || {},
         filters: action.filters || []
       } as ToolAction & { config: ActionConfig });
-      setSelectedField(action.config?.selectedField || '');
+      setSelectedField(`${action.config?.selectedField }` || '');
     } else {
       setEditingAction({
         id: '',
         name: '',
         type: '',
         config: {},
-        filters: [{ variable: '', operator: 'exists', value: '' }]
+        filters: []
       } as ToolAction & { config: ActionConfig });
       setSelectedField('');
     }
@@ -197,6 +213,15 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
     return editingAction.config as T;
   };
 
+  // Função auxiliar para acessar mapping com type safety
+  const safeGetMapping = <T,>(obj: T | undefined | null, key: string): string | undefined => {
+    if (!obj) return undefined;
+    // Uso de Record<string, unknown> para evitar 'any' explícito
+    const record = obj as Record<string, unknown>;
+    const value = record[key];
+    return typeof value === 'string' ? value : undefined;
+  };
+
   // Obter os campos disponíveis com base no tipo de ação
   const getAvailableFields = () => {
     switch (editingAction.type) {
@@ -211,13 +236,13 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
           { id: 'teamId', label: t('prompts:form.actions.team') },
           { id: 'title', label: t('prompts:form.actions.chatFieldTitle') }
         ];
-      case 'start_flow':
-        return [
-          { id: 'flowId', label: t('prompts:form.actions.flow') }
-        ];
       case 'check_schedule':
         return [
           { id: 'scheduleId', label: t('prompts:form.actions.schedule') }
+        ];
+      case 'go_to_flow_node':
+        return [
+          { id: 'nodeId', label: t('prompts:form.actions.flowNode') }
         ];
       default:
         return [];
@@ -259,11 +284,11 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
-        {/* Overlay */}
-        <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
-        
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
+    
         {/* Modal */}
-        <div className="relative w-full max-w-2xl rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
+        <div className="relative w-full max-w-2xl rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -429,927 +454,282 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
                 </div>
               </div>
 
-              {(editingAction.filters || []).length > 0 && (
-                <>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('prompts:form.actions.type')} *
+                </label>
+                <select
+                  value={editingAction.type}
+                  onChange={(e) => {
+                    const newType = e.target.value as ToolAction['type'];
+                    const newName = !editingAction.name || editingAction.type !== newType
+                      ? t(`prompts:form.actions.types.${newType}`)
+                      : editingAction.name;
+
+                    setEditingAction({ 
+                      ...editingAction, 
+                      type: newType,
+                      name: newName,
+                      config: {} // Resetar a configuração ao mudar o tipo
+                    });
+                    setSelectedField('');
+                  }}
+                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                >
+                  <option value="">{t('prompts:form.actions.selectType')}</option>
+                  <option value="update_customer">{t('prompts:form.actions.types.update_customer')}</option>
+                  <option value="update_chat">{t('prompts:form.actions.types.update_chat')}</option>
+                  <option value="check_schedule">{t('prompts:form.actions.types.check_schedule')}</option>
+                  <option value="go_to_flow_node">{t('prompts:form.actions.types.go_to_flow_node')}</option>
+                </select>
+              </div>
+
+              {editingAction.type == 'update_customer' || editingAction.type == 'update_chat' || editingAction.type == 'check_schedule' ? (
+                <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('prompts:form.actions.type')} *
+                      {t('prompts:form.actions.selectField')}
                     </label>
                     <select
-                      value={editingAction.type}
+                      value={selectedField}
                       onChange={(e) => {
-                        const newType = e.target.value as ToolAction['type'];
-                        const newName = !editingAction.name || editingAction.type !== newType
-                          ? t(`prompts:form.actions.types.${newType}`)
-                          : editingAction.name;
-
-                        setEditingAction({ 
-                          ...editingAction, 
-                          type: newType,
-                          name: newName,
-                          config: {} // Resetar a configuração ao mudar o tipo
-                        });
-                        setSelectedField('');
+                        const newField = e.target.value;
+                        setSelectedField(newField);
+                        
+                        // Atualizar as configurações baseado no campo selecionado
+                        if (newField) {
+                          const currentConfig = { ...editingAction.config };
+                          switch (editingAction.type) {
+                            case 'update_customer': {
+                              const customerConfig = currentConfig as CustomerActionConfig;
+                              if (newField === 'name') {
+                                customerConfig.name = '';
+                              } else if (newField === 'funnelId') {
+                                customerConfig.funnelId = '';
+                                customerConfig.stageId = '';
+                              }
+                              break;
+                            }
+                            case 'update_chat': {
+                              const chatConfig = currentConfig as ChatActionConfig;
+                              if (newField === 'status') {
+                                chatConfig.status = '';
+                              } else if (newField === 'teamId') {
+                                chatConfig.teamId = '';
+                              } else if (newField === 'title') {
+                                chatConfig.title = '';
+                              }
+                              break;
+                            }
+                          }
+                          
+                          setEditingAction({
+                            ...editingAction,
+                            config: currentConfig
+                          });
+                        }
                       }}
                       className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
                     >
-                      <option value="">{t('prompts:form.actions.selectType')}</option>
-                      <option value="update_customer">{t('prompts:form.actions.types.update_customer')}</option>
-                      <option value="update_chat">{t('prompts:form.actions.types.update_chat')}</option>
-                      <option value="start_flow">{t('prompts:form.actions.types.start_flow')}</option>
-                      <option value="check_schedule">{t('prompts:form.actions.types.check_schedule')}</option>
-                      <option value="custom">{t('prompts:form.actions.types.custom')}</option>
+                      <option value="">{t('prompts:form.actions.selectField')}</option>
+                      {getAvailableFields()
+                        .map(field => (
+                          <option key={field.id} value={field.id}>{field.label}</option>
+                        ))}
                     </select>
                   </div>
 
-                  {editingAction.type === 'check_schedule' && (
-                    <div className="space-y-3">
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('prompts:form.actions.scheduleOperation')}
-                        </label>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id="direct-operation"
-                              name="operation-type"
-                              checked={!getConfig<ScheduleActionConfig>().operationMapping}
-                              onChange={() => {
-                                const newConfig = { 
-                                  ...editingAction.config, 
-                                  operationMapping: undefined,
-                                  operation: 'checkAvailability'
-                                };
-                                setEditingAction({
-                                  ...editingAction,
-                                  config: newConfig
-                                });
-                              }}
-                              className="text-blue-600 focus:ring-blue-500"
-                            />
-                            <label htmlFor="direct-operation" className="text-xs text-gray-700 dark:text-gray-300">
-                              {t('prompts:form.actions.directOperation')}
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id="mapped-operation"
-                              name="operation-type"
-                              checked={!!getConfig<ScheduleActionConfig>().operationMapping}
-                              onChange={() => {
-                                const newConfig = { 
-                                  ...editingAction.config, 
-                                  operationMapping: {
-                                    variable: '',
-                                    mapping: {}
-                                  },
-                                  operation: undefined
-                                };
-                                setEditingAction({
-                                  ...editingAction,
-                                  config: newConfig
-                                });
-                              }}
-                              className="text-blue-600 focus:ring-blue-500"
-                            />
-                            <label htmlFor="mapped-operation" className="text-xs text-gray-700 dark:text-gray-300">
-                              {t('prompts:form.actions.mappedOperation')}
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {!getConfig<ScheduleActionConfig>().operationMapping ? (
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('prompts:form.actions.selectOperation')}
-                          </label>
-                          <select
-                            value={getConfig<ScheduleActionConfig>().operation || 'checkAvailability'}
-                            onChange={(e) => {
-                              const operation = e.target.value as 'checkAvailability' | 'createAppointment' | 'checkAppointment' | 'deleteAppointment';
-                              const newConfig = { ...editingAction.config, operation };
-                              setEditingAction({
-                                ...editingAction,
-                                config: newConfig
-                              });
-                            }}
-                            className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                          >
-                            <option value="checkAvailability">{t('prompts:form.actions.scheduleOperationTypes.checkAvailability')}</option>
-                            <option value="createAppointment">{t('prompts:form.actions.scheduleOperationTypes.createAppointment')}</option>
-                            <option value="checkAppointment">{t('prompts:form.actions.scheduleOperationTypes.checkAppointment')}</option>
-                            <option value="deleteAppointment">{t('prompts:form.actions.scheduleOperationTypes.deleteAppointment')}</option>
-                          </select>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
+                  {/* Campos específicos para update_customer */}
+                  {editingAction.type === 'update_customer' && (
+                    <>
+                      {shouldShowField('name') && (
+                        <div className="mt-3 space-y-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              {t('prompts:form.actions.selectVariable')}
+                              {t('prompts:form.examples.variables.name.label')}
                             </label>
-                            <select
-                              value={getConfig<ScheduleActionConfig>().operationMapping?.variable || ''}
-                              onChange={(e) => {
-                                const newConfig = {
-                                  ...editingAction.config,
-                                  operationMapping: {
-                                    variable: e.target.value,
-                                    mapping: {}
-                                  }
-                                };
-                                setEditingAction({
-                                  ...editingAction,
-                                  config: newConfig
-                                });
-                              }}
-                              className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                            >
-                              <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                              {getAvailableParameters()
-                                .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                                .map((param) => (
-                                  <option key={param.name} value={param.name}>{param.label}</option>
-                                ))}
-                            </select>
-                          </div>
-
-                          {getConfig<ScheduleActionConfig>().operationMapping?.variable && (
-                            <div className="mt-3">
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                {t('prompts:form.actions.operationMapping')}
-                              </label>
-                              <div className="space-y-2">
-                                {(() => {
-                                  const selectedVariable = getConfig<ScheduleActionConfig>().operationMapping?.variable;
-                                  const enumValues = parameters[selectedVariable!]?.enum || [];
-
-                                  return enumValues.map((enumValue: string) => (
-                                    <div key={enumValue} className="flex items-center space-x-2">
-                                      <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                        {enumValue}:
-                                      </span>
-                                      <select
-                                        value={getConfig<ScheduleActionConfig>().operationMapping?.mapping[enumValue] || ''}
-                                        onChange={(e) => {
-                                          const operation = e.target.value as 'checkAvailability' | 'createAppointment' | 'checkAppointment' | 'deleteAppointment';
-                                          const newMapping = {
-                                            ...(getConfig<ScheduleActionConfig>().operationMapping?.mapping || {}),
-                                            [enumValue]: operation
-                                          };
-                                          const newConfig = {
-                                            ...editingAction.config,
-                                            operationMapping: {
-                                              ...getConfig<ScheduleActionConfig>().operationMapping!,
-                                              mapping: newMapping
-                                            }
-                                          };
-                                          setEditingAction({
-                                            ...editingAction,
-                                            config: newConfig
-                                          });
-                                        }}
-                                        className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                      >
-                                        <option value="">{t('prompts:form.actions.selectOperation')}</option>
-                                        <option value="checkAvailability">{t('prompts:form.actions.scheduleOperationTypes.checkAvailability')}</option>
-                                        <option value="createAppointment">{t('prompts:form.actions.scheduleOperationTypes.createAppointment')}</option>
-                                        <option value="checkAppointment">{t('prompts:form.actions.scheduleOperationTypes.checkAppointment')}</option>
-                                        <option value="deleteAppointment">{t('prompts:form.actions.scheduleOperationTypes.deleteAppointment')}</option>
-                                      </select>
-                                    </div>
-                                  ));
-                                })()}
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="direct-name"
+                                  name="name-type"
+                                  checked={!getConfig<CustomerActionConfig>().nameMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      nameMapping: undefined,
+                                      name: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="direct-name" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.directName')}
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="mapped-name"
+                                  name="name-type"
+                                  checked={!!getConfig<CustomerActionConfig>().nameMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      nameMapping: {
+                                        variable: '',
+                                        mapping: {}
+                                      },
+                                      name: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="mapped-name" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.mappedName')}
+                                </label>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('prompts:form.actions.schedule')}
-                        </label>
-                        <select
-                          value={getConfig<ScheduleActionConfig>().scheduleId || ''}
-                          onChange={(e) => {
-                            const newConfig = { ...editingAction.config, scheduleId: e.target.value };
-                            setEditingAction({
-                              ...editingAction,
-                              config: newConfig
-                            });
-                          }}
-                          className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                        >
-                          <option value="">{t('prompts:form.actions.selectSchedule')}</option>
-                          {schedules.map((schedule) => (
-                            <option key={schedule.id} value={schedule.id}>{schedule.title}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                     
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('prompts:form.actions.scheduleDay')}
-                        </label>
-                        <select
-                          value={getConfig<ScheduleActionConfig>().dayVariable || ''}
-                          onChange={(e) => {
-                            const newConfig = { ...editingAction.config, dayVariable: e.target.value };
-                            setEditingAction({
-                              ...editingAction,
-                              config: newConfig
-                            });
-                          }}
-                          className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                        >
-                          <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                          {getAvailableParameters()
-                            .filter(param => !param.name.includes('service')) // Excluir variáveis de serviço
-                            .map((param) => (
-                              <option key={param.name} value={param.name}>{param.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('prompts:form.actions.scheduleTime')}
-                        </label>
-                        <select
-                          value={getConfig<ScheduleActionConfig>().timeVariable || ''}
-                          onChange={(e) => {
-                            const newConfig = { ...editingAction.config, timeVariable: e.target.value };
-                            setEditingAction({
-                              ...editingAction,
-                              config: newConfig
-                            });
-                          }}
-                          className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                        >
-                          <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                          {getAvailableParameters()
-                            .filter(param => !param.name.includes('service')) // Excluir variáveis de serviço
-                            .map((param) => (
-                              <option key={param.name} value={param.name}>{param.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                            {t('prompts:form.actions.scheduleNotes')}
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => toggleManualInput('notes')}
-                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            {manualInputs.notes ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
-                          </button>
-                        </div>
-                        {manualInputs.notes ? (
-                          <input
-                            type="text"
-                            value={getConfig<ScheduleActionConfig>().notes || ''}
-                            onChange={(e) => {
-                              const newConfig = { ...editingAction.config, notes: e.target.value };
-                              setEditingAction({
-                                ...editingAction,
-                                config: newConfig
-                              });
-                            }}
-                            className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                            placeholder={t('prompts:form.actions.notesPlaceholder')}
-                          />
-                        ) : (
-                          <select
-                            value={getConfig<ScheduleActionConfig>().notes || ''}
-                            onChange={(e) => {
-                              const newConfig = { ...editingAction.config, notes: e.target.value };
-                              setEditingAction({
-                                ...editingAction,
-                                config: newConfig
-                              });
-                            }}
-                            className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                          >
-                            <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                            {getAvailableParameters().map((param) => (
-                              <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('prompts:form.actions.scheduleService')}
-                        </label>
-                        <select
-                          value={getConfig<ScheduleActionConfig>().serviceVariable || ''}
-                          onChange={(e) => {
-                            const newConfig = { ...editingAction.config, serviceVariable: e.target.value };
-                            setEditingAction({
-                              ...editingAction,
-                              config: newConfig
-                            });
-                          }}
-                          className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                        >
-                          <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                          {getAvailableParameters()
-                            .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                            .map((param) => (
-                              <option key={param.name} value={param.name}>{param.label}</option>
-                            ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('prompts:form.actions.appointmentId')}
-                        </label>
-                        <select
-                          value={getConfig<ScheduleActionConfig>().appointmentIdVariable || ''}
-                          onChange={(e) => {
-                            const newConfig = { ...editingAction.config, appointmentIdVariable: e.target.value };
-                            setEditingAction({
-                              ...editingAction,
-                              config: newConfig
-                            });
-                          }}
-                          className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                        >
-                          <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                          {getAvailableParameters()
-                            .filter(param => !Array.isArray(parameters[param.name]?.enum) || parameters[param.name]?.enum?.length === 0)
-                            .map((param) => (
-                              <option key={param.name} value={param.name}>{param.label}</option>
-                            ))}
-                        </select>
-                      </div>
-
-                      {getConfig<ScheduleActionConfig>().serviceVariable && (
-                        <div className="mt-3">
-                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('prompts:form.actions.serviceMapping')}
-                          </label>
-                          <div className="space-y-2">
-                            {(() => {
-                              const selectedVariable = getConfig<ScheduleActionConfig>().serviceVariable;
-                              const enumValues = parameters[selectedVariable!]?.enum || [];
-                              const selectedSchedule = schedules.find(s => s.id === getConfig<ScheduleActionConfig>().scheduleId);
-                              const availableServices = selectedSchedule?.services || [];
-
-                              return enumValues.map((enumValue: string) => (
-                                <div key={enumValue} className="flex items-center space-x-2">
-                                  <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                    {enumValue}:
-                                  </span>
-                                  <select
-                                    value={getConfig<ScheduleActionConfig>().serviceMapping?.[enumValue] || ''}
-                                    onChange={(e) => {
-                                      const newMapping = {
-                                        ...(getConfig<ScheduleActionConfig>().serviceMapping || {}),
-                                        [enumValue]: e.target.value
-                                      };
-                                      const newConfig = {
-                                        ...editingAction.config,
-                                        serviceMapping: newMapping
-                                      };
-                                      setEditingAction({
-                                        ...editingAction,
-                                        config: newConfig
-                                      });
-                                    }}
-                                    className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                  >
-                                    <option value="">{t('prompts:form.actions.selectService')}</option>
-                                    {availableServices.map((service) => (
-                                      <option key={service.id} value={service.id}>
-                                        {service.title}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              ));
-                            })()}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
-                  {editingAction.type !== 'custom' && editingAction.type !== 'check_schedule' && editingAction.type !== 'start_flow' ? (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {t('prompts:form.actions.selectField')}
-                        </label>
-                        <select
-                          value={selectedField}
-                          onChange={(e) => {
-                            const newField = e.target.value;
-                            setSelectedField(newField);
-                            
-                            // Atualizar as configurações baseado no campo selecionado
-                            if (newField) {
-                              const currentConfig = { ...editingAction.config };
-                              switch (editingAction.type) {
-                                case 'update_customer': {
-                                  const customerConfig = currentConfig as CustomerActionConfig;
-                                  if (newField === 'name') {
-                                    customerConfig.name = '';
-                                  } else if (newField === 'funnelId') {
-                                    customerConfig.funnelId = '';
-                                    customerConfig.stageId = '';
-                                  }
-                                  break;
-                                }
-                                case 'update_chat': {
-                                  const chatConfig = currentConfig as ChatActionConfig;
-                                  if (newField === 'status') {
-                                    chatConfig.status = '';
-                                  } else if (newField === 'teamId') {
-                                    chatConfig.teamId = '';
-                                  } else if (newField === 'title') {
-                                    chatConfig.title = '';
-                                  }
-                                  break;
-                                }
-                                case 'start_flow': {
-                                  const flowConfig = currentConfig as FlowActionConfig;
-                                  if (newField === 'flowId') {
-                                    flowConfig.flowId = '';
-                                  }
-                                  break;
-                                }
-                              }
-                              
-                              setEditingAction({
-                                ...editingAction,
-                                config: currentConfig
-                              });
-                            }
-                          }}
-                          className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                        >
-                          <option value="">{t('prompts:form.actions.selectField')}</option>
-                          {getAvailableFields()
-                            .map(field => (
-                              <option key={field.id} value={field.id}>{field.label}</option>
-                            ))}
-                        </select>
-                      </div>
-
-                      {/* Campos específicos para update_customer */}
-                      {editingAction.type === 'update_customer' && (
-                        <>
-                          {shouldShowField('name') && (
-                            <div className="mt-3 space-y-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {!getConfig<CustomerActionConfig>().nameMapping ? (
+                            <div>
+                              <div className="flex justify-between items-center mb-1">
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
                                   {t('prompts:form.examples.variables.name.label')}
                                 </label>
-                                <div className="space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="direct-name"
-                                      name="name-type"
-                                      checked={!getConfig<CustomerActionConfig>().nameMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          nameMapping: undefined,
-                                          name: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="direct-name" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.directName')}
-                                    </label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="mapped-name"
-                                      name="name-type"
-                                      checked={!!getConfig<CustomerActionConfig>().nameMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          nameMapping: {
-                                            variable: '',
-                                            mapping: {}
-                                          },
-                                          name: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="mapped-name" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.mappedName')}
-                                    </label>
-                                  </div>
-                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleManualInput('name')}
+                                  className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                >
+                                  {manualInputs.name ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
+                                </button>
                               </div>
-
-                              {!getConfig<CustomerActionConfig>().nameMapping ? (
-                                <div>
-                                  <div className="flex justify-between items-center mb-1">
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.examples.variables.name.label')}
-                                    </label>
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleManualInput('name')}
-                                      className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                    >
-                                      {manualInputs.name ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
-                                    </button>
-                                  </div>
-                                  {manualInputs.name ? (
-                                    <input
-                                      type="text"
-                                      value={getConfig<CustomerActionConfig>().name || ''}
-                                      onChange={(e) => {
-                                        const newConfig = { ...editingAction.config, name: e.target.value };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                      placeholder={t('prompts:form.actions.customerNamePlaceholder')}
-                                    />
-                                  ) : (
-                                    <select
-                                      value={getConfig<CustomerActionConfig>().name || ''}
-                                      onChange={(e) => {
-                                        const newConfig = { ...editingAction.config, name: e.target.value };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters().map((param) => (
-                                        <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
-                                      ))}
-                                    </select>
-                                  )}
-                                </div>
+                              {manualInputs.name ? (
+                                <input
+                                  type="text"
+                                  value={safeGetMapping(getConfig<CustomerActionConfig>().nameMapping, 'name') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = { ...editingAction.config, name: e.target.value };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                  placeholder={t('prompts:form.actions.customerNamePlaceholder')}
+                                />
                               ) : (
-                                <div className="space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                      {t('prompts:form.actions.selectVariable')}
-                                    </label>
-                                    <select
-                                      value={getConfig<CustomerActionConfig>().nameMapping?.variable || ''}
-                                      onChange={(e) => {
-                                        const newConfig = {
-                                          ...editingAction.config,
-                                          nameMapping: {
-                                            variable: e.target.value,
-                                            mapping: {}
-                                          }
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters()
-                                        .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                                        .map((param) => (
-                                          <option key={param.name} value={param.name}>{param.label}</option>
-                                        ))}
-                                    </select>
-                                  </div>
-
-                                  {getConfig<CustomerActionConfig>().nameMapping?.variable && (
-                                    <div className="mt-3">
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.nameMapping')}
-                                      </label>
-                                      <div className="space-y-2">
-                                        {(() => {
-                                          const selectedVariable = getConfig<CustomerActionConfig>().nameMapping?.variable;
-                                          const enumValues = parameters[selectedVariable!]?.enum || [];
-
-                                          return enumValues.map((enumValue: string) => (
-                                            <div key={enumValue} className="flex items-center space-x-2">
-                                              <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                                {enumValue}:
-                                              </span>
-                                              <div className="flex-1">
-                                                <div className="flex justify-end mb-1">
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      const newManualInputs = { ...manualInputs };
-                                                      newManualInputs[`name_${enumValue}`] = !manualInputs[`name_${enumValue}`];
-                                                      setManualInputs(newManualInputs);
-                                                    }}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                                  >
-                                                    {manualInputs[`name_${enumValue}`] ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
-                                                  </button>
-                                                </div>
-                                                {manualInputs[`name_${enumValue}`] ? (
-                                                  <input
-                                                    type="text"
-                                                    value={getConfig<CustomerActionConfig>().nameMapping?.mapping[enumValue] || ''}
-                                                    onChange={(e) => {
-                                                      const newMapping = {
-                                                        ...(getConfig<CustomerActionConfig>().nameMapping?.mapping || {}),
-                                                        [enumValue]: e.target.value
-                                                      };
-                                                      const newConfig = {
-                                                        ...editingAction.config,
-                                                        nameMapping: {
-                                                          ...getConfig<CustomerActionConfig>().nameMapping!,
-                                                          mapping: newMapping
-                                                        }
-                                                      };
-                                                      setEditingAction({
-                                                        ...editingAction,
-                                                        config: newConfig
-                                                      });
-                                                    }}
-                                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                                    placeholder={t('prompts:form.actions.customerNamePlaceholder')}
-                                                  />
-                                                ) : (
-                                                  <select
-                                                    value={getConfig<CustomerActionConfig>().nameMapping?.mapping[enumValue] || ''}
-                                                    onChange={(e) => {
-                                                      const newMapping = {
-                                                        ...(getConfig<CustomerActionConfig>().nameMapping?.mapping || {}),
-                                                        [enumValue]: e.target.value
-                                                      };
-                                                      const newConfig = {
-                                                        ...editingAction.config,
-                                                        nameMapping: {
-                                                          ...getConfig<CustomerActionConfig>().nameMapping!,
-                                                          mapping: newMapping
-                                                        }
-                                                      };
-                                                      setEditingAction({
-                                                        ...editingAction,
-                                                        config: newConfig
-                                                      });
-                                                    }}
-                                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                                  >
-                                                    <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                                    {getAvailableParameters().map((param) => (
-                                                      <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
-                                                    ))}
-                                                  </select>
-                                                )}
-                                              </div>
-                                            </div>
-                                          ));
-                                        })()}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
+                                <select
+                                  value={safeGetMapping(getConfig<CustomerActionConfig>().nameMapping, 'name') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = { ...editingAction.config, name: e.target.value };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                  {getAvailableParameters()
+                                    .filter(param => {
+                                      const enumValues = parameters[param.name]?.enum;
+                                      return Array.isArray(enumValues) && enumValues.length > 0;
+                                    })
+                                    .map((param) => (
+                                      <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
+                                    ))}
+                                </select>
                               )}
                             </div>
-                          )}
-                          
-                          {shouldShowField('funnelId') && (
-                            <div className="mt-3 space-y-3">
+                          ) : (
+                            <div className="space-y-3">
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  {t('prompts:form.actions.funnel')}
+                                  {t('prompts:form.actions.selectVariable')}
                                 </label>
-                                <div className="space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="direct-funnel"
-                                      name="funnel-type"
-                                      checked={!getConfig<CustomerActionConfig>().funnelMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          funnelMapping: undefined,
-                                          funnelId: '',
-                                          stageId: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="direct-funnel" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.directFunnel')}
-                                    </label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="mapped-funnel"
-                                      name="funnel-type"
-                                      checked={!!getConfig<CustomerActionConfig>().funnelMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          funnelMapping: {
-                                            variable: '',
-                                            mapping: {}
-                                          },
-                                          funnelId: '',
-                                          stageId: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="mapped-funnel" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.mappedFunnel')}
-                                    </label>
-                                  </div>
-                                </div>
+                                <select
+                                  value={safeGetMapping(getConfig<CustomerActionConfig>().nameMapping, 'variable') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = {
+                                      ...editingAction.config,
+                                      nameMapping: {
+                                        variable: e.target.value,
+                                        mapping: {}
+                                      }
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                  {getAvailableParameters()
+                                    .filter(param => {
+                                      const enumValues = parameters[param.name]?.enum;
+                                      return Array.isArray(enumValues) && enumValues.length > 0;
+                                    })
+                                    .map((param) => (
+                                      <option key={param.name} value={param.name}>{param.label}</option>
+                                    ))}
+                                </select>
                               </div>
 
-                              {!getConfig<CustomerActionConfig>().funnelMapping ? (
-                                <>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                      {t('prompts:form.actions.selectFunnel')}
-                                    </label>
-                                    <select
-                                      value={getConfig<CustomerActionConfig>().funnelId || ''}
-                                      onChange={(e) => {
-                                        const config = getConfig<CustomerActionConfig>();
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          funnelId: e.target.value,
-                                          stageId: e.target.value !== config.funnelId ? '' : config.stageId
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectFunnel')}</option>
-                                      {funnels.map((funnel) => (
-                                        <option key={funnel.id} value={funnel.id}>{funnel.name}</option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  
-                                  {getConfig<CustomerActionConfig>().funnelId && (
-                                    <div>
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.selectStage')}
-                                      </label>
-                                      <select
-                                        value={getConfig<CustomerActionConfig>().stageId || ''}
-                                        onChange={(e) => {
-                                          const newConfig = { ...editingAction.config, stageId: e.target.value };
-                                          setEditingAction({
-                                            ...editingAction,
-                                            config: newConfig
-                                          });
-                                        }}
-                                        className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                      >
-                                        <option value="">{t('prompts:form.actions.selectStage')}</option>
-                                        {funnels
-                                          .find(f => f.id === getConfig<CustomerActionConfig>().funnelId)
-                                          ?.stages?.map((stage) => (
-                                            <option key={stage.id} value={stage.id}>{stage.name}</option>
-                                          ))}
-                                      </select>
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <div className="space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                      {t('prompts:form.actions.selectVariable')}
-                                    </label>
-                                    <select
-                                      value={getConfig<CustomerActionConfig>().funnelMapping?.variable || ''}
-                                      onChange={(e) => {
-                                        const newConfig = {
-                                          ...editingAction.config,
-                                          funnelMapping: {
-                                            variable: e.target.value,
-                                            mapping: {}
-                                          }
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters()
-                                        .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                                        .map((param) => (
-                                          <option key={param.name} value={param.name}>{param.label}</option>
-                                        ))}
-                                    </select>
-                                  </div>
+                              {safeGetMapping(getConfig<CustomerActionConfig>().nameMapping, 'variable') && (
+                                <div className="mt-3">
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('prompts:form.actions.nameMapping')}
+                                  </label>
+                                  <div className="space-y-2">
+                                    {(() => {
+                                      const selectedVariable = safeGetMapping(getConfig<CustomerActionConfig>().nameMapping, 'variable');
+                                      const enumValues = parameters[selectedVariable!]?.enum || [];
 
-                                  {getConfig<CustomerActionConfig>().funnelMapping?.variable && (
-                                    <div>
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.selectFunnel')}
-                                      </label>
-                                      <select
-                                        value={getConfig<CustomerActionConfig>().funnelId || ''}
-                                        onChange={(e) => {
-                                          const newConfig = {
-                                            ...editingAction.config,
-                                            funnelId: e.target.value,
-                                            funnelMapping: {
-                                              ...getConfig<CustomerActionConfig>().funnelMapping!,
-                                              mapping: {}
-                                            }
-                                          };
-                                          setEditingAction({
-                                            ...editingAction,
-                                            config: newConfig
-                                          });
-                                        }}
-                                        className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                      >
-                                        <option value="">{t('prompts:form.actions.selectFunnel')}</option>
-                                        {funnels.map((funnel) => (
-                                          <option key={funnel.id} value={funnel.id}>{funnel.name}</option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                  )}
-
-                                  {getConfig<CustomerActionConfig>().funnelMapping?.variable && getConfig<CustomerActionConfig>().funnelId && (
-                                    <div className="mt-3">
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.stageMapping')}
-                                      </label>
-                                      <div className="space-y-2">
-                                        {(() => {
-                                          const selectedVariable = getConfig<CustomerActionConfig>().funnelMapping?.variable;
-                                          const enumValues = parameters[selectedVariable!]?.enum || [];
-                                          const selectedFunnel = funnels.find(f => f.id === getConfig<CustomerActionConfig>().funnelId);
-                                          const availableStages = selectedFunnel?.stages || [];
-
-                                          return enumValues.map((enumValue: string) => (
-                                            <div key={enumValue} className="flex items-center space-x-2">
-                                              <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                                {enumValue}:
-                                              </span>
-                                              <select
-                                                value={getConfig<CustomerActionConfig>().funnelMapping?.mapping[enumValue] || ''}
+                                      return enumValues.map((enumValue: string) => (
+                                        <div key={enumValue} className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
+                                            {enumValue}:
+                                          </span>
+                                          <div className="flex-1">
+                                            <div className="flex justify-end mb-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const newManualInputs = { ...manualInputs };
+                                                  newManualInputs[`name_${enumValue}`] = !manualInputs[`name_${enumValue}`];
+                                                  setManualInputs(newManualInputs);
+                                                }}
+                                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                              >
+                                                {manualInputs[`name_${enumValue}`] ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
+                                              </button>
+                                            </div>
+                                            {manualInputs[`name_${enumValue}`] ? (
+                                              <input
+                                                type="text"
+                                                value={safeGetMapping(getConfig<CustomerActionConfig>().nameMapping?.mapping, enumValue) || ''}
                                                 onChange={(e) => {
                                                   const newMapping = {
-                                                    ...(getConfig<CustomerActionConfig>().funnelMapping?.mapping || {}),
+                                                    ...(getConfig<CustomerActionConfig>().nameMapping?.mapping || {}),
                                                     [enumValue]: e.target.value
                                                   };
                                                   const newConfig = {
                                                     ...editingAction.config,
-                                                    funnelMapping: {
-                                                      ...getConfig<CustomerActionConfig>().funnelMapping!,
+                                                    nameMapping: {
+                                                      ...getConfig<CustomerActionConfig>().nameMapping!,
                                                       mapping: newMapping
                                                     }
                                                   };
@@ -1358,849 +738,935 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
                                                     config: newConfig
                                                   });
                                                 }}
-                                                className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                                placeholder={t('prompts:form.actions.customerNamePlaceholder')}
+                                              />
+                                            ) : (
+                                              <select
+                                                value={safeGetMapping(getConfig<CustomerActionConfig>().nameMapping?.mapping, enumValue) || ''}
+                                                onChange={(e) => {
+                                                  const newMapping = {
+                                                    ...(getConfig<CustomerActionConfig>().nameMapping?.mapping || {}),
+                                                    [enumValue]: e.target.value
+                                                  };
+                                                  const newConfig = {
+                                                    ...editingAction.config,
+                                                    nameMapping: {
+                                                      ...getConfig<CustomerActionConfig>().nameMapping!,
+                                                      mapping: newMapping
+                                                    }
+                                                  };
+                                                  setEditingAction({
+                                                    ...editingAction,
+                                                    config: newConfig
+                                                  });
+                                                }}
+                                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
                                               >
-                                                <option value="">{t('prompts:form.actions.selectStage')}</option>
-                                                {availableStages.map((stage) => (
-                                                  <option key={stage.id} value={stage.id}>
-                                                    {stage.name}
-                                                  </option>
-                                                ))}
+                                                <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                                {getAvailableParameters()
+                                                  .filter(param => {
+                                                    const enumValues = parameters[param.name]?.enum;
+                                                    return Array.isArray(enumValues) && enumValues.length > 0;
+                                                  })
+                                                  .map((param) => (
+                                                    <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
+                                                  ))}
                                               </select>
-                                            </div>
-                                          ));
-                                        })()}
-                                      </div>
-                                    </div>
-                                  )}
+                                            )}
+                                          </div>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
                                 </div>
                               )}
                             </div>
                           )}
-                        </>
+                        </div>
+                      )}
+                      
+                      {shouldShowField('funnelId') && (
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              {t('prompts:form.actions.funnel')}
+                            </label>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="direct-funnel"
+                                  name="funnel-type"
+                                  checked={!getConfig<CustomerActionConfig>().funnelMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      funnelMapping: undefined,
+                                      funnelId: '',
+                                      stageId: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="direct-funnel" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.directFunnel')}
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="mapped-funnel"
+                                  name="funnel-type"
+                                  checked={!!getConfig<CustomerActionConfig>().funnelMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      funnelMapping: {
+                                        variable: '',
+                                        mapping: {}
+                                      },
+                                      funnelId: '',
+                                      stageId: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="mapped-funnel" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.mappedFunnel')}
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          {!getConfig<CustomerActionConfig>().funnelMapping ? (
+                            <>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  {t('prompts:form.actions.selectFunnel')}
+                                </label>
+                                <select
+                                  value={safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'funnelId') || ''}
+                                  onChange={(e) => {
+                                    const config = getConfig<CustomerActionConfig>();
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      funnelId: e.target.value,
+                                      stageId: e.target.value !== config.funnelId ? '' : config.stageId
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectFunnel')}</option>
+                                  {funnels.map((funnel) => (
+                                    <option key={funnel.id} value={funnel.id}>{funnel.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              
+                              {safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'funnelId') && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('prompts:form.actions.selectStage')}
+                                  </label>
+                                  <select
+                                    value={safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'stageId') || ''}
+                                    onChange={(e) => {
+                                      const newConfig = { ...editingAction.config, stageId: e.target.value };
+                                      setEditingAction({
+                                        ...editingAction,
+                                        config: newConfig
+                                      });
+                                    }}
+                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                  >
+                                    <option value="">{t('prompts:form.actions.selectStage')}</option>
+                                    {funnels
+                                      .find(f => f.id === safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'funnelId'))
+                                      ?.stages?.map((stage) => (
+                                        <option key={stage.id} value={stage.id}>{stage.name}</option>
+                                      ))}
+                                  </select>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  {t('prompts:form.actions.selectVariable')}
+                                </label>
+                                <select
+                                  value={safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'variable') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = {
+                                      ...editingAction.config,
+                                      funnelMapping: {
+                                        variable: e.target.value,
+                                        mapping: {}
+                                      }
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                  {getAvailableParameters()
+                                    .filter(param => {
+                                      const enumValues = parameters[param.name]?.enum;
+                                      return Array.isArray(enumValues) && enumValues.length > 0;
+                                    })
+                                    .map((param) => (
+                                      <option key={param.name} value={param.name}>{param.label}</option>
+                                    ))}
+                                </select>
+                              </div>
+
+                              {safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'variable') && safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'funnelId') && (
+                                <div className="mt-3">
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('prompts:form.actions.stageMapping')}
+                                  </label>
+                                  <div className="space-y-2">
+                                    {(() => {
+                                      const selectedVariable = safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'variable');
+                                      const enumValues = parameters[selectedVariable!]?.enum || [];
+                                      const selectedFunnel = funnels.find(f => f.id === safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping, 'funnelId'));
+                                      const availableStages = selectedFunnel?.stages || [];
+
+                                      return enumValues.map((enumValue: string) => (
+                                        <div key={enumValue} className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
+                                            {enumValue}:
+                                          </span>
+                                          <select
+                                            value={safeGetMapping(getConfig<CustomerActionConfig>().funnelMapping?.mapping, enumValue) || ''}
+                                            onChange={(e) => {
+                                              const newMapping = {
+                                                ...(getConfig<CustomerActionConfig>().funnelMapping?.mapping || {}),
+                                                [enumValue]: e.target.value
+                                              };
+                                              const newConfig = {
+                                                ...editingAction.config,
+                                                funnelMapping: {
+                                                  ...getConfig<CustomerActionConfig>().funnelMapping!,
+                                                  mapping: newMapping
+                                                }
+                                              };
+                                              setEditingAction({
+                                                ...editingAction,
+                                                config: newConfig
+                                              });
+                                            }}
+                                            className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                          >
+                                            <option value="">{t('prompts:form.actions.selectStage')}</option>
+                                            {availableStages.map((stage) => (
+                                              <option key={stage.id} value={stage.id}>
+                                                {stage.name}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Campos específicos para update_chat */}
+                  {editingAction.type === 'update_chat' && (
+                    <>
+                      {shouldShowField('status') && (
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              {t('prompts:form.actions.status')}
+                            </label>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="direct-status"
+                                  name="status-type"
+                                  checked={!getConfig<ChatActionConfig>().statusMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      statusMapping: undefined,
+                                      status: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="direct-status" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.directStatus')}
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="mapped-status"
+                                  name="status-type"
+                                  checked={!!getConfig<ChatActionConfig>().statusMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      statusMapping: {
+                                        variable: '',
+                                        mapping: {}
+                                      },
+                                      status: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="mapped-status" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.mappedStatus')}
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          {!getConfig<ChatActionConfig>().statusMapping ? (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {t('prompts:form.actions.selectStatus')}
+                              </label>
+                              <select
+                                value={safeGetMapping(getConfig<ChatActionConfig>(), 'status') || ''}
+                                onChange={(e) => {
+                                  const newConfig = { ...editingAction.config, status: e.target.value };
+                                  setEditingAction({
+                                    ...editingAction,
+                                    config: newConfig
+                                  });
+                                }}
+                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                              >
+                                <option value="">{t('prompts:form.actions.selectStatus')}</option>
+                                <option value="pending">{t('prompts:form.actions.statusPending')}</option>
+                                <option value="in_progress">{t('prompts:form.actions.statusInProgress')}</option>
+                                <option value="closed">{t('prompts:form.actions.statusClosed')}</option>
+                              </select>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  {t('prompts:form.actions.selectVariable')}
+                                </label>
+                                <select
+                                  value={safeGetMapping(getConfig<ChatActionConfig>().statusMapping, 'variable') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = {
+                                      ...editingAction.config,
+                                      statusMapping: {
+                                        variable: e.target.value,
+                                        mapping: {}
+                                      }
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                  {getAvailableParameters()
+                                    .filter(param => {
+                                      const enumValues = parameters[param.name]?.enum;
+                                      return Array.isArray(enumValues) && enumValues.length > 0;
+                                    })
+                                    .map((param) => (
+                                      <option key={param.name} value={param.name}>{param.label}</option>
+                                    ))}
+                                </select>
+                              </div>
+
+                              {safeGetMapping(getConfig<ChatActionConfig>().statusMapping, 'variable') && (
+                                <div className="mt-3">
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('prompts:form.actions.statusMapping')}
+                                  </label>
+                                  <div className="space-y-2">
+                                    {(() => {
+                                      const selectedVariable = safeGetMapping(getConfig<ChatActionConfig>().statusMapping, 'variable');
+                                      const enumValues = parameters[selectedVariable!]?.enum || [];
+                                      const availableStatuses = [
+                                        { value: 'pending', label: t('prompts:form.actions.statusPending') },
+                                        { value: 'in_progress', label: t('prompts:form.actions.statusInProgress') },
+                                        { value: 'closed', label: t('prompts:form.actions.statusClosed') }
+                                      ];
+
+                                      return enumValues.map((enumValue: string) => (
+                                        <div key={enumValue} className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
+                                            {enumValue}:
+                                          </span>
+                                          <select
+                                            value={safeGetMapping(getConfig<ChatActionConfig>().statusMapping?.mapping, enumValue) || ''}
+                                            onChange={(e) => {
+                                              const newMapping = {
+                                                ...(getConfig<ChatActionConfig>().statusMapping?.mapping || {}),
+                                                [enumValue]: e.target.value
+                                              };
+                                              const newConfig = {
+                                                ...editingAction.config,
+                                                statusMapping: {
+                                                  ...getConfig<ChatActionConfig>().statusMapping!,
+                                                  mapping: newMapping
+                                                }
+                                              };
+                                              setEditingAction({
+                                                ...editingAction,
+                                                config: newConfig
+                                              });
+                                            }}
+                                            className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                          >
+                                            <option value="">{t('prompts:form.actions.selectStatus')}</option>
+                                            {availableStatuses.map((status) => (
+                                              <option key={status.value} value={status.value}>
+                                                {status.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {shouldShowField('teamId') && (
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              {t('prompts:form.actions.team')}
+                            </label>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="direct-team"
+                                  name="team-type"
+                                  checked={!getConfig<ChatActionConfig>().teamMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      teamMapping: undefined,
+                                      teamId: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="direct-team" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.directTeam')}
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="mapped-team"
+                                  name="team-type"
+                                  checked={!!getConfig<ChatActionConfig>().teamMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      teamMapping: {
+                                        variable: '',
+                                        mapping: {}
+                                      },
+                                      teamId: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="mapped-team" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.mappedTeam')}
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          {!getConfig<ChatActionConfig>().teamMapping ? (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {t('prompts:form.actions.selectTeam')}
+                              </label>
+                              <select
+                                value={safeGetMapping(getConfig<ChatActionConfig>(), 'teamId') || ''}
+                                onChange={(e) => {
+                                  const newConfig = { ...editingAction.config, teamId: e.target.value };
+                                  setEditingAction({
+                                    ...editingAction,
+                                    config: newConfig
+                                  });
+                                }}
+                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                              >
+                                <option value="">{t('prompts:form.actions.selectTeam')}</option>
+                                {teams.map((team) => (
+                                  <option key={team.id} value={team.id}>{team.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  {t('prompts:form.actions.selectVariable')}
+                                </label>
+                                <select
+                                  value={safeGetMapping(getConfig<ChatActionConfig>().teamMapping, 'variable') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = {
+                                      ...editingAction.config,
+                                      teamMapping: {
+                                        variable: e.target.value,
+                                        mapping: {}
+                                      }
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                  {getAvailableParameters()
+                                    .filter(param => {
+                                      const enumValues = parameters[param.name]?.enum;
+                                      return Array.isArray(enumValues) && enumValues.length > 0;
+                                    })
+                                    .map((param) => (
+                                      <option key={param.name} value={param.name}>{param.label}</option>
+                                    ))}
+                                </select>
+                              </div>
+
+                              {safeGetMapping(getConfig<ChatActionConfig>().teamMapping, 'variable') && (
+                                <div className="mt-3">
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('prompts:form.actions.teamMapping')}
+                                  </label>
+                                  <div className="space-y-2">
+                                    {(() => {
+                                      const selectedVariable = safeGetMapping(getConfig<ChatActionConfig>().teamMapping, 'variable');
+                                      const enumValues = parameters[selectedVariable!]?.enum || [];
+
+                                      return enumValues.map((enumValue: string) => (
+                                        <div key={enumValue} className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
+                                            {enumValue}:
+                                          </span>
+                                          <div className="flex-1">
+                                            <div className="flex justify-end mb-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const newManualInputs = { ...manualInputs };
+                                                  newManualInputs[`team_${enumValue}`] = !manualInputs[`team_${enumValue}`];
+                                                  setManualInputs(newManualInputs);
+                                                }}
+                                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                              >
+                                                {manualInputs[`team_${enumValue}`] ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
+                                              </button>
+                                            </div>
+                                            {manualInputs[`team_${enumValue}`] ? (
+                                              <input
+                                                type="text"
+                                                value={safeGetMapping(getConfig<ChatActionConfig>().teamMapping?.mapping, enumValue) || ''}
+                                                onChange={(e) => {
+                                                  const newMapping = {
+                                                    ...(getConfig<ChatActionConfig>().teamMapping?.mapping || {}),
+                                                    [enumValue]: e.target.value
+                                                  };
+                                                  const newConfig = {
+                                                    ...editingAction.config,
+                                                    teamMapping: {
+                                                      ...getConfig<ChatActionConfig>().teamMapping!,
+                                                      mapping: newMapping
+                                                    }
+                                                  };
+                                                  setEditingAction({
+                                                    ...editingAction,
+                                                    config: newConfig
+                                                  });
+                                                }}
+                                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                                placeholder={t('prompts:form.actions.teamNamePlaceholder')}
+                                              />
+                                            ) : (
+                                              <select
+                                                value={safeGetMapping(getConfig<ChatActionConfig>().teamMapping?.mapping, enumValue) || ''}
+                                                onChange={(e) => {
+                                                  const newMapping = {
+                                                    ...(getConfig<ChatActionConfig>().teamMapping?.mapping || {}),
+                                                    [enumValue]: e.target.value
+                                                  };
+                                                  const newConfig = {
+                                                    ...editingAction.config,
+                                                    teamMapping: {
+                                                      ...getConfig<ChatActionConfig>().teamMapping!,
+                                                      mapping: newMapping
+                                                    }
+                                                  };
+                                                  setEditingAction({
+                                                    ...editingAction,
+                                                    config: newConfig
+                                                  });
+                                                }}
+                                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                              >
+                                                <option value="">{t('prompts:form.actions.selectTeam')}</option>
+                                                {teams.map((team) => (
+                                                  <option key={team.id} value={team.id}>
+                                                    {team.name}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       )}
 
-                      {/* Campos específicos para update_chat */}
-                      {editingAction.type === 'update_chat' && (
-                        <>
-                          {shouldShowField('status') && (
-                            <div className="mt-3 space-y-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  {t('prompts:form.actions.status')}
+                      {shouldShowField('title') && (
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              {t('prompts:form.actions.chatFieldTitle')}
+                            </label>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="direct-title"
+                                  name="title-type"
+                                  checked={!getConfig<ChatActionConfig>().titleMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      titleMapping: undefined,
+                                      title: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="direct-title" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.directTitle')}
                                 </label>
-                                <div className="space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="direct-status"
-                                      name="status-type"
-                                      checked={!getConfig<ChatActionConfig>().statusMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          statusMapping: undefined,
-                                          status: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="direct-status" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.directStatus')}
-                                    </label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="mapped-status"
-                                      name="status-type"
-                                      checked={!!getConfig<ChatActionConfig>().statusMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          statusMapping: {
-                                            variable: '',
-                                            mapping: {}
-                                          },
-                                          status: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="mapped-status" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.mappedStatus')}
-                                    </label>
-                                  </div>
-                                </div>
                               </div>
-
-                              {!getConfig<ChatActionConfig>().statusMapping ? (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    {t('prompts:form.actions.selectStatus')}
-                                  </label>
-                                  <select
-                                    value={getConfig<ChatActionConfig>().status || ''}
-                                    onChange={(e) => {
-                                      const newConfig = { ...editingAction.config, status: e.target.value };
-                                      setEditingAction({
-                                        ...editingAction,
-                                        config: newConfig
-                                      });
-                                    }}
-                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                  >
-                                    <option value="">{t('prompts:form.actions.selectStatus')}</option>
-                                    <option value="pending">{t('prompts:form.actions.statusPending')}</option>
-                                    <option value="in_progress">{t('prompts:form.actions.statusInProgress')}</option>
-                                    <option value="closed">{t('prompts:form.actions.statusClosed')}</option>
-                                  </select>
-                                </div>
-                              ) : (
-                                <div className="space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                      {t('prompts:form.actions.selectVariable')}
-                                    </label>
-                                    <select
-                                      value={getConfig<ChatActionConfig>().statusMapping?.variable || ''}
-                                      onChange={(e) => {
-                                        const newConfig = {
-                                          ...editingAction.config,
-                                          statusMapping: {
-                                            variable: e.target.value,
-                                            mapping: {}
-                                          }
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters()
-                                        .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                                        .map((param) => (
-                                          <option key={param.name} value={param.name}>{param.label}</option>
-                                        ))}
-                                    </select>
-                                  </div>
-
-                                  {getConfig<ChatActionConfig>().statusMapping?.variable && (
-                                    <div className="mt-3">
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.statusMapping')}
-                                      </label>
-                                      <div className="space-y-2">
-                                        {(() => {
-                                          const selectedVariable = getConfig<ChatActionConfig>().statusMapping?.variable;
-                                          const enumValues = parameters[selectedVariable!]?.enum || [];
-                                          const availableStatuses = [
-                                            { value: 'pending', label: t('prompts:form.actions.statusPending') },
-                                            { value: 'in_progress', label: t('prompts:form.actions.statusInProgress') },
-                                            { value: 'closed', label: t('prompts:form.actions.statusClosed') }
-                                          ];
-
-                                          return enumValues.map((enumValue: string) => (
-                                            <div key={enumValue} className="flex items-center space-x-2">
-                                              <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                                {enumValue}:
-                                              </span>
-                                              <select
-                                                value={getConfig<ChatActionConfig>().statusMapping?.mapping?.[enumValue] || ''}
-                                                onChange={(e) => {
-                                                  const newMapping = {
-                                                    ...(getConfig<ChatActionConfig>().statusMapping?.mapping || {}),
-                                                    [enumValue]: e.target.value
-                                                  };
-                                                  const newConfig = {
-                                                    ...editingAction.config,
-                                                    statusMapping: {
-                                                      ...getConfig<ChatActionConfig>().statusMapping!,
-                                                      mapping: newMapping
-                                                    }
-                                                  };
-                                                  setEditingAction({
-                                                    ...editingAction,
-                                                    config: newConfig
-                                                  });
-                                                }}
-                                                className="flex-1 p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                              >
-                                                <option value="">{t('prompts:form.actions.selectStatus')}</option>
-                                                {availableStatuses.map((status) => (
-                                                  <option key={status.value} value={status.value}>
-                                                    {status.label}
-                                                  </option>
-                                                ))}
-                                              </select>
-                                            </div>
-                                          ));
-                                        })()}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          {shouldShowField('teamId') && (
-                            <div className="mt-3 space-y-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  {t('prompts:form.actions.team')}
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="mapped-title"
+                                  name="title-type"
+                                  checked={!!getConfig<ChatActionConfig>().titleMapping}
+                                  onChange={() => {
+                                    const newConfig = { 
+                                      ...editingAction.config, 
+                                      titleMapping: {
+                                        variable: '',
+                                        mapping: {}
+                                      },
+                                      title: ''
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="mapped-title" className="text-xs text-gray-700 dark:text-gray-300">
+                                  {t('prompts:form.actions.mappedTitle')}
                                 </label>
-                                <div className="space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="direct-team"
-                                      name="team-type"
-                                      checked={!getConfig<ChatActionConfig>().teamMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          teamMapping: undefined,
-                                          teamId: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="direct-team" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.directTeam')}
-                                    </label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="mapped-team"
-                                      name="team-type"
-                                      checked={!!getConfig<ChatActionConfig>().teamMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          teamMapping: {
-                                            variable: '',
-                                            mapping: {}
-                                          },
-                                          teamId: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="mapped-team" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.mappedTeam')}
-                                    </label>
-                                  </div>
-                                </div>
                               </div>
-
-                              {!getConfig<ChatActionConfig>().teamMapping ? (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    {t('prompts:form.actions.selectTeam')}
-                                  </label>
-                                  <select
-                                    value={getConfig<ChatActionConfig>().teamId || ''}
-                                    onChange={(e) => {
-                                      const newConfig = { ...editingAction.config, teamId: e.target.value };
-                                      setEditingAction({
-                                        ...editingAction,
-                                        config: newConfig
-                                      });
-                                    }}
-                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                  >
-                                    <option value="">{t('prompts:form.actions.selectTeam')}</option>
-                                    {teams.map((team) => (
-                                      <option key={team.id} value={team.id}>{team.name}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                              ) : (
-                                <div className="space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                      {t('prompts:form.actions.selectVariable')}
-                                    </label>
-                                    <select
-                                      value={getConfig<ChatActionConfig>().teamMapping?.variable || ''}
-                                      onChange={(e) => {
-                                        const newConfig = {
-                                          ...editingAction.config,
-                                          teamMapping: {
-                                            variable: e.target.value,
-                                            mapping: {}
-                                          }
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters()
-                                        .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                                        .map((param) => (
-                                          <option key={param.name} value={param.name}>{param.label}</option>
-                                        ))}
-                                    </select>
-                                  </div>
-
-                                  {getConfig<ChatActionConfig>().teamMapping?.variable && (
-                                    <div className="mt-3">
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.teamMapping')}
-                                      </label>
-                                      <div className="space-y-2">
-                                        {(() => {
-                                          const selectedVariable = getConfig<ChatActionConfig>().teamMapping?.variable;
-                                          const enumValues = parameters[selectedVariable!]?.enum || [];
-
-                                          return enumValues.map((enumValue: string) => (
-                                            <div key={enumValue} className="flex items-center space-x-2">
-                                              <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                                {enumValue}:
-                                              </span>
-                                              <div className="flex-1">
-                                                <div className="flex justify-end mb-1">
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      const newManualInputs = { ...manualInputs };
-                                                      newManualInputs[`team_${enumValue}`] = !manualInputs[`team_${enumValue}`];
-                                                      setManualInputs(newManualInputs);
-                                                    }}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                                  >
-                                                    {manualInputs[`team_${enumValue}`] ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
-                                                  </button>
-                                                </div>
-                                                {manualInputs[`team_${enumValue}`] ? (
-                                                  <input
-                                                    type="text"
-                                                    value={getConfig<ChatActionConfig>().teamMapping?.mapping[enumValue] || ''}
-                                                    onChange={(e) => {
-                                                      const newMapping = {
-                                                        ...(getConfig<ChatActionConfig>().teamMapping?.mapping || {}),
-                                                        [enumValue]: e.target.value
-                                                      };
-                                                      const newConfig = {
-                                                        ...editingAction.config,
-                                                        teamMapping: {
-                                                          ...getConfig<ChatActionConfig>().teamMapping!,
-                                                          mapping: newMapping
-                                                        }
-                                                      };
-                                                      setEditingAction({
-                                                        ...editingAction,
-                                                        config: newConfig
-                                                      });
-                                                    }}
-                                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                                    placeholder={t('prompts:form.actions.teamNamePlaceholder')}
-                                                  />
-                                                ) : (
-                                                  <select
-                                                    value={getConfig<ChatActionConfig>().teamMapping?.mapping?.[enumValue] || ''}
-                                                    onChange={(e) => {
-                                                      const newMapping = {
-                                                        ...(getConfig<ChatActionConfig>().teamMapping?.mapping || {}),
-                                                        [enumValue]: e.target.value
-                                                      };
-                                                      const newConfig = {
-                                                        ...editingAction.config,
-                                                        teamMapping: {
-                                                          ...getConfig<ChatActionConfig>().teamMapping!,
-                                                          mapping: newMapping
-                                                        }
-                                                      };
-                                                      setEditingAction({
-                                                        ...editingAction,
-                                                        config: newConfig
-                                                      });
-                                                    }}
-                                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                                  >
-                                                    <option value="">{t('prompts:form.actions.selectTeam')}</option>
-                                                    {teams.map((team) => (
-                                                      <option key={team.id} value={team.id}>
-                                                        {team.name}
-                                                      </option>
-                                                    ))}
-                                                  </select>
-                                                )}
-                                              </div>
-                                            </div>
-                                          ));
-                                        })()}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </div>
-                          )}
+                          </div>
 
-                          {shouldShowField('title') && (
-                            <div className="mt-3 space-y-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {!getConfig<ChatActionConfig>().titleMapping ? (
+                            <div>
+                              <div className="flex justify-between items-center mb-1">
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
                                   {t('prompts:form.actions.chatFieldTitle')}
                                 </label>
-                                <div className="space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="direct-title"
-                                      name="title-type"
-                                      checked={!getConfig<ChatActionConfig>().titleMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          titleMapping: undefined,
-                                          title: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="direct-title" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.directTitle')}
-                                    </label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="mapped-title"
-                                      name="title-type"
-                                      checked={!!getConfig<ChatActionConfig>().titleMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          titleMapping: {
-                                            variable: '',
-                                            mapping: {}
-                                          },
-                                          title: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="mapped-title" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.mappedTitle')}
-                                    </label>
-                                  </div>
-                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleManualInput('title')}
+                                  className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                >
+                                  {manualInputs.title ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
+                                </button>
                               </div>
-
-                              {!getConfig<ChatActionConfig>().titleMapping ? (
-                                <div>
-                                  <div className="flex justify-between items-center mb-1">
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.chatFieldTitle')}
-                                    </label>
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleManualInput('title')}
-                                      className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                    >
-                                      {manualInputs.title ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
-                                    </button>
-                                  </div>
-                                  {manualInputs.title ? (
-                                    <input
-                                      type="text"
-                                      value={getConfig<ChatActionConfig>().title || ''}
-                                      onChange={(e) => {
-                                        const newConfig = { ...editingAction.config, title: e.target.value };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                      placeholder={t('prompts:form.actions.chatTitlePlaceholder')}
-                                    />
-                                  ) : (
-                                    <select
-                                      value={getConfig<ChatActionConfig>().title || ''}
-                                      onChange={(e) => {
-                                        const newConfig = { ...editingAction.config, title: e.target.value };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters().map((param) => (
-                                        <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
-                                      ))}
-                                    </select>
-                                  )}
-                                </div>
+                              {manualInputs.title ? (
+                                <input
+                                  type="text"
+                                  value={safeGetMapping(getConfig<ChatActionConfig>(), 'title') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = { ...editingAction.config, title: e.target.value };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                  placeholder={t('prompts:form.actions.chatTitlePlaceholder')}
+                                />
                               ) : (
-                                <div className="space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                      {t('prompts:form.actions.selectVariable')}
-                                    </label>
-                                    <select
-                                      value={getConfig<ChatActionConfig>().titleMapping?.variable || ''}
-                                      onChange={(e) => {
-                                        const newConfig = {
-                                          ...editingAction.config,
-                                          titleMapping: {
-                                            variable: e.target.value,
-                                            mapping: {}
-                                          }
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters()
-                                        .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                                        .map((param) => (
-                                          <option key={param.name} value={param.name}>{param.label}</option>
-                                        ))}
-                                    </select>
-                                  </div>
-
-                                  {getConfig<ChatActionConfig>().titleMapping?.variable && (
-                                    <div className="mt-3">
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.titleMapping')}
-                                      </label>
-                                      <div className="space-y-2">
-                                        {(() => {
-                                          const selectedVariable = getConfig<ChatActionConfig>().titleMapping?.variable;
-                                          const enumValues = parameters[selectedVariable!]?.enum || [];
-
-                                          return enumValues.map((enumValue: string) => (
-                                            <div key={enumValue} className="flex items-center space-x-2">
-                                              <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                                {enumValue}:
-                                              </span>
-                                              <div className="flex-1">
-                                                <div className="flex justify-end mb-1">
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      const newManualInputs = { ...manualInputs };
-                                                      newManualInputs[`title_${enumValue}`] = !manualInputs[`title_${enumValue}`];
-                                                      setManualInputs(newManualInputs);
-                                                    }}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                                  >
-                                                    {manualInputs[`title_${enumValue}`] ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
-                                                  </button>
-                                                </div>
-                                                {manualInputs[`title_${enumValue}`] ? (
-                                                  <input
-                                                    type="text"
-                                                    value={getConfig<ChatActionConfig>().titleMapping?.mapping?.[enumValue] || ''}
-                                                    onChange={(e) => {
-                                                      const newMapping = {
-                                                        ...(getConfig<ChatActionConfig>().titleMapping?.mapping || {}),
-                                                        [enumValue]: e.target.value
-                                                      };
-                                                      const newConfig = {
-                                                        ...editingAction.config,
-                                                        titleMapping: {
-                                                          ...getConfig<ChatActionConfig>().titleMapping!,
-                                                          mapping: newMapping
-                                                        }
-                                                      };
-                                                      setEditingAction({
-                                                        ...editingAction,
-                                                        config: newConfig
-                                                      });
-                                                    }}
-                                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                                    placeholder={t('prompts:form.actions.chatTitlePlaceholder')}
-                                                  />
-                                                ) : (
-                                                  <select
-                                                    value={getConfig<ChatActionConfig>().titleMapping?.mapping?.[enumValue] || ''}
-                                                    onChange={(e) => {
-                                                      const newMapping = {
-                                                        ...(getConfig<ChatActionConfig>().titleMapping?.mapping || {}),
-                                                        [enumValue]: e.target.value
-                                                      };
-                                                      const newConfig = {
-                                                        ...editingAction.config,
-                                                        titleMapping: {
-                                                          ...getConfig<ChatActionConfig>().titleMapping!,
-                                                          mapping: newMapping
-                                                        }
-                                                      };
-                                                      setEditingAction({
-                                                        ...editingAction,
-                                                        config: newConfig
-                                                      });
-                                                    }}
-                                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                                  >
-                                                    <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                                    {getAvailableParameters().map((param) => (
-                                                      <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
-                                                    ))}
-                                                  </select>
-                                                )}
-                                              </div>
-                                            </div>
-                                          ));
-                                        })()}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
+                                <select
+                                  value={safeGetMapping(getConfig<ChatActionConfig>(), 'title') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = { ...editingAction.config, title: e.target.value };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                  {getAvailableParameters()
+                                    .filter(param => {
+                                      const enumValues = parameters[param.name]?.enum;
+                                      return Array.isArray(enumValues) && enumValues.length > 0;
+                                    })
+                                    .map((param) => (
+                                      <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
+                                    ))}
+                                </select>
                               )}
                             </div>
-                          )}
-                        </>
-                      )}
-
-                      {/* Campos específicos para start_flow */}
-                      {editingAction.type === 'start_flow' && (
-                        <>
-                          {shouldShowField('flowId') && (
-                            <div className="mt-3 space-y-3">
+                          ) : (
+                            <div className="space-y-3">
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  {t('prompts:form.actions.flow')}
+                                  {t('prompts:form.actions.selectVariable')}
                                 </label>
-                                <div className="space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="direct-flow"
-                                      name="flow-type"
-                                      checked={!getConfig<FlowActionConfig>().flowMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          flowMapping: undefined,
-                                          flowId: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="direct-flow" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.directFlow')}
-                                    </label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="mapped-flow"
-                                      name="flow-type"
-                                      checked={!!getConfig<FlowActionConfig>().flowMapping}
-                                      onChange={() => {
-                                        const newConfig = { 
-                                          ...editingAction.config, 
-                                          flowMapping: {
-                                            variable: '',
-                                            mapping: {}
-                                          },
-                                          flowId: ''
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <label htmlFor="mapped-flow" className="text-xs text-gray-700 dark:text-gray-300">
-                                      {t('prompts:form.actions.mappedFlow')}
-                                    </label>
-                                  </div>
-                                </div>
+                                <select
+                                  value={safeGetMapping(getConfig<ChatActionConfig>(), 'variable') || ''}
+                                  onChange={(e) => {
+                                    const newConfig = {
+                                      ...editingAction.config,
+                                      titleMapping: {
+                                        variable: e.target.value,
+                                        mapping: {}
+                                      }
+                                    };
+                                    setEditingAction({
+                                      ...editingAction,
+                                      config: newConfig
+                                    });
+                                  }}
+                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                >
+                                  <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                  {getAvailableParameters()
+                                    .filter(param => {
+                                      const enumValues = parameters[param.name]?.enum;
+                                      return Array.isArray(enumValues) && enumValues.length > 0;
+                                    })
+                                    .map((param) => (
+                                      <option key={param.name} value={param.name}>{param.label}</option>
+                                    ))}
+                                </select>
                               </div>
 
-                              {!getConfig<FlowActionConfig>().flowMapping ? (
-                                <div>
+                              {safeGetMapping(getConfig<ChatActionConfig>(), 'variable') && (
+                                <div className="mt-3">
                                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    {t('prompts:form.actions.flow')}
+                                    {t('prompts:form.actions.titleMapping')}
                                   </label>
-                                  <select
-                                    value={getConfig<FlowActionConfig>().flowId || ''}
-                                    onChange={(e) => {
-                                      const newConfig = { ...editingAction.config, flowId: e.target.value };
-                                      setEditingAction({
-                                        ...editingAction,
-                                        config: newConfig
-                                      });
-                                    }}
-                                    className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                  >
-                                    <option value="">{t('prompts:form.actions.selectFlow')}</option>
-                                    {flows.map((flow) => (
-                                      <option key={flow.id} value={flow.id}>{flow.name}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                              ) : (
-                                <div className="space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                      {t('prompts:form.actions.selectVariable')}
-                                    </label>
-                                    <select
-                                      value={getConfig<FlowActionConfig>().flowMapping?.variable || ''}
-                                      onChange={(e) => {
-                                        const newConfig = {
-                                          ...editingAction.config,
-                                          flowMapping: {
-                                            variable: e.target.value,
-                                            mapping: {}
-                                          }
-                                        };
-                                        setEditingAction({
-                                          ...editingAction,
-                                          config: newConfig
-                                        });
-                                      }}
-                                      className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                    >
-                                      <option value="">{t('prompts:form.actions.selectVariable')}</option>
-                                      {getAvailableParameters()
-                                        .filter(param => Array.isArray(parameters[param.name]?.enum) && parameters[param.name]?.enum?.length > 0)
-                                        .map((param) => (
-                                          <option key={param.name} value={param.name}>{param.label}</option>
-                                        ))}
-                                    </select>
-                                  </div>
+                                  <div className="space-y-2">
+                                    {(() => {
+                                      const selectedVariable = safeGetMapping(getConfig<ChatActionConfig>(), 'variable');
+                                      const enumValues = parameters[selectedVariable!]?.enum || [];
 
-                                  {getConfig<FlowActionConfig>().flowMapping?.variable && (
-                                    <div className="mt-3">
-                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('prompts:form.actions.flowMapping')}
-                                      </label>
-                                      <div className="space-y-2">
-                                        {(() => {
-                                          const selectedVariable = getConfig<FlowActionConfig>().flowMapping?.variable;
-                                          const enumValues = parameters[selectedVariable!]?.enum || [];
-
-                                          return enumValues.map((enumValue: string) => (
-                                            <div key={enumValue} className="flex items-center space-x-2">
-                                              <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
-                                                {enumValue}:
-                                              </span>
-                                              <div className="flex-1">
-                                                <select
-                                                  value={getConfig<FlowActionConfig>().flowMapping?.mapping?.[enumValue] || ''}
-                                                  onChange={(e) => {
-                                                    const newMapping = {
-                                                      ...(getConfig<FlowActionConfig>().flowMapping?.mapping || {}),
-                                                      [enumValue]: e.target.value
-                                                    };
-                                                    const newConfig = {
-                                                      ...editingAction.config,
-                                                      flowMapping: {
-                                                        ...getConfig<FlowActionConfig>().flowMapping!,
-                                                        mapping: newMapping
-                                                      }
-                                                    };
-                                                    setEditingAction({
-                                                      ...editingAction,
-                                                      config: newConfig
-                                                    });
-                                                  }}
-                                                  className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                                >
-                                                  <option value="">{t('prompts:form.actions.selectFlow')}</option>
-                                                  {flows.map((flow) => (
-                                                    <option key={flow.id} value={flow.id}>
-                                                      {flow.name}
-                                                    </option>
-                                                  ))}
-                                                </select>
-                                              </div>
+                                      return enumValues.map((enumValue: string) => (
+                                        <div key={enumValue} className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[100px]">
+                                            {enumValue}:
+                                          </span>
+                                          <div className="flex-1">
+                                            <div className="flex justify-end mb-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const newManualInputs = { ...manualInputs };
+                                                  newManualInputs[`title_${enumValue}`] = !manualInputs[`title_${enumValue}`];
+                                                  setManualInputs(newManualInputs);
+                                                }}
+                                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                              >
+                                                {manualInputs[`title_${enumValue}`] ? t('prompts:form.actions.useVariable') : t('prompts:form.actions.manualInput')}
+                                              </button>
                                             </div>
-                                          ));
-                                        })()}
-                                      </div>
-                                    </div>
-                                  )}
+                                            {manualInputs[`title_${enumValue}`] ? (
+                                              <input
+                                                type="text"
+                                                value={safeGetMapping(getConfig<ChatActionConfig>().titleMapping?.mapping, enumValue) || ''}
+                                                onChange={(e) => {
+                                                  const newMapping = {
+                                                    ...(getConfig<ChatActionConfig>().titleMapping?.mapping || {}),
+                                                    [enumValue]: e.target.value
+                                                  };
+                                                  const newConfig = {
+                                                    ...editingAction.config,
+                                                    titleMapping: {
+                                                      ...getConfig<ChatActionConfig>().titleMapping!,
+                                                      mapping: newMapping
+                                                    }
+                                                  };
+                                                  setEditingAction({
+                                                    ...editingAction,
+                                                    config: newConfig
+                                                  });
+                                                }}
+                                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                                placeholder={t('prompts:form.actions.chatTitlePlaceholder')}
+                                              />
+                                            ) : (
+                                              <select
+                                                value={safeGetMapping(getConfig<ChatActionConfig>().titleMapping?.mapping, enumValue) || ''}
+                                                onChange={(e) => {
+                                                  const newMapping = {
+                                                    ...(getConfig<ChatActionConfig>().titleMapping?.mapping || {}),
+                                                    [enumValue]: e.target.value
+                                                  };
+                                                  const newConfig = {
+                                                    ...editingAction.config,
+                                                    titleMapping: {
+                                                      ...getConfig<ChatActionConfig>().titleMapping!,
+                                                      mapping: newMapping
+                                                    }
+                                                  };
+                                                  setEditingAction({
+                                                    ...editingAction,
+                                                    config: newConfig
+                                                  });
+                                                }}
+                                                className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                              >
+                                                <option value="">{t('prompts:form.actions.selectVariable')}</option>
+                                                {getAvailableParameters()
+                                                  .filter(param => {
+                                                    const enumValues = parameters[param.name]?.enum;
+                                                    return Array.isArray(enumValues) && enumValues.length > 0;
+                                                  })
+                                                  .map((param) => (
+                                                    <option key={param.name} value={`{{${param.name}}}`}>{param.label}</option>
+                                                  ))}
+                                              </select>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
                                 </div>
                               )}
                             </div>
                           )}
-                        </>
+                        </div>
                       )}
-                    </div>
-                  ) : editingAction.type === 'custom' ? (
+                    </>
+                  )}
+                </div>
+              ) : null}
+              {/* Campos específicos para go_to_flow_node */}
+              {editingAction.type === 'go_to_flow_node' && (
+                <>
+                  <div className="mt-3 space-y-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {t('prompts:form.actions.customConfig')}
+                        {t('prompts:form.actions.selectNode')}
                       </label>
-                      <textarea
-                        value={JSON.stringify(editingAction.config, null, 2)}
+                      <select
+                        value={safeGetMapping(getConfig<FlowNodeActionConfig>(), 'nodeId') || ''}
                         onChange={(e) => {
-                          try {
-                            const config = JSON.parse(e.target.value);
-                            setEditingAction({
-                              ...editingAction,
-                              config
-                            });
-                          } catch {
-                            // Ignorar erros de parsing enquanto o usuário está digitando
-                          }
+                          const newConfig = { 
+                            ...editingAction.config, 
+                            nodeId: e.target.value
+                          };
+                          setEditingAction({
+                            ...editingAction,
+                            config: newConfig
+                          });
                         }}
-                        className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs"
-                        rows={4}
-                        placeholder='{"name": "value", "email": "value"}'
-                      />
+                        className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                      >
+                        <option value="">{t('prompts:form.actions.selectNode')}</option>
+                        {linkedFlow?.nodes?.map((node: FlowNode) => (
+                          <option key={node.id} value={node.id}>{node.data?.label || node.id}</option>
+                        ))}
+                      </select>
                     </div>
-                  ) : null}
+                  </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="mt-6 flex justify-end space-x-3">
+          {/* Footer - Movido para dentro do modal */}
+          <div className="mt-6 flex justify-end space-x-3 sticky bottom-0 bg-white dark:bg-gray-800 py-3 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"
@@ -2217,6 +1683,8 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
           </div>
         </div>
       </div>
+
+      
     </div>
   );
 };

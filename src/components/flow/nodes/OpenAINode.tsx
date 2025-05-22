@@ -200,14 +200,14 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                   
                   <BaseNode 
                     id={id} 
-                    data={data} 
+                    data={data}
+                    type="openai"
                     onLabelChange={(newLabel) => {
                       const event = new CustomEvent('nodeDataChanged', {
                         detail: { nodeId: id, data: { ...data, label: newLabel } }
                       });
                       document.dispatchEvent(event);
                     }}
-                    icon={<OpenAILogo />}
                   />
                 </div>
 
@@ -606,7 +606,7 @@ export function OpenAINode({ id, data, isConnectable }: OpenAINodeProps) {
                                               console.error('Error updating parameters:', error);
                                             }
                                           }}
-                                          disabled={isAlreadyAdded}
+                                          disabled={!!isAlreadyAdded}
                                           className={`px-2 py-1 text-xs rounded-md flex items-center space-x-2 ${
                                             isAlreadyAdded
                                               ? 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'

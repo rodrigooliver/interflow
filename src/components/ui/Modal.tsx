@@ -114,7 +114,7 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className="dark:text-gray-300 p-6 overflow-y-auto flex-1">
+        <div className="dark:text-gray-300 p-3 overflow-y-auto flex-1">
           {children}
         </div>
       </div>

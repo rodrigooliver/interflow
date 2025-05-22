@@ -5,14 +5,8 @@ import VariableForm from './VariableForm';
 import ToolActionList from './ToolActionList';
 import { Modal } from '../ui/Modal';
 import { Pencil } from 'lucide-react';
-import { toolExamples } from '../../examples/tools';
-
-interface ToolExample {
-  label: string;
-  name: string;
-  description: string;
-  parameters: Parameters;
-}
+// import { toolExamples } from '../../examples/tools';
+import { Flow } from '../../types/database';
 
 interface ToolFormProps {
   onAddTool: (tool: Tool) => void;
@@ -20,6 +14,7 @@ interface ToolFormProps {
   initialTool?: Tool;
   destinations?: Record<string, ToolAction[]>;
   onDestinationsChange?: (destinations: Record<string, ToolAction[]>) => void;
+  linkedFlow?: Flow;
 }
 
 const ToolForm: React.FC<ToolFormProps> = ({ 
@@ -28,8 +23,10 @@ const ToolForm: React.FC<ToolFormProps> = ({
   initialTool,
   destinations = {},
   onDestinationsChange,
+  linkedFlow
 }) => {
-  const { t, i18n } = useTranslation(['prompts', 'common']);
+  // const { t, i18n } = useTranslation(['prompts', 'common']);
+  const { t } = useTranslation(['prompts', 'common']);
   const [newTool, setNewTool] = useState<Tool>({
     name: '',
     description: '',
@@ -46,6 +43,18 @@ const ToolForm: React.FC<ToolFormProps> = ({
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [parametersViewMode, setParametersViewMode] = useState<'json' | 'list' | 'actions'>('list');
   const [editingVariable, setEditingVariable] = useState<{ name: string; property: ParameterProperty } | null>(null);
+  const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
+
+  // Função para gerar um slug de função a partir de um texto
+  const generateFunctionSlug = (text: string): string => {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos mantendo as letras base
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '') // Remove caracteres especiais exceto espaços e hifens
+      .replace(/[\s-]+/g, '_'); // Substitui espaços e hifens por underscores
+  };
 
   // Carregar ferramenta inicial para edição, se fornecida
   useEffect(() => {
@@ -60,6 +69,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
         }
       });
       setParametersText(JSON.stringify(initialTool.parameters || {}, null, 2));
+      setIsNameManuallyEdited(true); // Consideramos que se está editando, o nome já foi definido
     }
   }, [initialTool]);
 
@@ -67,6 +77,17 @@ const ToolForm: React.FC<ToolFormProps> = ({
   useEffect(() => {
     setParametersText(JSON.stringify(newTool.parameters || {}, null, 2));
   }, [newTool.parameters]);
+
+  // Gerar nome automaticamente quando a descrição mudar (se o nome não foi editado manualmente)
+  useEffect(() => {
+    if (newTool.description && !isNameManuallyEdited) {
+      const generatedName = generateFunctionSlug(newTool.description);
+      setNewTool(prev => ({
+        ...prev,
+        name: generatedName
+      }));
+    }
+  }, [newTool.description, isNameManuallyEdited]);
 
   // Função para aplicar o JSON dos parâmetros
   const applyParametersJson = (parametersText: string) => {
@@ -134,6 +155,18 @@ const ToolForm: React.FC<ToolFormProps> = ({
     });
   };
 
+  // Função para lidar com a mudança do nome da ferramenta
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = generateFunctionSlug(e.target.value);
+    setNewTool({ ...newTool, name: newName });
+    setIsNameManuallyEdited(true);
+  };
+
+  // Função para lidar com a mudança da descrição da ferramenta
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewTool({ ...newTool, description: e.target.value });
+  };
+
   const handleSubmit = () => {
     // Se estiver editando JSON, tenta aplicar as mudanças
     if (parametersViewMode === 'json' && parametersText) {
@@ -142,33 +175,33 @@ const ToolForm: React.FC<ToolFormProps> = ({
     onAddTool(newTool);
   };
 
-  // Função para carregar um exemplo de ferramenta
-  const loadToolExample = (exampleKey: string) => {
-    const currentLanguage = i18n.language.split('-')[0]; // Pega o código da língua principal (ex: 'pt' de 'pt-BR')
-    const examples = toolExamples[currentLanguage] || toolExamples['en']; // Fallback para inglês se a língua não existir
+  // // Função para carregar um exemplo de ferramenta
+  // const loadToolExample = (exampleKey: string) => {
+  //   const currentLanguage = i18n.language.split('-')[0]; // Pega o código da língua principal (ex: 'pt' de 'pt-BR')
+  //   const examples = toolExamples[currentLanguage] || toolExamples['en']; // Fallback para inglês se a língua não existir
     
-    // Verifica se a chave já existe
-    let finalKey = exampleKey;
-    let counter = 1;
-    while (examples[finalKey]) {
-      finalKey = `${exampleKey}_${counter}`;
-      counter++;
-    }
+  //   // Verifica se a chave já existe
+  //   let finalKey = exampleKey;
+  //   let counter = 1;
+  //   while (examples[finalKey]) {
+  //     finalKey = `${exampleKey}_${counter}`;
+  //     counter++;
+  //   }
 
-    const example = examples[exampleKey];
+  //   const example = examples[exampleKey];
     
-    if (example) {
-      setNewTool({
-        name: finalKey === exampleKey ? example.name : `${example.name}_${counter - 1}`,
-        description: example.description,
-        parameters: {
-          ...example.parameters,
-          required: example.parameters.required || []
-        },
-        actions: []
-      });
-    }
-  };
+  //   if (example) {
+  //     setNewTool({
+  //       name: finalKey === exampleKey ? example.name : `${example.name}_${counter - 1}`,
+  //       description: example.description,
+  //       parameters: {
+  //         ...example.parameters,
+  //         required: example.parameters.required || []
+  //       },
+  //       actions: []
+  //     });
+  //   }
+  // };
 
   // Função para atualizar as ações da ferramenta
   const handleActionsChange = (actions: ToolAction[]) => {
@@ -255,9 +288,23 @@ const ToolForm: React.FC<ToolFormProps> = ({
           actions={destinations[newTool.name] || []}
           onActionsChange={handleActionsChange}
           parameters={newTool.parameters.properties}
+          linkedFlow={linkedFlow}
         />
       ) : (
         <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t('prompts:form.toolDescription') || 'Descrição da Ferramenta'}
+            </label>
+            <input
+              type="text"
+              value={newTool.description}
+              onChange={handleDescriptionChange}
+              className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder={t('prompts:form.toolDescriptionPlaceholder') || 'Ex: Obtém informações sobre o clima atual para uma localização específica'}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('prompts:form.toolName') || 'Nome da Ferramenta'}
@@ -265,27 +312,17 @@ const ToolForm: React.FC<ToolFormProps> = ({
             <input
               type="text"
               value={newTool.name}
-              onChange={(e) => setNewTool({ ...newTool, name: e.target.value })}
+              onChange={handleNameChange}
               className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder={t('prompts:form.toolNamePlaceholder') || 'Ex: get_weather'}
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('prompts:form.toolDescription') || 'Descrição da Ferramenta'}
-            </label>
-            <textarea
-              value={newTool.description}
-              onChange={(e) => setNewTool({ ...newTool, description: e.target.value })}
-              className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder={t('prompts:form.toolDescriptionPlaceholder') || 'Ex: Obtém informações sobre o clima atual para uma localização específica'}
-              rows={3}
-            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t('prompts:form.toolNameHelp') || 'O nome será formatado automaticamente como um slug de função (minúsculas e underscores).'}
+            </p>
           </div>
 
           {/* Exemplos de ferramentas */}
-          {!initialTool && (
+          {/* {!initialTool && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('prompts:form.examples.title') || 'Exemplos'}
@@ -321,7 +358,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
                 </button>
               </div>
             </div>
-          )}
+          )} */}
 
           <div>
             <div className="flex justify-between items-center mb-2">

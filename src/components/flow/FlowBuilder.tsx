@@ -12,6 +12,9 @@ import ReactFlow, {
   NodeProps,
   applyNodeChanges,
   applyEdgeChanges,
+  NodeToolbar as ReactFlowNodeToolbar,
+  EdgeLabelRenderer,
+  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { NodeType } from '../../types/flow';
@@ -27,7 +30,8 @@ import { OpenAINode } from './nodes/OpenAINode';
 import { AgenteIANode } from './nodes/AgenteIANode';
 import { UpdateCustomerNode } from './nodes/UpdateCustomerNode';
 import { RequestNode } from './nodes/RequestNode';
-import { Trash2, RotateCcw } from 'lucide-react';
+import { JumpToNode } from './nodes/JumpToNode';
+import { Trash2, RotateCcw, Copy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlowEditor } from '../../contexts/FlowEditorContext';
 
@@ -45,6 +49,7 @@ const nodeTypes: NodeTypes = {
   openai: OpenAINode,
   agenteia: AgenteIANode,
   update_customer: UpdateCustomerNode,
+  jump_to: JumpToNode,
   request: RequestNode,
 };
 
@@ -83,6 +88,7 @@ export function FlowBuilder() {
       openai: t('nodes.openai.title') + ` ${nodeCount}`,
       agenteia: t('nodes.agenteia.title') + ` ${nodeCount}`,
       update_customer: t('nodes.updateCustomer.title') + ` ${nodeCount}`,
+      jump_to: t('nodes.jumpTo.title') + ` ${nodeCount}`,
       request: t('nodes.request.title') + ` ${nodeCount}`,
     };
 
@@ -141,6 +147,72 @@ export function FlowBuilder() {
 
     setNodes((nds) => nds.concat(node));
   }, [setNodes, nodes]);
+
+  // Função para duplicar um nó
+  const onNodeDuplicate = useCallback((nodeId: string) => {
+    // Encontre o nó a ser duplicado
+    const nodeToDuplicate = nodes.find(n => n.id === nodeId);
+    
+    if (!nodeToDuplicate) return;
+    
+    // Não permite duplicar nós de início
+    if (nodeToDuplicate.type === 'start') return;
+    
+    // Cria um novo ID para o nó duplicado
+    const newNodeId = crypto.randomUUID();
+    
+    // Cria o novo nó como uma cópia do original com novo ID
+    // e posição ligeiramente deslocada para ser visível
+    const newNode: Node = {
+      ...nodeToDuplicate,
+      id: newNodeId,
+      position: {
+        x: nodeToDuplicate.position.x + 50,
+        y: nodeToDuplicate.position.y + 50
+      },
+      data: {
+        ...nodeToDuplicate.data,
+        id: newNodeId,
+      },
+      selected: false, // Garante que o novo nó não esteja selecionado inicialmente
+    };
+
+    // Adiciona o texto "(cópia)" ao label, se existir
+    if (nodeToDuplicate.data?.label) {
+      newNode.data.label = nodeToDuplicate.data.label + ' (cópia)';
+    }
+
+    // Adiciona o novo nó ao fluxo e garante que apenas o novo nó esteja selecionado
+    setNodes((nds) => {
+      // Desselecionamos todos os nós (incluindo o original)
+      const updatedNodes = nds.map(node => ({
+        ...node,
+        selected: false
+      }));
+      
+      // Adicionamos o novo nó ao array
+      return [...updatedNodes, newNode];
+    });
+    
+    // Atualizamos o estado de seleção para apontar para o novo nó
+    // Com um pequeno atraso para garantir que o React Flow tenha tempo de processar
+    setTimeout(() => {
+      setSelectedNode(newNodeId);
+      
+      // Força o React Flow a atualizar a seleção visual
+      if (reactFlowInstance) {
+        reactFlowInstance.setNodes((nds: Node[]) => 
+          nds.map(node => ({
+            ...node,
+            selected: node.id === newNodeId
+          }))
+        );
+      }
+      
+      // Salva o fluxo com as alterações
+      onSaveFlow();
+    }, 50);
+  }, [nodes, setNodes, reactFlowInstance, onSaveFlow]);
 
   const onNodeRemove = useCallback((nodeId: string) => {
     let updatedNodes: Node[] = [];
@@ -232,7 +304,6 @@ export function FlowBuilder() {
       return { x: 0, y: 0 };
     }
 
-    const bounds = reactFlowWrapper.current.getBoundingClientRect();
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
@@ -270,18 +341,50 @@ export function FlowBuilder() {
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    // Atualiza o estado de seleção para selecionar apenas este nó
     setSelectedNode(node.id);
-  }, []);
+    setSelectedEdge(null);
+    
+    // Força o React Flow a atualizar a seleção visual
+    if (reactFlowInstance) {
+      reactFlowInstance.setNodes((nds: Node[]) => 
+        nds.map(n => ({
+          ...n,
+          selected: n.id === node.id
+        }))
+      );
+    }
+  }, [reactFlowInstance]);
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     setSelectedEdge(edge.id);
     setSelectedNode(null); // Limpa a seleção do nó quando seleciona uma edge
-  }, []);
+    
+    // Desselecionamos todos os nós para evitar seleções múltiplas
+    if (reactFlowInstance) {
+      reactFlowInstance.setNodes((nds: Node[]) => 
+        nds.map(n => ({
+          ...n,
+          selected: false
+        }))
+      );
+    }
+  }, [reactFlowInstance]);
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
     setSelectedEdge(null);
-  }, []);
+    
+    // Desselecionamos todos os nós quando clica no painel
+    if (reactFlowInstance) {
+      reactFlowInstance.setNodes((nds: Node[]) => 
+        nds.map(n => ({
+          ...n,
+          selected: false
+        }))
+      );
+    }
+  }, [reactFlowInstance]);
 
   const onEdgesDelete = useCallback((deletedEdges: Edge[]) => {
     console.log('On edges delete...', deletedEdges);
@@ -351,6 +454,28 @@ export function FlowBuilder() {
     
   };
 
+  // Componente dos botões de ação para ser usado com nós e arestas
+  const ActionButtons = ({ onDelete, onDuplicate }: { onDelete: () => void, onDuplicate?: () => void }) => (
+    <div className="flex space-x-2">
+      {onDuplicate && (
+        <button
+          onClick={onDuplicate}
+          className="p-2 bg-white dark:bg-gray-800 rounded-md shadow-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          title={t('flows:duplicate')}
+        >
+          <Copy className="w-4 h-4" />
+        </button>
+      )}
+      <button
+        onClick={onDelete}
+        className="p-2 bg-white dark:bg-gray-800 rounded-md shadow-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+        title={t('flows:delete')}
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+
   return (
     <div className="flex h-[calc(100vh-64px)]" ref={reactFlowWrapper}>
       <div className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -368,18 +493,6 @@ export function FlowBuilder() {
           >
             <RotateCcw className="w-4 h-4" />
           </button>
-          {(selectedNode || selectedEdge) && (
-            <button
-              onClick={() => {
-                if (selectedNode) onNodeRemove(selectedNode);
-                if (selectedEdge) onEdgesDelete([{ id: selectedEdge } as Edge]);
-              }}
-              className="p-2 bg-white dark:bg-gray-800 rounded-md shadow-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-              title={t('flows:delete')}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
         </div>
 
         <ReactFlow
@@ -406,13 +519,70 @@ export function FlowBuilder() {
           selectionOnDrag={false}
           onError={handleFlowError}
           onNodeDragStop={(event, node) => {
-            // console.log('On node drag stop...', event, node);
             onNodeUpdate(node.id, { ...node.data, position: node.position });
           }}
+          multiSelectionKeyCode={null} // Desativa a seleção múltipla
+          selectionKeyCode={null} // Desativa a seleção por arrasto
         >
           <Background />
           <Controls />
-          {/* <MiniMap /> */}
+          
+          {/* Botões de ação para nós selecionados */}
+          {selectedNode && (
+            <ReactFlowNodeToolbar 
+              nodeId={selectedNode}
+              position={'top' as Position}
+              className="node-toolbar"
+              offset={10}
+            >
+              <ActionButtons 
+                onDelete={() => onNodeRemove(selectedNode)} 
+                onDuplicate={() => onNodeDuplicate(selectedNode)}
+              />
+            </ReactFlowNodeToolbar>
+          )}
+          
+          {/* Botões de ação para arestas selecionadas */}
+          {selectedEdge && (
+            <EdgeLabelRenderer>
+              {edges.filter(edge => edge.id === selectedEdge).map(edge => {
+                // Calcula a posição média da aresta para posicionar o botão
+                const sourceNode = nodes.find(n => n.id === edge.source);
+                const targetNode = nodes.find(n => n.id === edge.target);
+                
+                if (sourceNode && targetNode) {
+                  // Calcula o ponto médio considerando o centro dos nós
+                  // e ajusta para ficar exatamente no meio do caminho entre eles
+                  const sourceX = sourceNode.position.x + 75; // Metade da largura média (150px)
+                  const sourceY = sourceNode.position.y + 25; // Metade da altura média (50px)
+                  const targetX = targetNode.position.x + 75; // Metade da largura média
+                  const targetY = targetNode.position.y + 25; // Metade da altura média
+                  
+                  // Calcula o ponto médio da linha
+                  const x = (sourceX + targetX) / 2;
+                  const y = (sourceY + targetY) / 2;
+                  
+                  return (
+                    <div
+                      key={edge.id}
+                      style={{
+                        position: 'absolute',
+                        transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+                        zIndex: 1000,
+                        pointerEvents: 'all'
+                      }}
+                      className="nodrag nopan"
+                    >
+                      <ActionButtons 
+                        onDelete={() => onEdgesDelete([{ id: edge.id } as Edge])}
+                      />
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </EdgeLabelRenderer>
+          )}
         </ReactFlow>
       </div>
 

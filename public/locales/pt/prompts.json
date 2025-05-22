@@ -68,6 +68,7 @@
     "viewAsList": "Ver como Lista",
     "viewAsJson": "Ver como JSON",
     "noParameters": "Nenhum parâmetro definido",
+    "toolNameHelp": "O nome será formatado automaticamente como um slug de função (minúsculas e underscores).",
     "toolsDescription": "Configure as ações que o modelo pode executar. Você pode personalizar suas próprias ações ou utilizar ações prontas do sistema. As ações permitem que o modelo realize tarefas específicas durante a conversa. Apenas os modelos GPT-4, GPT-4o e GPT-3.5-Turbo suportam ações.",
     "toolsInfo": "Informação sobre ações",
     "toolsInfoDescription": "Ações permitem que o modelo chame funções específicas. Você pode criar ações personalizadas ou utilizar ações prontas do sistema.",
@@ -155,7 +156,27 @@
     "noSystemActions": "Nenhuma ação do sistema disponível",
     "noCustomActions": "Nenhuma ação personalizada configurada",
     "examples": {
-      "title": "Exemplos"
+      "title": "Exemplos",
+      "variables": {
+        "name": {
+          "label": "Nome"
+        },
+        "email": {
+          "label": "E-mail"
+        },
+        "language": {
+          "label": "Idioma"
+        },
+        "age": {
+          "label": "Idade"
+        },
+        "options": {
+          "label": "Opções"
+        },
+        "sales_stage": {
+          "label": "Etapa de Vendas"
+        }
+      }
     },
     "tabs": {
       "context": "Contexto",
@@ -188,7 +209,8 @@
         "update_chat": "Atualizar Chat",
         "start_flow": "Iniciar Fluxo",
         "custom": "Personalizado",
-        "check_schedule": "Agendamento"
+        "check_schedule": "Verificar Agenda",
+        "go_to_flow_node": "Ir para Nó do Flow"
       },
       "manualInput": "Entrada manual",
       "useVariable": "Usar variável",
@@ -330,7 +352,17 @@
       "mappedOperation": "Operação Mapeada",
       "operationMapping": "Mapeamento de Operações",
       "appointmentId": "ID do Agendamento no formato YYYY-MM-DD-HH:MM",
-      "aiSettings": "Configurações de IA"
+      "aiSettings": "Configurações de IA",
+      "flowNode": "Nó do Flow",
+      "selectNode": "Selecionar Nó",
+      "directNode": "Nó Direto",
+      "mappedNode": "Nó Mapeado",
+      "nodeMapping": "Mapeamento de Nós",
+      "flowVariables": "Variáveis do Flow",
+      "flowVariable": "Variável do Flow",
+      "promptVariable": "Variável do Prompt",
+      "flowVariablePlaceholder": "Nome da variável no flow",
+      "noVariables": "Nenhuma variável adicionada. Clique em 'Adicionar Variável' para começar."
     },
     "editSystemAction": "Editar Ação do Sistema",
     "actionName": "Nome da Ação",

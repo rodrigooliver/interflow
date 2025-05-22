@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { Variable } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
@@ -44,7 +43,7 @@ export function VariableNode({ id, data, isConnectable }: VariableNodeProps) {
       <BaseNode 
         id={id} 
         data={data}
-        icon={<Variable className="w-4 h-4 text-gray-500" />}
+        type="variable"
       />
 
       <div className="space-y-2">

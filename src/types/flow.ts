@@ -12,6 +12,7 @@ export type NodeType =
   | 'start'
   | 'openai'
   | 'agenteia'
+  | 'jump_to'
   | 'request';
 
 export interface Variable {
@@ -23,6 +24,8 @@ export interface Variable {
 export interface OpenAINodeData {
   integration_id: string;
   prompt: string;
+  label?: string;
+  targetNodeId?: string;
 }
 
 export interface FlowNode {
@@ -54,6 +57,8 @@ export interface FlowNode {
       debounceTime: number;
       fallbackNodeId?: string;
     };
+    label?: string;
+    targetNodeId?: string;
   } | OpenAINodeData;
 }
 

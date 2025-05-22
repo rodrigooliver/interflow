@@ -18,7 +18,7 @@ export function StartNode({ isConnectable }: StartNodeProps) {
             <Play className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t('nodes.start')}
+            {t('nodes.start.title')}
           </span>
         </div>
       </div>

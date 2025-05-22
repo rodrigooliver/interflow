@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { GitFork, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import { ConditionModal } from './ConditionModal';
@@ -11,7 +11,8 @@ interface SubCondition {
   field: string;
   operator: 'equalTo' | 'notEqual' | 'contains' | 'doesNotContain' | 
            'greaterThan' | 'lessThan' | 'isSet' | 'isEmpty' | 
-           'startsWith' | 'endsWith' | 'matchesRegex' | 'doesNotMatchRegex';
+           'startsWith' | 'endsWith' | 'matchesRegex' | 'doesNotMatchRegex' |
+           'inList' | 'notInList';
   value: string;
 }
 
@@ -33,11 +34,11 @@ export function ConditionNode({ data, id, isConnectable }: ConditionNodeProps) {
   const { updateNodeData, variables } = useFlowEditor();
   const [localConditions, setLocalConditions] = useState<Condition[]>(
     data.conditions || [{
-      logicOperator: 'AND',
+      logicOperator: 'AND' as const,
       subConditions: [{
-        type: 'variable',
+        type: 'variable' as const,
         field: '',
-        operator: 'equalTo',
+        operator: 'equalTo' as const,
         value: ''
       }]
     }]
@@ -49,7 +50,7 @@ export function ConditionNode({ data, id, isConnectable }: ConditionNodeProps) {
       <BaseNode 
         id={id} 
         data={data}
-        icon={<GitFork className="w-4 h-4 text-gray-500" />}
+        type="condition"
       />
       
       <div className="space-y-4">
@@ -115,8 +116,13 @@ export function ConditionNode({ data, id, isConnectable }: ConditionNodeProps) {
         <button
           onClick={() => {
             const newConditions = [...localConditions, {
-              logicOperator: 'AND',
-              subConditions: [{ type: 'variable', field: '', operator: 'equalTo', value: '' }]
+              logicOperator: 'AND' as const,
+              subConditions: [{ 
+                type: 'variable' as const, 
+                field: '', 
+                operator: 'equalTo' as const, 
+                value: '' 
+              }]
             }];
             setLocalConditions(newConditions);
             updateNodeData(id, { ...data, conditions: newConditions });

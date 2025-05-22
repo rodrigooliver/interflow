@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { UserCog, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 import { useAgents, useFunnels, useTeams } from '../../../hooks/useQueryes';
 import { useAuthContext } from '../../../contexts/AuthContext';
@@ -88,7 +88,7 @@ export function UpdateCustomerNode({ data, id, isConnectable }: UpdateCustomerNo
       <BaseNode 
         id={id} 
         data={data}
-        icon={<UserCog className="w-4 h-4 text-gray-500" />}
+        type="update_customer"
       />
 
       <div className="space-y-4">

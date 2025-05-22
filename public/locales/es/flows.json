@@ -198,6 +198,13 @@
       "noMatchingOption": "Ninguna opción correspondiente"
     },
     "inputPlaceholder": "Escribe la pregunta...",
+    "jumpTo": {
+      "title": "Saltar a",
+      "targetNode": "Nodo destino",
+      "selectNode": "Seleccionar nodo",
+      "selectTarget": "Seleccionar nodo destino",
+      "noNodesAvailable": "No hay nodos disponibles"
+    },
     "options": {
       "title": "Opciones",
       "textPlaceholder": "Texto de la opción",

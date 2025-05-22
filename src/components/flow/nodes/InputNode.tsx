@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle, Plus, X, Clock, Variable, Type } from 'lucide-react';
+import { Plus, X, Clock, Variable, Type } from 'lucide-react';
 import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
 
@@ -115,8 +115,8 @@ export function InputNode({ data, isConnectable, id }: InputNodeProps) {
     <div className="bg-white dark:bg-gray-800">
       <BaseNode 
         id={id} 
-        data={data} 
-        icon={<MessageCircle className="w-4 h-4 text-gray-500" />}
+        data={data}
+        type="input"
       />
 
       <div className="">

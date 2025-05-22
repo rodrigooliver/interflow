@@ -2,9 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { BaseNode } from './BaseNode';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
-import { Loader2, Play, Globe, Sparkles } from 'lucide-react';
+import { Loader2, Play, Sparkles, Pencil, Check, Globe } from 'lucide-react';
 import api from '../../../lib/api';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { VariableSelectorModal } from '../../flow/VariableSelectorModal';
@@ -30,11 +29,6 @@ interface RequestNodeProps {
 const Portal = ({ children }: { children: React.ReactNode }) => {
   return createPortal(children, document.body);
 };
-
-// Ícone do RequestNode
-const RequestIcon = () => (
-  <Globe className="w-5 h-5 mr-2 text-indigo-500" />
-);
 
 // Função para extrair propriedades aninhadas de um objeto JSON
 const extractProperties = (obj: Record<string, unknown> | unknown[], prefix = ''): { path: string; value: unknown }[] => {
@@ -103,9 +97,23 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
   });
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [currentEditField, setCurrentEditField] = useState<{
-    type: 'param' | 'header' | 'body';
+    type: 'param' | 'header' | 'body' | 'url';
     index?: number;
+    cursorPosition?: number;
   } | null>(null);
+  
+  // Estado para edição do rótulo
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editedLabel, setEditedLabel] = useState(data.label || '');
+
+  // Função para lidar com a mudança do rótulo
+  const handleLabelChange = useCallback(async (newLabel: string) => {
+    try {
+      await updateNodeData(id, { ...data, label: newLabel });
+    } catch (error) {
+      console.error('Error updating node label:', error);
+    }
+  }, [id, data, updateNodeData]);
 
   // Atualiza estado local
   const handleConfigChange = (updates: Partial<typeof localConfig>) => {
@@ -165,7 +173,6 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
     const newHeaders = [...localConfig.headers];
     newHeaders.splice(index, 1);
     handleConfigChange({ headers: newHeaders });
-    handleConfigBlur();
   };
 
   // Atualiza um header
@@ -339,31 +346,53 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
   };
 
   // Função para abrir o seletor de variáveis
-  const openVariableSelector = (type: 'param' | 'header' | 'body', index?: number) => {
-    setCurrentEditField({ type, index });
+  const openVariableSelector = (
+    type: 'param' | 'header' | 'body' | 'url', 
+    index?: number, 
+    element?: HTMLInputElement | HTMLTextAreaElement
+  ) => {
+    let cursorPosition;
+    if (element) {
+      cursorPosition = element.selectionStart || 0;
+    }
+    
+    setCurrentEditField({ type, index, cursorPosition });
     setShowVariableSelector(true);
   };
 
   // Função para inserir a variável selecionada no campo correto
   const handleInsertVariable = (variableName: string) => {
     if (!currentEditField) return;
+    const cursorPos = currentEditField.cursorPosition || 0;
 
     if (currentEditField.type === 'param' && currentEditField.index !== undefined) {
       const newParams = [...localConfig.params];
+      const currentValue = newParams[currentEditField.index].value;
       newParams[currentEditField.index].value = 
-        newParams[currentEditField.index].value + variableName;
+        currentValue.substring(0, cursorPos) + variableName + currentValue.substring(cursorPos);
       handleConfigChange({ params: newParams });
       handleConfigBlur();
     } 
     else if (currentEditField.type === 'header' && currentEditField.index !== undefined) {
       const newHeaders = [...localConfig.headers];
+      const currentValue = newHeaders[currentEditField.index].value;
       newHeaders[currentEditField.index].value = 
-        newHeaders[currentEditField.index].value + variableName;
+        currentValue.substring(0, cursorPos) + variableName + currentValue.substring(cursorPos);
       handleConfigChange({ headers: newHeaders });
       handleConfigBlur();
     } 
     else if (currentEditField.type === 'body') {
-      handleConfigChange({ body: localConfig.body + variableName });
+      const currentValue = localConfig.body;
+      handleConfigChange({ 
+        body: currentValue.substring(0, cursorPos) + variableName + currentValue.substring(cursorPos) 
+      });
+      handleConfigBlur();
+    }
+    else if (currentEditField.type === 'url') {
+      const currentValue = localConfig.url;
+      handleConfigChange({ 
+        url: currentValue.substring(0, cursorPos) + variableName + currentValue.substring(cursorPos) 
+      });
       handleConfigBlur();
     }
 
@@ -414,7 +443,11 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
                         className="w-full p-2 text-sm border rounded-l-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
                       <button
-                        onClick={() => openVariableSelector('param', index)}
+                        onClick={(e) => {
+                          // Encontrar o input mais próximo deste botão
+                          const inputElement = e.currentTarget.previousElementSibling as HTMLInputElement;
+                          openVariableSelector('param', index, inputElement);
+                        }}
                         className="flex items-center px-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-r-md text-blue-600 dark:text-blue-400"
                         title={t('flows:variables.insertVariable')}
                       >
@@ -477,7 +510,11 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
                         className="w-full p-2 text-sm border rounded-l-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
                       <button
-                        onClick={() => openVariableSelector('header', index)}
+                        onClick={(e) => {
+                          // Encontrar o input mais próximo deste botão
+                          const inputElement = e.currentTarget.previousElementSibling as HTMLInputElement;
+                          openVariableSelector('header', index, inputElement);
+                        }}
                         className="flex items-center px-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-r-md text-blue-600 dark:text-blue-400"
                         title={t('flows:variables.insertVariable')}
                       >
@@ -526,7 +563,10 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
                     <div></div>
                     <button
                       type="button"
-                      onClick={() => openVariableSelector('body')}
+                      onClick={() => {
+                        const textareaElement = document.querySelector('textarea[value="' + localConfig.body + '"]') as HTMLTextAreaElement;
+                        openVariableSelector('body', undefined, textareaElement);
+                      }}
                       className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
                     >
                       <Sparkles className="w-3.5 h-3.5 mr-1" />
@@ -703,7 +743,7 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
         className="flex items-center p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md"
       >
         <div className="flex items-center space-x-2">
-          <RequestIcon />
+          <Globe className="w-5 h-5 text-violet-500" />
           <div className="flex flex-col">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {data.label || t('nodes.request.defaultLabel')}
@@ -748,17 +788,57 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
                     </svg>
                   </button>
                   
-                  <BaseNode 
-                    id={id} 
-                    data={data} 
-                    onLabelChange={(newLabel) => {
-                      const event = new CustomEvent('nodeDataChanged', {
-                        detail: { nodeId: id, data: { ...data, label: newLabel } }
-                      });
-                      document.dispatchEvent(event);
-                    }}
-                    icon={<RequestIcon />}
-                  />
+                  <div className="px-1 pb-1 pt-0 border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    {isEditingLabel ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editedLabel}
+                          onChange={(e) => setEditedLabel(e.target.value)}
+                          onBlur={() => {
+                            handleLabelChange(editedLabel);
+                            setIsEditingLabel(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleLabelChange(editedLabel);
+                              setIsEditingLabel(false);
+                            }
+                            if (e.key === 'Escape') {
+                              setEditedLabel(data.label || '');
+                              setIsEditingLabel(false);
+                            }
+                          }}
+                          className="text-sm px-2 py-1 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white nodrag"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => {
+                            handleLabelChange(editedLabel);
+                            setIsEditingLabel(false);
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 nodrag"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          <Globe className="w-4 h-4 text-violet-500" />
+                          <span className="ml-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {data.label || ''}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setIsEditingLabel(true)}
+                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 nodrag"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-4 mt-4">
@@ -796,6 +876,17 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
                           onBlur={handleConfigBlur}
                           className="w-full p-2 text-sm border rounded-l-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                         />
+                        <button
+                          onClick={(e) => {
+                            // Encontrar o input mais próximo deste botão
+                            const inputElement = e.currentTarget.previousElementSibling as HTMLInputElement;
+                            openVariableSelector('url', undefined, inputElement);
+                          }}
+                          className="flex items-center px-2 border border-l-0 border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-blue-600 dark:text-blue-400"
+                          title={t('flows:variables.insertVariable')}
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={executeTestRequest}
                           disabled={loading || !localConfig.url}
