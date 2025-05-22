@@ -71,6 +71,13 @@ export function FlowBuilder() {
   const { t } = useTranslation('flows');
   const [showResetModal, setShowResetModal] = useState(false);
 
+  // Garantir que o viewport seja aplicado ao carregar o componente
+  useEffect(() => {
+    if (reactFlowInstance && viewport) {
+      reactFlowInstance.setViewport(viewport);
+    }
+  }, [reactFlowInstance, viewport]);
+
   const generateFriendlyLabel = (type: NodeType): string => {
     const nodeCount = nodes.filter(n => n.type === type).length + 1;
     
@@ -410,9 +417,8 @@ export function FlowBuilder() {
 
   const onMoveEnd = useCallback((event: MouseEvent | TouchEvent, viewport: Viewport) => {
     setViewport(viewport);
-    if (reactFlowInstance) {
-      onSaveFlow({viewport});
-    }
+    // Garantir que o salvamento do viewport ocorra sempre após um movimento
+    onSaveFlow({viewport});
   }, [setViewport, onSaveFlow]);
 
   const onReset = useCallback(() => {
@@ -510,6 +516,7 @@ export function FlowBuilder() {
           onMoveEnd={onMoveEnd}
           nodeTypes={nodeTypes}
           onInit={setReactFlowInstance}
+          key={`flow-${viewport?.x}-${viewport?.y}-${viewport?.zoom}`}
           defaultViewport={viewport || { x: 0, y: 0, zoom: 0.7 }}
           minZoom={0.2}
           maxZoom={1.5}
