@@ -62,7 +62,17 @@ export function TaskBoard({
 
   // Atualizar o estado local quando as tarefas mudam
   React.useEffect(() => {
-    // Ordenar as tarefas pelo stage_order
+    // Função para obter o valor numérico da prioridade (maior = mais urgente)
+    const getPriorityValue = (priority: 'low' | 'medium' | 'high') => {
+      switch (priority) {
+        case 'high': return 3;
+        case 'medium': return 2;
+        case 'low': return 1;
+        default: return 0;
+      }
+    };
+
+    // Ordenar as tarefas
     const sortedTasks = [...tasks].sort((a, b) => {
       // Primeiro, agrupar por stage_id
       if (a.stage_id !== b.stage_id) {
@@ -71,7 +81,40 @@ export function TaskBoard({
         return a.stage_id > b.stage_id ? 1 : -1;
       }
       
-      // Depois, ordenar pelo stage_order dentro da mesma coluna
+      // Dentro da mesma coluna, ordenar por:
+      // 1. Prioridade (high primeiro, depois medium, depois low)
+      const priorityA = getPriorityValue(a.priority);
+      const priorityB = getPriorityValue(b.priority);
+      
+      if (priorityA !== priorityB) {
+        return priorityB - priorityA; // Maior prioridade primeiro
+      }
+      
+      // 2. Data de vencimento (mais antiga primeiro) - apenas se ambas tiverem data
+      if (a.due_date && b.due_date) {
+        const dateA = new Date(a.due_date).getTime();
+        const dateB = new Date(b.due_date).getTime();
+        
+        if (dateA !== dateB) {
+          return dateA - dateB; // Data mais antiga primeiro
+        }
+      }
+      
+      // 3. Se uma tem data e outra não, priorizar a que tem data
+      if (a.due_date && !b.due_date) return -1;
+      if (!a.due_date && b.due_date) return 1;
+      
+      // 4. Se nenhuma tem data de vencimento, ordenar por data de cadastro (mais antiga primeiro)
+      if (!a.due_date && !b.due_date) {
+        const createdA = new Date(a.created_at).getTime();
+        const createdB = new Date(b.created_at).getTime();
+        
+        if (createdA !== createdB) {
+          return createdA - createdB; // Mais antiga primeiro
+        }
+      }
+      
+              // 5. Por último, usar o stage_order como fallback
       const orderA = a.stage_order || 1000;
       const orderB = b.stage_order || 1000;
       return orderA - orderB;
@@ -453,10 +496,55 @@ export function TaskBoard({
       >
         <div className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
           {stages.map((stage) => {
-            // Ordenar tarefas pelo stage_order
+            // Função para obter o valor numérico da prioridade (maior = mais urgente)
+            const getPriorityValue = (priority: 'low' | 'medium' | 'high') => {
+              switch (priority) {
+                case 'high': return 3;
+                case 'medium': return 2;
+                case 'low': return 1;
+                default: return 0;
+              }
+            };
+
+            // Ordenar tarefas por prioridade e data
             const stageTasks = localTasks
               .filter(t => t.stage_id === stage.id)
-              .sort((a, b) => (a.stage_order || 1000) - (b.stage_order || 1000));
+              .sort((a, b) => {
+                // 1. Prioridade (high primeiro, depois medium, depois low)
+                const priorityA = getPriorityValue(a.priority);
+                const priorityB = getPriorityValue(b.priority);
+                
+                if (priorityA !== priorityB) {
+                  return priorityB - priorityA; // Maior prioridade primeiro
+                }
+                
+                // 2. Data de vencimento (mais antiga primeiro) - apenas se ambas tiverem data
+                if (a.due_date && b.due_date) {
+                  const dateA = new Date(a.due_date).getTime();
+                  const dateB = new Date(b.due_date).getTime();
+                  
+                  if (dateA !== dateB) {
+                    return dateA - dateB; // Data mais antiga primeiro
+                  }
+                }
+                
+                                 // 3. Se uma tem data e outra não, priorizar a que tem data
+                 if (a.due_date && !b.due_date) return -1;
+                 if (!a.due_date && b.due_date) return 1;
+                 
+                 // 4. Se nenhuma tem data de vencimento, ordenar por data de cadastro (mais antiga primeiro)
+                 if (!a.due_date && !b.due_date) {
+                   const createdA = new Date(a.created_at).getTime();
+                   const createdB = new Date(b.created_at).getTime();
+                   
+                   if (createdA !== createdB) {
+                     return createdA - createdB; // Mais antiga primeiro
+                   }
+                 }
+                 
+                 // 5. Por último, usar o stage_order como fallback
+                 return (a.stage_order || 1000) - (b.stage_order || 1000);
+              });
               
             return (
               <SortableContext

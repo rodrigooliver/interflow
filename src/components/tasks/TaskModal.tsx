@@ -1428,7 +1428,15 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                 <div ref={labelsDropdownRef}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <Tag className="w-4 h-4 mr-1.5" />
-                    {t('labels.title')}
+                      {t('labels.title')}
+                      {/* Botão para abrir dropdown */}
+                    <button
+                      type="button"
+                      onClick={() => setShowLabelDropdown(!showLabelDropdown)}
+                      className="ml-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
                   </label>
                   
                   <div className="mt-2 relative">
@@ -1461,15 +1469,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                       })}
                     </div>
                     
-                    {/* Botão para abrir dropdown */}
-                    <button
-                      type="button"
-                      onClick={() => setShowLabelDropdown(!showLabelDropdown)}
-                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      {t('labels.addLabel')}
-                    </button>
+                   
                     
                     {/* Dropdown das etiquetas */}
                     {showLabelDropdown && (
@@ -1479,7 +1479,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                             <div 
                               key={label.id}
                               onClick={() => toggleLabel(label.id)}
-                              className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center ${
+                              className={`px-4 py-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center ${
                                 selectedLabels.includes(label.id) ? 'bg-gray-100 dark:bg-gray-700' : ''
                               }`}
                             >

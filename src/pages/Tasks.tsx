@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, ChevronDown, Settings, FolderPlus, Folder, Filter, X } from 'lucide-react';
+import { Plus, ChevronDown, Settings, FolderPlus, Folder, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthContext } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';

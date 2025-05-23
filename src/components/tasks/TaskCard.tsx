@@ -416,16 +416,16 @@ export function TaskCard({
           </div>
 
           <div className="flex justify-between items-start mt-0.5 sm:mt-1">
-            <div className="flex-1 min-w-0">
-              <h3 className={`text-xs sm:text-sm text-gray-900 dark:text-white truncate ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
-                {task.title}
-                {task.is_archived && (
-                  <span className="ml-1 text-xs text-gray-500 dark:text-gray-400 italic">
-                    ({t('archived')})
-                  </span>
-                )}
-              </h3>
-            </div>
+                      <div className="flex-1 min-w-0">
+            <h3 className={`text-xs sm:text-sm text-gray-900 dark:text-white ${showDetails ? '' : 'truncate'} ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
+              {task.title}
+              {task.is_archived && (
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400 italic">
+                  ({t('archived')})
+                </span>
+              )}
+            </h3>
+          </div>
           </div>
 
           {/* Conteúdo com scroll quando necessário */}
