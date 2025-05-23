@@ -362,7 +362,14 @@
       "flowVariable": "Variável do Flow",
       "promptVariable": "Variável do Prompt",
       "flowVariablePlaceholder": "Nome da variável no flow",
-      "noVariables": "Nenhuma variável adicionada. Clique em 'Adicionar Variável' para começar."
+      "noVariables": "Nenhuma variável adicionada. Clique em 'Adicionar Variável' para começar.",
+      "variableMapping": "Mapeamento de Variáveis",
+      "addVariableMapping": "+ Adicionar Mapeamento de Variável",
+      "variableMappingDescription": "Mapeie parâmetros do prompt para variáveis do fluxo para passar dados entre a ferramenta e o fluxo.",
+      "noVariableMappings": "Nenhum mapeamento de variável definido",
+      "promptParameter": "Parâmetro do Prompt",
+      "selectParameter": "Selecionar parâmetro",
+      "selectFlowVariable": "Selecionar variável do fluxo"
     },
     "editSystemAction": "Editar Ação do Sistema",
     "actionName": "Nome da Ação",

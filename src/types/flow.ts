@@ -20,6 +20,7 @@ export interface Variable {
   id: string;
   name: string;
   value: string;
+  testValue?: string;
 }
 
 export interface OpenAINodeData {

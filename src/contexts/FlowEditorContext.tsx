@@ -85,7 +85,7 @@ export function FlowEditorProvider({ children }: { children: React.ReactNode }) 
   };
 
   const addVariable = () => {
-    setVariables([...variables, { id: crypto.randomUUID(), name: '', value: '' }]);
+    setVariables([...variables, { id: crypto.randomUUID(), name: '', value: '', testValue: '' }]);
   };
 
   const removeVariable = (index: number) => {

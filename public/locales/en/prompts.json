@@ -284,7 +284,15 @@
       "mappedOperation": "Mapped Operation",
       "operationMapping": "Operation Mapping",
       "appointmentId": "Appointment ID in YYYY-MM-DD-HH:MM format",
-      "aiSettings": "AI Settings"
+      "aiSettings": "AI Settings",
+      "variableMapping": "Variable Mapping",
+      "addVariableMapping": "+ Add Variable Mapping",
+      "variableMappingDescription": "Map prompt parameters to flow variables to pass data between the tool and the flow.",
+      "noVariableMappings": "No variable mappings defined",
+      "promptParameter": "Prompt Parameter",
+      "flowVariable": "Flow Variable",
+      "selectParameter": "Select parameter",
+      "selectFlowVariable": "Select flow variable"
     },
     "aiSettings": "AI Settings",
     "systemActionTypes": {

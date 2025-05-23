@@ -32,6 +32,7 @@
     "add": "Add Variable",
     "noVariables": "No variables found",
     "valueDefault": "Initial value",
+    "valueTest": "Test value",
     "selectVariable": "Select variable",
     "insertVariable": "Insert variable",
     "flowVariables": "Flow variables",
@@ -321,7 +322,12 @@
       "methodPost": "POST",
       "methodPut": "PUT",
       "methodPatch": "PATCH",
-      "methodDelete": "DELETE"
+      "methodDelete": "DELETE",
+      "selectVariableForMapping": "Select Variable for Mapping",
+      "property": "Property",
+      "selectVariableLabel": "Select the variable",
+      "selectVariablePlaceholder": "Select a variable...",
+      "cancel": "Cancel"
     },
     "updateCustomer": {
       "title": "Update Customer",

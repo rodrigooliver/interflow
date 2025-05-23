@@ -285,7 +285,15 @@
       "mappedOperation": "Operación Mapeada",
       "operationMapping": "Mapeo de Operaciones",
       "appointmentId": "ID de Cita en formato YYYY-MM-DD-HH:MM",
-      "aiSettings": "Configuración de IA"
+      "aiSettings": "Configuración de IA",
+      "variableMapping": "Mapeo de Variables",
+      "addVariableMapping": "+ Añadir Mapeo de Variable",
+      "variableMappingDescription": "Mapea parámetros del prompt a variables del flujo para pasar datos entre la herramienta y el flujo.",
+      "noVariableMappings": "No hay mapeos de variables definidos",
+      "promptParameter": "Parámetro del Prompt",
+      "flowVariable": "Variable del Flujo",
+      "selectParameter": "Seleccionar parámetro",
+      "selectFlowVariable": "Seleccionar variable del flujo"
     },
     "aiSettings": "Configuración de IA",
     "systemActionTypes": {

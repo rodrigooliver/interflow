@@ -1664,6 +1664,141 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
                           ))}
                       </select>
                     </div>
+
+                    {/* Mapeamento de variáveis */}
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center space-x-2">
+                            <h6 className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {t('prompts:form.actions.variableMapping')}
+                            </h6>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentVariables = getConfig<FlowNodeActionConfig>().variables || [];
+                              const newConfig = {
+                                ...editingAction.config,
+                                variables: [
+                                  ...currentVariables,
+                                  { flowVariable: '', promptVariable: '' }
+                                ]
+                              };
+                              setEditingAction({
+                                ...editingAction,
+                                config: newConfig
+                              });
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                          >
+                            {t('prompts:form.actions.addVariableMapping')}
+                          </button>
+                        </div>
+
+                        <div className="p-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            {t('prompts:form.actions.variableMappingDescription')}
+                          </p>
+
+                          {(!getConfig<FlowNodeActionConfig>().variables || getConfig<FlowNodeActionConfig>().variables?.length === 0) ? (
+                            <div className="bg-white dark:bg-gray-700 p-4 rounded-md">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                {t('prompts:form.actions.noVariableMappings')}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {(getConfig<FlowNodeActionConfig>().variables || []).map((mapping, index) => (
+                                <div key={index} className="bg-white dark:bg-gray-700 p-3 rounded-md">
+                                  <div className="flex items-start space-x-3">
+                                    <div className="flex-1">
+                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        {t('prompts:form.actions.promptParameter')}
+                                      </label>
+                                      <select
+                                        value={mapping.promptVariable}
+                                        onChange={(e) => {
+                                          const newVariables = [...(getConfig<FlowNodeActionConfig>().variables || [])];
+                                          newVariables[index] = {
+                                            ...newVariables[index],
+                                            promptVariable: e.target.value
+                                          };
+                                          const newConfig = {
+                                            ...editingAction.config,
+                                            variables: newVariables
+                                          };
+                                          setEditingAction({
+                                            ...editingAction,
+                                            config: newConfig
+                                          });
+                                        }}
+                                        className="w-full text-xs p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                      >
+                                        <option value="">{t('prompts:form.actions.selectParameter')}</option>
+                                        {getAvailableParameters().map((param) => (
+                                          <option key={param.name} value={param.name}>{param.label}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div className="flex-1">
+                                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        {t('prompts:form.actions.flowVariable')}
+                                      </label>
+                                      <select
+                                        value={mapping.flowVariable}
+                                        onChange={(e) => {
+                                          const newVariables = [...(getConfig<FlowNodeActionConfig>().variables || [])];
+                                          newVariables[index] = {
+                                            ...newVariables[index],
+                                            flowVariable: e.target.value
+                                          };
+                                          const newConfig = {
+                                            ...editingAction.config,
+                                            variables: newVariables
+                                          };
+                                          setEditingAction({
+                                            ...editingAction,
+                                            config: newConfig
+                                          });
+                                        }}
+                                        className="w-full text-xs p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                      >
+                                        <option value="">{t('prompts:form.actions.selectFlowVariable')}</option>
+                                        {(linkedFlow?.variables || []).map((variable: {name: string; description?: string}) => (
+                                          <option key={variable.name} value={variable.name}>
+                                            {variable.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newVariables = (getConfig<FlowNodeActionConfig>().variables || []).filter((_, i) => i !== index);
+                                        const newConfig = {
+                                          ...editingAction.config,
+                                          variables: newVariables
+                                        };
+                                        setEditingAction({
+                                          ...editingAction,
+                                          config: newConfig
+                                        });
+                                      }}
+                                      className="mt-6 p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </>
               )}

@@ -29,7 +29,8 @@ export function VariablesModal({ isOpen, onClose }: VariablesModalProps) {
       const filtered = variables.filter(
         variable => 
           variable.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-          variable.value.toLowerCase().includes(searchTerm.toLowerCase())
+          variable.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (variable.testValue && variable.testValue.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredVariables(filtered);
     }
@@ -45,7 +46,11 @@ export function VariablesModal({ isOpen, onClose }: VariablesModalProps) {
     if (searchTerm.trim() === '') return filteredIndex;
     
     const filteredVar = filteredVariables[filteredIndex];
-    return variables.findIndex(v => v.name === filteredVar.name && v.value === filteredVar.value);
+    return variables.findIndex(v => 
+      v.name === filteredVar.name && 
+      v.value === filteredVar.value && 
+      v.testValue === filteredVar.testValue
+    );
   };
 
   if (!isOpen) return null;
@@ -89,13 +94,16 @@ export function VariablesModal({ isOpen, onClose }: VariablesModalProps) {
 
         {/* Lista de variáveis com rolagem */}
         <div className="max-h-[50vh] overflow-y-auto pr-2 mb-4">
-          <div className="grid grid-cols-[1fr,1fr,auto] gap-2">
+          <div className="grid grid-cols-[1fr,1fr,1fr,auto] gap-2">
             {/* Cabeçalho */}
             <div className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
               {t('common:name')}
             </div>
             <div className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
               {t('flows:variables.valueDefault')}
+            </div>
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
+              {t('flows:variables.valueTest')}
             </div>
             <div className="w-8"></div>
 
@@ -124,6 +132,17 @@ export function VariablesModal({ isOpen, onClose }: VariablesModalProps) {
                       placeholder={t('flows:variables.valueDefault')}
                       className="px-4 py-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
+                    <input
+                      type="text"
+                      value={variable.testValue || ''}
+                      onChange={(e) => {
+                        const newVariables = [...variables];
+                        newVariables[originalIndex].testValue = e.target.value;
+                        setVariables(newVariables);
+                      }}
+                      placeholder={t('flows:variables.valueTest')}
+                      className="px-4 py-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
                     <button
                       onClick={() => handleDeleteVariable(originalIndex)}
                       className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
@@ -135,7 +154,7 @@ export function VariablesModal({ isOpen, onClose }: VariablesModalProps) {
                 );
               })
             ) : (
-              <div className="col-span-3 py-4 text-center text-gray-500 dark:text-gray-400">
+              <div className="col-span-4 py-4 text-center text-gray-500 dark:text-gray-400">
                 {searchTerm ? t('common:noResults') : t('flows:variables.noVariables')}
               </div>
             )}

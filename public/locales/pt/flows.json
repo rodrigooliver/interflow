@@ -256,7 +256,12 @@
       "addProperty": "Adicionar",
       "missingUrl": "URL não informada",
       "response": "Respostas",
-      "action": "Ação"
+      "action": "Ação",
+      "selectVariableForMapping": "Selecionar Variável para Mapeamento",
+      "property": "Propriedade",
+      "selectVariableLabel": "Selecione a variável",
+      "selectVariablePlaceholder": "Selecione uma variável...",
+      "cancel": "Cancelar"
     },
     "options": {
       "textPlaceholder": "Texto da opção",
@@ -406,6 +411,7 @@
     "add": "Adicionar Variável",
     "noVariables": "Nenhuma variável encontrada",
     "valueDefault": "Valor inicial",
+    "valueTest": "Valor para teste",
     "selectVariable": "Selecionar variável",
     "insertVariable": "Inserir variável",
     "flowVariables": "Variáveis do fluxo",

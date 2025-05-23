@@ -32,6 +32,7 @@
     "add": "Agregar Variable",
     "noVariables": "Ninguna variable encontrada",
     "valueDefault": "Valor inicial",
+    "valueTest": "Valor de prueba",
     "selectVariable": "Seleccionar variable",
     "insertVariable": "Insertar variable",
     "flowVariables": "Variables del flujo",
@@ -316,7 +317,12 @@
       "addProperty": "Añadir",
       "missingUrl": "URL no proporcionada",
       "response": "Respuestas",
-      "action": "Acción"
+      "action": "Acción",
+      "selectVariableForMapping": "Seleccionar Variable para Mapeo",
+      "property": "Propiedad",
+      "selectVariableLabel": "Seleccione la variable",
+      "selectVariablePlaceholder": "Seleccione una variable...",
+      "cancel": "Cancelar"
     },
     "updateCustomer": {
       "title": "Actualizar Cliente",

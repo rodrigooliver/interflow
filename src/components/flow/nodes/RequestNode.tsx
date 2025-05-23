@@ -78,7 +78,7 @@ const extractProperties = (obj: Record<string, unknown> | unknown[], prefix = ''
 
 export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
   const { t } = useTranslation('flows');
-  const { variables, updateNodeData } = useFlowEditor();
+  const { variables, updateNodeData, setVariables } = useFlowEditor();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
@@ -105,6 +105,13 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
   // Estado para edição do rótulo
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editedLabel, setEditedLabel] = useState(data.label || '');
+
+  // Estados para o modal de seleção de variável para mapeamento
+  const [showVariableMappingModal, setShowVariableMappingModal] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<{
+    path: string;
+    value: unknown;
+  } | null>(null);
 
   // Função para lidar com a mudança do rótulo
   const handleLabelChange = useCallback(async (newLabel: string) => {
@@ -205,10 +212,9 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
     newParams[index] = { key, value };
     handleConfigChange({ params: newParams });
 
-    // Atualizar a URL com o novo parâmetro quando o nome ou valor são alterados
-    if (key && value) {
-      updateUrlFromParams(newParams);
-    }
+    // Sempre atualizar a URL para refletir mudanças nos parâmetros
+    // incluindo quando um valor é apagado (para remover da URL)
+    updateUrlFromParams(newParams);
   };
 
   // Atualiza a URL com base nos parâmetros
@@ -217,18 +223,27 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
       // Verificar se é uma URL válida
       const url = new URL(localConfig.url);
       
-      // Limpar todos os parâmetros existentes
-      url.search = '';
+      // Construir a query string manualmente para preservar {{variavel}}
+      const searchParams = new URLSearchParams();
       
       // Adicionar os parâmetros da lista
       params.forEach(param => {
         if (param.key && param.value) {
-          url.searchParams.append(param.key, param.value);
+          searchParams.append(param.key, param.value);
         }
       });
       
+      // Converter para string e restaurar as variáveis {{}} que foram encodadas
+      let queryString = searchParams.toString();
+      
+      // Decodificar apenas as variáveis no formato {{variavel}}
+      queryString = queryString.replace(/%7B%7B([^%]+)%7D%7D/g, '{{$1}}');
+      
+      // Construir a URL final
+      const finalUrl = url.origin + url.pathname + (queryString ? '?' + queryString : '');
+      
       // Atualizar o estado local com a nova URL
-      handleConfigChange({ url: url.toString() });
+      handleConfigChange({ url: finalUrl });
     } catch {
       // Não é uma URL válida, ignorar
     }
@@ -308,7 +323,8 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
         params: localConfig.params,
         body: localConfig.body,
         bodyType: localConfig.bodyType,
-        timeout: 15000
+        timeout: 15000,
+        variables: variables // Enviando as variáveis para o backend
       });
       
       console.log('Resposta do backend:', response);
@@ -334,15 +350,9 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
   };
 
   // Função para adicionar propriedades selecionadas como mapeamentos
-  const addPropertyAsMapping = (path: string) => {
-    // Verificar se já existe um mapeamento para este path
-    const existingMapping = localConfig.variableMappings.find(m => m.jsonPath === path);
-    
-    if (!existingMapping) {
-      const newMappings = [...localConfig.variableMappings, { variable: '', jsonPath: path }];
-      handleConfigChange({ variableMappings: newMappings });
-      handleConfigBlur();
-    }
+  const addPropertyAsMapping = (path: string, value: unknown) => {
+    setSelectedProperty({ path, value });
+    setShowVariableMappingModal(true);
   };
 
   // Função para abrir o seletor de variáveis
@@ -372,6 +382,9 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
         currentValue.substring(0, cursorPos) + variableName + currentValue.substring(cursorPos);
       handleConfigChange({ params: newParams });
       handleConfigBlur();
+      
+      // Sempre atualizar a URL quando uma variável é inserida em um parâmetro
+      updateUrlFromParams(newParams);
     } 
     else if (currentEditField.type === 'header' && currentEditField.index !== undefined) {
       const newHeaders = [...localConfig.headers];
@@ -397,6 +410,52 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
     }
 
     setShowVariableSelector(false);
+  };
+
+  // Função para salvar o mapeamento de variável
+  const handleSaveVariableMapping = (selectedVariableName: string) => {
+    if (!selectedProperty) return;
+
+    // Verificar se já existe um mapeamento para esta variável
+    const existingMappingIndex = localConfig.variableMappings.findIndex(
+      mapping => mapping.variable === selectedVariableName
+    );
+
+    let newMappings;
+    if (existingMappingIndex !== -1) {
+      // Se já existe, substituir o mapeamento existente
+      newMappings = [...localConfig.variableMappings];
+      newMappings[existingMappingIndex] = {
+        variable: selectedVariableName,
+        jsonPath: selectedProperty.path
+      };
+    } else {
+      // Se não existe, adicionar um novo mapeamento
+      newMappings = [...localConfig.variableMappings, { 
+        variable: selectedVariableName, 
+        jsonPath: selectedProperty.path 
+      }];
+    }
+
+    handleConfigChange({ variableMappings: newMappings });
+    handleConfigBlur();
+
+    // Atualizar o valor de teste da variável selecionada
+    const newVariables = [...variables];
+    const variableIndex = newVariables.findIndex(v => v.name === selectedVariableName);
+    
+    if (variableIndex !== -1) {
+      newVariables[variableIndex].testValue = typeof selectedProperty.value === 'string' 
+        ? selectedProperty.value 
+        : JSON.stringify(selectedProperty.value);
+      
+      // Salvar as variáveis atualizadas
+      setVariables(newVariables);
+    }
+
+    // Fechar o modal
+    setShowVariableMappingModal(false);
+    setSelectedProperty(null);
   };
 
   // Renderiza o conteúdo com base na aba ativa
@@ -650,7 +709,7 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
                                   </td>
                                   <td className="px-3 py-2 text-right">
                                     <button
-                                      onClick={() => addPropertyAsMapping(prop.path as string)}
+                                      onClick={() => addPropertyAsMapping(prop.path as string, prop.value)}
                                       className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
                                     >
                                       {t('nodes.request.addProperty')}
@@ -960,6 +1019,62 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
                     variables={variables}
                     onSelectVariable={handleInsertVariable}
                   />
+                )}
+
+                {/* Modal para seleção de variável para mapeamento */}
+                {showVariableMappingModal && selectedProperty && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowVariableMappingModal(false)} />
+                    <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                        {t('nodes.request.selectVariableForMapping')}
+                      </h3>
+                      
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {t('nodes.request.property')}: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{selectedProperty.path}</code>
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          {t('nodes.request.value')}: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">
+                            {typeof selectedProperty.value === 'string' 
+                              ? selectedProperty.value 
+                              : JSON.stringify(selectedProperty.value)}
+                          </code>
+                        </p>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          {t('nodes.request.selectVariableLabel')}:
+                        </label>
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleSaveVariableMapping(e.target.value);
+                            }
+                          }}
+                          className="w-full p-2 text-sm border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          defaultValue=""
+                        >
+                          <option value="">{t('nodes.request.selectVariablePlaceholder')}</option>
+                          {variables.map((variable) => (
+                            <option key={variable.id} value={variable.name}>
+                              {variable.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => setShowVariableMappingModal(false)}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                        >
+                          {t('nodes.request.cancel')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
