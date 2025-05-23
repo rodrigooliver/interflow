@@ -63,7 +63,8 @@
     "send": "Enviar",
     "receive": "Recibir",
     "action": "Acción",
-    "integrations": "Integraciones"
+    "integrations": "Integraciones",
+    "organization": "Organización"
   },
   "nodes": {
     "start": "Inicio",
@@ -341,6 +342,9 @@
         "phone": "Teléfono",
         "facebook": "Facebook",
         "instagram": "Instagram"
+      },
+      "group": {
+        "title": "Grupo"
       }
     }
   },

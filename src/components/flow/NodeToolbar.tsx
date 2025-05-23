@@ -57,6 +57,12 @@ export function NodeToolbar() {
         { type: 'agenteia', label: t('nodes.agenteia.title') },
         { type: 'request', label: t('nodes.request.title') },
       ]
+    },
+    {
+      title: t('categories.organization'),
+      nodes: [
+        { type: 'group', label: t('nodes.group.title') },
+      ]
     }
   ];
 

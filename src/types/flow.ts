@@ -13,7 +13,8 @@ export type NodeType =
   | 'openai'
   | 'agenteia'
   | 'jump_to'
-  | 'request';
+  | 'request'
+  | 'group';
 
 export interface Variable {
   id: string;
@@ -59,6 +60,9 @@ export interface FlowNode {
     };
     label?: string;
     targetNodeId?: string;
+    color?: string;
+    width?: number;
+    height?: number;
   } | OpenAINodeData;
 }
 

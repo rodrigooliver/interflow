@@ -1,0 +1,231 @@
+/* Estilos específicos para o GroupNode */
+.react-flow__node-group {
+  z-index: -10 !important;
+  /* Não remover o background aqui, deixar o componente controlar */
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+/* Remover borda de seleção padrão do ReactFlow */
+.react-flow__node-group.selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node-group .group-node-container {
+  pointer-events: none;
+  position: relative;
+  z-index: -10;
+}
+
+/* Forçar o background do container do grupo */
+.react-flow__node-group .group-node-container[style*="backgroundColor"] {
+  background-color: var(--group-bg-color) !important;
+}
+
+/* Permitir interação apenas com elementos específicos */
+.react-flow__node-group .group-node-container > div:not(.resize-handles) {
+  pointer-events: auto;
+  z-index: 1000;
+  position: relative;
+}
+
+/* Handles de redimensionamento devem ser interativos */
+.resize-handles .resize-handle {
+  pointer-events: auto;
+}
+
+/* Handles de redimensionamento */
+.resize-handles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.resize-handle {
+  position: absolute;
+  pointer-events: auto;
+  background: rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.6);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.1s;
+  z-index: 1001;
+}
+
+.resize-handle:hover {
+  background: rgba(59, 130, 246, 0.5);
+  border-color: rgba(59, 130, 246, 0.8);
+  transform: scale(1.2);
+}
+
+.resize-handle:active {
+  background: rgba(59, 130, 246, 0.7);
+  border-color: rgba(59, 130, 246, 1);
+  transform: scale(1.4);
+}
+
+.react-flow__node-group:hover .resize-handle,
+.react-flow__node-group.selected .resize-handle {
+  opacity: 1;
+}
+
+/* Cantos */
+.resize-handle-nw {
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: nw-resize;
+  border-radius: 50%;
+}
+
+.resize-handle-ne {
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: ne-resize;
+  border-radius: 50%;
+}
+
+.resize-handle-sw {
+  bottom: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: sw-resize;
+  border-radius: 50%;
+}
+
+.resize-handle-se {
+  bottom: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: se-resize;
+  border-radius: 50%;
+}
+
+/* Bordas */
+.resize-handle-n {
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  cursor: ns-resize;
+  border-radius: 50%;
+}
+
+.resize-handle-s {
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  cursor: ns-resize;
+  border-radius: 50%;
+}
+
+.resize-handle-w {
+  top: 50%;
+  left: -4px;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  cursor: ew-resize;
+  border-radius: 50%;
+}
+
+.resize-handle-e {
+  top: 50%;
+  right: -4px;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  cursor: ew-resize;
+  border-radius: 50%;
+}
+
+/* Garantir que outros nós fiquem acima dos grupos */
+.react-flow__node:not(.react-flow__node-group) {
+  z-index: 10 !important;
+}
+
+/* Elementos com classe nodrag não devem interferir no arrasto */
+.nodrag {
+  pointer-events: auto !important;
+}
+
+/* Ocultar handles padrão para grupos */
+.react-flow__node-group .react-flow__handle {
+  display: none !important;
+}
+
+/* Remover apenas os estilos internos problemáticos do ReactFlow */
+.react-flow__node-group .react-flow__node-default {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Prevenir seleção de texto durante redimensionamento */
+.react-flow__node-group.resizing {
+  user-select: none;
+}
+
+.react-flow__node-group.resizing * {
+  user-select: none;
+}
+
+/* Estilo quando está sendo redimensionado */
+.group-node-container.resizing {
+  transition: none !important;
+}
+
+/* Garantir que o background do grupo seja respeitado */
+.react-flow__node-group > .group-node-container {
+  background: inherit !important;
+}
+
+/* Forçar a visibilidade do background com cores */
+.group-node-container {
+  opacity: 1 !important;
+}
+
+.group-node-container[style*="backgroundColor"] {
+  background-color: inherit !important;
+}
+
+/* Regras mais específicas para sobrescrever ReactFlow */
+.react-flow__node-group > div.group-node-container {
+  background-color: var(--group-bg-color) !important;
+}
+
+/* Sobrescrever qualquer background do ReactFlow para grupos */
+.react-flow__node-group,
+.react-flow__node-group > *,
+.react-flow__node-group .react-flow__node-default {
+  background: transparent !important;
+}
+
+/* Aplicar background apenas no container do grupo */
+.react-flow__node-group .group-node-container {
+  background-color: var(--group-bg-color) !important;
+}
+
+/* Classe global para prevenir seleção durante redimensionamento */
+.no-select {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+} 

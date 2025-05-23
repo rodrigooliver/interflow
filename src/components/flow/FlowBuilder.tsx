@@ -15,8 +15,12 @@ import ReactFlow, {
   NodeToolbar as ReactFlowNodeToolbar,
   EdgeLabelRenderer,
   Position,
+  ReactFlowInstance,
+  NodeChange,
+  EdgeChange,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import './styles/group-node.css';
 import { NodeType } from '../../types/flow';
 import { NodeToolbar } from './NodeToolbar';
 import { TextNode } from './nodes/TextNode';
@@ -31,6 +35,7 @@ import { AgenteIANode } from './nodes/AgenteIANode';
 import { UpdateCustomerNode } from './nodes/UpdateCustomerNode';
 import { RequestNode } from './nodes/RequestNode';
 import { JumpToNode } from './nodes/JumpToNode';
+import { GroupNode } from './nodes/GroupNode';
 import { Trash2, RotateCcw, Copy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlowEditor } from '../../contexts/FlowEditorContext';
@@ -51,6 +56,7 @@ const nodeTypes: NodeTypes = {
   update_customer: UpdateCustomerNode,
   jump_to: JumpToNode,
   request: RequestNode,
+  group: GroupNode,
 };
 
 export function FlowBuilder() {
@@ -67,7 +73,7 @@ export function FlowBuilder() {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const { t } = useTranslation('flows');
   const [showResetModal, setShowResetModal] = useState(false);
 
@@ -97,19 +103,20 @@ export function FlowBuilder() {
       update_customer: t('nodes.updateCustomer.title') + ` ${nodeCount}`,
       jump_to: t('nodes.jumpTo.title') + ` ${nodeCount}`,
       request: t('nodes.request.title') + ` ${nodeCount}`,
+      group: t('nodes.group.title') + ` ${nodeCount}`,
     };
 
     return typeLabels[type] || t('nodes.labels.generic') + ` ${nodeCount}`;
   };
 
-  const onNodesChange = useCallback((changes: any) => {
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes((nds: Node[]) => {
       const updatedNodes = applyNodeChanges(changes, nds);
       return updatedNodes;
     });
   }, [setNodes]);
 
-  const onEdgesChange = useCallback((changes: any) => {
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     setEdges((eds: Edge[]) => {
       const updatedEdges = applyEdgeChanges(changes, eds);
       return updatedEdges;
@@ -246,7 +253,7 @@ export function FlowBuilder() {
     }, 0);
   }, [setNodes, setEdges, reactFlowInstance, onSaveFlow]);
 
-  const onNodeUpdate = useCallback((nodeId: string, data: any) => {
+  const onNodeUpdate = useCallback((nodeId: string, data: Record<string, any>) => {
     let hasChanges = false;
     
     // Primeiro verificamos as mudanças
@@ -449,15 +456,13 @@ export function FlowBuilder() {
     }, 0);
   }, [nodes, setNodes, setEdges, reactFlowInstance, onSaveFlow]);
 
-  const handleFlowError = (error: any) => {
-
+  const handleFlowError = (error: Error | string) => {
     // Ignorar erros específicos do React Flow relacionados a handles
     if (error.message?.includes("Couldn't create edge for source handle id") || error === '008') {
       return; // Silenciosamente ignora o erro
     }
     // Para outros erros, você pode logar ou tratar como desejar
     console.error(error);
-    
   };
 
   // Componente dos botões de ação para ser usado com nós e arestas

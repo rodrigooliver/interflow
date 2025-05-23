@@ -3,7 +3,8 @@
     "action": "Ação",
     "integrations": "Integrações",
     "receive": "Receber",
-    "send": "Enviar"
+    "send": "Enviar",
+    "organization": "Organização"
   },
   "days": {
     "friday": "Sexta",
@@ -222,10 +223,8 @@
     },
     "agenteia": {
       "title": "Agente IA",
-      "defaultLabel": "Agente IA",
-      "prompt": "Instrução IA",
-      "selectPrompt": "Selecione uma Instrução IA",
-      "saveResponse": "Salvar resposta em"
+      "selectIntegration": "Selecionar integração",
+      "enterPrompt": "Digite o prompt"
     },
     "request": {
       "title": "Requisição HTTP",
@@ -337,6 +336,9 @@
       "selectVariable": "Selecione uma variável",
       "title": "Alterar Variável",
       "valuePlaceholder": "Valor"
+    },
+    "group": {
+      "title": "Grupo"
     }
   },
   "publish": "Publicar",
