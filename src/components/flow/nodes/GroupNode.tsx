@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useFlowEditor } from '../../../contexts/FlowEditorContext';
-import { Pencil, Check, Settings, RectangleHorizontal } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 interface GroupNodeProps {
   id: string;
@@ -53,18 +53,6 @@ export function GroupNode({ id, data }: GroupNodeProps) {
       ...data,
       color: newColor
     });
-  }, [id, data, updateNodeData]);
-
-  const handleSizeChange = useCallback((dimension: 'width' | 'height', value: number) => {
-    const newData = { ...data };
-    if (dimension === 'width') {
-      setWidth(value);
-      newData.width = value;
-    } else {
-      setHeight(value);
-      newData.height = value;
-    }
-    updateNodeData(id, newData);
   }, [id, data, updateNodeData]);
 
   const handleLabelChange = useCallback((newLabel: string) => {
@@ -268,7 +256,6 @@ export function GroupNode({ id, data }: GroupNodeProps) {
               title="Arrastar grupo"
               style={{ pointerEvents: 'auto' }}
             >
-              <RectangleHorizontal className="w-4 h-4 text-gray-500" />
               {isEditing ? (
                 <input
                   type="text"
@@ -288,11 +275,20 @@ export function GroupNode({ id, data }: GroupNodeProps) {
                       setIsEditing(false);
                     }
                   }}
-                  className="text-sm px-1 py-1 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white nodrag"
+                  className="text-base px-1 py-1 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white nodrag"
+                  style={{
+                    width: `${Math.min(label.length * 10 + 20, width - 120)}px`,
+                    maxWidth: `${width - 120}px`,
+                    minWidth: '60px'
+                  }}
                   autoFocus
                 />
               ) : (
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span 
+                  className="text-base font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors"
+                  onClick={() => setIsEditing(true)}
+                  title="Clique para editar"
+                >
                   {label}
                 </span>
               )}
@@ -300,27 +296,6 @@ export function GroupNode({ id, data }: GroupNodeProps) {
           </div>
           
           <div className="flex items-center gap-1">
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 nodrag"
-                title="Editar nome"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
-            )}
-            {isEditing && (
-              <button
-                onClick={() => {
-                  handleLabelChange(label);
-                  setIsEditing(false);
-                }}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 nodrag"
-                title="Confirmar"
-              >
-                <Check className="w-3 h-3" />
-              </button>
-            )}
             <button
               onClick={() => setIsConfigOpen(!isConfigOpen)}
               className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 nodrag"
@@ -333,12 +308,10 @@ export function GroupNode({ id, data }: GroupNodeProps) {
         
         {/* Configurações expandidas */}
         {isConfigOpen && (
-          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             {/* Seletor de cor */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Cor do Grupo
-              </label>
+            <div className="space-y-2">
+              {/* Cores predefinidas */}
               <div className="flex gap-1 flex-wrap">
                 {colorOptions.map((option) => (
                   <button
@@ -352,35 +325,17 @@ export function GroupNode({ id, data }: GroupNodeProps) {
                   />
                 ))}
               </div>
-            </div>
-
-            {/* Controles de tamanho */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Largura
-                </label>
+              
+              {/* Cor personalizada */}
+              <div className="flex items-center gap-2">
                 <input
-                  type="number"
-                  min="200"
-                  max="800"
-                  value={width}
-                  onChange={(e) => handleSizeChange('width', Number(e.target.value))}
-                  className="w-full p-1 text-xs border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white nodrag"
+                  type="color"
+                  value={color}
+                  onChange={(e) => handleColorChange(e.target.value)}
+                  className="w-6 h-6 rounded border border-gray-300 dark:border-gray-600 cursor-pointer nodrag"
+                  title="Cor personalizada"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Altura
-                </label>
-                <input
-                  type="number"
-                  min="150"
-                  max="600"
-                  value={height}
-                  onChange={(e) => handleSizeChange('height', Number(e.target.value))}
-                  className="w-full p-1 text-xs border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white nodrag"
-                />
+                <span className="text-xs text-gray-500 dark:text-gray-400">Cor personalizada</span>
               </div>
             </div>
           </div>

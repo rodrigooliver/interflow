@@ -59,6 +59,7 @@ export function JumpToNode({ id, data, isConnectable }: JumpToNodeProps) {
   // Filtrar o nó atual da lista e ordenar os nós por label
   const availableNodes = nodes
     .filter(node => node.id !== id)
+    .filter(node => node.type !== 'group') // Excluir nodes do tipo grupo
     .filter(node => {
       if (!searchTerm) return true;
       const nodeLabel = String(node.data?.label || '').toLowerCase();

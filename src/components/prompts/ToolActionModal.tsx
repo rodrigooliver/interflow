@@ -85,7 +85,10 @@ type ActionConfig = CustomerActionConfig | ChatActionConfig | ScheduleActionConf
 
 interface FlowNode {
   id: string;
-  name?: string;
+  type?: string;
+  data?: {
+    label?: string;
+  };
 }
 
 interface ToolActionModalProps {
@@ -1654,9 +1657,11 @@ const ToolActionModal: React.FC<ToolActionModalProps> = ({
                         className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
                       >
                         <option value="">{t('prompts:form.actions.selectNode')}</option>
-                        {linkedFlow?.nodes?.map((node: FlowNode) => (
-                          <option key={node.id} value={node.id}>{node.data?.label || node.id}</option>
-                        ))}
+                        {linkedFlow?.nodes
+                          ?.filter((node: FlowNode) => node.type !== 'group')
+                          ?.map((node: FlowNode) => (
+                            <option key={node.id} value={node.id}>{node.data?.label || node.id}</option>
+                          ))}
                       </select>
                     </div>
                   </div>
