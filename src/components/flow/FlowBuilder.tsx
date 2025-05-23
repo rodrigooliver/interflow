@@ -36,7 +36,7 @@ import { UpdateCustomerNode } from './nodes/UpdateCustomerNode';
 import { RequestNode } from './nodes/RequestNode';
 import { JumpToNode } from './nodes/JumpToNode';
 import { GroupNode } from './nodes/GroupNode';
-import { Trash2, RotateCcw, Copy } from 'lucide-react';
+import { Trash2, RotateCcw, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlowEditor } from '../../contexts/FlowEditorContext';
 
@@ -76,6 +76,25 @@ export function FlowBuilder() {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const { t } = useTranslation('flows');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [isToolbarMinimized, setIsToolbarMinimized] = useState(false);
+
+  // Detectar se é mobile e minificar a toolbar automaticamente
+  useEffect(() => {
+    const checkIsMobile = () => {
+      const isMobile = window.innerWidth < 768; // md breakpoint
+      setIsToolbarMinimized(isMobile);
+    };
+
+    // Verificar no mount
+    checkIsMobile();
+
+    // Adicionar listener para mudanças de tamanho
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
 
   // Garantir que o viewport seja aplicado ao carregar o componente
   useEffect(() => {
@@ -489,10 +508,25 @@ export function FlowBuilder() {
 
   return (
     <div className="flex h-[calc(100vh-64px)]" ref={reactFlowWrapper}>
-      <div className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className={`${isToolbarMinimized ? 'w-16' : 'w-64'} flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-300 relative`}>
         <div className="h-full overflow-y-auto custom-scrollbar">
-          <NodeToolbar />
+          <NodeToolbar 
+            isMinimized={isToolbarMinimized}
+          />
         </div>
+        
+        {/* Botão de toggle flutuante */}
+        <button
+          onClick={() => setIsToolbarMinimized(!isToolbarMinimized)}
+          className="absolute -right-3 top-4 z-20 p-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          title={isToolbarMinimized ? t('toolbar.expand', 'Expandir') : t('toolbar.collapse', 'Recolher')}
+        >
+          {isToolbarMinimized ? (
+            <ChevronRight className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+          )}
+        </button>
       </div>
 
       <div className="flex-1 relative">

@@ -12,7 +12,11 @@ interface NodeCategory {
   }[];
 }
 
-export function NodeToolbar() {
+interface NodeToolbarProps {
+  isMinimized: boolean;
+}
+
+export function NodeToolbar({ isMinimized }: NodeToolbarProps) {
   const { t } = useTranslation('flows');
   const [minimizedCategories, setMinimizedCategories] = useState<Record<string, boolean>>({});
 
@@ -73,43 +77,66 @@ export function NodeToolbar() {
 
   return (
     <div className="p-4 h-full">
-      <div className="space-y-6">
-        {categories.map((category) => (
-          <div key={category.title} className="space-y-2">
-            <div 
-              className="flex justify-between items-center cursor-pointer" 
-              onClick={() => toggleCategory(category.title)}
-            >
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {category.title}
-              </h3>
-              {minimizedCategories[category.title] ? (
-                <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              ) : (
-                <ChevronUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+      {/* Conteúdo principal */}
+      {isMinimized ? (
+        // Versão minificada - apenas ícones
+        <div className="space-y-2">
+          {categories.map((category) => (
+            <div key={category.title} className="space-y-1">
+              {category.nodes.map(({ type, label }) => (
+                <div
+                  key={type}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, type)}
+                  className="flex items-center justify-center p-2 rounded-lg cursor-move bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title={label}
+                >
+                  {getNodeIcon(type, 'sm')}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        // Versão expandida - layout completo
+        <div className="space-y-6">
+          {categories.map((category) => (
+            <div key={category.title} className="space-y-2">
+              <div 
+                className="flex justify-between items-center cursor-pointer" 
+                onClick={() => toggleCategory(category.title)}
+              >
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  {category.title}
+                </h3>
+                {minimizedCategories[category.title] ? (
+                  <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                ) : (
+                  <ChevronUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                )}
+              </div>
+              {!minimizedCategories[category.title] && (
+                <div className="space-y-2">
+                  {category.nodes.map(({ type, label }) => (
+                    <div
+                      key={type}
+                      draggable
+                      onDragStart={(e) => onDragStart(e, type)}
+                      className="flex items-center p-3 rounded-lg cursor-move bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="mr-3">
+                        {getNodeIcon(type, 'md')}
+                      </div>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-            {!minimizedCategories[category.title] && (
-              <div className="space-y-2">
-                {category.nodes.map(({ type, label }) => (
-                  <div
-                    key={type}
-                    draggable
-                    onDragStart={(e) => onDragStart(e, type)}
-                    className="flex items-center p-3 rounded-lg cursor-move bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div className="mr-3">
-                      {getNodeIcon(type, 'md')}
-                    </div>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        <div className="h-1" />
-      </div>
+          ))}
+          <div className="h-1" />
+        </div>
+      )}
     </div>
   );
 }

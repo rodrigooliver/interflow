@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReactFlowProvider } from 'reactflow';
-import { ArrowLeft, Loader2, Variable, Send, RotateCcw, Pencil, Check, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, Variable, Send, RotateCcw, Pencil, Check, Settings, MoreVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FlowBuilder } from '../../components/flow/FlowBuilder';
 import { Trigger } from '../../types/flow';
@@ -39,6 +39,7 @@ function FlowEditorContent() {
   const [showVariablesModal, setShowVariablesModal] = useState(false);
   const [showEditFlowModal, setShowEditFlowModal] = useState(false);
   const [flowKey] = useState(0);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     if (currentOrganizationMember && id) {
@@ -191,14 +192,16 @@ function FlowEditorContent() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <div className="h-16 flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 flex items-center justify-between">
-        <div className="flex items-center">
+        {/* Seção esquerda - Botão voltar e título */}
+        <div className="flex items-center min-w-0 flex-1">
           <button
             onClick={() => navigate('/app/flows')}
-            className="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            className="mr-3 md:mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex flex-col">
+          
+          <div className="flex flex-col min-w-0 flex-1">
             {isEditingName ? (
               <div className="flex items-center">
                 <input
@@ -213,13 +216,13 @@ function FlowEditorContent() {
                       setEditedName(flowName);
                     }
                   }}
-                  className="text-lg font-medium text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-0 px-1"
+                  className="text-base md:text-lg font-medium text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-0 px-1 min-w-0 flex-1"
                   autoFocus
                 />
                 <button
                   onClick={handleNameEdit}
                   disabled={saving}
-                  className="ml-2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50"
+                  className="ml-2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50 flex-shrink-0"
                 >
                   {saving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -229,19 +232,21 @@ function FlowEditorContent() {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center">
-                <h1 className="text-lg font-medium text-gray-900 dark:text-white">
+              <div className="flex items-center min-w-0">
+                <h1 className="text-base md:text-lg font-medium text-gray-900 dark:text-white truncate">
                   {flowName}
                 </h1>
                 <button
                   onClick={() => setIsEditingName(true)}
-                  className="ml-2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="ml-2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
                 >
-                  <Pencil className="w-4 h-4" />
+                  <Pencil className="w-3 h-3 md:w-4 md:h-4" />
                 </button>
               </div>
             )}
-            <div className="flex items-center space-x-2">
+            
+            {/* Status e última salvação - Hidden em mobile muito pequeno */}
+            <div className="hidden sm:flex items-center space-x-2">
               {isPublished && (
                 <span className="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                   {t('flows:published')}
@@ -255,46 +260,120 @@ function FlowEditorContent() {
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        
+        {/* Seção direita - Botões de ação */}
+        <div className="flex items-center space-x-1 md:space-x-2 ml-2 flex-shrink-0">
+          {/* Menu mobile para ações secundárias */}
+          <div className="relative sm:hidden">
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="inline-flex items-center px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            
+            {showMobileMenu && (
+              <>
+                {/* Overlay para fechar o menu */}
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowMobileMenu(false)}
+                />
+                
+                {/* Menu dropdown */}
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-20">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowEditFlowModal(true);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      <Settings className="w-4 h-4 mr-3" />
+                      {t('flows:settings')}
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setShowVariablesModal(true);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      <Variable className="w-4 h-4 mr-3" />
+                      {t('flows:variables.title')}
+                    </button>
+                    
+                    {isPublished && hasChanges && (
+                      <button
+                        onClick={() => {
+                          handleRestore();
+                          setShowMobileMenu(false);
+                        }}
+                        disabled={restoring}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {restoring ? (
+                          <Loader2 className="w-4 h-4 mr-3 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-4 h-4 mr-3" />
+                        )}
+                        {t('flows:restore')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Botão Configurações - Hidden em mobile muito pequeno */}
           <button
             onClick={() => setShowEditFlowModal(true)}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="hidden sm:inline-flex items-center px-2 md:px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
-            <Settings className="w-4 h-4 mr-2" />
-            {t('flows:settings')}
+            <Settings className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
+            <span className="hidden md:inline">{t('flows:settings')}</span>
           </button>
+          
+          {/* Botão Variáveis */}
           <button
             onClick={() => setShowVariablesModal(true)}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="hidden sm:inline-flex items-center px-2 md:px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
-            <Variable className="w-4 h-4 mr-2" />
-            {t('flows:variables.title')}
+            <Variable className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
+            <span className="hidden md:inline">{t('flows:variables.title')}</span>
           </button>
+          
+          {/* Botão Restaurar - Visível apenas quando necessário */}
           {isPublished && hasChanges && (
             <button
               onClick={handleRestore}
               disabled={restoring}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="hidden lg:inline-flex items-center px-3 md:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {restoring ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3 h-3 md:w-4 md:h-4 mr-2 animate-spin" />
               ) : (
-                <RotateCcw className="w-4 h-4 mr-2" />
+                <RotateCcw className="w-3 h-3 md:w-4 md:h-4 mr-2" />
               )}
-              {t('flows:restore')}
+              <span className="hidden xl:inline">{t('flows:restore')}</span>
             </button>
           )}
+          
+          {/* Botão Publicar - Sempre visível */}
           <button
             onClick={handlePublish}
             disabled={publishing || saving || (isPublished && !hasChanges)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-3 md:px-4 py-2 border border-transparent rounded-md shadow-sm text-xs md:text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {publishing ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 animate-spin" />
             ) : (
-              <Send className="w-4 h-4 mr-2" />
+              <Send className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
             )}
-            {t('flows:publish')}
+            <span className="hidden sm:inline">{t('flows:publish')}</span>
           </button>
         </div>
       </div>
