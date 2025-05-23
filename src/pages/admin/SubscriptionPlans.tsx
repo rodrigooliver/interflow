@@ -20,6 +20,7 @@ interface SubscriptionPlan {
   max_channels: number;
   max_flows: number;
   max_teams: number;
+  max_tokens: number;
   storage_limit: number;
   additional_user_price_brl: number;
   additional_user_price_usd: number;
@@ -105,6 +106,10 @@ export default function SubscriptionPlans() {
     }).format(price);
   };
 
+  const formatTokens = (tokens: number) => {
+    return new Intl.NumberFormat(i18n.language).format(tokens);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -158,6 +163,9 @@ export default function SubscriptionPlans() {
                     <span>{t('subscription:plans.maxTeams')}: {plan.max_teams || 1}</span>
                     <span className="mx-2">•</span>
                     <span>{(plan.storage_limit / 1048576).toFixed(0)} MB</span>
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span>Tokens/mês: {formatTokens(plan.max_tokens || 1000000)}</span>
                   </div>
                   {plan.additional_user_price_brl > 0 && (
                     <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">

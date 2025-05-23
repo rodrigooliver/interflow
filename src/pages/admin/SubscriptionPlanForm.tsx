@@ -21,6 +21,7 @@ interface FormData {
   max_channels: number;
   max_flows: number;
   max_teams: number;
+  max_tokens: number;
   storage_limit: number;
   additional_user_price_brl: number;
   additional_user_price_usd: number;
@@ -56,6 +57,7 @@ const initialFormData: FormData = {
   max_channels: 1,
   max_flows: 5,
   max_teams: 1,
+  max_tokens: 1000000, // 1 milhão de tokens por mês
   storage_limit: 104857600, // 100MB em bytes
   additional_user_price_brl: 39.99,
   additional_user_price_usd: 7.99,
@@ -82,6 +84,20 @@ export default function SubscriptionPlanForm() {
   const [error, setError] = useState('');
   const { t, i18n } = useTranslation(['common', 'subscription']);
   const [newFeature, setNewFeature] = useState('');
+
+  // Função para formatar número com pontos
+  const formatNumberWithDots = (value: number): string => {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Função para formatar entrada em tempo real
+  const handleTokensChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Remove tudo que não for número
+    const numbersOnly = inputValue.replace(/[^\d]/g, '');
+    const numericValue = parseInt(numbersOnly) || 0;
+    setFormData(prev => ({ ...prev, max_tokens: numericValue }));
+  };
 
   useEffect(() => {
     if (id) {
@@ -116,6 +132,7 @@ export default function SubscriptionPlanForm() {
           max_channels: data.max_channels || 1,
           max_flows: data.max_flows || 5,
           max_teams: data.max_teams || 1,
+          max_tokens: data.max_tokens || 1000000,
           storage_limit: data.storage_limit || 104857600,
           additional_user_price_brl: data.additional_user_price_brl || 0,
           additional_user_price_usd: data.additional_user_price_usd || 0,
@@ -532,6 +549,24 @@ export default function SubscriptionPlanForm() {
                   value={formData.max_teams}
                   onChange={(e) => setFormData(prev => ({ ...prev, max_teams: parseInt(e.target.value) }))}
                 />
+              </div>
+
+              <div>
+                <label htmlFor="max_tokens" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Máx. de tokens por mês *
+                </label>
+                <input
+                  type="text"
+                  id="max_tokens"
+                  required
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm px-4 py-2"
+                  value={formatNumberWithDots(formData.max_tokens)}
+                  onChange={handleTokensChange}
+                  placeholder="1.000.000"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Limite de tokens de IA que podem ser utilizados por mês
+                </p>
               </div>
 
               <div>

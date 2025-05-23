@@ -110,6 +110,7 @@
     "maxChannels": "Canales",
     "maxFlows": "Flujos",
     "maxTeams": "Equipos",
+    "maxTokens": "Tokens/mes",
     "storage": "Almacenamiento",
     "additionalUser": "Usuario adicional",
     "additionalChannel": "Canal adicional",

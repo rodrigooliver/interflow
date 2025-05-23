@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, HelpCircle } from 'lucide-react';
 import { useSubscriptionPlans } from '../../hooks/useQueryes';
@@ -22,6 +22,7 @@ interface SubscriptionPlan {
   max_channels: number;
   max_flows: number;
   max_teams: number;
+  max_tokens?: number;
   storage_limit: number;
   additional_user_price_brl: number;
   additional_user_price_usd: number;
@@ -103,6 +104,10 @@ export const Pricing = () => {
       style: 'currency',
       currency: currency,
     }).format(price);
+  };
+
+  const formatTokens = (tokens: number) => {
+    return new Intl.NumberFormat(i18n.language).format(tokens);
   };
 
   const getFeaturesList = (plan: SubscriptionPlan) => {
@@ -297,6 +302,7 @@ export const Pricing = () => {
                     `${t('pricing.channels')}: ${plan.max_channels || 1}`,
                     `${t('pricing.flows')}: ${plan.max_flows || 5}`,
                     `${t('pricing.teams')}: ${plan.max_teams || 1}`,
+                    `${t('pricing.tokens')}: ${formatTokens(plan.max_tokens || 1000000)}`,
                     `${t('pricing.storage')}: ${(plan.storage_limit / 1048576).toFixed(0)}MB`,
                     ...getFeaturesList(plan)
                   ].map((feature, index) => (

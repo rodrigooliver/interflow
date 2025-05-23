@@ -23,6 +23,7 @@ interface SubscriptionPlan {
   max_channels: number;
   max_flows: number;
   max_teams: number;
+  max_tokens?: number;
   storage_limit: number;
   additional_user_price_brl: number;
   additional_user_price_usd: number;
@@ -150,6 +151,10 @@ export function BillingSettings() {
       style: 'currency',
       currency: currency,
     }).format(price);
+  };
+
+  const formatTokens = (tokens: number) => {
+    return new Intl.NumberFormat('pt-BR').format(tokens);
   };
 
   if (isLoadingPlans) {
@@ -380,6 +385,7 @@ export function BillingSettings() {
                   `${t('settings:billing.maxChannels')}: ${plan.max_channels || 1}`,
                   `${t('settings:billing.maxFlows')}: ${plan.max_flows || 5}`,
                   `${t('settings:billing.maxTeams')}: ${plan.max_teams || 1}`,
+                  `${t('settings:billing.maxTokens')}: ${formatTokens(plan.max_tokens || 1000000)}`,
                   `${t('settings:billing.storage')}: ${(plan.storage_limit / 1048576).toFixed(0)}MB`
                 ].map((feature, index) => (
                   <li key={index} className="flex items-start">
