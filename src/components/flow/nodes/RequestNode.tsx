@@ -78,7 +78,7 @@ const extractProperties = (obj: Record<string, unknown> | unknown[], prefix = ''
 
 export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
   const { t } = useTranslation('flows');
-  const { variables, updateNodeData, setVariables } = useFlowEditor();
+  const { variables, updateNodeData, setVariables, onSaveFlow } = useFlowEditor();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
@@ -413,7 +413,7 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
   };
 
   // Função para salvar o mapeamento de variável
-  const handleSaveVariableMapping = (selectedVariableName: string) => {
+  const handleSaveVariableMapping = async (selectedVariableName: string) => {
     if (!selectedProperty) return;
 
     // Verificar se já existe um mapeamento para esta variável
@@ -437,9 +437,6 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
       }];
     }
 
-    handleConfigChange({ variableMappings: newMappings });
-    handleConfigBlur();
-
     // Atualizar o valor de teste da variável selecionada
     const newVariables = [...variables];
     const variableIndex = newVariables.findIndex(v => v.name === selectedVariableName);
@@ -448,9 +445,26 @@ export function RequestNode({ id, data, isConnectable }: RequestNodeProps) {
       newVariables[variableIndex].testValue = typeof selectedProperty.value === 'string' 
         ? selectedProperty.value 
         : JSON.stringify(selectedProperty.value);
+    }
+
+    // Criar nova configuração com os mapeamentos atualizados
+    const newConfig = { ...localConfig, variableMappings: newMappings };
+
+    // Atualizar estados locais
+    handleConfigChange({ variableMappings: newMappings });
+    setVariables(newVariables);
+
+    try {
+      // Salvar o nó com a nova configuração
+      await updateNodeData(id, {
+        ...data,
+        request: newConfig
+      });
       
       // Salvar as variáveis atualizadas
-      setVariables(newVariables);
+      await onSaveFlow({ variables: newVariables });
+    } catch (error) {
+      console.error('Error saving variable mapping and test value:', error);
     }
 
     // Fechar o modal
