@@ -101,7 +101,7 @@ export function TaskColumn({
         </div>
 
         <div 
-          className={`flex flex-col gap-2 sm:gap-3 overflow-y-auto flex-1 pr-1 custom-scrollbar`}
+          className={`flex flex-col gap-0 sm:gap-0 overflow-y-auto flex-1 pr-1 custom-scrollbar`}
           data-column-content={stage.id}
         >
           {isEmpty ? (

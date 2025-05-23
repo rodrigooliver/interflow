@@ -307,8 +307,9 @@ export function TaskCard({
         ref={(node) => {
           // Combinar as referências
           setNodeRef(node);
-          if (cardRef) {
-            cardRef.current = node;
+          if (cardRef && node) {
+            // Usar Object.assign para contornar a propriedade readonly
+            Object.assign(cardRef, { current: node });
           }
         }}
         style={style}
@@ -339,7 +340,7 @@ export function TaskCard({
 
         <div className="flex flex-col h-full">
           {/* Status badge no topo com botão concluir sobreposto */}
-          <div className="flex justify-between items-start mb-1.5 sm:mb-2 relative">
+          <div className="flex justify-between items-start relative">
             {/* Status original (que ficará oculto quando o botão concluir estiver visível) */}
             <div className={`flex items-center px-2 py-0.5 rounded-full text-xs ${statusInfo.bgColor} ${statusInfo.textColor} ${
               showCompleteButton && (canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) ? 'invisible' : 'visible'
@@ -414,12 +415,12 @@ export function TaskCard({
             </div>
           </div>
 
-          <div className="flex justify-between items-start mt-1 sm:mt-2">
+          <div className="flex justify-between items-start mt-0.5 sm:mt-1">
             <div className="flex-1 min-w-0">
-              <h3 className={`text-sm sm:text-base font-medium text-gray-900 dark:text-white ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
+              <h3 className={`text-xs sm:text-sm text-gray-900 dark:text-white truncate ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
                 {task.title}
                 {task.is_archived && (
-                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                  <span className="ml-1 text-xs text-gray-500 dark:text-gray-400 italic">
                     ({t('archived')})
                   </span>
                 )}
@@ -430,7 +431,7 @@ export function TaskCard({
           {/* Conteúdo com scroll quando necessário */}
           <div 
             ref={contentRef}
-            className={`flex-1 mt-1.5 sm:mt-2 space-y-1.5 sm:space-y-2 ${isCompleted ? 'text-gray-500 dark:text-gray-400' : ''} 
+            className={`flex-1 mt-1 sm:mt-1.5 space-y-1 sm:space-y-1.5 ${isCompleted ? 'text-gray-500 dark:text-gray-400' : ''} 
               ${contentOverflows || isLastInColumn ? 'overflow-y-auto custom-scrollbar' : ''}`}
           >
             {/* Due Date */}
@@ -438,26 +439,26 @@ export function TaskCard({
               <div className={`flex items-center text-xs ${
                 isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'
               }`}>
-                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                <Calendar className="w-3 h-3 mr-1 flex-shrink-0" />
                 <span className="truncate">{formattedDueDate}</span>
                 {isOverdue && (
-                  <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 text-red-500 dark:text-red-400 flex-shrink-0" />
+                  <AlertCircle className="w-3 h-3 ml-1 text-red-500 dark:text-red-400 flex-shrink-0" />
                 )}
               </div>
             )}
 
             {/* Checklist Progress */}
             {hasChecklist && (
-              <div className="flex flex-col space-y-1">
+              <div className="flex flex-col space-y-0.5">
                 <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                  <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
+                  <CheckSquare className="w-3 h-3 mr-1" />
                   <span>
                     {t('tasks:checklist.progress', { count: checkedItems, total: totalItems })}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
                   <div 
-                    className={`h-1.5 rounded-full ${
+                    className={`h-1 rounded-full ${
                       progress === 100 ? 'bg-green-500' : 
                       progress > 50 ? 'bg-blue-500' : 
                       progress > 0 ? 'bg-amber-500' : 'bg-gray-400'
@@ -469,11 +470,11 @@ export function TaskCard({
             )}
 
             {/* Tags e Atribuições */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-1 mt-1">
               {/* Labels/Tags */}
               {task.labels && task.labels.length > 0 && (
                 <div className="flex items-center space-x-1">
-                  <Tag className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                  <Tag className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {task.labels.length}
                   </span>
@@ -483,7 +484,7 @@ export function TaskCard({
               {/* Assignees count */}
               {task.assignees && task.assignees.length > 0 && (
                 <div className="flex items-center space-x-1">
-                  <User className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                  <User className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {task.assignees.length}
                   </span>
@@ -493,7 +494,7 @@ export function TaskCard({
               {/* Customer if exists */}
               {task.customer && (
                 <div 
-                  className={`ml-auto text-xs px-1.5 py-0.5 rounded cursor-pointer ${
+                  className={`ml-auto text-xs px-1 py-0.5 rounded cursor-pointer truncate max-w-[100px] ${
                     isCompleted 
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400' 
                       : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
@@ -508,7 +509,7 @@ export function TaskCard({
 
             {/* Detalhes expandidos */}
             {showDetails && (
-              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+              <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
                 {/* Descrição */}
                 {task.description && (
                   <div className={`text-sm ${isCompleted ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
