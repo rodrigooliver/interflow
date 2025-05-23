@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Plus, Loader2, Pencil, Trash2, GitMerge, Search, MessageSquare, Tag, Filter, X, Settings, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, GitMerge, Search, MessageSquare, Tag, Filter, X, Settings, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -168,6 +168,10 @@ export default function Customers() {
   const [columnConfigs, setColumnConfigs] = useState<ColumnConfig[]>([]);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
+
+  // Estados para exportação
+  const [isExporting, setIsExporting] = useState(false);
+  const [showExportOptions, setShowExportOptions] = useState(false);
 
   // Referência para armazenar o ID da organização atual
   const currentOrgIdRef = useRef<string | null>(null);
@@ -658,6 +662,14 @@ export default function Customers() {
     return '';
   };
 
+  // Função auxiliar para obter valores de campo personalizado durante a exportação
+  const getCustomFieldValueForExport = (customer: Customer, fieldId: string) => {
+    if (customer.field_values) {
+      return customer.field_values[fieldId] || '';
+    }
+    return '';
+  };
+
   // Função para renderizar o valor de uma coluna
   const renderColumnValue = (column: ColumnConfig, customer: Customer) => {
     if (column.isCustomField && column.field_id) {
@@ -771,6 +783,23 @@ export default function Customers() {
     };
   }, [customers]); // Adicionar customers como dependência para garantir que a função tenha acesso à lista atualizada
 
+  // Efeito para fechar o menu de exportação quando clicar fora dele
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showExportOptions) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.export-menu-container')) {
+          setShowExportOptions(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showExportOptions]);
+
   // Função para ajustar a página após exclusão
   const adjustPageAfterDeletion = (totalItems: number) => {
     const maxPage = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
@@ -779,6 +808,367 @@ export default function Customers() {
         prev.set('page', maxPage.toString());
         return prev;
       });
+    }
+  };
+
+  // Função para buscar todos os clientes para exportação
+  const fetchAllCustomersForExport = async (): Promise<Customer[]> => {
+    if (!currentOrganizationMember) return [];
+    
+    const allCustomers: Customer[] = [];
+    let currentPageNum = 1;
+    let hasMoreData = true;
+    
+    while (hasMoreData) {
+      try {
+        const { data, error } = await supabase
+          .rpc('search_customers', {
+            p_organization_id: currentOrganizationMember.organization.id,
+            p_search_query: debouncedSearchTerm,
+            p_limit: ITEMS_PER_PAGE,
+            p_offset: (currentPageNum - 1) * ITEMS_PER_PAGE,
+            p_funnel_id: selectedFunnelId,
+            p_stage_id: selectedStageId,
+            p_tag_ids: selectedTagIds.length > 0 ? selectedTagIds : null,
+            p_sort_column: sortConfig?.key || 'name',
+            p_sort_direction: sortConfig?.direction || 'asc'
+          });
+
+        if (error) {
+          console.error('Erro ao buscar dados para exportação:', error);
+          break;
+        }
+        
+        if (data && data.length > 0) {
+          // Processar os dados da mesma forma que em loadCustomers
+          const formattedCustomers = data.map((customer: SearchCustomersResult) => {
+            const formattedCustomer = {
+              id: customer.id,
+              name: customer.name,
+              organization_id: customer.organization_id,
+              stage_id: customer.stage_id,
+              created_at: customer.created_at,
+              updated_at: customer.created_at,
+              tags: (customer.tags || []).map((tag) => ({
+                id: tag.id,
+                name: tag.name,
+                color: tag.color
+              })),
+              contacts: (customer.contacts || []).map((contact) => ({
+                id: contact.id,
+                customer_id: contact.customer_id,
+                type: contact.type,
+                value: contact.value,
+                created_at: contact.created_at,
+                updated_at: contact.updated_at
+              })),
+              field_values: customer.field_values || {},
+              crm_stages: customer.crm_stages ? {
+                id: customer.crm_stages.id,
+                name: customer.crm_stages.name,
+                color: customer.crm_stages.color,
+                position: customer.crm_stages.position,
+                funnel_id: customer.crm_stages.funnel_id,
+                created_at: customer.crm_stages.created_at,
+                crm_funnels: customer.crm_stages.crm_funnels ? {
+                  id: customer.crm_stages.crm_funnels.id,
+                  name: customer.crm_stages.crm_funnels.name,
+                  description: customer.crm_stages.crm_funnels.description,
+                  created_at: customer.crm_stages.crm_funnels.created_at
+                } : null
+              } : null
+            };
+            
+            return formattedCustomer as unknown as Customer;
+          });
+          
+          allCustomers.push(...formattedCustomers);
+          
+          // Verificar se há mais dados
+          if (data.length < ITEMS_PER_PAGE) {
+            hasMoreData = false;
+          } else {
+            currentPageNum++;
+          }
+        } else {
+          hasMoreData = false;
+        }
+      } catch (err) {
+        console.error('Erro inesperado ao buscar dados para exportação:', err);
+        break;
+      }
+    }
+    
+    return allCustomers;
+  };
+
+  // Função para exportar para CSV
+  const exportToCSV = async () => {
+    setIsExporting(true);
+    try {
+      const allCustomers = await fetchAllCustomersForExport();
+      
+      // Obter apenas as colunas visíveis
+      const visibleColumns = columnConfigs.filter(col => col.visible);
+      
+      // Tipos de contato disponíveis
+      const contactTypes = ['email', 'whatsapp', 'phone', 'instagram', 'facebook', 'telegram'];
+      
+      // Criar cabeçalhos
+      const headers: string[] = [];
+      visibleColumns.forEach(col => {
+        if (col.id === 'contacts') {
+          // Adicionar uma coluna para cada tipo de contato
+          contactTypes.forEach(type => {
+            headers.push(`${col.name} - ${type.charAt(0).toUpperCase() + type.slice(1)}`);
+          });
+        } else {
+          headers.push(col.name);
+        }
+      });
+      
+      // Criar linhas de dados
+      const rows = allCustomers.map(customer => {
+        const row: string[] = [];
+        
+        visibleColumns.forEach(column => {
+          if (column.id === 'name') {
+            row.push(customer.name);
+          } else if (column.id === 'stage') {
+            row.push(customer.crm_stages?.name || '');
+          } else if (column.id === 'stage_progress') {
+            row.push(customer.crm_stages?.name || '');
+          } else if (column.id === 'tags') {
+            row.push(customer.tags.map(tag => tag.name).join(', '));
+          } else if (column.id === 'contacts') {
+            // Agrupar contatos por tipo
+            contactTypes.forEach(type => {
+              const contactsOfType = customer.contacts
+                .filter(contact => contact.type === type)
+                .map(contact => contact.value);
+              row.push(contactsOfType.join('; '));
+            });
+          } else if (column.isCustomField && column.field_id) {
+            row.push(getCustomFieldValueForExport(customer, column.field_id));
+          } else {
+            row.push('');
+          }
+        });
+        
+        return row;
+      });
+      
+      // Criar conteúdo CSV
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      // Download do arquivo
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `clientes_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Mostrar notificação de sucesso
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = `CSV exportado com sucesso! ${allCustomers.length} clientes exportados.`;
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
+      
+      // Mostrar notificação de erro
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = 'Erro ao exportar CSV. Tente novamente.';
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+    } finally {
+      setIsExporting(false);
+      setShowExportOptions(false);
+    }
+  };
+
+  // Função para exportar para Excel
+  const exportToExcel = async () => {
+    setIsExporting(true);
+    try {
+      // Importar dinamicamente a biblioteca xlsx
+      const XLSX = await import('xlsx');
+      
+      const allCustomers = await fetchAllCustomersForExport();
+      
+      // Obter apenas as colunas visíveis
+      const visibleColumns = columnConfigs.filter(col => col.visible);
+      
+      // Tipos de contato disponíveis
+      const contactTypes = ['email', 'whatsapp', 'phone', 'instagram', 'facebook', 'telegram'];
+      
+      // Criar dados para o Excel
+      const excelData = allCustomers.map(customer => {
+        const row: Record<string, string> = {};
+        
+        visibleColumns.forEach(column => {
+          if (column.id === 'name') {
+            row[column.name] = customer.name;
+          } else if (column.id === 'stage') {
+            row[column.name] = customer.crm_stages?.name || '';
+          } else if (column.id === 'stage_progress') {
+            row[column.name] = customer.crm_stages?.name || '';
+          } else if (column.id === 'tags') {
+            row[column.name] = customer.tags.map(tag => tag.name).join(', ');
+          } else if (column.id === 'contacts') {
+            // Agrupar contatos por tipo
+            contactTypes.forEach(type => {
+              const contactsOfType = customer.contacts
+                .filter(contact => contact.type === type)
+                .map(contact => contact.value);
+              const columnName = `${column.name} - ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+              row[columnName] = contactsOfType.join('; ');
+            });
+          } else if (column.isCustomField && column.field_id) {
+            row[column.name] = getCustomFieldValueForExport(customer, column.field_id);
+          } else {
+            row[column.name] = '';
+          }
+        });
+        
+        return row;
+      });
+      
+      // Criar workbook e worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      
+      // Adicionar worksheet ao workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+      
+      // Download do arquivo
+      XLSX.writeFile(wb, `clientes_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      // Mostrar notificação de sucesso
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = `Excel exportado com sucesso! ${allCustomers.length} clientes exportados.`;
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      
+      // Mostrar notificação de erro
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = 'Erro ao exportar Excel. Tente novamente.';
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+    } finally {
+      setIsExporting(false);
+      setShowExportOptions(false);
+    }
+  };
+
+  // Função para exportar para JSON
+  const exportToJSON = async () => {
+    setIsExporting(true);
+    try {
+      const allCustomers = await fetchAllCustomersForExport();
+      
+      // Obter apenas as colunas visíveis
+      const visibleColumns = columnConfigs.filter(col => col.visible);
+      
+      // Tipos de contato disponíveis
+      const contactTypes = ['email', 'whatsapp', 'phone', 'instagram', 'facebook', 'telegram'];
+      
+      // Criar dados JSON com apenas as colunas visíveis
+      const jsonData = allCustomers.map(customer => {
+        const customerData: Record<string, string | CustomerTag[] | CustomerContact[] | Record<string, string[]>> = {};
+        
+        visibleColumns.forEach(column => {
+          if (column.id === 'name') {
+            customerData.name = customer.name;
+          } else if (column.id === 'stage') {
+            customerData.stage = customer.crm_stages?.name || '';
+          } else if (column.id === 'stage_progress') {
+            customerData.stage_progress = customer.crm_stages?.name || '';
+          } else if (column.id === 'tags') {
+            customerData.tags = customer.tags;
+          } else if (column.id === 'contacts') {
+            // Para JSON, criar um objeto com contatos agrupados por tipo
+            const contactsByType: Record<string, string[]> = {};
+            contactTypes.forEach(type => {
+              const contactsOfType = customer.contacts
+                .filter(contact => contact.type === type)
+                .map(contact => contact.value);
+              if (contactsOfType.length > 0) {
+                contactsByType[type] = contactsOfType;
+              }
+            });
+            customerData.contacts = contactsByType;
+          } else if (column.isCustomField && column.field_id) {
+            customerData[column.name] = getCustomFieldValueForExport(customer, column.field_id);
+          }
+        });
+        
+        return customerData;
+      });
+      
+      // Download do arquivo
+      const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `clientes_${new Date().toISOString().split('T')[0]}.json`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Mostrar notificação de sucesso
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = `JSON exportado com sucesso! ${allCustomers.length} clientes exportados.`;
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Erro ao exportar JSON:', error);
+      
+      // Mostrar notificação de erro
+      const feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      feedbackElement.textContent = 'Erro ao exportar JSON. Tente novamente.';
+      document.body.appendChild(feedbackElement);
+      
+      setTimeout(() => {
+        feedbackElement.remove();
+      }, 3000);
+    } finally {
+      setIsExporting(false);
+      setShowExportOptions(false);
     }
   };
 
@@ -817,6 +1207,48 @@ export default function Customers() {
               <Settings className="mr-1 h-4 w-4" />
               {t('customers:columns')}
             </button>
+            
+            {/* Botão de exportação */}
+            <div className="relative export-menu-container">
+              <button
+                onClick={() => setShowExportOptions(!showExportOptions)}
+                disabled={isExporting}
+                className="inline-flex items-center justify-center h-9 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-green-400 px-3 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none"
+              >
+                {isExporting ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-1 h-4 w-4" />
+                )}
+                {isExporting ? 'Exportando...' : 'Exportar'}
+              </button>
+              
+              {/* Menu suspenso de opções de exportação */}
+              {showExportOptions && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={exportToCSV}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      Exportar como CSV
+                    </button>
+                    <button
+                      onClick={exportToExcel}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      Exportar como Excel
+                    </button>
+                    <button
+                      onClick={exportToJSON}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      Exportar como JSON
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Link
