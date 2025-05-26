@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, FileText, X, Loader2 } from 'lucide-react';
+import { Image, FileText, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface FileUploadProps {
@@ -14,7 +14,6 @@ interface FileUploadProps {
 export function FileUpload({ organizationId, onUploadComplete, onError, type, onClose }: FileUploadProps) {
   const { t } = useTranslation('chats');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = React.useState(false);
   const [dragOver, setDragOver] = React.useState(false);
   const [storageInfo, setStorageInfo] = useState<{
     used: number;
@@ -29,15 +28,16 @@ export function FileUpload({ organizationId, onUploadComplete, onError, type, on
     try {
       const { data, error } = await supabase
         .from('organizations')
-        .select('storage_used, storage_limit')
+        .select('usage')
         .eq('id', organizationId)
         .single();
 
       if (error) throw error;
       if (data) {
+        const usage = data.usage || {};
         setStorageInfo({
-          used: data.storage_used,
-          limit: data.storage_limit
+          used: usage.storage?.used || 0,
+          limit: usage.storage?.limit || 0
         });
       }
     } catch (error) {
@@ -77,9 +77,10 @@ export function FileUpload({ organizationId, onUploadComplete, onError, type, on
       // Em vez de fazer upload, apenas retorna o arquivo para o componente pai
       onUploadComplete(file, file.type, file.name);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao processar arquivo:', error);
-      onError(error.message || t('attachments.errors.uploadFailed'));
+      const errorMessage = error instanceof Error ? error.message : t('attachments.errors.uploadFailed');
+      onError(errorMessage);
     }
   };
 
@@ -163,42 +164,33 @@ export function FileUpload({ organizationId, onUploadComplete, onError, type, on
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
-          {uploading ? (
-            <div className="flex flex-col items-center">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t('attachments.uploading')}
-              </p>
-            </div>
-          ) : (
-            <>
-              {type === 'image' ? (
-                <Image className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              ) : (
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              )}
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                {t('attachments.dragAndDrop')}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-                {t('attachments.maxSize')}
-              </p>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                {t('attachments.selectFile')}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept={allowedTypes.join(',')}
-                onChange={handleFileSelect}
-              />
-            </>
-          )}
+          <>
+            {type === 'image' ? (
+              <Image className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            ) : (
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            )}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              {t('attachments.dragAndDrop')}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+              {t('attachments.maxSize')}
+            </p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              {t('attachments.selectFile')}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept={allowedTypes.join(',')}
+              onChange={handleFileSelect}
+            />
+          </>
         </div>
       </div>
     </div>

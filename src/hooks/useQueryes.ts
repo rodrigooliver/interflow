@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
-import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember, Flow } from '../types/database';
+import type { Profile, ServiceTeam, ChatChannel, CustomFieldDefinition, Integration, Prompt, OrganizationMember, Flow, Organization } from '../types/database';
 import api from '../lib/api';
 import { reloadTranslations } from '../i18n';
 import { PostgrestResponse } from '@supabase/supabase-js';
@@ -748,6 +748,59 @@ export function useIntegrations(organizationId?: string) {
       return data as Integration[];
     },
     enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+export function useOrganizationById(organizationId?: string) {
+  return useQuery({
+    queryKey: ['organization-by-id', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', organizationId)
+        .single();
+
+      if (error) throw error;
+      return data as Organization;
+    },
+    enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+export function useOrganizationMemberByOrgId(organizationId?: string, userId?: string) {
+  return useQuery({
+    queryKey: ['organization-member-by-org', organizationId, userId],
+    queryFn: async () => {
+      if (!organizationId || !userId) return null;
+
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select(`
+          *,
+          organization:organizations(*)
+        `)
+        .eq('organization_id', organizationId)
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows returned - user is not a member of this organization
+          return null;
+        }
+        throw error;
+      }
+      return data as OrganizationMember;
+    },
+    enabled: !!organizationId && !!userId,
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
   });

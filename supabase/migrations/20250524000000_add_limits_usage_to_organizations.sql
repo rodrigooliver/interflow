@@ -1,14 +1,11 @@
--- Adicionar colunas de limits e usage na tabela organizations
+-- Adicionar colunas de usage na tabela organizations
 ALTER TABLE organizations
-ADD COLUMN limits JSONB NOT NULL DEFAULT '{}'::jsonb,
 ADD COLUMN usage JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 -- Criar índices GIN para consultas eficientes em campos JSONB
-CREATE INDEX idx_organizations_limits ON organizations USING GIN (limits);
 CREATE INDEX idx_organizations_usage ON organizations USING GIN (usage);
 
 -- Adicionar comentários nas colunas para documentação
-COMMENT ON COLUMN organizations.limits IS 'Limites de uso da organização (ex: tokens_per_month, max_users, max_customers, etc.) em formato JSON';
 COMMENT ON COLUMN organizations.usage IS 'Uso atual da organização (ex: tokens_used_this_month, current_users, current_customers, etc.) em formato JSON';
 
 

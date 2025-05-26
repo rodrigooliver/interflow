@@ -19,7 +19,3 @@ DROP TRIGGER IF EXISTS update_organization_storage_trigger ON storage.objects;
 
 -- Now we can safely drop the function
 DROP FUNCTION IF EXISTS update_organization_storage();
-
--- Remove storage_used column from organizations
-ALTER TABLE organizations 
-DROP COLUMN IF EXISTS storage_used;

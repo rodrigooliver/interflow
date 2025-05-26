@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Users, Loader2, X, Mail, AlertTriangle, Edit, Link } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { Link as RouterLink } from 'react-router-dom';
-import { useAgents } from '../../hooks/useQueryes';
+import { Link as RouterLink, useParams, useSearchParams } from 'react-router-dom';
+import { useAgents, useOrganizationById, useOrganizationMemberByOrgId } from '../../hooks/useQueryes';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 
@@ -40,7 +40,10 @@ interface EditProfileFormData {
 
 export default function OrganizationMembers() {
   const { t, i18n } = useTranslation(['member', 'common']);
-  const { currentOrganizationMember } = useAuthContext();
+  const { currentOrganizationMember, profile } = useAuthContext();
+  const { organizationId: paramOrganizationId } = useParams<{ organizationId?: string }>();
+  const [searchParams] = useSearchParams();
+  const queryOrganizationId = searchParams.get('organizationId');
   const queryClient = useQueryClient();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -64,11 +67,32 @@ export default function OrganizationMembers() {
     email: ''
   });
 
+  // Determinar qual organização usar - da URL, query string ou da organização atual
+  const organizationId = paramOrganizationId || queryOrganizationId;
+  const targetOrganizationId = organizationId || currentOrganizationMember?.organization.id;
+  
+  // Buscar dados da organização específica se vier da URL
+  const { data: urlOrganization } = useOrganizationById(organizationId || undefined);
+  
+  // Buscar membro da organização específica se vier da URL
+  const { data: urlOrganizationMember } = useOrganizationMemberByOrgId(
+    organizationId || undefined, 
+    profile?.id
+  );
+  
   // Usando o hook useAgents para buscar os membros
   const { data: members = [], isLoading } = useAgents(
-    currentOrganizationMember?.organization.id,
+    targetOrganizationId,
     ['agent', 'admin', 'owner', 'member']
   );
+
+  // Verificar limite de usuários - usar dados da URL se disponível, senão usar currentOrganizationMember
+  const organizationData = urlOrganization || currentOrganizationMember?.organization;
+  const userUsage = organizationData?.usage?.users;
+  const isUserLimitReached = userUsage && userUsage.used >= userUsage.limit;
+
+  // Determinar qual membro da organização usar para verificações de permissão
+  const effectiveOrganizationMember = urlOrganizationMember || currentOrganizationMember;
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -76,8 +100,23 @@ export default function OrganizationMembers() {
     setError('');
     setSuccessMessage('');
 
-    if (!currentOrganizationMember) {
+    if (!targetOrganizationId) {
       setError(t('member:errors.noOrganization'));
+      setInviteLoading(false);
+      return;
+    }
+
+    // Verificar se o usuário tem permissão para enviar convites
+    const hasPermission = (effectiveOrganizationMember?.role === 'owner' || effectiveOrganizationMember?.role === 'admin') || profile?.is_superadmin;
+    if (!hasPermission) {
+      setError(t('member:errors.noPermission', 'Você não tem permissão para enviar convites.'));
+      setInviteLoading(false);
+      return;
+    }
+
+    // Verificar limite de usuários
+    if (isUserLimitReached ) {
+      setError(t('member:errors.userLimitReached', 'Limite de usuários atingido. Faça upgrade do seu plano para adicionar mais membros.'));
       setInviteLoading(false);
       return;
     }
@@ -86,7 +125,7 @@ export default function OrganizationMembers() {
       // Obter o idioma atual da aplicação
       const currentLanguage = i18n.language || 'pt';
       
-      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/member/invite`, {
+      const response = await api.post(`/api/${targetOrganizationId}/member/invite`, {
         email: inviteForm.email,
         fullName: inviteForm.fullName,
         role: inviteForm.role,
@@ -104,7 +143,7 @@ export default function OrganizationMembers() {
       }
 
       // Invalidar cache dos agents
-      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganizationMember.organization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['agents', targetOrganizationId] });
       
       // Fechar modal e limpar form
       setShowInviteModal(false);
@@ -126,13 +165,20 @@ export default function OrganizationMembers() {
   }
 
   async function handleRemoveMember() {
-    if (!selectedMember?.profile || !currentOrganizationMember) return;
+    if (!selectedMember?.profile || !targetOrganizationId) return;
+    
+    // Verificar se o usuário tem permissão para remover membros
+    const hasPermission = effectiveOrganizationMember?.role === 'owner' || profile?.is_superadmin;
+    if (!hasPermission) {
+      setError(t('member:errors.noPermission', 'Você não tem permissão para remover membros.'));
+      return;
+    }
     
     setDeletingMember(true);
     setError('');
     
     try {
-      const response = await api.delete(`/api/${currentOrganizationMember.organization.id}/member/${selectedMember.profile.id}`);
+      const response = await api.delete(`/api/${targetOrganizationId}/member/${selectedMember.profile.id}`);
       
       const data = response.data;
       
@@ -141,7 +187,7 @@ export default function OrganizationMembers() {
       }
 
       // Invalidar cache dos agents
-      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganizationMember.organization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['agents', targetOrganizationId] });
       
       setShowDeleteModal(false);
       setSelectedMember(null);
@@ -163,13 +209,20 @@ export default function OrganizationMembers() {
 
   async function handleEditProfile(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedMember?.profile || !currentOrganizationMember) return;
+    if (!selectedMember?.profile || !targetOrganizationId) return;
+    
+    // Verificar se o usuário tem permissão para editar perfis
+    const hasPermission = (effectiveOrganizationMember?.role === 'owner' || effectiveOrganizationMember?.role === 'admin') || profile?.is_superadmin;
+    if (!hasPermission) {
+      setError(t('member:errors.noPermission', 'Você não tem permissão para editar perfis.'));
+      return;
+    }
     
     setEditingProfile(true);
     setError('');
     
     try {
-      const response = await api.put(`/api/${currentOrganizationMember.organization.id}/member/${selectedMember.profile.id}`, {
+      const response = await api.put(`/api/${targetOrganizationId}/member/${selectedMember.profile.id}`, {
         fullName: editProfileForm.fullName,
         nickname: editProfileForm.nickname,
         whatsapp: editProfileForm.whatsapp,
@@ -183,7 +236,7 @@ export default function OrganizationMembers() {
       }
       
       // Invalidar cache dos agents
-      await queryClient.invalidateQueries({ queryKey: ['agents', currentOrganizationMember.organization.id] });
+      await queryClient.invalidateQueries({ queryKey: ['agents', targetOrganizationId] });
       
       setShowEditModal(false);
       setSelectedMember(null);
@@ -196,7 +249,14 @@ export default function OrganizationMembers() {
   }
 
   async function handleResendInvite(member: MemberWithProfile) {
-    if (!currentOrganizationMember || !member.profile) return;
+    if (!targetOrganizationId || !member.profile) return;
+    
+    // Verificar se o usuário tem permissão para reenviar convites
+    const hasPermission = (effectiveOrganizationMember?.role === 'owner' || effectiveOrganizationMember?.role === 'admin') || profile?.is_superadmin;
+    if (!hasPermission) {
+      setError(t('member:errors.noPermission', 'Você não tem permissão para reenviar convites.'));
+      return;
+    }
     
     setResendingInvite(true);
     setError('');
@@ -206,7 +266,7 @@ export default function OrganizationMembers() {
       // Obter o idioma atual da aplicação
       const currentLanguage = i18n.language || 'pt';
       
-      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/member/invite`, {
+      const response = await api.post(`/api/${targetOrganizationId}/member/invite`, {
         email: member.profile.email,
         fullName: member.profile.full_name,
         role: member.role,
@@ -234,7 +294,7 @@ export default function OrganizationMembers() {
     }
   }
 
-  if (!currentOrganizationMember) {
+  if (!targetOrganizationId) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-[200px]">
@@ -262,17 +322,54 @@ export default function OrganizationMembers() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
           <Users className="w-6 h-6 mr-2" />
           {t('member:title')}
+          {userUsage && (
+            <span className="ml-3 text-sm font-normal text-gray-500 dark:text-gray-400">
+              ({userUsage.used}/{userUsage.limit} usuários)
+            </span>
+          )}
         </h1>
-        {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
+        {((effectiveOrganizationMember?.role === 'owner' || effectiveOrganizationMember?.role === 'admin') || profile?.is_superadmin) && (
           <button
             onClick={() => setShowInviteModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled={isUserLimitReached}
+            className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              isUserLimitReached
+                ? 'text-gray-400 bg-gray-300 cursor-not-allowed'
+                : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+            }`}
           >
             <Mail className="w-4 h-4 mr-2" />
             {t('member:actions.invite', 'Convidar Atendente')}
           </button>
         )}
       </div>
+
+      {/* Mensagem de limite atingido */}
+      {isUserLimitReached && (
+        <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 p-4 rounded-md flex items-start justify-between">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 mt-0.5">
+              <AlertTriangle className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium">
+                {t('member:limit.title', 'Limite de usuários atingido')}
+              </h3>
+              <p className="text-sm mt-1">
+                {t('member:limit.message', 'Você atingiu o limite de {{limit}} usuários do seu plano atual. Para adicionar mais membros, faça upgrade do seu plano.', { limit: userUsage?.limit })}
+              </p>
+            </div>
+          </div>
+          <div className="ml-4">
+            <RouterLink
+              to="/app/settings/billing"
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 dark:text-yellow-300 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+            >
+              {t('member:limit.upgrade', 'Trocar Plano')}
+            </RouterLink>
+          </div>
+        </div>
+      )}
 
       {/* Mensagem de sucesso */}
       {successMessage && (
@@ -313,7 +410,7 @@ export default function OrganizationMembers() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t('member:user.actions')}
               </th>
-              {currentOrganizationMember?.role === 'owner' && (
+              {(effectiveOrganizationMember?.role === 'owner' || profile?.is_superadmin) && (
                 <th className="relative px-6 py-3">
                   <span className="sr-only">{t('member:actions.register')}</span>
                 </th>
@@ -365,7 +462,7 @@ export default function OrganizationMembers() {
                   {member.status === 'pending' ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                       {t('member:status.pending', 'Aguardando aceitação')}
-                      {(currentOrganizationMember?.role === 'owner' || currentOrganizationMember?.role === 'admin') && (
+                      {((effectiveOrganizationMember?.role === 'owner' || effectiveOrganizationMember?.role === 'admin') || profile?.is_superadmin) && (
                         <button
                           onClick={() => handleResendInvite(member)}
                           disabled={resendingInvite}
@@ -395,34 +492,36 @@ export default function OrganizationMembers() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   <div className="flex space-x-3">
-                    <button
-                      onClick={() => {
-                        if (member.profile) {
-                          setSelectedMember(member);
-                          setEditProfileForm({
-                            fullName: member.profile.full_name || '',
-                            nickname: member.profile.nickname || '',
-                            whatsapp: member.profile.whatsapp || '',
-                            email: member.profile.email || ''
-                          });
-                          setShowEditModal(true);
-                        }
-                      }}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 flex items-center justify-center w-8 h-8 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                      title={t('member:actions.edit')}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
+                    {((effectiveOrganizationMember?.role === 'owner' || effectiveOrganizationMember?.role === 'admin') || profile?.is_superadmin) && (
+                      <button
+                        onClick={() => {
+                          if (member.profile) {
+                            setSelectedMember(member);
+                            setEditProfileForm({
+                              fullName: member.profile.full_name || '',
+                              nickname: member.profile.nickname || '',
+                              whatsapp: member.profile.whatsapp || '',
+                              email: member.profile.email || ''
+                            });
+                            setShowEditModal(true);
+                          }
+                        }}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 flex items-center justify-center w-8 h-8 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                        title={t('member:actions.edit')}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
                     {member.profile && (
                       <RouterLink
-                        to={`/app/member/referrals/${member.profile.id}`}
+                        to={organizationId ? `/app/organization/${organizationId}/member/referrals/${member.profile.id}` : `/app/member/referrals/${member.profile.id}`}
                         className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 flex items-center justify-center w-8 h-8 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30"
                         title={t('member:actions.referrals')}
                       >
                         <Link className="w-4 h-4" />
                       </RouterLink>
                     )}
-                    {currentOrganizationMember?.role === 'owner' && member.role !== 'owner' && (
+                    {(effectiveOrganizationMember?.role === 'owner' || profile?.is_superadmin) && member.role !== 'owner' && (
                       <button
                         onClick={() => {
                           setSelectedMember(member);
@@ -436,7 +535,7 @@ export default function OrganizationMembers() {
                     )}
                   </div>
                 </td>
-                {currentOrganizationMember?.role === 'owner' && (
+                {(effectiveOrganizationMember?.role === 'owner' || profile?.is_superadmin) && (
                   <td className="relative px-6 py-3">
                     <span className="sr-only">{t('member:actions.register')}</span>
                   </td>

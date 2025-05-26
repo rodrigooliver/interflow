@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HardDrive, Users, MessageSquare, GitBranch, Users2, AlertTriangle, Loader2 } from 'lucide-react';
+import { HardDrive, Users, MessageSquare, GitBranch, Users2, AlertTriangle, Loader2, Zap } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StorageDetailsModal } from './StorageDetailsModal';
@@ -11,23 +11,27 @@ interface UsageStats {
     limit: number;
   };
   users: {
-    active: number;
+    used: number;
     limit: number;
   };
   channels: {
-    active: number;
+    used: number;
     limit: number;
   };
   flows: {
-    active: number;
+    used: number;
     limit: number;
   };
   teams: {
-    active: number;
+    used: number;
     limit: number;
   };
   customers: {
-    active: number;
+    used: number;
+    limit: number;
+  };
+  tokens: {
+    used: number;
     limit: number;
   };
 }
@@ -48,97 +52,45 @@ export function UsageSettings() {
 
   async function loadUsageStats() {
     try {
-
-      const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .select('*, subscription_plans(*)')
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .in('status', ['active', 'trialing'])
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-
-      if (subscriptionError) throw subscriptionError;
-
-      const subscription = subscriptionData[0];
-
-      // Load storage usage
+      // Load organization data with usage information
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
-        .select('storage_used, storage_limit')
+        .select('usage')
         .eq('id', currentOrganizationMember?.organization.id)
         .single();
 
       if (orgError) throw orgError;
 
-      // Load active users count
-      const { count: activeUsers, error: usersError } = await supabase
-        .from('organization_members')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganizationMember?.organization.id);
-
-      if (usersError) throw usersError;
-
-      // Load active channels count
-      const { count: activeChannels, error: channelsError } = await supabase
-        .from('chat_channels')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .eq('status', 'active');
-
-      if (channelsError) throw channelsError;
-
-      // Load active flows count
-      const { count: activeFlows, error: flowsError } = await supabase
-        .from('flows')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganizationMember?.organization.id)
-        .eq('is_active', true);
-
-      if (flowsError) throw flowsError;
-
-      // Load active teams count
-      const { count: activeTeams, error: teamsError } = await supabase
-        .from('service_teams')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganizationMember?.organization.id);
-
-      if (teamsError) throw teamsError;
-
-      // Load active customers count
-      const { count: activeCustomers, error: customersError } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganizationMember?.organization.id);
-
-      if (customersError) throw customersError;
-
-      console.log(subscription);
+      const usage = orgData?.usage || {};
 
       setStats({
         storage: {
-          used: orgData.storage_used || 0,
-          limit: subscription?.subscription_plans?.storage_limit || 0
+          used: usage.storage?.used || 0,
+          limit: usage.storage?.limit || 0
         },
         users: {
-          active: activeUsers || 0,
-          limit: subscription?.subscription_plans?.max_users || 0
+          used: usage.users?.used || 0,
+          limit: usage.users?.limit || 0
         },
         channels: {
-          active: activeChannels || 0,
-          limit: subscription?.subscription_plans?.max_channels || 0
+          used: usage.channels?.used || 0,
+          limit: usage.channels?.limit || 0
         },
         flows: {
-          active: activeFlows || 0,
-          limit: subscription?.subscription_plans?.max_flows || 0
+          used: usage.flows?.used || 0,
+          limit: usage.flows?.limit || 0
         },
         teams: {
-          active: activeTeams || 0,
-          limit: subscription?.subscription_plans?.max_teams || 0
+          used: usage.teams?.used || 0,
+          limit: usage.teams?.limit || 0
         },
         customers: {
-          active: activeCustomers || 0,
-          limit: subscription?.subscription_plans?.max_customers || 0
+          used: usage.customers?.used || 0,
+          limit: usage.customers?.limit || 0
+        },
+        tokens: {
+          used: usage.tokens?.used || 0,
+          limit: usage.tokens?.limit || 0
         }
       });
     } catch (error) {
@@ -209,37 +161,44 @@ export function UsageSettings() {
     {
       icon: Users,
       title: t('settings:billing.maxUsers'),
-      used: stats.users.active,
+      used: stats.users.used,
       limit: stats.users.limit,
-      percentage: getUsagePercentage(stats.users.active, stats.users.limit)
+      percentage: getUsagePercentage(stats.users.used, stats.users.limit)
     },
     {
       icon: MessageSquare,
       title: t('settings:billing.maxChannels'),
-      used: stats.channels.active,
+      used: stats.channels.used,
       limit: stats.channels.limit,
-      percentage: getUsagePercentage(stats.channels.active, stats.channels.limit)
+      percentage: getUsagePercentage(stats.channels.used, stats.channels.limit)
     },
     {
       icon: GitBranch,
       title: t('settings:billing.maxFlows'),
-      used: stats.flows.active,
+      used: stats.flows.used,
       limit: stats.flows.limit,
-      percentage: getUsagePercentage(stats.flows.active, stats.flows.limit)
+      percentage: getUsagePercentage(stats.flows.used, stats.flows.limit)
     },
     {
       icon: Users2,
       title: t('settings:billing.maxTeams'),
-      used: stats.teams.active,
+      used: stats.teams.used,
       limit: stats.teams.limit,
-      percentage: getUsagePercentage(stats.teams.active, stats.teams.limit)
+      percentage: getUsagePercentage(stats.teams.used, stats.teams.limit)
     },
     {
       icon: Users,
       title: t('settings:billing.maxCustomers'),
-      used: stats.customers.active,
+      used: stats.customers.used,
       limit: stats.customers.limit,
-      percentage: getUsagePercentage(stats.customers.active, stats.customers.limit)
+      percentage: getUsagePercentage(stats.customers.used, stats.customers.limit)
+    },
+    {
+      icon: Zap,
+      title: 'Tokens',
+      used: `${((stats.tokens.used || 0) / 1000000).toFixed(1)}M`,
+      limit: `${((stats.tokens.limit || 0) / 1000000).toFixed(1)}M`,
+      percentage: getUsagePercentage(stats.tokens.used, stats.tokens.limit)
     }
   ];
 
@@ -297,7 +256,7 @@ export function UsageSettings() {
       </div>
 
       {/* Modal de detalhes de armazenamento */}
-      {currentOrganizationMember && (
+      {currentOrganizationMember?.organization?.id && (
         <StorageDetailsModal
           isOpen={isStorageModalOpen}
           onClose={() => setIsStorageModalOpen(false)}

@@ -729,6 +729,8 @@ function AppContent() {
                         <Route path="settings/notifications" element={<NotificationsPage />} />
                         <Route path="member" element={<OrganizationMembers />} />
                         <Route path="member/referrals/:profileId" element={<Referrals />} />
+                        <Route path="organization/:organizationId/members" element={<OrganizationMembers />} />
+                        <Route path="organization/:organizationId/member/referrals/:profileId" element={<Referrals />} />
                         <Route path="service-teams" element={<ServiceTeams />} />
                         <Route path="channels" element={<Channels />} />
                         <Route path="channels/new" element={<SelectChannelType />} />

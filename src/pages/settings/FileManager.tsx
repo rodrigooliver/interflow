@@ -62,14 +62,15 @@ export default function FileManager() {
     try {
       const { data, error } = await supabase
         .from('organizations')
-        .select('storage_used, storage_limit')
+        .select('usage')
         .eq('id', currentOrganizationMember.organization.id)
         .single();
 
       if (error) throw error;
+      const usage = data?.usage || {};
       setStorageInfo({
-        used: data.storage_used,
-        limit: data.storage_limit
+        used: usage.storage?.used || 0,
+        limit: usage.storage?.limit || 0
       });
     } catch (error) {
       console.error('Error loading storage info:', error);

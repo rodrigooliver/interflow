@@ -167,18 +167,46 @@ export interface Customer {
  * Each organization has its own users, customers, and settings
  */
 export interface Organization {
-  id: string;
+  id?: string;
   name: string;
   slug: string;
   logo_url?: string;
   email?: string;
   whatsapp?: string;
   status: 'active' | 'inactive' | 'suspended';
-  created_at: string;
-  updated_at: string;
-  storage_limit: number;
-  storage_used: number;
-  settings: Record<string, string | number | boolean | object>;
+  created_at?: string;
+  updated_at?: string;
+  settings?: Record<string, string | number | boolean | object>;
+  usage: {
+    users: {
+      used: number;
+      limit: number;
+    };
+    customers: {
+      used: number;
+      limit: number;
+    };
+    channels: {
+      used: number;
+      limit: number;
+    };
+    flows: {
+      used: number;
+      limit: number;
+    };
+    teams: {
+      used: number;
+      limit: number;
+    };
+    storage: {
+      used: number;
+      limit: number;
+    };
+    tokens: {
+      used: number;
+      limit: number;
+    };
+  }
 }
 
 /**

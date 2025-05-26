@@ -11,6 +11,26 @@
     - Mantém as permissões de CRUD com base em perfil do usuário
 */
 
+-- Criar função para verificar se usuário é super admin
+CREATE OR REPLACE FUNCTION public.user_is_superadmin()
+RETURNS boolean AS $$
+  SELECT COALESCE(
+    (SELECT is_superadmin FROM profiles WHERE id = auth.uid()),
+    false
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Criar função para verificar se usuário é membro de uma organização específica
+CREATE OR REPLACE FUNCTION public.user_is_org_member(org_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM organization_members
+    WHERE organization_members.organization_id = org_id
+    AND organization_members.user_id = auth.uid()
+    AND organization_members.status = 'active'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
 -- Remover políticas existentes que não respeitam a estrutura organizacional
 DROP POLICY IF EXISTS "Agents can read all messages" ON messages;
 DROP POLICY IF EXISTS "Agents can create messages" ON messages;
@@ -23,6 +43,7 @@ DROP POLICY IF EXISTS "Agents can read all profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 -- Remover políticas existentes que não respeitam a estrutura organizacional
 DROP POLICY IF EXISTS "Authenticated users can read profiles" ON profiles;
+DROP POLICY IF EXISTS "organization_members_policy" ON organization_members;
 
 -- Criar novas políticas para mensagens
 CREATE POLICY "Members can read organization messages"
@@ -168,12 +189,30 @@ CREATE POLICY "Members can delete organization customers"
     )
   );
 
+-- Criar nova política para organization_members (somente visualização)
+CREATE POLICY "Members can read organization members"
+  ON organization_members
+  FOR SELECT
+  TO authenticated
+  USING (
+    -- Super admins podem visualizar todos os membros
+    user_is_superadmin()
+    OR
+    -- Membros podem visualizar outros membros da mesma organização
+    user_is_org_member(organization_members.organization_id)
+  );
+
 -- Criar novas políticas para profiles
+DROP POLICY IF EXISTS "Users can read profiles from same organization" ON profiles;
 CREATE POLICY "Users can read profiles from same organization"
   ON profiles
   FOR SELECT
   TO authenticated
   USING (
+    -- Super admins podem visualizar todos os profiles
+    user_is_superadmin()
+    OR
+    -- Usuários podem visualizar profiles da mesma organização
     EXISTS (
       SELECT 1 FROM organization_members om1
       WHERE om1.user_id = auth.uid()

@@ -58,6 +58,13 @@
   },
   "errors": {
     "noOrganization": "Organização não selecionada",
-    "userExists": "Este email já está cadastrado. Por favor, use outro email."
+    "userExists": "Este email já está cadastrado. Por favor, use outro email.",
+    "userLimitReached": "Limite de usuários atingido. Faça upgrade do seu plano para adicionar mais membros.",
+    "noPermission": "Você não tem permissão para realizar esta ação."
+  },
+  "limit": {
+    "title": "Limite de usuários atingido",
+    "message": "Você atingiu o limite de {{limit}} usuários do seu plano atual. Para adicionar mais membros, faça upgrade do seu plano.",
+    "upgrade": "Trocar Plano"
   }
 }
