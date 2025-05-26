@@ -152,7 +152,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
   let links: NavigationLinkWithChildren[] = [...baseLinks];
   
   // Add admin links for admin and owner roles
-  if (profile?.role === 'admin' || profile?.is_superadmin) {
+  if (currentOrganizationMember?.role === 'admin' || currentOrganizationMember?.role === 'owner') {
     links = [...links, ...adminLinks];
   }
 

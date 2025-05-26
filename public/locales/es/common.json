@@ -59,8 +59,12 @@
   "inactive": "Inactivo",
   "customer": "Cliente",
   "trialDaysLeft": "{{days}} días restantes del período de prueba",
+  "trialExpired": "Trial Expirado",
+  "trialExpiredMessage": "Tu período de prueba gratuito expiró hace {{days}} días.",
   "subscriptionEndingSoon": "Tu suscripción está a punto de vencer",
   "subscriptionExpired": "Tu suscripción venció hace {{days}} días",
+  "subscriptionExpiredTitle": "Suscripción Expirada",
+  "subscriptionExpiredContinue": "Para continuar usando la plataforma, necesitas suscribirte a un plan.",
   "updateSubscription": "Actualizar suscripción",
   "processing": "Procesando...",
   "delete_confirmation": {

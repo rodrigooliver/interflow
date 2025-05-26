@@ -51,6 +51,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ClosureTypesPage } from './pages/ClosureTypesPage';
 import { ToastProvider } from './hooks/useToast';
+import { SubscriptionGuard } from './components/SubscriptionGuard';
 
 import PrivacyPolicy from './pages/public/privacy-policy';
 import TermsOfService from './pages/public/terms-of-service';
@@ -275,13 +276,18 @@ const WhiteScreenDetector = () => {
         // Verificação adicional para detectar conteúdo renderizado mas invisível (problema comum em WebViews)
         const mainRoot = document.getElementById('root');
         const appContainer = document.querySelector('.mobile-container');
+        const subscriptionExpiredScreen = document.querySelector('.subscription-expired-screen');
         const isRootEmpty = !mainRoot || mainRoot.children.length === 0;
         const isAppContainerInvisible = !appContainer || 
                                       (appContainer as HTMLElement).offsetHeight === 0 ||
                                       window.getComputedStyle(appContainer as Element).display === 'none';
 
+        // Se há uma tela de subscription expirada, considerar como conteúdo válido
+        const hasSubscriptionScreen = !!subscriptionExpiredScreen && 
+                                     (subscriptionExpiredScreen as HTMLElement).offsetHeight > 0;
+
         // Se não houver conteúdo visível, considerar como tela branca
-        if (((!hasContent || !hasVisibleElements || hasOnlyLoader || isRootEmpty || isAppContainerInvisible)) && 
+        if (((!hasContent || !hasVisibleElements || hasOnlyLoader || isRootEmpty || isAppContainerInvisible) && !hasSubscriptionScreen) && 
              document.readyState === 'complete') {
           console.warn('Tela branca detectada! Recarregando a página...');
           
@@ -661,42 +667,43 @@ function AppContent() {
         <Route
           path="/app/*"
           element={
-            <div className="flex h-screen bg-gray-50 dark:bg-gray-900 mobile-container">
-              {/* Sidebar Desktop */}
-              <aside className="hidden md:block flex-shrink-0">
-                <Sidebar 
-                  isCollapsed={isCollapsed} 
-                  setIsCollapsed={setIsCollapsed} 
-                  isMobile={false} 
-                />
-              </aside>
-
-              {/* Sidebar Mobile */}
-              {sidebarOpen ? (
-                 <div className={`md:hidden fixed inset-y-0 left-0 z-50 transform ${
-                  sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                } transition-transform duration-300 ease-in-out`}>
+            <SubscriptionGuard>
+              <div className="flex h-screen bg-gray-50 dark:bg-gray-900 mobile-container">
+                {/* Sidebar Desktop */}
+                <aside className="hidden md:block flex-shrink-0">
                   <Sidebar 
-                    onClose={() => {setSidebarOpen(false);}} 
-                    isMobile={true} 
+                    isCollapsed={isCollapsed} 
+                    setIsCollapsed={setIsCollapsed} 
+                    isMobile={false} 
                   />
-                </div>
-              ) : null}
+                </aside>
 
-              {/* Mobile Overlay */}
-              {sidebarOpen && (
-                <div
-                  className="md:hidden fixed inset-0 z-30 bg-gray-600 bg-opacity-75 transition-opacity"
-                  onClick={() => setSidebarOpen(false)}
-                />
-              )}
+                {/* Sidebar Mobile */}
+                {sidebarOpen ? (
+                   <div className={`md:hidden fixed inset-y-0 left-0 z-50 transform ${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                  } transition-transform duration-300 ease-in-out`}>
+                    <Sidebar 
+                      onClose={() => {setSidebarOpen(false);}} 
+                      isMobile={true} 
+                    />
+                  </div>
+                ) : null}
 
-              {/* Main Content */}
-              <div className="flex-1 relative flex flex-col w-0 overflow-hidden">
-                <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
-                  <div className="min-h-full h-full">
-                    <Suspense fallback={<LoadingScreen />}>
-                      <Routes>
+                {/* Mobile Overlay */}
+                {sidebarOpen && (
+                  <div
+                    className="md:hidden fixed inset-0 z-30 bg-gray-600 bg-opacity-75 transition-opacity"
+                    onClick={() => setSidebarOpen(false)}
+                  />
+                )}
+
+                {/* Main Content */}
+                <div className="flex-1 relative flex flex-col w-0 overflow-hidden">
+                  <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
+                    <div className="min-h-full h-full">
+                      <Suspense fallback={<LoadingScreen />}>
+                        <Routes>
                         <Route index element={<Dashboard />} />
                         <Route path="chats" element={<Chats />} />
                         <Route path="chats/:id" element={<Chats />} />
@@ -795,6 +802,7 @@ function AppContent() {
                 setSidebarOpen(true);
               }} />
             </div>
+            </SubscriptionGuard>
           }
         />
 
