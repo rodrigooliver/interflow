@@ -1,32 +1,24 @@
 /*
-  # Função para deletar organização
+  # Atualização da função delete_organization para uso no backend
 
   1. Descrição:
-    - Cria uma função que permite deletar uma organização e todos os seus dados relacionados
-    - Ignora as verificações de chaves estrangeiras para garantir deleção completa
-    - Só pode ser executada via backend (SECURITY DEFINER)
+    - Remove a verificação de superadmin da função
+    - Permite execução via backend sem sessão de usuário
+    - Mantém SECURITY DEFINER para operações privilegiadas
+    - Adiciona política de segurança para controle de acesso
 
   2. Segurança:
-    - Função marcada como SECURITY DEFINER para permitir operações privilegiadas
-    - Requer autenticação e apenas superadmins podem executar
+    - Função pode ser executada apenas via service_role
+    - Controle de acesso feito no nível da aplicação backend
 */
 
--- Criação da função para deletar organização
+-- Atualizar a função para remover verificação de superadmin
 CREATE OR REPLACE FUNCTION delete_organization(organization_id_param UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
   success BOOLEAN := FALSE;
   profile_ids UUID[];
 BEGIN
-  -- Verificar se o usuário é superadmin
-  IF NOT EXISTS (
-    SELECT 1 FROM profiles
-    WHERE id = auth.uid()
-    AND is_superadmin = TRUE
-  ) THEN
-    RAISE EXCEPTION 'Apenas superadmins podem deletar organizações';
-  END IF;
-
   -- Verificar se a organização existe
   IF NOT EXISTS (
     SELECT 1 FROM organizations
@@ -184,9 +176,13 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Adicionar comentário na função
-COMMENT ON FUNCTION delete_organization(UUID) IS 'Deleta uma organização e todos os seus dados relacionados. Também remove perfis de usuários que pertenciam apenas a esta organização. Requer privilégios de superadmin.';
+-- Atualizar comentário da função
+COMMENT ON FUNCTION delete_organization(UUID) IS 'Deleta uma organização e todos os seus dados relacionados. Também remove perfis de usuários que pertenciam apenas a esta organização. Para uso exclusivo via backend com service_role.';
 
--- Permitir que a função seja chamada apenas por autenticados
+-- Revogar acesso de todos os roles
 REVOKE EXECUTE ON FUNCTION delete_organization(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION delete_organization(UUID) TO authenticated;
+REVOKE EXECUTE ON FUNCTION delete_organization(UUID) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION delete_organization(UUID) FROM anon;
+
+-- Conceder acesso apenas ao service_role (para uso no backend)
+GRANT EXECUTE ON FUNCTION delete_organization(UUID) TO service_role;
