@@ -23,6 +23,21 @@ CREATE TABLE profiles (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Função para verificar se o usuário atual é superadmin
+CREATE OR REPLACE FUNCTION public.is_superadmin()
+RETURNS BOOLEAN AS $$
+DECLARE
+  is_admin BOOLEAN;
+BEGIN
+  SELECT p.is_superadmin INTO is_admin
+  FROM auth.users u
+  JOIN public.profiles p ON u.id = p.id
+  WHERE u.id = auth.uid();
+  
+  RETURN COALESCE(is_admin, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Create customers table
 CREATE TABLE customers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

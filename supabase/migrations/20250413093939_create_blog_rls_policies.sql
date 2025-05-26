@@ -8,21 +8,6 @@ ALTER TABLE public.blog_post_translations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blog_post_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blog_post_tags ENABLE ROW LEVEL SECURITY;
 
--- Função para verificar se o usuário atual é superadmin
-CREATE OR REPLACE FUNCTION public.is_superadmin()
-RETURNS BOOLEAN AS $$
-DECLARE
-  is_admin BOOLEAN;
-BEGIN
-  SELECT p.is_superadmin INTO is_admin
-  FROM auth.users u
-  JOIN public.profiles p ON u.id = p.id
-  WHERE u.id = auth.uid();
-  
-  RETURN COALESCE(is_admin, false);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Políticas para blog_categories
 -- Leitura: qualquer pessoa pode ler
 CREATE POLICY "Qualquer pessoa pode visualizar categorias" ON public.blog_categories

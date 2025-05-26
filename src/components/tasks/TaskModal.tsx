@@ -480,12 +480,13 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
               if (!isNaN(suggestedDate.getTime())) {
                 // Formatar para YYYY-MM-DD (garantindo formato correto)
                 dueDate = format(suggestedDate, 'yyyy-MM-dd');
-                dueTime = '12:00'; // Meio-dia por padrão
+                // Usar o horário sugerido pela IA ou meio-dia como fallback
+                dueTime = generatedContent.time || '12:00';
               } else {
                 // Se a data for inválida, usar a data atual + 3 dias úteis
                 const fallbackDate = addBusinessDays(new Date(), 3);
                 dueDate = format(fallbackDate, 'yyyy-MM-dd');
-                dueTime = '12:00';
+                dueTime = generatedContent.time || '12:00';
                 
                 // Adicionar aviso na descrição
                 if (generatedContent.description) {
@@ -499,12 +500,16 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
               // Se não estiver no formato correto, usar data padrão
               const fallbackDate = addBusinessDays(new Date(), 3);
               dueDate = format(fallbackDate, 'yyyy-MM-dd');
-              dueTime = '12:00';
+              dueTime = generatedContent.time || '12:00';
             }
           } catch (error) {
             console.error('Erro ao processar data sugerida:', error);
-            // Em caso de erro, não definir data
+            // Em caso de erro, usar apenas o horário se disponível
+            dueTime = generatedContent.time || '';
           }
+        } else if (generatedContent.time) {
+          // Se não temos data mas temos horário, usar apenas o horário
+          dueTime = generatedContent.time;
         }
         
         // Criar itens de checklist a partir das subtarefas sugeridas
@@ -837,20 +842,24 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
               
               if (!isNaN(suggestedDate.getTime())) {
                 dueDate = format(suggestedDate, 'yyyy-MM-dd');
-                dueTime = '12:00';
+                dueTime = generatedContent.time || '12:00';
               } else {
                 const fallbackDate = addBusinessDays(new Date(), 3);
                 dueDate = format(fallbackDate, 'yyyy-MM-dd');
-                dueTime = '12:00';
+                dueTime = generatedContent.time || '12:00';
               }
             } else {
               const fallbackDate = addBusinessDays(new Date(), 3);
               dueDate = format(fallbackDate, 'yyyy-MM-dd');
-              dueTime = '12:00';
+              dueTime = generatedContent.time || '12:00';
             }
           } catch (error) {
             console.error('Erro ao processar data sugerida:', error);
+            dueTime = generatedContent.time || '';
           }
+        } else if (generatedContent.time) {
+          // Se não temos data mas temos horário, usar apenas o horário
+          dueTime = generatedContent.time;
         }
         
         // Criar itens de checklist
