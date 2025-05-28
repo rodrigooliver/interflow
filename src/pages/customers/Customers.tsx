@@ -12,6 +12,7 @@ import StageProgressBar from '../../components/customers/StageProgressBar';
 import CustomerTags from '../../components/customers/CustomerTags';
 import CustomerContacts from '../../components/customers/CustomerContacts';
 import { useTags, useCustomFieldDefinitions, useFunnels } from '../../hooks/useQueryes';
+import { getChannelIcon } from '../../utils/channel';
 
 
 interface CustomerContact {
@@ -1481,7 +1482,7 @@ export default function Customers() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden pb-16 md:pb-0">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-none md:rounded-lg overflow-hidden pb-16 md:pb-0">
           {/* Exibir filtros ativos */}
           {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/30">
@@ -1785,21 +1786,29 @@ export default function Customers() {
                         {customer.contacts && customer.contacts.length > 0 && (
                           <div className="ml-13 mb-2">
                             <div className="flex flex-wrap gap-2">
-                              {customer.contacts.slice(0, 2).map((contact, contactIndex) => (
-                                <div 
-                                  key={contactIndex}
-                                  className="flex items-center text-sm text-gray-600 dark:text-gray-400"
-                                >
-                                  <span className="truncate max-w-[200px]">
-                                    {contact.value}
-                                  </span>
-                                  {contactIndex === 0 && customer.contacts.length > 1 && (
-                                    <span className="ml-1 text-xs text-gray-400">
-                                      +{customer.contacts.length - 1}
+                              {customer.contacts.slice(0, 2).map((contact, contactIndex) => {
+                                const iconPath = getChannelIcon(contact.type);
+                                return (
+                                  <div 
+                                    key={contactIndex}
+                                    className="flex items-center text-sm text-gray-600 dark:text-gray-400"
+                                  >
+                                    <img 
+                                      src={iconPath} 
+                                      alt={contact.type}
+                                      className="w-4 h-4 mr-1.5 flex-shrink-0"
+                                    />
+                                    <span className="truncate max-w-[180px]">
+                                      {contact.value}
                                     </span>
-                                  )}
-                                </div>
-                              ))}
+                                    {contactIndex === 0 && customer.contacts.length > 1 && (
+                                      <span className="ml-1 text-xs text-gray-400">
+                                        +{customer.contacts.length - 1}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
