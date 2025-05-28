@@ -13,10 +13,6 @@ import CustomerTags from '../../components/customers/CustomerTags';
 import CustomerContacts from '../../components/customers/CustomerContacts';
 import { useTags, useCustomFieldDefinitions, useFunnels } from '../../hooks/useQueryes';
 
-interface ContactModalState {
-  type: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram';
-  value: string;
-}
 
 interface CustomerContact {
   id: string;
@@ -130,9 +126,7 @@ export default function Customers() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showContactModal, setShowContactModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [contactModalState, setContactModalState] = useState<ContactModalState | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [totalCustomers, setTotalCustomers] = useState(0);
@@ -191,7 +185,7 @@ export default function Customers() {
     if (currentOrgIdRef.current === currentOrganizationMember.organization.id) return;
     
     // Atualizar a referência com o ID da organização atual
-    currentOrgIdRef.current = currentOrganizationMember.organization.id;
+    currentOrgIdRef.current = currentOrganizationMember.organization.id || null;
     
     // Carregar configurações de colunas
     loadColumnConfigs();
@@ -547,7 +541,6 @@ export default function Customers() {
   };
 
   const handleContactClick = (type: 'email' | 'whatsapp' | 'phone' | 'instagram' | 'facebook' | 'telegram', value: string) => {
-    setContactModalState({ type, value });
     // Encontrar o cliente correspondente ao contato
     const customer = customers.find(c => 
       c.contacts.some(contact => contact.value === value && contact.type === type)
@@ -555,7 +548,6 @@ export default function Customers() {
     if (customer) {
       setSelectedCustomer(customer);
     }
-    setShowContactModal(true);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -774,7 +766,7 @@ export default function Customers() {
 
   // Configurar a função de manipulação de contato no objeto window para que o componente CustomerContacts possa acessá-la
   useEffect(() => {
-    // @ts-ignore - Ignorar erros de tipo para a função handleContactClick
+    // @ts-expect-error - Ignorar erros de tipo para a função handleContactClick
     window.handleContactClick = handleContactClick;
     
     // Limpar a função ao desmontar o componente
@@ -1185,158 +1177,167 @@ export default function Customers() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-full overflow-hidden pb-20 md:pb-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-          {t('customers:title')}
-        </h1>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center justify-center h-9 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              {t('customers:addCustomer')}
-            </button>
-            
-            <button
-              onClick={() => setShowColumnSelector(true)}
-              className="inline-flex items-center justify-center h-9 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
-            >
-              <Settings className="mr-1 h-4 w-4" />
-              {t('customers:columns')}
-            </button>
-            
-            {/* Botão de exportação */}
-            <div className="relative export-menu-container">
-              <button
-                onClick={() => setShowExportOptions(!showExportOptions)}
-                disabled={isExporting}
-                className="inline-flex items-center justify-center h-9 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-green-400 px-3 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none"
-              >
-                {isExporting ? (
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-1 h-4 w-4" />
-                )}
-                {isExporting ? 'Exportando...' : 'Exportar'}
-              </button>
-              
-              {/* Menu suspenso de opções de exportação */}
-              {showExportOptions && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10">
-                  <div className="py-1">
-                    <button
-                      onClick={exportToCSV}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      Exportar como CSV
-                    </button>
-                    <button
-                      onClick={exportToExcel}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      Exportar como Excel
-                    </button>
-                    <button
-                      onClick={exportToJSON}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      Exportar como JSON
-                    </button>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header Mobile Melhorado */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="px-4 py-3">
+          {/* Título e contador */}
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {t('customers:title')}
+              </h1>
+              {!loading && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  {totalCustomers} {totalCustomers === 1 ? 'cliente' : 'clientes'}
+                </p>
               )}
             </div>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Link
-              to="/app/crm"
-              className="inline-flex items-center justify-center px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex-1 sm:flex-none"
-            >
-              <GitMerge className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-              <span className="whitespace-nowrap">{t('customers:viewCRM')}</span>
-            </Link>
+            
+            {/* Botão adicionar - sempre visível no mobile */}
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`inline-flex items-center justify-center px-3 py-1.5 md:px-4 md:py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex-1 sm:flex-none ${
-                selectedFunnelId || selectedStageId || selectedTagIds.length > 0
-                  ? "border-blue-500 text-white bg-blue-500 hover:bg-blue-600"
-                  : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-              }`}
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full shadow-lg transition-colors"
             >
-              <Filter className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-              <span className="whitespace-nowrap">{t('customers:filters')}</span>
-              {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
-                <span className="ml-1.5 flex items-center justify-center w-5 h-5 text-xs bg-white text-blue-600 rounded-full">
-                  {(selectedFunnelId ? 1 : 0) + (selectedStageId ? 1 : 0) + (selectedTagIds.length > 0 ? 1 : 0)}
-                </span>
-              )}
+              <Plus className="w-5 h-5 text-white" />
             </button>
+          </div>
+
+          {/* Barra de pesquisa melhorada */}
+          <div className="relative mb-3">
+            <input
+              type="text"
+              placeholder={t('customers:searchPlaceholder')}
+              value={searchTerm}
+              onChange={handleSearch}
+              className="w-full h-10 pl-10 pr-4 bg-gray-100 dark:bg-gray-700 border-0 rounded-full focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
+            />
+            {searchTerm !== debouncedSearchTerm ? (
+              <Loader2 className="absolute left-3 top-2.5 w-5 h-5 text-blue-500 animate-spin" />
+            ) : (
+              <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
+            )}
+          </div>
+
+          {/* Botões de ação secundários */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedFunnelId || selectedStageId || selectedTagIds.length > 0
+                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                }`}
+              >
+                <Filter className="w-3 h-3 mr-1" />
+                {t('customers:filters')}
+                {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
+                  <span className="ml-1 flex items-center justify-center w-4 h-4 text-xs bg-blue-600 text-white rounded-full">
+                    {(selectedFunnelId ? 1 : 0) + (selectedStageId ? 1 : 0) + (selectedTagIds.length > 0 ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+
+              <Link
+                to="/app/crm"
+                className="flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full text-xs font-medium"
+              >
+                <GitMerge className="w-3 h-3 mr-1" />
+                CRM
+              </Link>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowColumnSelector(true)}
+                className="flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              
+              <div className="relative export-menu-container">
+                <button
+                  onClick={() => setShowExportOptions(!showExportOptions)}
+                  disabled={isExporting}
+                  className="flex items-center justify-center w-8 h-8 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                </button>
+                
+                {/* Menu suspenso de opções de exportação */}
+                {showExportOptions && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
+                    <div className="py-1">
+                      <button
+                        onClick={exportToCSV}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Exportar como CSV
+                      </button>
+                      <button
+                        onClick={exportToExcel}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Exportar como Excel
+                      </button>
+                      <button
+                        onClick={exportToJSON}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Exportar como JSON
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Painel de filtros */}
-      {showFilters && (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6 overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('customers:filters')}</h3>
-            <div className="flex items-center gap-2">
-              {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
+      {/* Conteúdo principal */}
+      <div className={isMobileView ? "px-0" : "p-4 md:p-6 max-w-full overflow-hidden pb-20 md:pb-6"}>
+        {/* Painel de filtros */}
+        {showFilters && (
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('customers:filters')}</h3>
+              <div className="flex items-center gap-2">
+                {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    {t('customers:clearFilters')}
+                  </button>
+                )}
                 <button
-                  onClick={clearFilters}
-                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  onClick={() => setShowFilters(false)}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 >
-                  {t('customers:clearFilters')}
+                  <X className="w-5 h-5" />
                 </button>
-              )}
-              <button
-                onClick={() => setShowFilters(false)}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Filtro de Funil e Estágio */}
-            <div>
-              
-              {/* Seleção de Funil */}
-              <div className="mb-4">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('crm:funnel')}</label>
-                <select
-                  value={selectedFunnelId || ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setSelectedFunnelId(value || null);
-                    setSelectedStageId(null); // Resetar estágio ao mudar de funil
-                    setSearchParams(prev => {
-                      prev.delete('page');
-                      return prev;
-                    });
-                  }}
-                  className="w-full p-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-md focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
-                >
-                  <option value="">{t('crm:allFunnels')}</option>
-                  {funnels.map(funnel => (
-                    <option key={funnel.id} value={funnel.id}>{funnel.name}</option>
-                  ))}
-                </select>
               </div>
-              
-              {/* Seleção de Estágio (apenas se um funil estiver selecionado) */}
-              {selectedFunnelId && (
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('crm:stage')}</label>
+            </div>
+            
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Filtro de Funil e Estágio */}
+              <div>
+                
+                {/* Seleção de Funil */}
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('crm:funnel')}</label>
                   <select
-                    value={selectedStageId || ''}
+                    value={selectedFunnelId || ''}
                     onChange={(e) => {
                       const value = e.target.value;
-                      setSelectedStageId(value || null);
+                      setSelectedFunnelId(value || null);
+                      setSelectedStageId(null); // Resetar estágio ao mudar de funil
                       setSearchParams(prev => {
                         prev.delete('page');
                         return prev;
@@ -1344,517 +1345,581 @@ export default function Customers() {
                     }}
                     className="w-full p-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-md focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                   >
-                    <option value="">{t('crm:allStages')}</option>
-                    {stages
-                      .filter(stage => stage.funnel_id === selectedFunnelId)
-                      .sort((a, b) => a.position - b.position)
-                      .map(stage => (
-                        <option key={stage.id} value={stage.id}>{stage.name}</option>
-                      ))}
+                    <option value="">{t('crm:allFunnels')}</option>
+                    {funnels.map(funnel => (
+                      <option key={funnel.id} value={funnel.id}>{funnel.name}</option>
+                    ))}
                   </select>
                 </div>
-              )}
+                
+                {/* Seleção de Estágio (apenas se um funil estiver selecionado) */}
+                {selectedFunnelId && (
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('crm:stage')}</label>
+                    <select
+                      value={selectedStageId || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setSelectedStageId(value || null);
+                        setSearchParams(prev => {
+                          prev.delete('page');
+                          return prev;
+                        });
+                      }}
+                      className="w-full p-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-md focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                    >
+                      <option value="">{t('crm:allStages')}</option>
+                      {stages
+                        .filter(stage => stage.funnel_id === selectedFunnelId)
+                        .sort((a, b) => a.position - b.position)
+                        .map(stage => (
+                          <option key={stage.id} value={stage.id}>{stage.name}</option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+              
+              {/* Filtro de Tags */}
+              <div>
+                {loadingTags ? (
+                  <div className="flex justify-center p-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                ) : availableTags.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('customers:noTagsAvailable')}</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto p-2">
+                    {availableTags.map(tag => (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTagSelection(tag.id)}
+                        className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                          selectedTagIds.includes(tag.id)
+                            ? 'ring-2 ring-offset-1 ring-blue-500'
+                            : ''
+                        }`}
+                        style={{ 
+                          backgroundColor: `${tag.color}30`,
+                          color: tag.color,
+                          border: `1px solid ${tag.color}`
+                        }}
+                      >
+                        <Tag className="w-3 h-3 mr-1 flex-shrink-0" />
+                        <span>{tag.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             
-            {/* Filtro de Tags */}
-            <div>
-              {loadingTags ? (
-                <div className="flex justify-center p-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                </div>
-              ) : availableTags.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('customers:noTagsAvailable')}</p>
-              ) : (
-                <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto p-2">
-                  {availableTags.map(tag => (
-                    <button
-                      key={tag.id}
-                      onClick={() => toggleTagSelection(tag.id)}
-                      className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                        selectedTagIds.includes(tag.id)
-                          ? 'ring-2 ring-offset-1 ring-blue-500'
-                          : ''
-                      }`}
-                      style={{ 
-                        backgroundColor: `${tag.color}30`,
-                        color: tag.color,
-                        border: `1px solid ${tag.color}`
-                      }}
-                    >
-                      <Tag className="w-3 h-3 mr-1 flex-shrink-0" />
-                      <span>{tag.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-            <button
-              onClick={() => {
-                setShowFilters(false);
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {t('common:close')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Configurações de colunas visíveis acima da tabela */}
-      {showColumnSelector && (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6 overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              {t('customers:configureVisibleColumns')}
-            </h3>
-            <div className="flex items-center gap-2">
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-end">
               <button
-                onClick={handleResetColumnConfigs}
-                className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                onClick={() => {
+                  setShowFilters(false);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {t('customers:resetSettings')}
-              </button>
-              <button
-                onClick={() => setShowColumnSelector(false)}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {columnConfigs.map((column, index) => (
-              <div key={`${column.id}-${index}`} className="flex items-center">
-                <input
-                  type="checkbox"
-                  id={`column-${column.id}-${index}`}
-                  checked={column.visible}
-                  onChange={() => toggleColumnVisibility(column.id)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor={`column-${column.id}-${index}`}
-                  className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
-                >
-                  {column.name}
-                </label>
-              </div>
-            ))}
-          </div>
-          
-          <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-            <button
-              onClick={() => setShowColumnSelector(false)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {t('common:close')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder={t('customers:searchPlaceholder')}
-              value={searchTerm}
-              onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            />
-            {searchTerm !== debouncedSearchTerm ? (
-              <Loader2 className="absolute left-3 top-2.5 w-5 h-5 text-blue-500 animate-spin" />
-            ) : (
-            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
-            )}
-          </div>
-        </div>
-
-        {/* Exibir filtros ativos */}
-        {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/30">
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-xs text-blue-700 dark:text-blue-300">{t('customers:activeFilters')}:</span>
-              
-              {selectedFunnelId && (
-                <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200">
-                  <span className="mr-1">{t('crm:funnel')}: {funnels.find(f => f.id === selectedFunnelId)?.name}</span>
-                  <button 
-                    onClick={() => {
-                      setSelectedFunnelId(null);
-                      setSelectedStageId(null);
-                      setSearchParams(prev => {
-                        prev.delete('page');
-                        return prev;
-                      });
-                    }}
-                    className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              
-              {selectedStageId && (
-                <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200">
-                  <span className="mr-1">{t('crm:stage')}: {stages.find(s => s.id === selectedStageId)?.name}</span>
-                  <button 
-                    onClick={() => {
-                      setSelectedStageId(null);
-                      setSearchParams(prev => {
-                        prev.delete('page');
-                        return prev;
-                      });
-                    }}
-                    className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              
-              {selectedTagIds.length > 0 && (
-                <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200">
-                  <span className="mr-1">{t('customers:tags.title')}: {selectedTagIds.length}</span>
-                  <button 
-                    onClick={() => {
-                      setSelectedTagIds([]);
-                      setSearchParams(prev => {
-                        prev.delete('page');
-                        return prev;
-                      });
-                    }}
-                    className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              
-              <button
-                onClick={clearFilters}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 ml-auto"
-              >
-                {t('customers:clearAll')}
+                {t('common:close')}
               </button>
             </div>
           </div>
         )}
 
-        {error ? (
-          <div className="p-4 text-red-600 dark:text-red-400">{error}</div>
-        ) : loading || loadingCRM ? (
-          <div className="p-8 flex justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        {/* Configurações de colunas visíveis acima da tabela */}
+        {showColumnSelector && (
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {t('customers:configureVisibleColumns')}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleResetColumnConfigs}
+                  className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  {t('customers:resetSettings')}
+                </button>
+                <button
+                  onClick={() => setShowColumnSelector(false)}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {columnConfigs.map((column, index) => (
+                <div key={`${column.id}-${index}`} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={`column-${column.id}-${index}`}
+                    checked={column.visible}
+                    onChange={() => toggleColumnVisibility(column.id)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor={`column-${column.id}-${index}`}
+                    className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
+                  >
+                    {column.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+            
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                onClick={() => setShowColumnSelector(false)}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {t('common:close')}
+              </button>
+            </div>
           </div>
-        ) : customers.length === 0 ? (
-          <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-            {searchTerm || selectedFunnelId || selectedStageId || selectedTagIds.length > 0 
-              ? t('common:noResults') 
-              : t('customers:noCustomers')}
-          </div>
-        ) : (
-          <>
-            {/* Visualização em tabela para desktop */}
-            {!isMobileView && (
-              <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      {/* Coluna de nome sempre visível */}
-                      <th 
-                        scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('name')}
-                      >
-                        <div className="flex items-center">
-                    {t('customers:name')}
-                          {sortConfig?.key === 'name' && (
-                            sortConfig.direction === 'asc' 
-                              ? <ArrowUp className="w-4 h-4 ml-1" /> 
-                              : <ArrowDown className="w-4 h-4 ml-1" />
-                          )}
-                        </div>
-                  </th>
-                      
-                      {/* Colunas configuráveis */}
-                      {columnConfigs
-                        .filter(col => col.visible && col.id !== 'name')
-                        .map(column => (
-                          <th 
-                            key={column.id}
-                            scope="col" 
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
-                            onClick={() => handleSort(column.id)}
-                          >
-                            <div className="flex items-center">
-                              {column.name}
-                              {sortConfig?.key === column.id && (
-                                sortConfig.direction === 'asc' 
-                                  ? <ArrowUp className="w-4 h-4 ml-1" /> 
-                                  : <ArrowDown className="w-4 h-4 ml-1" />
-                              )}
-                            </div>
-                  </th>
-                        ))
-                      }
-                      
-                      {/* Coluna de ações sempre visível */}
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        {t('common:actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {sortedCustomers.map(customer => (
-                      <tr 
-                        key={customer.id} 
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                      >
-                        {/* Coluna de nome */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {customer.name}
-                      </div>
-                    </td>
-                        
+        )}
+
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden pb-16 md:pb-0">
+          {/* Exibir filtros ativos */}
+          {(selectedFunnelId || selectedStageId || selectedTagIds.length > 0) && (
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/30">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-blue-700 dark:text-blue-300">{t('customers:activeFilters')}:</span>
+                
+                {selectedFunnelId && (
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200">
+                    <span className="mr-1">{t('crm:funnel')}: {funnels.find(f => f.id === selectedFunnelId)?.name}</span>
+                    <button 
+                      onClick={() => {
+                        setSelectedFunnelId(null);
+                        setSelectedStageId(null);
+                        setSearchParams(prev => {
+                          prev.delete('page');
+                          return prev;
+                        });
+                      }}
+                      className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                
+                {selectedStageId && (
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200">
+                    <span className="mr-1">{t('crm:stage')}: {stages.find(s => s.id === selectedStageId)?.name}</span>
+                    <button 
+                      onClick={() => {
+                        setSelectedStageId(null);
+                        setSearchParams(prev => {
+                          prev.delete('page');
+                          return prev;
+                        });
+                      }}
+                      className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                
+                {selectedTagIds.length > 0 && (
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-800/40 text-blue-800 dark:text-blue-200">
+                    <span className="mr-1">{t('customers:tags.title')}: {selectedTagIds.length}</span>
+                    <button 
+                      onClick={() => {
+                        setSelectedTagIds([]);
+                        setSearchParams(prev => {
+                          prev.delete('page');
+                          return prev;
+                        });
+                      }}
+                      className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                
+                <button
+                  onClick={clearFilters}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 ml-auto"
+                >
+                  {t('customers:clearAll')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {error ? (
+            <div className="p-4 text-red-600 dark:text-red-400">{error}</div>
+          ) : loading || loadingCRM ? (
+            <div className="p-8 flex justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+              {searchTerm || selectedFunnelId || selectedStageId || selectedTagIds.length > 0 
+                ? t('common:noResults') 
+                : t('customers:noCustomers')}
+            </div>
+          ) : (
+            <>
+              {/* Visualização em tabela para desktop */}
+              {!isMobileView && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        {/* Coluna de nome sempre visível */}
+                        <th 
+                          scope="col" 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                          onClick={() => handleSort('name')}
+                        >
+                          <div className="flex items-center">
+                          {t('customers:name')}
+                            {sortConfig?.key === 'name' && (
+                              sortConfig.direction === 'asc' 
+                                ? <ArrowUp className="w-4 h-4 ml-1" /> 
+                                : <ArrowDown className="w-4 h-4 ml-1" />
+                            )}
+                          </div>
+                        </th>
+                            
                         {/* Colunas configuráveis */}
                         {columnConfigs
                           .filter(col => col.visible && col.id !== 'name')
                           .map(column => (
-                            <td key={column.id} className="px-6 py-4 whitespace-nowrap">
-                              {column.id === 'stage' && (
-                                <div className="text-sm text-gray-900 dark:text-white">
-                                  {customer.crm_stages?.name || '-'}
-                          </div>
-                        )}
-                              
-                              {column.id === 'stage_progress' && (
-                                <div className="w-full max-w-xs">
-                                  {customer.crm_stages && (
-                                    <StageProgressBar 
-                                      customer={customer} 
-                                      funnels={funnels} 
-                                      stages={stages}
-                                      onStageChange={handleStageChange}
-                                    />
-                                  )}
-                          </div>
-                        )}
-                              
-                              {column.id === 'tags' && (
-                                <div className="flex flex-wrap gap-1">
-                                  <CustomerTags tags={customer.tags} />
-                      </div>
-                              )}
-                              
-                              {column.id === 'contacts' && (
-                                <div>
-                                  <CustomerContacts contacts={customer.contacts} customer={customer} />
-                                </div>
-                              )}
-                              
-                              {column.isCustomField && column.field_id && (
-                                <div className="text-sm text-gray-900 dark:text-white">
-                                  {renderColumnValue(column, customer)}
-                                </div>
-                              )}
-                    </td>
+                            <th 
+                              key={column.id}
+                              scope="col" 
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                              onClick={() => handleSort(column.id)}
+                            >
+                              <div className="flex items-center">
+                                {column.name}
+                                {sortConfig?.key === column.id && (
+                                  sortConfig.direction === 'asc' 
+                                    ? <ArrowUp className="w-4 h-4 ml-1" /> 
+                                    : <ArrowDown className="w-4 h-4 ml-1" />
+                                )}
+                              </div>
+                            </th>
                           ))
                         }
                         
-                        {/* Coluna de ações */}
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end items-center space-x-3">
-                        <Link
-                          to={`/app/customers/${customer.id}/chats`}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                              title="Atendimentos"
-                        >
+                        {/* Coluna de ações sempre visível */}
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {t('common:actions')}
+                        </th>
+                      </tr>
+                    </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                              {sortedCustomers.map(customer => (
+                                <tr 
+                                  key={customer.id} 
+                                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                >
+                                  {/* Coluna de nome */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {customer.name}
+                                </div>
+                              </td>
+                                  
+                                  {/* Colunas configuráveis */}
+                                  {columnConfigs
+                                    .filter(col => col.visible && col.id !== 'name')
+                                    .map(column => (
+                                      <td key={column.id} className="px-6 py-4 whitespace-nowrap">
+                                        {column.id === 'stage' && (
+                                          <div className="text-sm text-gray-900 dark:text-white">
+                                            {customer.crm_stages?.name || '-'}
+                                    </div>
+                                  )}
+                                        
+                                  {column.id === 'stage_progress' && (
+                                    <div className="w-full max-w-xs">
+                                      {customer.crm_stages && (
+                                        <StageProgressBar 
+                                          customer={customer} 
+                                          funnels={funnels} 
+                                          stages={stages}
+                                          onStageChange={handleStageChange}
+                                        />
+                                      )}
+                              </div>
+                                    )}
+                                        
+                                  {column.id === 'tags' && (
+                                    <div className="flex flex-wrap gap-1">
+                                      <CustomerTags tags={customer.tags} />
+                          </div>
+                                  )}
+                                  
+                                  {column.id === 'contacts' && (
+                                    <div>
+                                      <CustomerContacts contacts={customer.contacts} customer={customer} />
+                                    </div>
+                                  )}
+                                  
+                                  {column.isCustomField && column.field_id && (
+                                    <div className="text-sm text-gray-900 dark:text-white">
+                                      {renderColumnValue(column, customer)}
+                                    </div>
+                                  )}
+                              </td>
+                                ))
+                              }
+                              
+                              {/* Coluna de ações */}
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex justify-end items-center space-x-3">
+                              <Link
+                                to={`/app/customers/${customer.id}/chats`}
+                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                    title="Atendimentos"
+                              >
+                                    <MessageSquare className="w-5 h-5" />
+                              </Link>
+                                  
+                              <button
+                                onClick={() => {
+                                  setSelectedCustomer(customer);
+                                  setShowEditModal(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                    title="Editar"
+                              >
+                                    <Pencil className="w-5 h-5" />
+                              </button>
+                                  
+                              <button
+                                onClick={() => {
+                                  setSelectedCustomer(customer);
+                                  setShowDeleteModal(true);
+                                }}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                    title="Excluir"
+                              >
+                                    <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                            </div>
+                          )}
+
+              {/* Visualização em cards para mobile */}
+              {isMobileView && (
+                <div>
+                  {sortedCustomers.map((customer, index) => (
+                    <div 
+                      key={customer.id} 
+                      className={`border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                        index === 0 ? '' : ''
+                      }`}
+                    >
+                      <div className="px-4 py-4 active:bg-gray-50 dark:active:bg-gray-700 transition-colors">
+                        {/* Linha principal com nome e ações */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center">
+                              {/* Avatar com inicial */}
+                              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-3">
+                                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                  {customer.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              
+                              {/* Nome e estágio */}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-base font-medium text-gray-900 dark:text-white truncate">
+                                  {customer.name}
+                                </h3>
+                                {customer.crm_stages && (
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                    {customer.crm_stages.name}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Botões de ação */}
+                          <div className="flex items-center space-x-1 ml-2">
+                            <Link
+                              to={`/app/customers/${customer.id}/chats`}
+                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                            >
                               <MessageSquare className="w-5 h-5" />
-                        </Link>
-                            
-                        <button
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setShowEditModal(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                              title="Editar"
-                        >
+                            </Link>
+                            <button
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setShowEditModal(true);
+                              }}
+                              className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full transition-colors"
+                            >
                               <Pencil className="w-5 h-5" />
-                        </button>
-                            
-                        <button
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setShowDeleteModal(true);
-                          }}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                              title="Excluir"
-                        >
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setShowDeleteModal(true);
+                              }}
+                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                            >
                               <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Informações de contato */}
+                        {customer.contacts && customer.contacts.length > 0 && (
+                          <div className="ml-13 mb-2">
+                            <div className="flex flex-wrap gap-2">
+                              {customer.contacts.slice(0, 2).map((contact, contactIndex) => (
+                                <div 
+                                  key={contactIndex}
+                                  className="flex items-center text-sm text-gray-600 dark:text-gray-400"
+                                >
+                                  <span className="truncate max-w-[200px]">
+                                    {contact.value}
+                                  </span>
+                                  {contactIndex === 0 && customer.contacts.length > 1 && (
+                                    <span className="ml-1 text-xs text-gray-400">
+                                      +{customer.contacts.length - 1}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
-
-            {/* Visualização em cards para mobile */}
-            {isMobileView && (
-              <div className="grid grid-cols-1 gap-4 p-4 mb-16 md:mb-0">
-                {sortedCustomers.map((customer) => (
-                  <div 
-                    key={customer.id} 
-                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden"
-                  >
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setShowEditModal(true);
-                          }}
-                          className="text-base font-semibold text-gray-900 dark:text-white truncate pr-2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                          {customer.name}
-                        </h3>
-                        <div className="flex space-x-2">
-                        <Link
-                          to={`/app/customers/${customer.id}/chats`}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1"
-                          title="Ver atendimentos"
-                        >
-                            <MessageSquare className="w-5 h-5" />
-                        </Link>
-                <button
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setShowEditModal(true);
-                          }}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1"
-                        >
-                            <Pencil className="w-5 h-5" />
-                </button>
-                <button
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setShowDeleteModal(true);
-                          }}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1"
-                        >
-                            <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-                </div>
-                      
-                      {/* Informações de contato */}
-                      <div className="mb-3">
-                        <CustomerContacts contacts={customer.contacts} />
-                      </div>
-                      
-                      {/* Tags */}
-                      {customer.tags && customer.tags.length > 0 && (
-                        <div className="mb-3">
-                          <CustomerTags tags={customer.tags} />
-                        </div>
-                      )}
-                      
-                      {/* Data de registro */}
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        {t('customers:registeredOn')}: {new Date(customer.created_at).toLocaleDateString()}
+                        
+                        {/* Tags */}
+                        {customer.tags && customer.tags.length > 0 && (
+                          <div className="ml-13">
+                            <div className="flex flex-wrap gap-1">
+                              {customer.tags.slice(0, 3).map((tag, tagIndex) => (
+                                <span
+                                  key={tagIndex}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{ 
+                                    backgroundColor: `${tag.color}20`,
+                                    color: tag.color,
+                                    border: `1px solid ${tag.color}30`
+                                  }}
+                                >
+                                  {tag.name}
+                                </span>
+                              ))}
+                              {customer.tags.length > 3 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                  +{customer.tags.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Data de registro - apenas se não houver tags */}
+                        {(!customer.tags || customer.tags.length === 0) && (
+                          <div className="ml-13">
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              {t('customers:registeredOn')}: {new Date(customer.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
 
-            {/* Pagination */}
-            <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 flex-wrap gap-2">
-              <div className="flex-1 flex justify-between">
-                    <button
-                      onClick={handlePreviousPage}
-                      disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                  {t('common:previous')}
-                    </button>
-                <div className="mx-2 flex items-center">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {currentPage} {t('common:of')} {totalPages}
-                    </span>
+              {/* Pagination */}
+              <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 flex-wrap gap-2">
+                <div className="flex-1 flex justify-between">
+                      <button
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                    {t('common:previous')}
+                      </button>
+                  <div className="mx-2 flex items-center">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {currentPage} {t('common:of')} {totalPages}
+                      </span>
+                  </div>
+                      <button
+                        onClick={handleNextPage}
+                        disabled={currentPage >= totalPages}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                    {t('common:next')}
+                      </button>
+                  </div>
+                <div className="hidden md:block">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {t('common:showing')} <span className="font-medium">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalCustomers)}</span> {t('common:to')}{' '}
+                      <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, totalCustomers)}</span> {t('common:of')}{' '}
+                      <span className="font-medium">{totalCustomers}</span> {t('common:results')}
+                    </p>
                 </div>
-                    <button
-                      onClick={handleNextPage}
-                      disabled={currentPage >= totalPages}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                  {t('common:next')}
-                    </button>
-                </div>
-              <div className="hidden md:block">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {t('common:showing')} <span className="font-medium">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalCustomers)}</span> {t('common:to')}{' '}
-                    <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, totalCustomers)}</span> {t('common:of')}{' '}
-                    <span className="font-medium">{totalCustomers}</span> {t('common:results')}
-                  </p>
               </div>
-            </div>
-          </>
+            </>
+          )}
+        </div>
+
+        {/* Add Customer Modal */}
+        {showAddModal && (
+          <CustomerAddModal
+            onClose={() => setShowAddModal(false)}
+            onSuccess={() => loadCustomers()}
+          />
+        )}
+
+        {/* Edit Customer Modal */}
+        {showEditModal && selectedCustomer && (
+          <CustomerEditModal
+            customer={convertToTagRelations(selectedCustomer)}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedCustomer(null);
+              // loadCustomers(true);
+            }}
+            onSuccess={(silentRefresh = false) => {
+              if (!silentRefresh) {
+                loadCustomers(true);
+              }
+            }}
+          />
+        )}
+
+        {/* Delete Customer Modal */}
+        {showDeleteModal && selectedCustomer && (
+          <CustomerDeleteModal
+            customer={convertToTagRelations(selectedCustomer)}
+            onClose={() => {
+              setShowDeleteModal(false);
+              setSelectedCustomer(null);
+            }}
+            onSuccess={() => {
+              loadCustomers(true);
+              // Ajustar a página após a exclusão
+              adjustPageAfterDeletion(totalCustomers - 1);
+            }}
+          />
         )}
       </div>
-
-      {/* Add Customer Modal */}
-      {showAddModal && (
-        <CustomerAddModal
-          onClose={() => setShowAddModal(false)}
-          onSuccess={() => loadCustomers()}
-        />
-      )}
-
-      {/* Edit Customer Modal */}
-      {showEditModal && selectedCustomer && (
-        <CustomerEditModal
-          customer={convertToTagRelations(selectedCustomer) as any}
-          onClose={() => {
-            setShowEditModal(false);
-            setSelectedCustomer(null);
-            // loadCustomers(true);
-          }}
-          onSuccess={(silentRefresh = false) => {
-            if (!silentRefresh) {
-              loadCustomers(true);
-            }
-          }}
-        />
-      )}
-
-      {/* Delete Customer Modal */}
-      {showDeleteModal && selectedCustomer && (
-        <CustomerDeleteModal
-          customer={convertToTagRelations(selectedCustomer) as any}
-          onClose={() => {
-            setShowDeleteModal(false);
-            setSelectedCustomer(null);
-          }}
-          onSuccess={() => {
-            loadCustomers(true);
-            // Ajustar a página após a exclusão
-            adjustPageAfterDeletion(totalCustomers - 1);
-          }}
-        />
-      )}
-
     </div>
   );
 }
