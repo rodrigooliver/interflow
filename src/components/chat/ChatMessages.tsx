@@ -488,7 +488,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           loadSpecificMessage(messageId);
         } else {
           // Só carregar mensagens se o chatId mudou ou se for o primeiro carregamento
-          loadMessages(1, false);
+          loadMessages(1, false, true);
           isFirstLoadRef.current = false;
           messagesLoadedRef.current = true;
         }
@@ -1649,8 +1649,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         start_time: new Date().toISOString()
       } : null);
 
-      // Recarrega as mensagens
-      loadMessages();
+      // Recarrega as mensagens com forceReset=true para ignorar newMessagesCount no offset
+      loadMessages(1, false, true);
 
     } catch (error) {
       console.error('Error attending chat:', error);
@@ -1919,7 +1919,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       console.error('Erro ao carregar mensagem específica:', error);
       setError(t('errors.loading'));
       // Carregar mensagens normalmente como fallback
-      loadMessages(1, false);
+      loadMessages(1, false, true);
     } finally {
       setIsLoadingSpecificMessage(false);
       setLoading(false);
