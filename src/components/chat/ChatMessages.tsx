@@ -9,9 +9,10 @@ import { CustomerEditModal } from '../customers/CustomerEditModal';
 import { ChatResolutionModal } from './ChatResolutionModal';
 import { ChatAvatar } from './ChatAvatar';
 import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
+import { AddCollaboratorModal } from './AddCollaboratorModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2, History, Image } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
@@ -189,7 +190,6 @@ interface ChatGroupResult {
 export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesProps) {
   const { t } = useTranslation('chats');
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -247,6 +247,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [isLeavingCollaboration, setIsLeavingCollaboration] = useState(false);
   const [isAttending, setIsAttending] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showAddCollaboratorModal, setShowAddCollaboratorModal] = useState(false);
   const scrollDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialScrollDoneRef = useRef(false);
   const [channelFeatures, setChannelFeatures] = useState<ChannelFeatures>({
@@ -262,12 +263,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   // Estado para mensagens que falharam e podem ser reenviadas
   const [failedMessages, setFailedMessages] = useState<OptimisticMessage[]>([]);
   // Estado para rastrear mensagens que estão sendo reenviadas
-  const [retryingMessages, setRetryingMessages] = useState<string[]>([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [deletingMessages, setDeletingMessages] = useState<string[]>([]);
 
   const [lastSubscriptionUpdate, setLastSubscriptionUpdate] = useState<Date | null>(null);
-  const [isReconnecting, setIsReconnecting] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isViewingAllCustomerMessages, setIsViewingAllCustomerMessages] = useState(false);
@@ -275,6 +274,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   // Vamos adicionar estados para controlar o carregamento específico do botão
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingCurrentChat, setIsLoadingCurrentChat] = useState(false);
+
+  // Estados para o modal do avatar
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarImageUrl, setAvatarImageUrl] = useState<string | null>(null);
 
   // Estado para armazenar os anexos que serão passados para o MessageInput
   const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
@@ -347,16 +350,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     setDroppedFiles(files);
   };
 
-  // Função para verificar se o componente está sendo montado pela primeira vez
-  const isInitialRender = useCallback(() => {
-    // Usar um ID único para a renderização atual
-    if (initialRenderRef.current) {
-      // Importante: não alteramos o valor até que o efeito seja realmente executado
-      // para evitar que o Strict Mode cause execuções duplicadas
-      return true;
-    }
-    return false;
-  }, []);
 
   // Função para determinar as funcionalidades disponíveis com base no tipo de canal
   const updateChannelFeatures = useCallback((channelType: string | undefined) => {
@@ -1965,6 +1958,26 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     setCanInteract(isUserAssigned || isUserCollaborator);
   }, [chat, currentUserId, collaborators]);
 
+  // Fechar modal do avatar com ESC
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showAvatarModal) {
+        setShowAvatarModal(false);
+      }
+    };
+
+    if (showAvatarModal) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevenir scroll do body quando o modal está aberto
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAvatarModal]);
+
   // Atualizar a função subscribeToCollaborators para usar o novo formato
   const subscribeToCollaborators = () => {
     const subscription = supabase
@@ -2497,9 +2510,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const handleRetryMessage = async (message: Message) => {
     if (!message.id) return;
     
-    // Adicionar ID à lista de mensagens sendo reenviadas
-    setRetryingMessages(prev => [...prev, message.id]);
-    
     try {
       // console.log(`Tentando reenviar mensagem: ${message.id}`);
       
@@ -2596,7 +2606,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       toast.error(t('errors.sendingMessage'));
     } finally {
       // Remover da lista de mensagens sendo reenviadas
-      setRetryingMessages(prev => prev.filter(id => id !== message.id));
     }
   };
 
@@ -2834,7 +2843,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {isMobileView && (
               <button 
                 onClick={handleBackClick}
-                className="mr-2 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 self-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="mr-0 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 self-center p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 aria-label={t('backToList')}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2846,21 +2855,32 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           </div>
           
           {/* Informações do cliente */}
-          <div 
-            className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors overflow-hidden"
-            onClick={() => setShowEditCustomer(true)}
-          >
+          <div className="flex items-center space-x-3 overflow-hidden">
+            {/* Avatar - fora da área clicável */}
             {headerLoading ? (
               <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
             ) : (
-              <ChatAvatar 
-                id={chatId}
-                name={chat?.customer?.name || 'Anônimo'}
-                profilePicture={chat?.profile_picture || chat?.customer?.profile_picture}
-                channel={chat?.channel_details}
-              />
+              <div 
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => {
+                  const imageUrl = chat?.profile_picture || chat?.customer?.profile_picture;
+                  if (imageUrl) {
+                    setAvatarImageUrl(imageUrl);
+                    setShowAvatarModal(true);
+                  }
+                }}
+              >
+                <ChatAvatar 
+                  id={chatId}
+                  name={chat?.customer?.name || 'Anônimo'}
+                  profilePicture={chat?.profile_picture || chat?.customer?.profile_picture}
+                  channel={chat?.channel_details}
+                />
+              </div>
             )}
-            <div className="truncate">
+            
+            {/* Informações clicáveis e colaboradores */}
+            <div className="truncate flex-1">
               {headerLoading ? (
                 <div className="space-y-2">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
@@ -2870,70 +2890,159 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 </div>
               ) : (
                 <>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 truncate ">
-                    {chat?.customer?.name || t('unnamed')}
-                    {isViewingAllCustomerMessages && (
-                      <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded-full">
-                        {t('viewingAllMessages')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                  {chat?.external_id && (
-                      <span className="truncate flex items-center">
-                        {/* <img 
-                          src={getChannelIcon(chat.channel_details?.type || 'whatsapp_official')} 
-                          alt="Canal" 
-                          className="w-3.5 h-3.5 mr-1"
-                        /> */}
-                        {chat.external_id}
-                      </span>
-                    )}
-                    {chat?.ticket_number && (
-                      <span className="truncate">
-                        #{chat.ticket_number}
-                      </span>
-                    )}
+                  {/* Área clicável para editar cliente - apenas nome e informações básicas */}
+                  <div 
+                    className="cursor-pointer hover:opacity-80 "
+                    onClick={() => setShowEditCustomer(true)}
+                  >
+                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {chat?.customer?.name || t('unnamed')}
+                      {isViewingAllCustomerMessages && (
+                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded-full">
+                          {t('viewingAllMessages')}
+                        </span>
+                      )}
+                    </div>
                     
-                    {/* Tags do cliente */}
-                    {chat?.customer?.tags && chat.customer.tags.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        {chat.customer.tags.slice(0, 2).map((tagItem: CustomerTag) => (
-                          <CustomTooltip 
-                            key={tagItem.tag_id}
-                            content={tagItem.tags?.name || ''}
-                            color={tagItem.tags?.color ? tagItem.tags.color : '#3B82F6'}
-                          >
-                            <span 
-                              className="inline-flex items-center px-1.5 py-0.5 text-xs rounded-full whitespace-nowrap overflow-hidden max-w-[50px]"
-                              style={{ 
-                                backgroundColor: tagItem.tags?.color ? `${tagItem.tags.color}20` : '#3B82F620',
-                                color: tagItem.tags?.color || '#3B82F6'
-                              }}
+                    {/* Informações básicas do chat */}
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 min-w-0">
+                      {chat?.external_id && (
+                        <span className="truncate flex items-center">
+                          {chat.external_id}
+                        </span>
+                      )}
+                      {chat?.ticket_number && (
+                        <span className="truncate">
+                          #{chat.ticket_number}
+                        </span>
+                      )}
+                      
+                      {/* Tags do cliente */}
+                      {chat?.customer?.tags && chat.customer.tags.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          {chat.customer.tags.slice(0, 1).map((tagItem: CustomerTag) => (
+                            <CustomTooltip 
+                              key={tagItem.tag_id}
+                              content={tagItem.tags?.name || ''}
+                              color={tagItem.tags?.color ? tagItem.tags.color : '#3B82F6'}
                             >
-                              <span className="truncate">{tagItem.tags?.name || ''}</span>
-                            </span>
-                          </CustomTooltip>
-                        ))}
-                        {chat.customer.tags.length > 2 && (
-                          <CustomTooltip 
-                            content={chat.customer.tags.slice(2).map((tag: CustomerTag) => 
-                              tag.tags?.name || ''
-                            ).join(', ')}
-                            color="#4B5563"
-                          >
-                            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">
-                              +{chat.customer.tags.length - 2}
-                            </span>
-                          </CustomTooltip>
-                        )}
-                      </div>
-                    )}
+                              <span 
+                                className="inline-flex items-center px-1.5 py-0.5 text-xs rounded-full whitespace-nowrap overflow-hidden max-w-[40px]"
+                                style={{ 
+                                  backgroundColor: tagItem.tags?.color ? `${tagItem.tags.color}20` : '#3B82F620',
+                                  color: tagItem.tags?.color || '#3B82F6'
+                                }}
+                              >
+                                <span className="truncate">{tagItem.tags?.name || ''}</span>
+                              </span>
+                            </CustomTooltip>
+                          ))}
+                          {chat.customer.tags.length > 1 && (
+                            <CustomTooltip 
+                              content={chat.customer.tags.slice(1).map((tag: CustomerTag) => 
+                                tag.tags?.name || ''
+                              ).join(', ')}
+                              color="#4B5563"
+                            >
+                              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">
+                                +{chat.customer.tags.length - 1}
+                              </span>
+                            </CustomTooltip>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
-                  {/* Mostrar quem está atendendo */}
+                  {/* Responsável e Colaboradores - fora da área clicável */}
+                  {(chat?.assigned_agent || collaborators.length > 0) && (
+                    <div className="flex items-center gap-1 mt-1 ">
+                      {/* Responsável */}
+                      {chat?.assigned_agent && (
+                        <CustomTooltip 
+                          content={`Responsável: ${chat.assigned_agent.full_name}`}
+                          color="#059669"
+                        >
+                          <div className="relative">
+                            <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center border-2 border-green-500">
+                              {chat.assigned_agent.avatar_url ? (
+                                <img 
+                                  src={chat.assigned_agent.avatar_url} 
+                                  alt={chat.assigned_agent.full_name}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                                  {chat.assigned_agent.full_name.charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-900"></div>
+                          </div>
+                        </CustomTooltip>
+                      )}
+                      
+                      {/* Colaboradores */}
+                      {collaborators.slice(0, 3).map((collab, index) => (
+                        <CustomTooltip 
+                          key={collab.id}
+                          content={`Colaborador: ${collab.user?.full_name || 'Usuário'}`}
+                          color="#3B82F6"
+                        >
+                          <div 
+                            className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center border-2 border-blue-500"
+                            style={{ marginLeft: index > 0 || chat?.assigned_agent ? '-8px' : '0', zIndex: 10 - index }}
+                          >
+                            {collab.user?.avatar_url ? (
+                              <img 
+                                src={collab.user.avatar_url} 
+                                alt={collab.user.full_name || 'Colaborador'}
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                                {(collab.user?.full_name || 'C').charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </CustomTooltip>
+                      ))}
+                      
+                      {/* Contador de colaboradores extras */}
+                      {collaborators.length > 3 && (
+                        <CustomTooltip 
+                          content={`+${collaborators.length - 3} colaboradores: ${collaborators.slice(3).map(c => c.user?.full_name || 'Usuário').join(', ')}`}
+                          color="#6B7280"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center border-2 border-gray-400 text-xs font-medium text-gray-600 dark:text-gray-300" style={{ marginLeft: '-8px', zIndex: 5 }}>
+                            +{collaborators.length - 3}
+                          </div>
+                        </CustomTooltip>
+                      )}
+                      
+                      {/* Botão de adicionar colaboradores - apenas para o responsável */}
+                      {isAssignedAgent && (
+                        <CustomTooltip 
+                          content={t('collaborator.addCollaborator')}
+                          color="#3B82F6"
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowAddCollaboratorModal(true);
+                            }}
+                            className="w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white transition-colors ml-1"
+                          >
+                            <UserPlus className="w-3 h-3" />
+                          </button>
+                        </CustomTooltip>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Mostrar quem está atendendo - apenas se não for o responsável nem colaborador */}
                   {chat?.status === 'in_progress' && chat?.assigned_agent && !isAssignedAgent && !isCollaborator && (
-                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center">
+                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center px-2">
                       <UserCheck className="w-3 h-3 mr-1" />
                       {t('collaborator.attendedBy', { name: chat.assigned_agent.full_name })}
                     </div>
@@ -3194,18 +3303,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             )}
           </div>
         </div>
-        
-        {/* Lista de colaboradores */}
-        {collaborators.length > 0 && (
-          <div className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center">
-            <span className="mr-2">{t('collaborator.collaborators')}:</span>
-            {collaborators.map((collab) => (
-              <span key={collab.id} className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full mr-1 mb-1">
-                {collab.user?.full_name}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       
@@ -3674,6 +3771,57 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           } : null);
         }}
       />
+
+      {/* Modal de adicionar colaboradores */}
+      <AddCollaboratorModal
+        isOpen={showAddCollaboratorModal}
+        onClose={() => setShowAddCollaboratorModal(false)}
+        chatId={chatId}
+        organizationId={organizationId}
+        currentCollaborators={collaborators.map(c => c.user_id)}
+        assignedUserId={chat?.assigned_to}
+        onCollaboratorAdded={() => {
+          // Recarregar colaboradores após adicionar um novo
+          subscribeToCollaborators();
+        }}
+      />
+
+      {/* Modal de visualização do avatar */}
+      {showAvatarModal && avatarImageUrl && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+          onClick={() => setShowAvatarModal(false)}
+        >
+          <div className="relative max-w-4xl max-h-4xl p-4">
+            {/* Botão de fechar */}
+            <button
+              onClick={() => setShowAvatarModal(false)}
+              className="absolute top-2 right-2 z-10 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+              aria-label="Fechar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            {/* Imagem do avatar */}
+            <img
+              src={avatarImageUrl}
+              alt={chat?.customer?.name || 'Avatar do cliente'}
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {/* Informações do cliente */}
+            <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg backdrop-blur-sm">
+              <p className="font-medium">{chat?.customer?.name || 'Cliente'}</p>
+              {chat?.external_id && (
+                <p className="text-sm opacity-80">{chat.external_id}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

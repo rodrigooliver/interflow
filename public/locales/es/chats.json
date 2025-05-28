@@ -46,7 +46,16 @@
     "leaveSuccess": "Has salido de la colaboración",
     "leaveError": "Error al salir de la colaboración",
     "leaveAttendanceSuccess": "Has salido de la atención",
-    "leaveAttendanceError": "Error al salir de la atención"
+    "leaveAttendanceError": "Error al salir de la atención",
+    "addCollaborator": "Agregar Colaborador",
+    "add": "Agregar",
+    "searchAgents": "Buscar agentes...",
+    "noCollaborators": "Sin colaboradores",
+    "noAgentsFound": "No se encontraron agentes",
+    "allAgentsAreCollaborators": "Todos los agentes ya son colaboradores",
+    "addedSuccessfully": "Colaborador agregado exitosamente",
+    "addError": "Error al agregar colaborador",
+    "addNewCollaborator": "Agregar nuevo colaborador"
   },
   "filters": {
     "title": "Filtros",

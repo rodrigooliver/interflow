@@ -46,7 +46,11 @@
     "leaveSuccess": "You left the collaboration",
     "leaveError": "Error leaving collaboration",
     "leaveAttendanceSuccess": "You left the attendance",
-    "leaveAttendanceError": "Error leaving attendance"
+    "leaveAttendanceError": "Error leaving attendance",
+    "allAgentsAreCollaborators": "All agents are already collaborators",
+    "addedSuccessfully": "Collaborator added successfully",
+    "addError": "Error adding collaborator",
+    "addNewCollaborator": "Add new collaborator"
   },
   "filters": {
     "title": "Filters",

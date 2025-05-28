@@ -348,7 +348,6 @@ export function ChatItem({
 
   const handleTransferCustomerComplete = (newCustomerId: string) => {
     setShowTransferCustomerModal(false);
-    console.log(`Chat transferido para o cliente ID: ${newCustomerId}`);
     // Aqui você pode adicionar lógica para atualizar a UI ou recarregar os dados
     if (onUpdateChat && chat.id) {
       // Recarregar os dados do chat ou atualizar conforme necessário
@@ -385,13 +384,6 @@ export function ChatItem({
             {/* Canal abaixo do avatar */}
             {chat.channel_id && (() => {
               // Debug temporário
-              console.log('Canal debug:', {
-                channel_id: chat.channel_id,
-                name: chat.channel_id.name,
-                type: chat.channel_id.type,
-                initials: getChannelInitials(chat.channel_id.name, chat.channel_id.type),
-                iconPath: getChannelIcon(chat.channel_id.type || '')
-              });
               
               return (
                 <CustomTooltip 
