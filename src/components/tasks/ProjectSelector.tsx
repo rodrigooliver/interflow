@@ -73,9 +73,9 @@ export function ProjectSelector({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-300 min-w-[220px] hover:bg-gray-200 dark:hover:bg-gray-700"
+        className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-300 min-w-[140px] max-w-[140px] truncate hover:bg-gray-200 dark:hover:bg-gray-700"
       >
-        <div className="flex items-center">
+        <div className="flex items-center truncate">
           <Briefcase className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
           <span className="truncate">
             {selectedProject 

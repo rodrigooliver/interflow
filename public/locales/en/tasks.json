@@ -16,6 +16,8 @@
   "unarchived": "Task restored",
   "markAsCompleted": "Complete",
   "startTask": "Start",
+  "start": "Start",
+  "done": "Done",
   "realtime": {
     "taskCreated": "New task created",
     "taskUpdated": "Task updated",

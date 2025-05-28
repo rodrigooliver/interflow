@@ -671,7 +671,7 @@ export default function Tasks() {
                 setSelectedTask(null);
                 setShowTaskModal(true);
               }}
-              className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+              className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
             >
               <Plus className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">{t('addTask')}</span>
@@ -767,7 +767,7 @@ export default function Tasks() {
               <div className="relative group" ref={projectMenuRef}>
                 <button
                   onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
-                  className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <Settings className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">{t('projects.manageProject')}</span>

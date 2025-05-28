@@ -13,7 +13,9 @@ import {
   XCircle,
   Check,
   Loader2,
-  ArchiveRestore
+  ArchiveRestore,
+  Play,
+  AlertTriangle
 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -226,19 +228,19 @@ export function TaskCard({
       case 'pending':
         return {
           icon: Clock,
-          color: 'blue',
-          bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-          borderColor: 'border-blue-200 dark:border-blue-800',
-          textColor: 'text-blue-700 dark:text-blue-300',
+          color: 'gray',
+          bgColor: 'bg-gray-50 dark:bg-gray-900/20',
+          borderColor: 'border-gray-200 dark:border-gray-800',
+          textColor: 'text-gray-700 dark:text-gray-300',
           label: t('tasks:statuses.pending')
         };
       case 'in_progress':
         return {
           icon: Hourglass,
-          color: 'amber',
-          bgColor: 'bg-amber-50 dark:bg-amber-900/20',
-          borderColor: 'border-amber-200 dark:border-amber-800',
-          textColor: 'text-amber-700 dark:text-amber-300',
+          color: 'blue',
+          bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+          borderColor: 'border-blue-200 dark:border-blue-800',
+          textColor: 'text-blue-700 dark:text-blue-300',
           label: t('tasks:statuses.in_progress')
         };
       case 'completed':
@@ -274,33 +276,6 @@ export function TaskCard({
   const statusInfo = getStatusInfo(task.status);
   const StatusIcon = statusInfo.icon;
 
-  // Função para renderizar o badge de prioridade
-  const renderPriorityBadge = (priority: TaskWithRelations['priority']) => {
-    let bgColor = 'bg-gray-100 dark:bg-gray-800';
-    let textColor = 'text-gray-700 dark:text-gray-300';
-    
-    switch (priority) {
-      case 'high':
-        bgColor = 'bg-red-100 dark:bg-red-900/30';
-        textColor = 'text-red-700 dark:text-red-300';
-        break;
-      case 'medium':
-        bgColor = 'bg-amber-100 dark:bg-amber-900/30';
-        textColor = 'text-amber-700 dark:text-amber-300';
-        break;
-      case 'low':
-        bgColor = 'bg-green-100 dark:bg-green-900/30';
-        textColor = 'text-green-700 dark:text-green-300';
-        break;
-    }
-    
-    return (
-      <div className={`px-2 py-0.5 rounded-full text-xs ${bgColor} ${textColor}`}>
-        {t(`tasks:priorities.${priority}`)}
-      </div>
-    );
-  };
-
   return (
     <>
       <div
@@ -315,7 +290,7 @@ export function TaskCard({
         style={style}
         {...attributes}
         {...listeners}
-        className={`bg-white dark:bg-gray-800 p-2.5 sm:p-3 rounded-md shadow-sm border relative 
+        className={`bg-white dark:bg-gray-800 p-2 sm:p-2.5 md:p-3 rounded-md shadow-sm border relative 
         ${contentOverflows || isLastInColumn ? 'overflow-hidden' : ''}
         ${isOverdue ? 'border-red-300 dark:border-red-700' : statusInfo.borderColor} 
         ${task.is_archived ? 'opacity-60' : ''} 
@@ -331,8 +306,8 @@ export function TaskCard({
       >
         {/* Barra de status na lateral esquerda */}
         <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+          statusInfo.color === 'gray' ? 'bg-gray-500 dark:bg-gray-600' :
           statusInfo.color === 'blue' ? 'bg-blue-500 dark:bg-blue-600' :
-          statusInfo.color === 'amber' ? 'bg-amber-500 dark:bg-amber-600' :
           statusInfo.color === 'green' ? 'bg-green-500 dark:bg-green-600' :
           statusInfo.color === 'red' ? 'bg-red-500 dark:bg-red-600' :
           'bg-gray-500 dark:bg-gray-600'
@@ -342,20 +317,20 @@ export function TaskCard({
           {/* Status badge no topo com botão concluir sobreposto */}
           <div className="flex justify-between items-start relative">
             {/* Status original (que ficará oculto quando o botão concluir estiver visível) */}
-            <div className={`flex items-center px-2 py-0.5 rounded-full text-xs ${statusInfo.bgColor} ${statusInfo.textColor} ${
+            <div className={`flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs whitespace-nowrap ${statusInfo.bgColor} ${statusInfo.textColor} ${
               showCompleteButton && (canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) ? 'invisible' : 'visible'
             }`}>
-              <StatusIcon className="w-3 h-3 mr-1" />
-              <span>{statusInfo.label}</span>
+              <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
+              <span className="truncate max-w-[60px] sm:max-w-none">{statusInfo.label}</span>
             </div>
             
             {/* Botão para iniciar ou concluir tarefa (sobreposto ao status) */}
             {(canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) && (
               <button
                 onClick={handleUpdateStatus}
-                className={`absolute left-0 top-0 px-2 py-0.5 rounded-full text-xs ${
+                className={`absolute left-0 top-0 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs whitespace-nowrap ${
                   canBeStarted 
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50' 
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50' 
                     : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
                 } flex items-center transition-opacity duration-200 ${
                   showCompleteButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -363,34 +338,45 @@ export function TaskCard({
                 title={canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
               >
                 {canBeStarted ? (
-                  <Hourglass className="w-3 h-3 mr-1" />
+                  <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
                 ) : (
-                  <Check className="w-3 h-3 mr-1" />
+                  <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
                 )}
-                <span className="hidden xs:inline">
+                <span className="hidden sm:inline truncate">
                   {canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
+                </span>
+                <span className="sm:hidden truncate max-w-[40px]">
+                  {canBeStarted ? t('tasks:start') : t('tasks:done')}
                 </span>
               </button>
             )}
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               {/* Indicador de prioridade */}
-              {renderPriorityBadge(task.priority)}
+              <div className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs whitespace-nowrap flex items-center ${
+                task.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                task.priority === 'medium' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
+                task.priority === 'low' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}>
+                {task.priority === 'high' && <AlertTriangle className="w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5 flex-shrink-0 sm:hidden" />}
+                <span>{t(`tasks:priorities.${task.priority}`)}</span>
+              </div>
               
               {/* Botões de ação */}
-              <div className="flex space-x-1 flex-shrink-0">
+              <div className="flex space-x-0.5 sm:space-x-1 flex-shrink-0">
                 <button
                   onClick={handleToggleArchived}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-0.5 sm:p-1 touch-manipulation"
                   title={task.is_archived ? t('unarchived') : t('archived')}
                   disabled={isArchiveLoading}
                 >
                   {isArchiveLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                    <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
                   ) : task.is_archived ? (
-                    <ArchiveRestore className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <ArchiveRestore className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   ) : (
-                    <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Archive className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   )}
                 </button>
                 <button
@@ -398,34 +384,34 @@ export function TaskCard({
                     e.stopPropagation();
                     onEdit();
                   }}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-0.5 sm:p-1 touch-manipulation"
                 >
-                  <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onRemove();
                   }}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 touch-manipulation"
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-0.5 sm:p-1 touch-manipulation"
                 >
-                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 </button>
               </div>
             </div>
           </div>
 
           <div className="flex justify-between items-start mt-0.5 sm:mt-1">
-                      <div className="flex-1 min-w-0">
-            <h3 className={`text-xs sm:text-sm text-gray-900 dark:text-white ${showDetails ? '' : 'truncate'} ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
-              {task.title}
-              {task.is_archived && (
-                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400 italic">
-                  ({t('archived')})
-                </span>
-              )}
-            </h3>
-          </div>
+            <div className="flex-1 min-w-0 pr-1 sm:pr-2">
+              <h3 className={`text-xs sm:text-sm text-gray-900 dark:text-white leading-tight ${showDetails ? '' : 'line-clamp-2 sm:truncate'} ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
+                {task.title}
+                {task.is_archived && (
+                  <span className="ml-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 italic">
+                    ({t('archived')})
+                  </span>
+                )}
+              </h3>
+            </div>
           </div>
 
           {/* Conteúdo com scroll quando necessário */}
@@ -470,12 +456,12 @@ export function TaskCard({
             )}
 
             {/* Tags e Atribuições */}
-            <div className="flex flex-wrap gap-1 mt-1">
+            <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-1">
               {/* Labels/Tags */}
               {task.labels && task.labels.length > 0 && (
-                <div className="flex items-center space-x-1">
-                  <Tag className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center space-x-0.5 sm:space-x-1">
+                  <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-500 dark:text-gray-400" />
+                  <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                     {task.labels.length}
                   </span>
                 </div>
@@ -483,9 +469,9 @@ export function TaskCard({
 
               {/* Assignees count */}
               {task.assignees && task.assignees.length > 0 && (
-                <div className="flex items-center space-x-1">
-                  <User className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center space-x-0.5 sm:space-x-1">
+                  <User className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-500 dark:text-gray-400" />
+                  <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                     {task.assignees.length}
                   </span>
                 </div>
@@ -494,7 +480,7 @@ export function TaskCard({
               {/* Customer if exists */}
               {task.customer && (
                 <div 
-                  className={`ml-auto text-xs px-1 py-0.5 rounded cursor-pointer truncate max-w-[100px] ${
+                  className={`ml-auto text-[10px] sm:text-xs px-1 py-0.5 rounded cursor-pointer truncate max-w-[80px] sm:max-w-[100px] ${
                     isCompleted 
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400' 
                       : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'

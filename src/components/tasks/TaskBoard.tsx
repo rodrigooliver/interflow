@@ -494,7 +494,7 @@ export function TaskBoard({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-20 md:pb-4 custom-scrollbar">
+        <div className="flex gap-3 sm:gap-6 p-2 sm:p-4 overflow-x-auto h-full flex-1 w-full pb-16 md:pb-0 custom-scrollbar">
           {stages.map((stage) => {
             // Função para obter o valor numérico da prioridade (maior = mais urgente)
             const getPriorityValue = (priority: 'low' | 'medium' | 'high') => {

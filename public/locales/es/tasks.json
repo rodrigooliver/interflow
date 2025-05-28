@@ -16,6 +16,8 @@
   "unarchived": "Tarea restaurada",
   "markAsCompleted": "Completar",
   "startTask": "Iniciar",
+  "start": "Iniciar",
+  "done": "Listo",
   "loading": "Cargando tareas...",
   "realtime": {
     "taskCreated": "Nueva tarea creada",
