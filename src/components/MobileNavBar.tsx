@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, MessageSquare, Users, Calendar, Home, CheckSquare } from 'lucide-react';
+import { Menu, MessageSquare, Users, Calendar, CheckSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavbarVisibility } from '../contexts/NavbarVisibilityContext';
 
@@ -44,7 +44,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({ onOpenSidebar }) => {
         </button>
 
         {/* Link para dashboard */}
-        <Link
+        {/* <Link
           to="/app"
           className={`flex flex-col items-center justify-center w-full h-full py-2 transition-all duration-300 hover:scale-105 active:scale-95 ${
             isActive('/app') && location.pathname === '/app'
@@ -60,7 +60,7 @@ const MobileNavBar: React.FC<MobileNavBarProps> = ({ onOpenSidebar }) => {
             <Home className="h-5 w-5" strokeWidth={2} />
           </div>
           <span className="text-[10px] font-semibold mt-0.5 tracking-wide">{t('navigation:dashboard')}</span>
-        </Link>
+        </Link> */}
 
         {/* Link para tarefas */}
         <Link
