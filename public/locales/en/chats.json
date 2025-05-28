@@ -56,6 +56,7 @@
     "title": "Filters",
     "unassigned": "Unassigned",
     "assignedToMe": "Assigned to me",
+    "collaborating": "Collaborating",
     "assignedToTeam": "Assigned to team",
     "completed": "Completed",
     "spam": "Spam",
@@ -113,6 +114,7 @@
     "description": {
       "unassigned": "There are no unassigned chats at the moment",
       "assigned-to-me": "There are no chats assigned to you at the moment",
+      "collaborating": "There are no chats you are collaborating on at the moment",
       "team": "There are no chats assigned to your team at the moment"
     }
   },

@@ -65,6 +65,7 @@
     "title": "Filtros",
     "unassigned": "Não atribuídos",
     "assignedToMe": "Atribuídos a mim",
+    "collaborating": "Colaborando",
     "assignedToTeam": "Atribuídos à equipe",
     "completed": "Concluídos",
     "spam": "Spam",
@@ -122,6 +123,7 @@
     "description": {
       "unassigned": "Não há atendimentos não atribuídos no momento",
       "assigned-to-me": "Não há atendimentos atribuídos a você no momento",
+      "collaborating": "Não há atendimentos em que você está colaborando no momento",
       "team": "Não há atendimentos atribuídos à sua equipe no momento"
     }
   },

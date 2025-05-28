@@ -1,16 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Chat } from '../../types/database';
 import { Archive, ArrowLeft } from 'lucide-react';
 import { ChatItem } from './ChatItem';
 import './styles.css';
-
-interface Stage {
-  id: string;
-  name: string;
-  funnel_id: string;
-  color?: string;
-}
 
 interface ChatListProps {
   chats: Chat[];
@@ -18,37 +11,16 @@ interface ChatListProps {
   onSelectChat: (chatId: string) => void;
   isLoading?: boolean;
   onUpdateChat?: (chatId: string, updates: Partial<Chat>) => void;
+  selectedFilter?: string;
 }
 
-export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false, onUpdateChat }: ChatListProps) {
+export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false, onUpdateChat, selectedFilter = 'unassigned' }: ChatListProps) {
   const { t } = useTranslation('chats');
-  const [stages, setStages] = useState<Record<string, Stage>>({});
   const [showArchived, setShowArchived] = useState(false);
 
   // Separar chats arquivados e não arquivados
   const archivedChats = chats.filter(chat => chat.is_archived);
   const activeChats = chats.filter(chat => !chat.is_archived);
-
-  // Atualizar o estado stages diretamente dos dados do relacionamento
-  useEffect(() => {
-    const stagesMap = chats.reduce((acc, chat) => {
-      if (chat.customer?.stage) {
-        // Converter o tipo CrmStage para Stage
-        const stage: Stage = {
-          id: chat.customer.stage.id,
-          name: chat.customer.stage.name,
-          funnel_id: typeof chat.customer.stage.funnel_id === 'object' 
-            ? (chat.customer.stage.funnel_id as { id: string }).id || '' 
-            : chat.customer.stage.funnel_id || '',
-          color: chat.customer.stage.color
-        };
-        acc[chat.customer.stage.id] = stage;
-      }
-      return acc;
-    }, {} as Record<string, Stage>);
-    
-    setStages(stagesMap);
-  }, [chats]);
 
   if (isLoading) {
     return (
@@ -74,7 +46,7 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center text-gray-500 dark:text-gray-400">
           <p className="text-lg font-medium mb-2">{t('noChatsFound')}</p>
-          <p className="text-sm">{t('emptyState.description.unassigned')}</p>
+          <p className="text-sm">{t(`emptyState.description.${selectedFilter}`)}</p>
         </div>
       </div>
     );
@@ -102,12 +74,11 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
           )}
           {activeChats.map((chat) => (
             <ChatItem
-          key={chat.id}
+              key={chat.id}
               chat={chat}
               isSelected={selectedChat === chat.id}
               onSelectChat={onSelectChat}
               onUpdateChat={onUpdateChat}
-              stages={stages}
             />
           ))}
         </>
@@ -129,7 +100,6 @@ export function ChatList({ chats, selectedChat, onSelectChat, isLoading = false,
               isSelected={selectedChat === chat.id}
               onSelectChat={onSelectChat}
               onUpdateChat={onUpdateChat}
-              stages={stages}
             />
           ))}
         </>

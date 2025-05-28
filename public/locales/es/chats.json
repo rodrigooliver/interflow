@@ -61,6 +61,7 @@
     "title": "Filtros",
     "unassigned": "Sin asignar",
     "assignedToMe": "Asignados a mí",
+    "collaborating": "Colaborando",
     "assignedToTeam": "Asignados al equipo",
     "completed": "Completados",
     "spam": "Spam",
@@ -75,7 +76,7 @@
     "automationActive": "Activo",
     "automationInactive": "Inactivo",
     "stage": "Etapa",
-    "unreadOnly": "No leídos"
+    "unreadOnly": "Solo no leídos"
   },
   "search": {
     "title": "Buscar",
@@ -118,6 +119,7 @@
     "description": {
       "unassigned": "No hay chats sin asignar en este momento",
       "assigned-to-me": "No hay chats asignados a ti en este momento",
+      "collaborating": "No hay chats en los que estés colaborando en este momento",
       "team": "No hay chats asignados a tu equipo en este momento"
     }
   },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, MessageSquare, Users, UserCheck, Bot, Share2, Tags, X, Plus, GitMerge, Mail } from 'lucide-react';
+import { Search, Filter, MessageSquare, Users, UserCheck, Bot, Share2, Tags, X, Plus, GitMerge, Mail, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ChatList } from '../../components/chat/ChatList';
@@ -94,6 +94,7 @@ export default function Chats() {
       options: [
         { id: 'unassigned', label: t('chats:filters.unassigned') },
         { id: 'assigned-to-me', label: t('chats:filters.assignedToMe') },
+        { id: 'collaborating', label: t('chats:filters.collaborating') },
         { id: 'team', label: t('chats:filters.assignedToTeam') },
         { id: 'completed', label: t('chats:filters.completed') },
         { id: 'spam', label: t('chats:filters.spam') },
@@ -316,58 +317,120 @@ export default function Chats() {
       return;
     }
     
-    const { data: chatData } = await supabase
-      .from('chats')
-      .select(`
-        *,
-        customer:customers(
-          id,
-          name,
-          email,
-          whatsapp,
-          stage_id,
-          is_spam,
-          tags:customer_tags(
-            tag_id,
-            tags:tags(
+    let query;
+    
+    if (selectedFilter === 'collaborating') {
+      query = supabase
+        .from('chats')
+        .select(`
+          *,
+          customer:customers(
+            id,
+            name,
+            email,
+            whatsapp,
+            stage_id,
+            is_spam,
+            tags:customer_tags(
+              tag_id,
+              tags:tags(
+                id,
+                name,
+                color
+              )
+            ),
+            stage:crm_stages!customers_stage_id_fkey(
               id,
               name,
+              funnel_id,
               color
             )
           ),
-          stage:crm_stages!customers_stage_id_fkey(
-            id,
-            name,
-            funnel_id,
-            color
-          )
-        ),
-        channel:chat_channels(
-          type,
-          is_connected,
-          name
-        ),
-        last_message:messages!chats_last_message_id_fkey(
-          content,
-          status,
-          error_message,
-          created_at,
-          sender_type,
-          type
-        ),
-        team:service_teams!inner(
-            id,
-            name,
-            members:service_team_members!inner(
+          channel:chat_channels(
+            type,
+            is_connected,
+            name
+          ),
+          last_message:messages!chats_last_message_id_fkey(
+            content,
+            status,
+            error_message,
+            created_at,
+            sender_type,
+            type
+          ),
+          team:service_teams!inner(
               id,
-              user_id
+              name,
+              members:service_team_members!inner(
+                id,
+                user_id
+            )
+          ),
+          collaborators:chat_collaborators!inner(
+            id,
+            user_id
           )
-        )
-      `)
-      .eq('id', chatId) 
-      .eq('organization_id', currentOrganizationMember?.organization.id)
-      .eq('team.members.user_id', session?.user?.id)
-      .maybeSingle();
+        `)
+        .eq('id', chatId) 
+        .eq('organization_id', currentOrganizationMember?.organization.id)
+        .eq('team.members.user_id', session?.user?.id)
+        .eq('collaborators.user_id', session?.user?.id);
+    } else {
+      query = supabase
+        .from('chats')
+        .select(`
+          *,
+          customer:customers(
+            id,
+            name,
+            email,
+            whatsapp,
+            stage_id,
+            is_spam,
+            tags:customer_tags(
+              tag_id,
+              tags:tags(
+                id,
+                name,
+                color
+              )
+            ),
+            stage:crm_stages!customers_stage_id_fkey(
+              id,
+              name,
+              funnel_id,
+              color
+            )
+          ),
+          channel:chat_channels(
+            type,
+            is_connected,
+            name
+          ),
+          last_message:messages!chats_last_message_id_fkey(
+            content,
+            status,
+            error_message,
+            created_at,
+            sender_type,
+            type
+          ),
+          team:service_teams!inner(
+              id,
+              name,
+              members:service_team_members!inner(
+                id,
+                user_id
+            )
+          )
+        `)
+        .eq('id', chatId) 
+        .eq('organization_id', currentOrganizationMember?.organization.id)
+        .eq('team.members.user_id', session?.user?.id);
+    }
+
+    const { data: chatData } = await query.maybeSingle();
 
     // console.log('chatData', chatData, chatError);
 
@@ -381,6 +444,8 @@ export default function Chats() {
             return chatData.status === 'pending';
           case 'assigned-to-me':
             return chatData.status === 'in_progress' && chatData.assigned_to === session?.user?.id;
+          case 'collaborating':
+            return chatData.status === 'in_progress' && chatData.collaborators && chatData.collaborators.length > 0;
           case 'team':
             return chatData.team_id === selectedTeam && chatData.assigned_to !== session?.user?.id;
           case 'completed':
@@ -508,93 +573,144 @@ export default function Chats() {
     }
 
     try {
-      let query = supabase
-        .from('chats')
-        .select(`
-          *,
-          customer:customers!chats_customer_id_fkey(
-            id,
-            name,
-            email,
-            whatsapp,
-            stage_id,
-            is_spam,
-            profile_picture,
-            tags:customer_tags(
-              tag_id,
-              tags:tags(
+      let query;
+      
+      if (selectedFilter === 'collaborating') {
+        query = supabase
+          .from('chats')
+          .select(`
+            *,
+            customer:customers!chats_customer_id_fkey(
+              id,
+              name,
+              email,
+              whatsapp,
+              stage_id,
+              is_spam,
+              profile_picture,
+              tags:customer_tags(
+                tag_id,
+                tags:tags(
+                  id,
+                  name,
+                  color
+                )
+              ),
+              stage:crm_stages!customers_stage_id_fkey(
                 id,
                 name,
+                funnel_id,
                 color
               )
             ),
-            stage:crm_stages!customers_stage_id_fkey(
+            channel:chat_channels(
+              type,
+              is_connected,
+              name
+            ),
+            last_message:messages!chats_last_message_id_fkey(
+              content,
+              status,
+              error_message,
+              created_at,
+              sender_type,
+              type
+            ),
+            team:service_teams!inner(
               id,
               name,
-              funnel_id,
-              color
-            )
-          ),
-          channel:chat_channels(
-            type,
-            is_connected,
-            name
-          ),
-          last_message:messages!chats_last_message_id_fkey(
-            content,
-            status,
-            error_message,
-            created_at,
-            sender_type,
-            type
-          ),
-          team:service_teams!inner(
-            id,
-            name,
-            members:service_team_members!inner(
+              members:service_team_members!inner(
+                id,
+                user_id
+              )
+            ),
+            collaborators:chat_collaborators!inner(
               id,
               user_id
             )
-          )
-        `)
-        .eq('organization_id', currentOrganizationMember.organization.id)
-        .eq('team.members.user_id', session.user.id)
-        .order('is_fixed', { ascending: false })
-        .order('last_message_at', { ascending: false })
-        .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+          `)
+          .eq('organization_id', currentOrganizationMember.organization.id)
+          .eq('team.members.user_id', session.user.id)
+          .eq('collaborators.user_id', session.user.id)
+          .eq('status', 'in_progress')
+          .order('is_fixed', { ascending: false })
+          .order('last_message_at', { ascending: false })
+          .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+      } else {
+        query = supabase
+          .from('chats')
+          .select(`
+            *,
+            customer:customers!chats_customer_id_fkey(
+              id,
+              name,
+              email,
+              whatsapp,
+              stage_id,
+              is_spam,
+              profile_picture,
+              tags:customer_tags(
+                tag_id,
+                tags:tags(
+                  id,
+                  name,
+                  color
+                )
+              ),
+              stage:crm_stages!customers_stage_id_fkey(
+                id,
+                name,
+                funnel_id,
+                color
+              )
+            ),
+            channel:chat_channels(
+              type,
+              is_connected,
+              name
+            ),
+            last_message:messages!chats_last_message_id_fkey(
+              content,
+              status,
+              error_message,
+              created_at,
+              sender_type,
+              type
+            ),
+            team:service_teams!inner(
+              id,
+              name,
+              members:service_team_members!inner(
+                id,
+                user_id
+              )
+            )
+          `)
+          .eq('organization_id', currentOrganizationMember.organization.id)
+          .eq('team.members.user_id', session.user.id)
+          .order('is_fixed', { ascending: false })
+          .order('last_message_at', { ascending: false })
+          .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
-      // Mover declarações para fora do switch
-      // let teamMembers;
-      // let teamIds;
-
-      // Aplicar filtros
-      switch (selectedFilter) {
-        case 'unassigned':
-          query = query.eq('status', 'pending');
-          break;
-        case 'assigned-to-me':
-          query = query
-            .eq('assigned_to', session.user.id)
-            .eq('status', 'in_progress');
-          break;
-        case 'team':
-          // Get user's teams first
-          // teamMembers = await supabase
-          //   .from('service_team_members')
-          //   .select('team_id')
-          //   .eq('user_id', session.user.id);
-
-          // teamIds = teamMembers?.data?.map(tm => tm.team_id) || [];
-          
-          // Filter chats by team and exclude those assigned to the current user
-          query = query
-            .eq('status', 'in_progress')
-            // .in('team_id', teamIds)
-            .neq('assigned_to', session.user.id);
-          break;
-        case 'completed':
-          query = query.eq('status', 'closed');
-          break;
+        // Aplicar filtros apenas se não for o filtro "collaborating"
+        switch (selectedFilter) {
+          case 'unassigned':
+            query = query.eq('status', 'pending');
+            break;
+          case 'assigned-to-me':
+            query = query
+              .eq('assigned_to', session.user.id)
+              .eq('status', 'in_progress');
+            break;
+          case 'team':
+            query = query
+              .eq('status', 'in_progress')
+              .neq('assigned_to', session.user.id);
+            break;
+          case 'completed':
+            query = query.eq('status', 'closed');
+            break;
+        }
       }
 
       if(selectedFilter === 'spam') {
@@ -976,67 +1092,176 @@ export default function Chats() {
         </div>
 
         {/* Status Filter Buttons */}
-        <div className="mt-3 overflow-x-auto pb-2 flex space-x-2 custom-scrollbar">
-          <button
-            onClick={() => handleFilterChange('status', 'unassigned')}
-            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-              selectedFilter === 'unassigned' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {t('chats:filters.unassigned')}
-          </button>
-          <button
-            onClick={() => handleFilterChange('status', 'assigned-to-me')}
-            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-              selectedFilter === 'assigned-to-me' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {t('chats:filters.assignedToMe')}
-          </button>
-          <button
-            onClick={() => handleFilterChange('status', 'team')}
-            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-              selectedFilter === 'team' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {t('chats:filters.assignedToTeam')}
-          </button>
-          <button
-            onClick={() => handleFilterChange('status', 'completed')}
-            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-              selectedFilter === 'completed' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {t('chats:filters.completed')}
-          </button>
-          <button
-            onClick={() => handleFilterChange('status', 'spam')}
-            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-              selectedFilter === 'spam' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {t('chats:filters.spam')}
-          </button>
-          <button
-            onClick={() => handleFilterChange('status', '')}
-            className={`flex-shrink-0 px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-              selectedFilter === '' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {t('common:all')}
-          </button>
+        <div className=" border-b border-gray-200 dark:border-gray-700">
+          <div className="px-4 py-2 flex items-center justify-start space-x-1 overflow-x-auto  custom-scrollbar">
+            {/* Botão Não Atribuídos */}
+            <div className="relative group flex-shrink-0">
+              <button
+                onClick={() => handleFilterChange('status', 'unassigned')}
+                className={`flex items-center rounded-lg transition-all duration-200 ease-out ${
+                  selectedFilter === 'unassigned' 
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 shadow-sm px-3 py-2 space-x-2' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-900/20 dark:hover:text-orange-400 p-2 hover:px-3 group-hover:shadow-sm'
+                }`}
+                title={t('chats:filters.unassigned')}
+              >
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                {selectedFilter === 'unassigned' ? (
+                  <span className="text-sm font-medium whitespace-nowrap ml-2">
+                    {t('chats:filters.unassigned')}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium whitespace-nowrap ml-0 group-hover:ml-2 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-200 ease-out">
+                    {t('chats:filters.unassigned')}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Botão Atribuídos a Mim */}
+            <div className="relative group flex-shrink-0">
+              <button
+                onClick={() => handleFilterChange('status', 'assigned-to-me')}
+                className={`flex items-center rounded-lg transition-all duration-200 ease-out ${
+                  selectedFilter === 'assigned-to-me' 
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shadow-sm px-3 py-2 space-x-2' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 p-2 hover:px-3 group-hover:shadow-sm'
+                }`}
+                title={t('chats:filters.assignedToMe')}
+              >
+                <UserCheck className="w-4 h-4 flex-shrink-0" />
+                {selectedFilter === 'assigned-to-me' ? (
+                  <span className="text-sm font-medium whitespace-nowrap ml-2">
+                    {t('chats:filters.assignedToMe')}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium whitespace-nowrap ml-0 group-hover:ml-2 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-200 ease-out">
+                    {t('chats:filters.assignedToMe')}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Botão Colaborando */}
+            <div className="relative group flex-shrink-0">
+              <button
+                onClick={() => handleFilterChange('status', 'collaborating')}
+                className={`flex items-center rounded-lg transition-all duration-200 ease-out ${
+                  selectedFilter === 'collaborating' 
+                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 shadow-sm px-3 py-2 space-x-2' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-purple-900/20 dark:hover:text-purple-400 p-2 hover:px-3 group-hover:shadow-sm'
+                }`}
+                title={t('chats:filters.collaborating')}
+              >
+                <Users className="w-4 h-4 flex-shrink-0" />
+                {selectedFilter === 'collaborating' ? (
+                  <span className="text-sm font-medium whitespace-nowrap ml-2">
+                    {t('chats:filters.collaborating')}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium whitespace-nowrap ml-0 group-hover:ml-2 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-200 ease-out">
+                    {t('chats:filters.collaborating')}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Botão Equipe */}
+            <div className="relative group flex-shrink-0">
+              <button
+                onClick={() => handleFilterChange('status', 'team')}
+                className={`flex items-center rounded-lg transition-all duration-200 ease-out ${
+                  selectedFilter === 'team' 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 shadow-sm px-3 py-2 space-x-2' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400 p-2 hover:px-3 group-hover:shadow-sm'
+                }`}
+                title={t('chats:filters.assignedToTeam')}
+              >
+                <Users className="w-4 h-4 flex-shrink-0" />
+                {selectedFilter === 'team' ? (
+                  <span className="text-sm font-medium whitespace-nowrap ml-2">
+                    {t('chats:filters.assignedToTeam')}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium whitespace-nowrap ml-0 group-hover:ml-2 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-200 ease-out">
+                    {t('chats:filters.assignedToTeam')}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Botão Concluídos */}
+            <div className="relative group flex-shrink-0">
+              <button
+                onClick={() => handleFilterChange('status', 'completed')}
+                className={`flex items-center rounded-lg transition-all duration-200 ease-out ${
+                  selectedFilter === 'completed' 
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 shadow-sm px-3 py-2 space-x-2' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 p-2 hover:px-3 group-hover:shadow-sm'
+                }`}
+                title={t('chats:filters.completed')}
+              >
+                <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                {selectedFilter === 'completed' ? (
+                  <span className="text-sm font-medium whitespace-nowrap ml-2">
+                    {t('chats:filters.completed')}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium whitespace-nowrap ml-0 group-hover:ml-2 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-200 ease-out">
+                    {t('chats:filters.completed')}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Botão Spam */}
+            <div className="relative group flex-shrink-0">
+              <button
+                onClick={() => handleFilterChange('status', 'spam')}
+                className={`flex items-center rounded-lg transition-all duration-200 ease-out ${
+                  selectedFilter === 'spam' 
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 shadow-sm px-3 py-2 space-x-2' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 p-2 hover:px-3 group-hover:shadow-sm'
+                }`}
+                title={t('chats:filters.spam')}
+              >
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                {selectedFilter === 'spam' ? (
+                  <span className="text-sm font-medium whitespace-nowrap ml-2">
+                    {t('chats:filters.spam')}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium whitespace-nowrap ml-0 group-hover:ml-2 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-200 ease-out">
+                    {t('chats:filters.spam')}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Botão Todos */}
+            <div className="relative group flex-shrink-0">
+              <button
+                onClick={() => handleFilterChange('status', '')}
+                className={`flex items-center rounded-lg transition-all duration-200 ease-out ${
+                  selectedFilter === '' 
+                    ? 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 shadow-sm px-3 py-2 space-x-2' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-600 dark:hover:text-gray-300 p-2 hover:px-3 group-hover:shadow-sm'
+                }`}
+                title={t('common:all')}
+              >
+                <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                {selectedFilter === '' ? (
+                  <span className="text-sm font-medium whitespace-nowrap ml-2">
+                    {t('common:all')}
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium whitespace-nowrap ml-0 group-hover:ml-2 max-w-0 group-hover:max-w-xs overflow-hidden transition-all duration-200 ease-out">
+                    {t('common:all')}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Chat List */}
@@ -1054,6 +1279,7 @@ export default function Chats() {
                 selectedChat={selectedChat}
                 onSelectChat={handleSelectChat}
                 isLoading={loading}
+                selectedFilter={selectedFilter}
                 // onUpdateChat={updateChatInList}
               />
               
