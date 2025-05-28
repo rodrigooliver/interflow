@@ -21,6 +21,7 @@ import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { TeamTransferModal } from './TeamTransferModal';
 import { MergeChatModal } from './MergeChatModal';
 import { TransferChatToCustomerModal } from './TransferChatToCustomerModal';
+import { getChannelIcon } from '../../utils/channel';
 
 interface CustomerTag {
   tag_id: string;
@@ -31,27 +32,18 @@ interface CustomerTag {
   };
 }
 
-interface Stage {
-  id: string;
-  name: string;
-  funnel_id: string;
-  color?: string;
-}
-
 interface ChatItemProps {
   chat: Chat;
   isSelected: boolean;
   onSelectChat: (chatId: string) => void;
   onUpdateChat?: (chatId: string, updates: Partial<Chat>) => void;
-  stages: Record<string, Stage>;
 }
 
 export function ChatItem({ 
   chat, 
   isSelected, 
   onSelectChat, 
-  onUpdateChat,
-  stages 
+  onUpdateChat
 }: ChatItemProps) {
   const { t, i18n } = useTranslation('chats');
   const [showDetails, setShowDetails] = useState(false);
@@ -284,6 +276,68 @@ export function ChatItem({
     return colors[index];
   };
 
+  // Função para obter as iniciais do canal
+  const getChannelInitials = (channelName?: string, channelType?: string) => {
+    // Priorizar o nome do canal para as iniciais
+    if (channelName && channelName.trim()) {
+      const words = channelName.trim().split(/\s+/);
+      if (words.length === 1) {
+        return words[0].substring(0, 4).toUpperCase();
+      }
+      if (words.length === 2) {
+        return (words[0].substring(0, 2) + words[1].substring(0, 2)).toUpperCase();
+      }
+      if (words.length === 3) {
+        return (words[0][0] + words[1][0] + words[2].substring(0, 2)).toUpperCase();
+      }
+      return words.slice(0, 4).map(word => word[0]).join('').toUpperCase();
+    }
+    
+    // Fallback para tipo do canal se não houver nome
+    switch (channelType) {
+      case 'whatsapp_official':
+      case 'whatsapp_wapi':
+      case 'whatsapp_zapi':
+      case 'whatsapp_evo':
+        return 'WHAP';
+      case 'instagram':
+      case 'instagramId':
+        return 'INST';
+      case 'facebook':
+      case 'facebookId':
+        return 'FACE';
+      case 'email':
+        return 'MAIL';
+      case 'telegram':
+        return 'TELE';
+      default:
+        return 'CHAN';
+    }
+  };
+
+  // Função para gerar cor do canal
+  const getChannelColor = (channelType: string) => {
+    switch (channelType) {
+      case 'whatsapp_official':
+      case 'whatsapp_wapi':
+      case 'whatsapp_zapi':
+      case 'whatsapp_evo':
+        return '#25D366';
+      case 'instagram':
+      case 'instagramId':
+        return '#E4405F';
+      case 'facebook':
+      case 'facebookId':
+        return '#1877F2';
+      case 'email':
+        return '#EA4335';
+      case 'telegram':
+        return '#0088CC';
+      default:
+        return '#6B7280';
+    }
+  };
+
   const handleMergeComplete = () => {
     setShowMergeModal(false);
     // Recarregar os dados ou atualizar a UI conforme necessário
@@ -319,7 +373,7 @@ export function ChatItem({
         } ${chat.is_fixed ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}`}
         onClick={() => onSelectChat(chat.id)}
       >
-        <div className="flex items-start space-x-3">
+        <div className="flex items-start flex-row gap-2">
           <div className="flex flex-col items-center">
             <ChatAvatar 
               id={chat.id}
@@ -328,48 +382,29 @@ export function ChatItem({
               channel={chat.channel_id}
             />
             
-            {/* Estágio do funil abaixo do avatar */}
-            {chat.customer?.stage_id && stages[chat.customer.stage_id] ? (
-              <CustomTooltip 
-                content={stages[chat.customer.stage_id].name}
-                color={stages[chat.customer.stage_id].color || '#4B5563'}
-              >
-                <span 
-                  className="mt-3 inline-flex items-center px-1.5 py-0.5 text-xs rounded-full whitespace-nowrap overflow-hidden max-w-[60px] border border-gray-200 dark:border-gray-700 cursor-pointer"
-                  style={{ 
-                    backgroundColor: stages[chat.customer.stage_id].color ? `${stages[chat.customer.stage_id].color}10` : 'transparent',
-                    color: stages[chat.customer.stage_id].color || 'currentColor'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (chat.customer) {
-                      setSelectedCustomer(chat.customer);
-                      setShowEditCustomerModal(true);
-                    }
-                  }}
+            {/* Canal abaixo do avatar */}
+            {chat.channel_id && (() => {
+              // Debug temporário
+              console.log('Canal debug:', {
+                channel_id: chat.channel_id,
+                name: chat.channel_id.name,
+                type: chat.channel_id.type,
+                initials: getChannelInitials(chat.channel_id.name, chat.channel_id.type),
+                iconPath: getChannelIcon(chat.channel_id.type || '')
+              });
+              
+              return (
+                <CustomTooltip 
+                  content={`${chat.channel_id.name || chat.channel_id.type || 'Canal'}`}
+                  color={getChannelColor(chat.channel_id.type || '')}
                 >
-                  <span className="truncate">{stages[chat.customer.stage_id].name}</span>
-                </span>
-              </CustomTooltip>
-            ) : (
-              <CustomTooltip 
-                content={t('chats:noFunnelStage')}
-                color="#6B7280"
-              >
-                <span 
-                  className="mt-3 inline-flex items-center px-1.5 py-0.5 text-xs rounded-full whitespace-nowrap overflow-hidden max-w-[60px] border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (chat.customer) {
-                      setSelectedCustomer(chat.customer);
-                      setShowEditCustomerModal(true);
-                    }
-                  }}
-                >
-                  <span className="truncate">{t('chats:noFunnelStage')}</span>
-                </span>
-              </CustomTooltip>
-            )}
+                  <div className="mt-3 flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full  text-gray-500 dark:text-gray-500 whitespace-nowrap overflow-hidden max-w-[80px]">
+
+                    <span className="">{getChannelInitials(chat.channel_id.name, chat.channel_id.type)}</span>
+                  </div>
+                </CustomTooltip>
+              );
+            })()}
           </div>
           
           <div className="flex-1 truncate">
