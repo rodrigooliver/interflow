@@ -27,7 +27,7 @@
     "insertNicknameAtStart": "Insertar nickname al inicio del mensaje",
     "insertNicknameAtEnd": "Insertar nickname al final del mensaje",
     "regards": "Saludos cordiales",
-    "namePlaceholder": "Ingrese el nombre del canal. Ej: Principal",
+    "namePlaceholder": "Ingrese el nombre del canal WhatsApp. Ej: Soporte Principal",
     "email": {
       "server": "Servidor IMAP",
       "port": "Puerto",
@@ -224,7 +224,7 @@
         "rejected": "Rechazada"
       },
       "templateUpdated": "Plantilla actualizada con éxito",
-      "templates": "Plantillas de WhatsApp",
+      "templates": "Templates de WhatsApp",
       "templatesDescription": "Gestione las plantillas de mensajes para su canal de WhatsApp Business",
       "templatesLoadError": "Error al cargar plantillas",
       "testConnection": "Probar Conexión",
@@ -268,7 +268,8 @@
       "sync": "Sincronizar",
       "syncing": "Sincronizando...",
       "syncSuccess": "¡Plantillas sincronizadas con éxito!",
-      "syncError": "Error al sincronizar plantillas"
+      "syncError": "Error al sincronizar plantillas",
+      "nameRequired": "El nombre del canal es obligatorio"
     },
     "instagram": {
       "saveAndContinue": "Guardar y Continuar",

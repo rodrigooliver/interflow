@@ -305,7 +305,7 @@ export function TaskCard({
         onTouchEnd={() => setTimeout(() => setShowCompleteButton(false), 1500)}
       >
         {/* Barra de status na lateral esquerda */}
-        <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+        <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-md ${
           statusInfo.color === 'gray' ? 'bg-gray-500 dark:bg-gray-600' :
           statusInfo.color === 'blue' ? 'bg-blue-500 dark:bg-blue-600' :
           statusInfo.color === 'green' ? 'bg-green-500 dark:bg-green-600' :

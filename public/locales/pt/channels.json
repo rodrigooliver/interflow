@@ -290,7 +290,9 @@
       "sync": "Sincronizar",
       "syncing": "Sincronizando...",
       "syncSuccess": "Templates sincronizados com sucesso!",
-      "syncError": "Erro ao sincronizar templates"
+      "syncError": "Erro ao sincronizar templates",
+      "nameRequired": "O nome do canal é obrigatório",
+      "namePlaceholder": "Digite o nome do canal WhatsApp. Ex: Suporte Principal"
     }
   },
   "newChannel": "Novo Canal",

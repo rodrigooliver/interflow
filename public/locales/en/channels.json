@@ -268,7 +268,9 @@
       "sync": "Sync",
       "syncing": "Syncing...",
       "syncSuccess": "Templates synced successfully!",
-      "syncError": "Error syncing templates"
+      "syncError": "Error syncing templates",
+      "nameRequired": "Channel name is required",
+      "namePlaceholder": "Enter WhatsApp channel name. Ex: Main Support"
     },
     "instagram": {
       "saveAndContinue": "Save and Continue",

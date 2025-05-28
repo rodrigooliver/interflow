@@ -82,6 +82,8 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
   const assigneesDropdownRef = useRef<HTMLDivElement>(null);
   // Ref para controlar se loadChatInfo já foi chamado para este chatId
   const chatInfoLoadedRef = useRef<string | null>(null);
+  // Ref para o input de título
+  const titleInputRef = useRef<HTMLInputElement>(null);
   
   // Novo estado para cliente selecionado e modal
   const [selectedCustomer, setSelectedCustomer] = useState<{id: string; name: string; profile_picture?: string} | null>(null);
@@ -915,6 +917,33 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     }
   };
 
+  // Efeito para dar foco no input de título quando for criar uma nova tarefa
+  useEffect(() => {
+    if (mode === 'create' && !isLoading && titleInputRef.current) {
+      // Pequeno delay para garantir que o modal esteja totalmente renderizado
+      const timer = setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mode, isLoading]);
+
+  // Função para lidar com teclas pressionadas no formulário
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Salvar com Ctrl+Enter ou Cmd+Enter
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      // Criar um evento sintético para o handleSubmit
+      const syntheticEvent = {
+        preventDefault: () => {},
+        target: e.target,
+        currentTarget: e.currentTarget
+      } as React.FormEvent<HTMLFormElement>;
+      handleSubmit(syntheticEvent);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -926,9 +955,11 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                 <div className="w-full">
                   <div className="flex items-center gap-1">
                     <input
+                      ref={titleInputRef}
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onKeyDown={handleKeyDown}
                       placeholder={mode === 'create' ? t('form.titlePlaceholderCreate', 'Escreva aqui o título...') : t('form.titlePlaceholderEdit', 'Título da tarefa...')}
                       className={`w-full text-lg font-medium bg-transparent border rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all ${
                         showValidationErrors && !formData.title.trim() 
@@ -983,7 +1014,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
             <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="p-6 pt-2 space-y-6">
             {showValidationErrors && (
               <div className="text-sm text-red-500 dark:text-red-400 mb-2">
                 <span className="text-red-500">*</span> {t('form.requiredFields')}
@@ -1639,7 +1670,10 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                     {t('form.saving')}
                   </>
                 ) : (
-                  t('form.submit')
+                  <>
+                    {t('form.submit')}
+                    <span className="ml-2 text-xs opacity-75">Ctrl+Enter</span>
+                  </>
                 )}
               </button>
             </div>
