@@ -2977,7 +2977,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                                 </span>
                               )}
                             </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-900"></div>
+                            <div className="absolute -bottom-[0.05rem] -right-[0.05rem] w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-900"></div>
                           </div>
                         </CustomTooltip>
                       )}
@@ -3041,12 +3041,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   )}
                   
                   {/* Mostrar quem está atendendo - apenas se não for o responsável nem colaborador */}
-                  {chat?.status === 'in_progress' && chat?.assigned_agent && !isAssignedAgent && !isCollaborator && (
+                  {/* {chat?.status === 'in_progress' && chat?.assigned_agent && !isAssignedAgent && !isCollaborator && (
                     <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center px-2">
                       <UserCheck className="w-3 h-3 mr-1" />
                       {t('collaborator.attendedBy', { name: chat.assigned_agent.full_name })}
                     </div>
-                  )}
+                  )} */}
                 </>
               )}
             </div>
