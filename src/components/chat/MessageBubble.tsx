@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users, ExternalLink, CheckSquare, Clock, Hourglass, XCircle } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users, CheckSquare, Clock, Hourglass, XCircle, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +68,16 @@ interface WhatsAppList {
   sections: WhatsAppListSection[];
 }
 
+// Adicionar interface para o estado do zoom
+interface ZoomState {
+  scale: number;
+  translateX: number;
+  translateY: number;
+  isDragging: boolean;
+  lastPanPoint: { x: number; y: number } | null;
+  hasDragged: boolean;
+}
+
 interface MessageBubbleProps {
   message: MessageWithTasks
   chatStatus: string;
@@ -107,6 +117,42 @@ export function MessageBubble({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  
+  // Ref para o container da imagem
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Estado para controle de zoom
+  const [zoomState, setZoomState] = useState<ZoomState>({
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+    isDragging: false,
+    lastPanPoint: null,
+    hasDragged: false
+  });
+
+  // Função para controle de zoom com wheel
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoomState(prev => ({
+      ...prev,
+      scale: Math.min(Math.max(prev.scale * delta, 0.5), 5)
+    }));
+  };
+
+  // Adicionar/remover listener de wheel quando modal abre/fecha
+  useEffect(() => {
+    if (imageModalOpen && imageContainerRef.current) {
+      const container = imageContainerRef.current;
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      
+      return () => {
+        container.removeEventListener('wheel', handleWheel);
+      };
+    }
+  }, [imageModalOpen]);
+
   const {
     content,
     created_at,
@@ -370,22 +416,18 @@ export function MessageBubble({
         return t('systemMessages.userJoin', { name: agentName });
       case 'user_closed':
         return t('systemMessages.userClosed', { name: agentName });
-      case 'task':
+      case 'task': {
         // Verificar primeiro pelo objeto tasks na mensagem e depois por task_id no metadata
         let task: TaskObject | null = null;
-        let taskId: string | null = null;
         
         if (message.tasks) {
           // Novo formato com objeto tasks diretamente na mensagem
           task = message.tasks as TaskObject;
-          taskId = task.id || null;
         } else if (metadata?.task) {
           // Formato alternativo com task no metadata
           task = metadata.task as TaskObject;
-          taskId = task.id || null;
         } else if (metadata?.task_id) {
           // Formato antigo com task_id
-          taskId = String(metadata.task_id);
           task = {
             title: metadata.task_title as string || t('systemMessages.taskUnknown', 'tarefa'),
             status: 'pending'
@@ -501,6 +543,7 @@ export function MessageBubble({
             </h3>
           </div>
         );
+      }
       default:
         return content || '';
     }
@@ -534,7 +577,7 @@ export function MessageBubble({
         }
         
         // Caso normal como file=boleto.pdf
-        const [key, value] = param.split('=');
+        const [, value] = param.split('=');
         if (value && value.includes('.')) {
           return decodeURIComponent(value);
         }
@@ -607,6 +650,151 @@ export function MessageBubble({
     return mimeTypes[extension] || defaultType;
   };
 
+  // Funções para controle de zoom
+  const resetZoom = () => {
+    setZoomState({
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+      isDragging: false,
+      lastPanPoint: null,
+      hasDragged: false
+    });
+  };
+
+  const zoomIn = () => {
+    setZoomState(prev => ({
+      ...prev,
+      scale: Math.min(prev.scale * 1.5, 5)
+    }));
+  };
+
+  const zoomOut = () => {
+    setZoomState(prev => ({
+      ...prev,
+      scale: Math.max(prev.scale / 1.5, 0.5)
+    }));
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Só fazer zoom se não houve arraste
+    if (!zoomState.hasDragged) {
+      if (zoomState.scale === 1) {
+        zoomIn();
+      } else {
+        resetZoom();
+      }
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomState.scale > 1) {
+      e.preventDefault();
+      setZoomState(prev => ({
+        ...prev,
+        isDragging: true,
+        lastPanPoint: { x: e.clientX, y: e.clientY },
+        hasDragged: false // Reset flag quando inicia o arraste
+      }));
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (zoomState.isDragging && zoomState.lastPanPoint && zoomState.scale > 1) {
+      e.preventDefault();
+      const deltaX = e.clientX - zoomState.lastPanPoint.x;
+      const deltaY = e.clientY - zoomState.lastPanPoint.y;
+      
+      // Detectar se houve movimento significativo (mais de 5px)
+      const hasMoved = Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5;
+      
+      setZoomState(prev => ({
+        ...prev,
+        translateX: prev.translateX + deltaX,
+        translateY: prev.translateY + deltaY,
+        lastPanPoint: { x: e.clientX, y: e.clientY },
+        hasDragged: prev.hasDragged || hasMoved // Marcar que houve arraste
+      }));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setZoomState(prev => ({
+      ...prev,
+      isDragging: false,
+      lastPanPoint: null
+      // Manter hasDragged para o próximo clique
+    }));
+    
+    // Reset hasDragged após um pequeno delay para permitir o clique
+    setTimeout(() => {
+      setZoomState(prev => ({
+        ...prev,
+        hasDragged: false
+      }));
+    }, 100);
+  };
+
+  // Funções para touch/gestos no mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && zoomState.scale > 1) {
+      const touch = e.touches[0];
+      setZoomState(prev => ({
+        ...prev,
+        isDragging: true,
+        lastPanPoint: { x: touch.clientX, y: touch.clientY },
+        hasDragged: false
+      }));
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && zoomState.isDragging && zoomState.lastPanPoint && zoomState.scale > 1) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - zoomState.lastPanPoint.x;
+      const deltaY = touch.clientY - zoomState.lastPanPoint.y;
+      
+      const hasMoved = Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5;
+      
+      setZoomState(prev => ({
+        ...prev,
+        translateX: prev.translateX + deltaX,
+        translateY: prev.translateY + deltaY,
+        lastPanPoint: { x: touch.clientX, y: touch.clientY },
+        hasDragged: prev.hasDragged || hasMoved
+      }));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setZoomState(prev => ({
+      ...prev,
+      isDragging: false,
+      lastPanPoint: null
+    }));
+    
+    setTimeout(() => {
+      setZoomState(prev => ({
+        ...prev,
+        hasDragged: false
+      }));
+    }, 100);
+  };
+
+  // Reset zoom quando modal abre/fecha
+  const openImageModal = (image: { url: string; name: string }) => {
+    setSelectedImage(image);
+    setImageModalOpen(true);
+    resetZoom();
+  };
+
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+    resetZoom();
+  };
+
   // Função para renderizar anexos
   const renderAttachment = (attachment: { url: string; type: string; name?: string; file_name?: string; mime_type?: string | null }) => {
     // Normalizar campos
@@ -636,10 +824,7 @@ export function MessageBubble({
       return (
         <div className="max-w-full">
           <div 
-            onClick={() => {
-              setSelectedImage({ url: attachment.url, name: betterName });
-              setImageModalOpen(true);
-            }}
+            onClick={() => openImageModal({ url: attachment.url, name: betterName })}
             className="cursor-pointer hover:opacity-90 transition-opacity"
           >
             <img
@@ -959,28 +1144,97 @@ export function MessageBubble({
     <>
       {messageContent}
 
-      {/* Modal de imagem - compartilhado */}
+      {/* Modal de imagem com zoom - atualizado */}
       {imageModalOpen && selectedImage && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 overflow-y-auto"
-          onClick={() => setImageModalOpen(false)}
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 overflow-hidden"
+          onClick={closeImageModal}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh] overflow-auto">
-            <button 
-              className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                setImageModalOpen(false);
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Controles de zoom */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+              <button 
+                className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeImageModal();
+                }}
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <button 
+                className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  zoomIn();
+                }}
+              >
+                <ZoomIn className="w-5 h-5" />
+              </button>
+              <button 
+                className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  zoomOut();
+                }}
+              >
+                <ZoomOut className="w-5 h-5" />
+              </button>
+              <button 
+                className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetZoom();
+                }}
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Indicador de zoom */}
+            {zoomState.scale !== 1 && (
+              <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm z-10">
+                {Math.round(zoomState.scale * 100)}%
+              </div>
+            )}
+
+            {/* Container da imagem */}
+            <div 
+              ref={imageContainerRef}
+              className="relative w-full h-full flex items-center justify-center overflow-hidden"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={{
+                cursor: zoomState.scale > 1 
+                  ? (zoomState.isDragging ? 'grabbing' : 'grab')
+                  : 'zoom-in'
               }}
             >
-              <X className="w-5 h-5" />
-            </button>
-            <img 
-              src={selectedImage.url} 
-              alt={selectedImage.name} 
-              className="max-w-full max-h-[85vh] object-contain"
-            />
-            <div className="text-white text-center mt-2">{selectedImage.name}</div>
+              <img 
+                src={selectedImage.url} 
+                alt={selectedImage.name} 
+                className="max-w-none select-none"
+                style={{
+                  transform: `scale(${zoomState.scale}) translate(${zoomState.translateX / zoomState.scale}px, ${zoomState.translateY / zoomState.scale}px)`,
+                  transition: zoomState.isDragging ? 'none' : 'transform 0.2s ease-out',
+                  maxHeight: zoomState.scale === 1 ? '85vh' : 'none',
+                  maxWidth: zoomState.scale === 1 ? '85vw' : 'none',
+                  objectFit: 'contain'
+                }}
+                onClick={handleImageClick}
+                draggable={false}
+              />
+            </div>
+
+            {/* Nome da imagem */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg text-center max-w-[80%] truncate">
+              {selectedImage.name}
+            </div>
           </div>
         </div>
       )}
@@ -1162,7 +1416,7 @@ export function MessageBubble({
                   : ''
           }
           mode="edit"
-          chatId={typeof message.chat_id === 'object' ? (message.chat_id as any).id : String(message.chat_id)}
+          chatId={typeof message.chat_id === 'object' ? (message.chat_id as { id: string }).id : String(message.chat_id)}
         />
       )}
     </>
