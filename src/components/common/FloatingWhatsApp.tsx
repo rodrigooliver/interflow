@@ -5,7 +5,24 @@ export const FloatingWhatsApp = () => {
   const { t } = useTranslation('landing');
   
   const openWhatsApp = () => {
-    window.open('https://wa.me/551996003991?text=' + encodeURIComponent(t('whatsapp.message')), '_blank');
+    // Buscar o código de referral do localStorage
+    const storedReferral = localStorage.getItem('@interflow:referral');
+    let referralCode = '';
+    
+    if (storedReferral) {
+      try {
+        const referralData = JSON.parse(storedReferral);
+        if (referralData?.code) {
+          referralCode = ` [${referralData.code}]`;
+        }
+      } catch (error) {
+        console.warn('Erro ao parsear referral do localStorage:', error);
+      }
+    }
+    
+    // Incluir o código de referral na mensagem
+    const message = t('whatsapp.message') + referralCode;
+    window.open('https://wa.me/551996003991?text=' + encodeURIComponent(message), '_blank');
   };
   
   return (
