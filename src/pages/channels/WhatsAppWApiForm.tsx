@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff, Settings, Zap, Trash2, ArrowRightLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff, Settings, Zap, Trash2, ArrowRightLeft, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -51,7 +51,8 @@ export default function WhatsAppWApiForm() {
       apiConnectionKey: '',
       apiToken: '',
       webhookUrl: '',
-      qrCode: '',
+      qrCode: '' as string | null,
+      qrCodeBase64: '' as string | null,
       qrExpiresAt: null as string | null
     },
     settings: {
@@ -83,6 +84,14 @@ export default function WhatsAppWApiForm() {
 
   // Adicionar novos estados
   const [showTransferModal, setShowTransferModal] = useState(false);
+
+  // Adicionar novos estados para contagem regressiva
+  const [qrCountdown, setQrCountdown] = useState<number | null>(null);
+  const [qrCountdownInterval, setQrCountdownInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Adicionar estado para migração
+  const [migrating, setMigrating] = useState(false);
+  const [migrationSuccess, setMigrationSuccess] = useState(false);
 
   const validateApiHost = (host: string) => {
     // Remove any protocol and trailing slashes
@@ -128,6 +137,10 @@ export default function WhatsAppWApiForm() {
       if (subscription) {
         subscription.unsubscribe();
       }
+      if (qrCountdownInterval) {
+        clearInterval(qrCountdownInterval);
+        setQrCountdownInterval(null);
+      }
     };
   }, [id, currentOrganizationMember]);
 
@@ -151,11 +164,10 @@ export default function WhatsAppWApiForm() {
         table: 'chat_channels',
         filter: `id=eq.${id}`
       }, (payload) => {
-        console.log('Channel updated:', payload);
         const updatedChannel = payload.new;
         
         // Se recebeu o QR code, reseta o estado de espera
-        if (updatedChannel.credentials?.qrCode) {
+        if (updatedChannel.credentials?.qrCode || updatedChannel.credentials?.qrCodeBase64) {
           setWaitingQrCode(false);
         }
 
@@ -165,6 +177,7 @@ export default function WhatsAppWApiForm() {
           apiToken: updatedChannel.credentials?.apiToken || '',
           webhookUrl: updatedChannel.credentials?.webhookUrl || '',
           qrCode: updatedChannel.credentials?.qrCode || '',
+          qrCodeBase64: updatedChannel.credentials?.qrCodeBase64 || '',
           qrExpiresAt: updatedChannel.credentials?.qrExpiresAt || null
         };
 
@@ -178,7 +191,8 @@ export default function WhatsAppWApiForm() {
               ...prev,
               credentials: {
                 ...updatedCredentials,
-                qrCode: '', // Limpa o QR code quando conectado
+                qrCode: null, // Limpa o QR code quando conectado
+                qrCodeBase64: null,
                 qrExpiresAt: null
               },
               is_connected: true,
@@ -220,6 +234,7 @@ export default function WhatsAppWApiForm() {
           apiToken: '', // Campo sensível - não preencher
           webhookUrl: data.credentials?.webhookUrl || '',
           qrCode: data.credentials?.qrCode || '',
+          qrCodeBase64: data.credentials?.qrCodeBase64 || '',
           qrExpiresAt: data.credentials?.qrExpiresAt || null
         };
 
@@ -231,7 +246,6 @@ export default function WhatsAppWApiForm() {
           status: data.status || 'inactive',
           settings: data.settings
         });
-        console.log(data);
         setShowConnectionSettings(!data.is_tested && !data.settings.isInterflow || false);
       }
     } catch (error) {
@@ -311,10 +325,9 @@ export default function WhatsAppWApiForm() {
     }
   };
 
-  // Função auxiliar para verificar se o QR code expirou
-  const isQrCodeExpired = () => {
-    if (!formData.credentials.qrExpiresAt) return false;
-    return new Date(formData.credentials.qrExpiresAt) < new Date();
+  // Função auxiliar para verificar se existe QR code (texto ou base64)
+  const hasQrCode = () => {
+    return !!(formData.credentials.qrCode || formData.credentials.qrCodeBase64);
   };
 
   // Adicionar as novas funções
@@ -338,7 +351,8 @@ export default function WhatsAppWApiForm() {
         is_connected: false,
         credentials: {
           ...prev.credentials,
-          qrCode: '',
+          qrCode: null,
+          qrCodeBase64: null,
           qrExpiresAt: null
         }
       }));
@@ -376,7 +390,8 @@ export default function WhatsAppWApiForm() {
         is_connected: false,
         credentials: {
           ...prev.credentials,
-          qrCode: '',
+          qrCode: null,
+          qrCodeBase64: null,
           qrExpiresAt: null
         }
       }));
@@ -471,7 +486,7 @@ export default function WhatsAppWApiForm() {
         throw new Error(response.data.error || 'Failed to delete channel');
       }
 
-      handleGoBack();
+      navigate('/app/channels');
     } catch (error: unknown) {
       const apiError = error as ApiError;
       console.error('Error deleting channel:', error);
@@ -553,6 +568,141 @@ export default function WhatsAppWApiForm() {
       setSaving(false);
     }
   }
+
+  // Função para calcular tempo restante em segundos
+  const calculateTimeRemaining = () => {
+    if (!formData.credentials.qrExpiresAt) return null;
+    const expiresAt = new Date(formData.credentials.qrExpiresAt).getTime();
+    const now = new Date().getTime();
+    const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
+    return remaining;
+  };
+
+  // Função para formatar tempo em MM:SS
+  const formatCountdown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Função para limpar QR code expirado
+  const clearExpiredQrCode = async () => {
+    // Limpar estado local primeiro
+    setFormData(prev => ({
+      ...prev,
+      credentials: {
+        ...prev.credentials,
+        qrCode: null,
+        qrCodeBase64: null,
+        qrExpiresAt: null
+      }
+    }));
+    setWaitingQrCode(false);
+
+    // Limpar QR code no banco de dados
+    if (id && currentOrganizationMember) {
+      try {
+        const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}/clear-qr`);
+        
+        if (!response.data.success) {
+          console.error('Erro ao limpar QR code do banco:', response.data.error);
+        }
+      } catch (error) {
+        console.error('Erro na requisição para limpar QR code:', error);
+      }
+    }
+  };
+
+  // useEffect para monitorar contagem regressiva do QR code
+  useEffect(() => {
+    // Limpar interval anterior se existir
+    if (qrCountdownInterval) {
+      clearInterval(qrCountdownInterval);
+      setQrCountdownInterval(null);
+    }
+
+    // Resetar contagem ao receber novo QR code ou mudança na data de expiração
+    setQrCountdown(null);
+
+    // Se tem QR code e data de expiração, iniciar contagem regressiva
+    if (hasQrCode() && formData.credentials.qrExpiresAt) {      
+      const updateCountdown = async () => {
+        const remaining = calculateTimeRemaining();
+        
+        if (remaining === null || remaining <= 0) {
+          // QR code expirou, limpar tudo
+          await clearExpiredQrCode();
+          setQrCountdown(null);
+          if (qrCountdownInterval) {
+            clearInterval(qrCountdownInterval);
+            setQrCountdownInterval(null);
+          }
+        } else {
+          setQrCountdown(remaining);
+        }
+      };
+
+      // Atualizar imediatamente
+      updateCountdown();
+
+      // Configurar interval para atualizar a cada segundo
+      const interval = setInterval(updateCountdown, 1000);
+      setQrCountdownInterval(interval);
+    }
+
+    // Cleanup function
+    return () => {
+      if (qrCountdownInterval) {
+        clearInterval(qrCountdownInterval);
+        setQrCountdownInterval(null);
+      }
+    };
+  }, [formData.credentials.qrCode, formData.credentials.qrCodeBase64, formData.credentials.qrExpiresAt]);
+
+  // Função para migrar para nova versão
+  const handleMigrateToNewVersion = async () => {
+    if (!id || !currentOrganizationMember) return;
+
+    setMigrating(true);
+    setError('');
+    setMigrationSuccess(false);
+
+    try {
+      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}/migrateTo2025_1`);
+      const data = response.data;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Falha ao migrar para nova versão');
+      }
+
+      // Atualizar settings local com a nova versão
+      setFormData(prev => ({
+        ...prev,
+        settings: {
+          ...prev.settings,
+          version: '2025_1'
+        }
+      }));
+
+      setMigrationSuccess(true);
+      
+      // Após migração bem-sucedida, aguardar QR code
+      setWaitingQrCode(true);
+      
+      setTimeout(() => {
+        setMigrationSuccess(false);
+      }, 3000);
+
+      // Recarregar dados do canal
+      await loadChannel();
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      console.error('Erro ao migrar para nova versão:', error);
+      setError(apiError.response?.data?.error || apiError.message || t('common:error') || '');
+    } finally {
+      setMigrating(false);
+    }
+  };
 
   if (!id && connectionType === null) {
     return (
@@ -727,6 +877,15 @@ export default function WhatsAppWApiForm() {
             </div>
           )}
 
+          {/* Aviso de Migração de Versão */}
+          {id && !formData.settings?.version && formData.is_tested && (
+            <div className="ml-4 flex items-center">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-400">
+                {t('form.whatsapp.needsMigration')}
+              </span>
+            </div>
+          )}
+
           {/* Botões de ação */}
           <div className="ml-auto flex items-center space-x-2">
             {id && (
@@ -795,6 +954,13 @@ export default function WhatsAppWApiForm() {
               </div>
             )}
 
+            {migrationSuccess && (
+              <div className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 p-4 rounded-md flex items-center">
+                <CheckCircle2 className="w-5 h-5 mr-2" />
+                {t('form.whatsapp.migration.success')}
+              </div>
+            )}
+
             <ChannelBasicFields 
               channel={{
                 name: formData.name,
@@ -812,28 +978,30 @@ export default function WhatsAppWApiForm() {
             />
 
             {/* Seção de Configurações de Conexão */}
-            {(formData.is_tested || formData.settings.isInterflow) && !showConnectionSettings ? (
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {t('form.whatsapp.connectionSettings')}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {t('form.whatsapp.connectionTested')}
-                    </p>
+            {(formData.is_tested || formData.settings.isInterflow) && !showConnectionSettings ? 
+              !formData.settings.isInterflow ? (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t('form.whatsapp.connectionSettings')}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {t('form.whatsapp.connectionTested')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowConnectionSettings(true)}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    >
+                      {t('form.whatsapp.newConnection')}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowConnectionSettings(true)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                  >
-                    {t('form.whatsapp.newConnection')}
-                  </button>
+                  
                 </div>
-                
-              </div>
-            ) : (
+              ) : null : 
+              (
               <div className="space-y-6 border-t border-gray-200 dark:border-gray-700 pt-6">
                 {showConnectionSettings && (
                   <div className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-md mb-4">
@@ -946,6 +1114,42 @@ export default function WhatsAppWApiForm() {
               </div>
             )}
 
+            {/* Botão de Migração de Versão */}
+            {id && !formData.settings?.version && formData.is_tested && (
+              <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+                <div className="bg-orange-50 dark:bg-orange-900/50 p-4 rounded-md">
+                  <div className="flex">
+                    <AlertTriangle className="h-5 w-5 text-orange-400 mr-2" />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                        {t('form.whatsapp.migration.title')}
+                      </h3>
+                      <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                        {t('form.whatsapp.migration.description')}
+                      </p>
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={handleMigrateToNewVersion}
+                          disabled={migrating}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {migrating ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              {t('form.whatsapp.migration.migrating')}
+                            </>
+                          ) : (
+                            t('form.whatsapp.migration.migrateButton')
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* QR Code Section */}
             {id && (formData.is_tested || formData.settings.isInterflow) && (
               <div>
@@ -1006,7 +1210,7 @@ export default function WhatsAppWApiForm() {
                   </div>
                 ) : (
                   <>
-                    {(!formData.credentials.qrCode || isQrCodeExpired()) && !waitingQrCode && (
+                    {!hasQrCode() && !waitingQrCode && (
                       <button
                         type="button"
                         onClick={generateQrCode}
@@ -1031,27 +1235,63 @@ export default function WhatsAppWApiForm() {
                       </div>
                     )}
 
-                    {formData.credentials.qrCode && !isQrCodeExpired() && !waitingQrCode && (
+                    {hasQrCode() && !waitingQrCode && (
                       <div className="flex flex-col items-center p-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg mt-4">
                         <QrCode className="w-8 h-8 text-gray-400 mb-4" />
                         <div className="bg-white p-4 rounded-lg">
-                          <QRCodeSVG
-                            value={formData.credentials.qrCode}
-                            size={256}
-                            level="L"
-                            includeMargin={true}
-                            style={{ display: 'block' }}
-                          />
+                          {formData.credentials.qrCodeBase64 ? (
+                            <img
+                              src={formData.credentials.qrCodeBase64.startsWith('data:') 
+                                ? formData.credentials.qrCodeBase64 
+                                : `data:image/png;base64,${formData.credentials.qrCodeBase64}`
+                              }
+                              alt="QR Code"
+                              className="w-64 h-64 object-contain"
+                            />
+                          ) : (
+                            <QRCodeSVG
+                              value={formData.credentials.qrCode || ''}
+                              size={256}
+                              level="L"
+                              includeMargin={true}
+                              style={{ display: 'block' }}
+                            />
+                          )}
                         </div>
                         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
                           {t('form.whatsapp.scanQrCode')}
                         </p>
-                        {formData.credentials.qrExpiresAt && (
-                          <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
-                            {t('form.whatsapp.qrExpiresAt', {
-                              time: new Date(formData.credentials.qrExpiresAt).toLocaleTimeString()
-                            })}
-                          </p>
+                        {qrCountdown !== null && (
+                          <div className="mt-3 flex items-center justify-center space-x-2">
+                            <Clock className="w-4 h-4 text-orange-500" />
+                            <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                              Expira em: {formatCountdown(qrCountdown)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Botão de reload para versão 2025_1 */}
+                        {formData.settings?.version === '2025_1' && (
+                          <div className="mt-4">
+                            <button
+                              type="button"
+                              onClick={generateQrCode}
+                              disabled={generatingQr}
+                              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {generatingQr ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  {t('form.whatsapp.generatingQr')}
+                                </>
+                              ) : (
+                                <>
+                                  <QrCode className="w-4 h-4 mr-2" />
+                                  {t('form.whatsapp.reloadQrCode')}
+                                </>
+                              )}
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}

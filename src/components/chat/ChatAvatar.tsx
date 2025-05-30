@@ -3,7 +3,7 @@ import { AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { getChannelIcon } from '../../utils/channel';
-import { getRandomColor } from '../../utils/chat';
+import { getRandomColor } from '../../utils/chat.tsx';
 
 interface ChatAvatarProps {
   id: string;

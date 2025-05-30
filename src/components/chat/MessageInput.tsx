@@ -1727,7 +1727,7 @@ export function MessageInput({
 
   return (
     <div 
-      className="relative w-full p-2 border-t border-gray-200 dark:border-gray-700"
+      className="relative w-full p-2 border-t border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-900"
       ref={dropZoneRef}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
@@ -1819,7 +1819,7 @@ export function MessageInput({
             >
               <Bold className="w-5 h-5" />
               {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
                   {isMac ? '⌘' : 'Ctrl'} B
                 </span>
               )}
@@ -1831,7 +1831,7 @@ export function MessageInput({
             >
               <Italic className="w-5 h-5" />
               {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
                   {isMac ? '⌘' : 'Ctrl'} I
                 </span>
               )}
@@ -1843,7 +1843,7 @@ export function MessageInput({
             >
               <Sparkles className="w-5 h-5" />
               {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
                   {isMac ? '⌘' : 'Ctrl'} J
                 </span>
               )}
@@ -1856,7 +1856,7 @@ export function MessageInput({
             >
               <ListTodo className="w-5 h-5" />
               {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
                   {t('task.shortcut', 'Tarefa')}
                 </span>
               )}
@@ -1873,7 +1873,7 @@ export function MessageInput({
                 title={t('emoji.title')}
               >
                 <Smile className="w-5 h-5" />
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
                   {isMac ? '⌘' : 'Ctrl'} E
                 </span>
               </button>
@@ -2006,7 +2006,7 @@ export function MessageInput({
             </div>
           </div>
         ) : (
-          <div className="input-container flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-3xl p-1 border border-gray-200 dark:border-gray-600">
+          <div className="input-container flex items-center space-x-2 bg-white dark:bg-gray-700 rounded-3xl p-1">
             {/* Botão de anexo (Plus) no lado esquerdo */}
             <div className="relative" ref={attachmentMenuRef}>
               <button

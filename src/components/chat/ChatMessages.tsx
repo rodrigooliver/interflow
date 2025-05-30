@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Message as BaseMessage } from '../../types/database';
+import { Message as BaseMessage, Chat, Profile } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
@@ -13,7 +13,7 @@ import { AddCollaboratorModal } from './AddCollaboratorModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowDown, UserPlus, UserCheck, RefreshCw, Pause, Loader2, History, Image } from 'lucide-react';
+import { ArrowDown, UserPlus, RefreshCw, Pause, Loader2, History, Image } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { FlowModal } from './FlowModal';
@@ -112,35 +112,6 @@ interface ChatMessagesProps {
   onBack?: () => void;
 }
 
-// Definir interface para o objeto chat
-interface Chat {
-  id: string;
-  status: 'pending' | 'in_progress' | 'closed' | 'await_closing';
-  customer?: {
-    id: string;
-    name: string;
-    [key: string]: any;
-  };
-  channel_details?: {
-    id: string;
-    type: string;
-    [key: string]: any;
-  };
-  profile_picture?: string;
-  ticket_number?: string;
-  assigned_to?: string;
-  assigned_agent?: {
-    id: string;
-    full_name: string;
-    avatar_url?: string;
-  };
-  start_time?: string;
-  end_time?: string;
-  closure_type_id?: string;
-  title?: string;
-  last_customer_message_at?: string;
-  [key: string]: any;
-}
 
 // Interface para colaboradores do chat
 interface ChatCollaborator {
@@ -165,6 +136,7 @@ interface ChannelFeatures {
   has24HourWindow: boolean;
   canSendAfter24Hours: boolean;
   canDeleteMessages: boolean;
+  canEditMessages: boolean;
 }
 
 // Interfaces para agrupamento de mensagens
@@ -207,7 +179,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     error_message?: string;
   }
   const [optimisticMessages, setOptimisticMessages] = useState<OptimisticMessage[]>([]);
-  const [chat, setChat] = useState<Chat | null>(null);
+  const [chat, setChat] = useState<Chat | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
@@ -256,7 +228,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     canSendTemplates: false,
     has24HourWindow: false,
     canSendAfter24Hours: false,
-    canDeleteMessages: false
+    canDeleteMessages: false,
+    canEditMessages: false
   });
   const [showFlowModal, setShowFlowModal] = useState(false);
 
@@ -361,7 +334,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         canSendTemplates: false,
         has24HourWindow: false,
         canSendAfter24Hours: false,
-        canDeleteMessages: false
+        canDeleteMessages: false,
+        canEditMessages: false
       });
       return;
     }
@@ -374,7 +348,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendTemplates: true,    // Permite enviar templates
           has24HourWindow: true,     // Tem janela de 24 horas
           canSendAfter24Hours: true, // Pode enviar após 24h (com templates)
-          canDeleteMessages: false   // Não permite excluir mensagens
+          canDeleteMessages: false,   // Não permite excluir mensagens
+          canEditMessages: false
         });
         break;
       case 'whatsapp_wapi':
@@ -386,7 +361,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendTemplates: false,   // Não permite enviar templates
           has24HourWindow: false,    // Não tem janela de 24 horas
           canSendAfter24Hours: true, // Pode enviar a qualquer momento
-          canDeleteMessages: true    // Permite excluir mensagens
+          canDeleteMessages: true,    // Permite excluir mensagens
+          canEditMessages: true
         });
         break;
       case 'instagram':
@@ -397,7 +373,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendTemplates: false,   // Não permite enviar templates
           has24HourWindow: true,     // Tem janela de 24 horas
           canSendAfter24Hours: false, // Não pode enviar após 24h
-          canDeleteMessages: false    // Permite excluir mensagens
+          canDeleteMessages: false,    // Permite excluir mensagens    
+          canEditMessages: false
         });
         break;
       default:
@@ -408,7 +385,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           canSendTemplates: false,
           has24HourWindow: false,
           canSendAfter24Hours: true,
-          canDeleteMessages: false
+          canDeleteMessages: false,
+          canEditMessages: false
         });
     }
   }, []);
@@ -889,10 +867,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
           // Se a mensagem foi deletada, removê-la da lista
           if (updatedMessage.status === 'deleted') {
-            setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
+            // setMessages(prev => prev.filter(msg => msg.id !== updatedMessage.id));
             // Remover da lista de mensagens em exclusão
-            setDeletingMessages(prev => prev.filter(id => id !== updatedMessage.id));
-            return;
+            // setDeletingMessages(prev => prev.filter(id => id !== updatedMessage.id));
+            // return;
           }
           
           // Se a mensagem falhou, não fazemos nada. As mensagens falhas existentes permanecerão na lista.
@@ -1127,7 +1105,24 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           // Se a mensagem existir em qualquer uma das listas, processamos a exclusão
           if (messageExists || optimisticMessageExists || failedMessageExists || isDeletingMessage) {
             // Método forçado: remover qualquer mensagem com ID semelhante
-            const removeMsgWithSimilarId = (msg: any) => {
+            const removeMsgWithSimilarId = (msg: Message) => {
+              if (!msg.id) return true; // Manter mensagens sem ID
+              
+              // Normalizar os IDs para comparação
+              const normalizedDeletedId = deletedMessageId.trim().toLowerCase();
+              const normalizedMsgId = msg.id.toString().trim().toLowerCase();
+              
+              // Verificar se há correspondência (exata ou parcial)
+              const exactMatch = normalizedMsgId === normalizedDeletedId;
+              const msgContainsDeletedId = normalizedMsgId.includes(normalizedDeletedId);
+              const deletedIdContainsMsgId = normalizedDeletedId.includes(normalizedMsgId);
+              
+              // Se houver qualquer tipo de correspondência, remover a mensagem (não incluir no resultado filtrado)
+              // Caso contrário, manter a mensagem
+              return !(exactMatch || msgContainsDeletedId || deletedIdContainsMsgId);
+            };
+            
+            const removeOptimisticMsgWithSimilarId = (msg: OptimisticMessage) => {
               if (!msg.id) return true; // Manter mensagens sem ID
               
               // Normalizar os IDs para comparação
@@ -1148,10 +1143,10 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             setMessages(prev => prev.filter(removeMsgWithSimilarId));
             
             // Também remover das listas de mensagens otimistas e falhas, se existir
-            setOptimisticMessages(prev => prev.filter(removeMsgWithSimilarId));
+            setOptimisticMessages(prev => prev.filter(removeOptimisticMsgWithSimilarId));
             
             setFailedMessages(prev => {
-              const updated = prev.filter(removeMsgWithSimilarId);
+              const updated = prev.filter(removeOptimisticMsgWithSimilarId);
               // Atualizar o localStorage
               saveFailedMessagesToStorage(updated);
               return updated;
@@ -1251,6 +1246,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           response_to:response_message_id(
             id,
             content,
+            type,
             sender_type,
             sender_agent_response:messages_sender_agent_id_fkey(
               id,
@@ -1571,13 +1567,13 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       if (chatError) throw chatError;
       
-      setChat((prev: Chat | null) => prev ? {
+      setChat((prev: Chat | undefined) => prev ? {
         ...prev,
         status: newStatus,
         end_time: new Date().toISOString(),
         closure_type_id: closureTypeId,
         title: title
-      } : null);
+      } : undefined);
       
       setShowResolutionModal(false);
       
@@ -1627,7 +1623,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         .from('chats')
         .update({
           status: 'in_progress',
-          assigned_to: user.data.user.id,
+          assigned_to: user.data.user?.id,
           start_time: new Date().toISOString()
         })
         .eq('id', chatId);
@@ -1635,12 +1631,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       if (chatError) throw chatError;
 
       // Atualiza o estado local
-      setChat((prev: Chat | null) => prev ? {
+      setChat((prev: Chat | undefined) => prev ? {
         ...prev,
         status: 'in_progress',
-        assigned_to: user.data.user.id,
+        assigned_to: user.data.user?.id,
         start_time: new Date().toISOString()
-      } : null);
+      } : undefined);
 
       // Recarrega as mensagens com forceReset=true para ignorar newMessagesCount no offset
       loadMessages(1, false, true);
@@ -1843,6 +1839,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           response_to:response_message_id(
             id,
             content,
+            type,
             sender_type,
             sender_agent_response:messages_sender_agent_id_fkey(
               id,
@@ -1884,6 +1881,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               response_to:response_message_id(
                 id,
                 content,
+                type,
                 sender_type,
                 sender_agent_response:messages_sender_agent_id_fkey(
                   id,
@@ -2036,11 +2034,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 .then(({ data: agentData }) => {
                   if (agentData) {
                     setChat(prevChat => {
-                      if (!prevChat) return null;
+                      if (!prevChat) return undefined;
                       return {
                         ...prevChat,
-                        assigned_to: updatedChat.assigned_to,
-                        assigned_agent: agentData
+                        assigned_to: updatedChat.assigned_to, 
+                        assigned_agent: agentData as Profile
                       };
                     });
                   }
@@ -2048,7 +2046,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             } else {
               // Atualizar apenas o campo assigned_to
               setChat(prevChat => {
-                if (!prevChat) return null;
+                if (!prevChat) return undefined;
                 return {
                   ...prevChat,
                   assigned_to: updatedChat.assigned_to,
@@ -2074,7 +2072,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             
             // Atualizar apenas o campo status
             setChat(prevChat => {
-              if (!prevChat) return null;
+              if (!prevChat) return undefined;
               return {
                 ...prevChat,
                 status: updatedChat.status,
@@ -2099,7 +2097,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             
             // Atualizar apenas o campo flow_session_id
             setChat(prevChat => {
-              if (!prevChat) return null;
+              if (!prevChat) return undefined;
               return {
                 ...prevChat,
                 flow_session_id: updatedChat.flow_session_id
@@ -2109,7 +2107,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
           // Atualizar outros campos importantes sem substituir relacionamentos
           setChat(prevChat => {
-            if (!prevChat) return null;
+            if (!prevChat) return undefined;
             return {
               ...prevChat,
               title: updatedChat.title || prevChat.title,
@@ -2201,7 +2199,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       setChat(prev => prev ? {
         ...prev,
         assigned_to: currentUserId
-      } : null);
+      } : undefined);
       
       // Recarregar o chat para obter informações atualizadas
       loadChat();
@@ -2316,7 +2314,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
     } catch (error: unknown) {
       const apiError = error as AxiosError;
-      const errorMessage = apiError.response?.data?.error || apiError.message || t('errors.deleteMessage');
+      const errorMessage = (apiError.response?.data as { error?: string })?.error || apiError.message || t('errors.deleteMessage');
       toast.error(errorMessage);
       console.error('Error deleting message:', error);
       
@@ -2532,7 +2530,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // console.log(`Reenvio: Incluindo tempId ${tempId} nos metadados da mensagem a ser reenviada`);
       
       // Adicionar o metadata com o tempId para rastreamento
-      let metadata: any = {};
+      let metadata: Record<string, unknown> = {};
       
       // Se a mensagem já tem metadata, preservar e adicionar ou atualizar o tempId
       if (message.metadata) {
@@ -2579,7 +2577,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       );
       
       // Enviar a mensagem
-      const response = await api.post(`/api/${organizationId}/chat/${chatId}/message`, formData);
+      await api.post(`/api/${organizationId}/chat/${chatId}/message`, formData);
       
       // console.log(`Resposta ao reenviar mensagem:`, response.data);
       
@@ -2589,7 +2587,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       
       // console.log(`Mensagem ${message.id} reenviada com sucesso. Esperando confirmação do servidor.`);
     } catch (error) {
-      // console.error(`Erro ao reenviar mensagem ${message.id}:`, error);
+      console.error(`Erro ao reenviar mensagem ${message.id}:`, error);
       
       // Não adicionar à lista de mensagens falhas, apenas manter as que já existem
       // console.log(`Não adicionando mensagem ${message.id} à lista de mensagens falhas após tentativa de reenvio`);
@@ -2697,6 +2695,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           response_to:response_message_id(
             id,
             content,
+            type,
             sender_type,
             sender_agent_response:messages_sender_agent_id_fkey(
               id,
@@ -3384,8 +3383,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                         </span>
                       </div>
                       
-                      <div className="flex flex-col gap-2 w-full">
-                        {dateMessages.map((message) => (
+                      <div className="flex flex-col gap-0.5 w-full">
+                        {dateMessages.map((message: Message) => (
                           <MessageBubble
                             key={message.id}
                             message={message}
@@ -3398,6 +3397,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                             onDeleteMessage={handleDeleteMessage}
                             onRetry={handleRetryMessage}
                             isDeleting={deletingMessages.includes(message.id)}
+                            chat={chat}
                           />
                         ))}
                       </div>
@@ -3428,7 +3428,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                             </span>
                           </div>
                           
-                          <div className="flex flex-col gap-2 w-full">
+                          <div className="flex flex-col gap-0.5 w-full">
                             {msgs.map((message: Message) => (
                               <MessageBubble
                                 key={message.id}
@@ -3442,6 +3442,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                                 onDeleteMessage={chatId === chat?.id ? handleDeleteMessage : undefined}
                                 onRetry={chatId === chat?.id ? handleRetryMessage : undefined}
                                 isDeleting={deletingMessages.includes(message.id)}
+                                chat={chat}
                               />
                             ))}
                           </div>
@@ -3469,7 +3470,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {/* Renderizar mensagens otimistas em seu próprio grupo */}
             {optimisticMessages.length > 0 && (
               <div className="w-full">
-                <div className="flex flex-col gap-2 w-full">
+                <div className="flex flex-col gap-0.5 w-full">
                   {optimisticMessages
                     .filter(msg => {
                       // Filtrar mensagens otimistas que têm conteúdo idêntico a mensagens reais recentes
@@ -3504,6 +3505,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                         onRetry={handleRetryMessage}
                         onDeleteMessage={handleDeleteMessage}
                         isDeleting={deletingMessages.includes(msg.id)}
+                        chat={chat}
                       />
                     ))}
                 </div>
@@ -3513,7 +3515,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {/* Adicionar aqui o bloco para mensagens falhas */}
             {failedMessages.length > 0 && (
               <div className="w-full">
-                <div className="flex flex-col gap-2 w-full">
+                <div className="flex flex-col gap-0.5 w-full">
                   {failedMessages
                     .filter(failedMsg => !optimisticMessages.some(optMsg => optMsg.id === failedMsg.id))
                     .filter(msg => {
@@ -3704,7 +3706,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       {showEditCustomer && chat?.customer && createPortal(
         <CustomerEditModal
-          // @ts-expect-error - Tipo do customer não corresponde exatamente ao esperado
           customer={chat.customer}
           onClose={() => setShowEditCustomer(false)}
           onSuccess={() => {
@@ -3742,13 +3743,13 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             ...prev,
             flow_session_id: sessionId,
             status: 'in_progress'
-          } : null);
+          } : undefined);
         }}
         onFlowPaused={() => {
           setChat(prev => prev ? {
             ...prev,
             flow_session_id: null
-          } : null);
+          } : undefined);
         }}
         currentFlowSessionId={chat?.flow_session_id}
       />
@@ -3768,7 +3769,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             ...prev,
             status: 'pending',
             assigned_to: undefined
-          } : null);
+          } : undefined);
         }}
       />
 

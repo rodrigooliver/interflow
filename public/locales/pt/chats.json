@@ -92,6 +92,7 @@
   },
   "actions": {
     "reply": "Responder",
+    "edit": "Editar",
     "details": "Detalhes",
     "delete": "Excluir mensagem",
     "deleteUnavailable": "Exclusão indisponível",
@@ -194,6 +195,7 @@
     "customerOrChannelNotFound": "Informações do cliente ou canal não encontradas",
     "sending": "Erro ao enviar mensagem",
     "deleteMessage": "Erro ao excluir mensagem",
+    "editMessage": "Erro ao editar mensagem",
     "microphoneAccess": "Não foi possível acessar o microfone. Verifique suas permissões.",
     "uploadFailed": "Falha ao enviar arquivo de áudio",
     "waitingConnection": "Aguardando conexão com o servidor...",
@@ -389,6 +391,15 @@
     "featureDisabled": "Exclusão não permitida neste canal",
     "timeExpired": "Exclusão disponível apenas nas primeiras 48 horas"
   },
+  "editMessage": {
+    "title": "Editar mensagem",
+    "description": "Você pode editar esta mensagem dentro de 15 minutos após o envio.",
+    "content": "Conteúdo",
+    "placeholder": "Digite o novo conteúdo da mensagem...",
+    "cancel": "Cancelar",
+    "save": "Alterar",
+    "saving": "Alterando..."
+  },
   "leaveAttendance": {
     "title": "Sair do Atendimento",
     "description": "Selecione a equipe para transferir o atendimento:",
@@ -420,5 +431,7 @@
     "confirm": "Excluir",
     "success": "Atendimento excluído com sucesso",
     "error": "Erro ao excluir atendimento"
-  }
+  },
+  "reactedWith": "Reagiu com",
+  "in": "em"
 }

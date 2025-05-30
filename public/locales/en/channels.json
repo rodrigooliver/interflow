@@ -152,6 +152,8 @@
       "processingStarted": "Processing started. Wait for status updates.",
       "processingStep": "Processing step: {step}. Wait for status updates.",
       "qrExpiresAt": "The QR code expires at {{time}}",
+      "reloadQrCode": "Generate New QR Code",
+      "generatingQr": "Generating QR Code...",
       "resetConfirmation": "Are you sure you want to reset the connection? This will require a new QR code.",
       "restartConnection": "Restart Connection",
       "restarting": "Restarting...",
@@ -270,7 +272,15 @@
       "syncSuccess": "Templates synced successfully!",
       "syncError": "Error syncing templates",
       "nameRequired": "Channel name is required",
-      "namePlaceholder": "Enter WhatsApp channel name. Ex: Main Support"
+      "namePlaceholder": "Enter WhatsApp channel name. Ex: Main Support",
+      "needsMigration": "Legacy Version",
+      "migration": {
+        "title": "Migration to New Version",
+        "description": "This channel was created with an older version of the API. To access new features and better performance, we recommend migrating to the new version.",
+        "migrateButton": "Migrate to New Version",
+        "migrating": "Migrating...",
+        "success": "Channel successfully migrated to the new version!"
+      }
     },
     "instagram": {
       "saveAndContinue": "Save and Continue",

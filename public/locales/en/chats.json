@@ -4,8 +4,12 @@
   "resolve": "Resolve",
   "attend": "Attend",
   "backToList": "Back to list",
-  "chatClosed": "Conversation closed",
   "startNewChat": "Start new conversation",
+  "history": "Conversation History",
+  "untitledConversation": "Untitled conversation",
+  "noMessages": "No messages",
+  "assignedTo": "Agent",
+  "channel": "Channel",
   "customer": "Customer",
   "you": "You",
   "connected": "Connected",
@@ -47,6 +51,11 @@
     "leaveError": "Error leaving collaboration",
     "leaveAttendanceSuccess": "You left the attendance",
     "leaveAttendanceError": "Error leaving attendance",
+    "addCollaborator": "Add Collaborator",
+    "add": "Add",
+    "searchAgents": "Search agents...",
+    "noCollaborators": "No collaborators",
+    "noAgentsFound": "No agents found",
     "allAgentsAreCollaborators": "All agents are already collaborators",
     "addedSuccessfully": "Collaborator added successfully",
     "addError": "Error adding collaborator",
@@ -83,6 +92,7 @@
   },
   "actions": {
     "reply": "Reply",
+    "edit": "Edit",
     "details": "Details",
     "delete": "Delete message",
     "deleteUnavailable": "Delete unavailable",
@@ -185,6 +195,7 @@
     "customerOrChannelNotFound": "Customer or channel information not found",
     "sending": "Error sending message",
     "deleteMessage": "Error deleting message",
+    "editMessage": "Error editing message",
     "microphoneAccess": "Could not access microphone. Please check your permissions.",
     "uploadFailed": "Failed to upload audio file",
     "waitingConnection": "Waiting for server connection...",
@@ -264,11 +275,10 @@
   "showAllMessages": "Show all messages",
   "showCurrentChat": "Show current chat",
   "unnamed": "Unnamed",
-  "history": "Conversation History",
-  "untitledConversation": "Untitled conversation",
-  "noMessages": "No messages",
-  "assignedTo": "Agent",
-  "channel": "Channel",
+  "leaveSuccess": "You left the collaboration",
+  "leaveError": "Error leaving collaboration",
+  "leaveAttendanceSuccess": "You left the attendance",
+  "leaveAttendanceError": "Error leaving attendance",
   "messageDetails": {
     "title": "Message Details",
     "id": "ID",
@@ -289,6 +299,7 @@
   },
   "chatReassigned": "This conversation has been transferred to another agent",
   "chatAssignedToYou": "This conversation has been transferred to you",
+  "chatClosed": "This conversation has been closed",
   "chatReopened": "This conversation has been reopened",
   "transfer": {
     "title": "Transfer All Conversations",
@@ -380,6 +391,15 @@
     "featureDisabled": "Deletion not allowed in this channel",
     "timeExpired": "Deletion only available within the first 48 hours"
   },
+  "editMessage": {
+    "title": "Edit message",
+    "description": "You can edit this message within 15 minutes after sending.",
+    "content": "Content",
+    "placeholder": "Type the new message content...",
+    "cancel": "Cancel",
+    "save": "Change",
+    "saving": "Changing..."
+  },
   "leaveAttendance": {
     "title": "Leave Attendance",
     "description": "Select the team to transfer the chat to:",
@@ -411,5 +431,7 @@
     "confirm": "Delete",
     "success": "Conversation deleted successfully",
     "error": "Error deleting conversation"
-  }
+  },
+  "reactedWith": "Reacted with",
+  "in": "to"
 }

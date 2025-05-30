@@ -4,10 +4,9 @@ import { Chat, Customer } from '../../types/database';
 import { ChatAvatar } from './ChatAvatar';
 import { MessageStatus } from './MessageStatus';
 import { formatLastMessageTime } from '../../utils/date';
+import { getMessageTypeIcon } from '../../utils/chat';
 import { supabase } from '../../lib/supabase';
-import { MoreVertical, Pin, Archive, Eye, CheckCircle, User, AlertTriangle, Info,
-  Image, Video, Mic, FileText, Sticker, Mail, UserPlus, LogIn, LogOut, 
-  UserCog, XCircle, Users, FileCode, Users2, GitMerge } from 'lucide-react';
+import { MoreVertical, Pin, Archive, Eye, CheckCircle, User, AlertTriangle, Info, GitMerge, Users2, Ban } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +20,6 @@ import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { TeamTransferModal } from './TeamTransferModal';
 import { MergeChatModal } from './MergeChatModal';
 import { TransferChatToCustomerModal } from './TransferChatToCustomerModal';
-import { getChannelIcon } from '../../utils/channel';
 
 interface CustomerTag {
   tag_id: string;
@@ -346,7 +344,7 @@ export function ChatItem({
     }
   };
 
-  const handleTransferCustomerComplete = (newCustomerId: string) => {
+  const handleTransferCustomerComplete = () => {
     setShowTransferCustomerModal(false);
     // Aqui você pode adicionar lógica para atualizar a UI ou recarregar os dados
     if (onUpdateChat && chat.id) {
@@ -534,38 +532,7 @@ export function ChatItem({
                 <div className="flex-1 min-w-0 flex items-center gap-2">
                   {chat.last_message && chat.last_message.type !== 'text' && (
                     <div className="flex-shrink-0 text-gray-400 dark:text-gray-500">
-                      {(() => {
-                        switch (chat.last_message.type) {
-                          case 'image':
-                            return <Image className="w-4 h-4" />;
-                          case 'video':
-                            return <Video className="w-4 h-4" />;
-                          case 'audio':
-                            return <Mic className="w-4 h-4" />;
-                          case 'document':
-                            return <FileText className="w-4 h-4" />;
-                          case 'sticker':
-                            return <Sticker className="w-4 h-4" />;
-                          case 'email':
-                            return <Mail className="w-4 h-4" />;
-                          case 'user_start':
-                            return <UserPlus className="w-4 h-4" />;
-                          case 'user_entered':
-                            return <LogIn className="w-4 h-4" />;
-                          case 'user_left':
-                            return <LogOut className="w-4 h-4" />;
-                          case 'user_transferred':
-                            return <UserCog className="w-4 h-4" />;
-                          case 'user_closed':
-                            return <XCircle className="w-4 h-4" />;
-                          case 'user_join':
-                            return <Users className="w-4 h-4" />;
-                          case 'template':
-                            return <FileCode className="w-4 h-4" />;
-                          default:
-                            return null;
-                        }
-                      })()}
+                      {getMessageTypeIcon(chat.last_message.type)}
                     </div>
                   )}
                   <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
@@ -576,6 +543,32 @@ export function ChatItem({
                       />
                     ) : chat.last_message?.type ? (
                       t(`messageTypes.${chat.last_message?.type}`)
+                    ) : chat.metadata?.last_message && chat.metadata.last_message.type === 'reaction' ? (
+                      <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                        <span className="text-xs flex items-center gap-1">
+                          {t('reactedWith')} {chat.metadata.last_message.reaction}
+                          {chat.metadata.last_message.message_type && (
+                            <>
+                              {' '}{t('in')}{' '}
+                              {chat.metadata.last_message.message_type === 'text' && chat.metadata.last_message.message_content ? (
+                                <span className="italic">"{chat.metadata.last_message.message_content.length > 30 
+                                  ? chat.metadata.last_message.message_content.substring(0, 30) + '...'
+                                  : chat.metadata.last_message.message_content}"</span>
+                              ) : (
+                                <span className="flex items-center gap-1 italic">
+                                  {getMessageTypeIcon(chat.metadata.last_message.message_type, "w-3 h-3")}
+                                  {t(`messageTypes.${chat.metadata.last_message.message_type}`)}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </span>
+                      </span>
+                    ) : chat.metadata?.last_message && chat.metadata.last_message.type === 'deleted' ? (
+                      <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 italic">
+                         <Ban className="w-3 h-3" />
+                         <span>{t('messageStatus.deleted')}</span>
+                      </span>
                     ) : (
                       t('noMessages')
                     )}

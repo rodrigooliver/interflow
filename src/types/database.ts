@@ -28,15 +28,18 @@ export interface Chat {
   end_time?: string;
   last_message?: Message;
   last_message_at?: string;
-  assigned_to?: string;
+  last_message_id?: string;
+  last_customer_message_at?: string;
   external_id?: string;
   title?: string;
-  flow_session_id?: FlowSession;
+  flow_session_id?: string | null;
+  flow_session?: FlowSession; // Não está no banco, mas útil para UI
   rating?: number;
   feedback?: string;
   customer?: Customer;
   channel_details?: ChatChannel;
   team?: ServiceTeam;
+  assigned_to?: string;
   assigned_agent?: Profile;
   collaborators?: ChatCollaborator[];
   wait_time?: string;
@@ -45,6 +48,18 @@ export interface Chat {
   is_fixed?: boolean;
   unread_count?: number;
   is_archived?: boolean;
+  metadata?: {
+    last_message?: {
+      type: 'reaction' | 'deleted';
+      timestamp: string;
+      message_id?: string;
+      reaction?: string;
+      senderName?: string;
+      message_content?: string;
+      message_type?: string;
+    },
+    [key: string]: unknown;
+  };
 }
 
 /**

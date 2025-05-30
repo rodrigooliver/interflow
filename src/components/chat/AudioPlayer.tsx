@@ -114,12 +114,12 @@ export function AudioPlayer({ src, fileName, compact = false }: AudioPlayerProps
   };
 
   return (
-    <div className={`flex items-center ${compact ? 'space-x-1' : 'space-x-2'} w-full max-w-[300px] sm:max-w-[400px]`}>
+    <div className={`flex items-center ${compact ? 'space-x-1' : 'gap-'} w-full max-w-[300px] sm:max-w-[400px]`}>
       <audio ref={audioRef} src={src} />
       
       <button
         onClick={togglePlay}
-        className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors"
+        className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-500 dark:text-white rounded-full transition-colors"
       >
         {isPlaying ? (
           <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -131,7 +131,7 @@ export function AudioPlayer({ src, fileName, compact = false }: AudioPlayerProps
       <div className="flex-1">
         <div className="flex items-center">
           <div
-            className="flex-1 h-1.5 ml-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden"
+            className="flex-1 h-1.5 ml-2 bg-gray-300 dark:bg-gray-800/60 rounded-full cursor-pointer overflow-hidden"
             onClick={handleProgressClick}
           >
             <div

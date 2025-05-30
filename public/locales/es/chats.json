@@ -4,8 +4,12 @@
   "resolve": "Resolver",
   "attend": "Atender",
   "backToList": "Volver a la lista",
-  "chatClosed": "Conversación finalizada",
   "startNewChat": "Iniciar nueva conversación",
+  "history": "Historial de Conversaciones",
+  "untitledConversation": "Conversación sin título",
+  "noMessages": "Sin mensajes",
+  "assignedTo": "Agente",
+  "channel": "Canal",
   "customer": "Cliente",
   "you": "Tú",
   "connected": "Conectado",
@@ -88,6 +92,7 @@
   },
   "actions": {
     "reply": "Responder",
+    "edit": "Editar",
     "details": "Detalles",
     "delete": "Eliminar mensaje",
     "deleteUnavailable": "Eliminación no disponible",
@@ -190,6 +195,7 @@
     "customerOrChannelNotFound": "Información del cliente o canal no encontrada",
     "sending": "Error al enviar mensaje",
     "deleteMessage": "Error al eliminar mensaje",
+    "editMessage": "Error al editar mensaje",
     "microphoneAccess": "Error al acceder al micrófono. Por favor, verifica tus permisos.",
     "uploadFailed": "Error al subir el archivo de audio",
     "waitingConnection": "Esperando conexión con el servidor...",
@@ -293,6 +299,7 @@
   "leaveAttendanceError": "Error al salir de la atención",
   "chatReassigned": "Esta conversación ha sido transferida a otro agente",
   "chatAssignedToYou": "Esta conversación ha sido transferida a ti",
+  "chatClosed": "Esta conversación ha sido cerrada",
   "chatReopened": "Esta conversación ha sido reabierta",
   "transfer": {
     "title": "Transferir Todas las Conversaciones",
@@ -384,6 +391,15 @@
     "featureDisabled": "Eliminación no permitida en este canal",
     "timeExpired": "Eliminación solo disponible durante las primeras 48 horas"
   },
+  "editMessage": {
+    "title": "Editar mensaje",
+    "description": "Puedes editar este mensaje dentro de 15 minutos después del envío.",
+    "content": "Contenido",
+    "placeholder": "Escribe el nuevo contenido del mensaje...",
+    "cancel": "Cancelar",
+    "save": "Cambiar",
+    "saving": "Cambiando..."
+  },
   "leaveAttendance": {
     "title": "Salir de la Atención",
     "description": "Seleccione el equipo para transferir el chat:",
@@ -415,5 +431,7 @@
     "confirm": "Eliminar",
     "success": "Conversación eliminada con éxito",
     "error": "Error al eliminar la conversación"
-  }
+  },
+  "reactedWith": "Reaccionó con",
+  "in": "a"
 }

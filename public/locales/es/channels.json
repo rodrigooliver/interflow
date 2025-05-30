@@ -152,6 +152,8 @@
       "processingStarted": "Procesamiento iniciado. Espere actualizaciones de estado.",
       "processingStep": "Procesando etapa: {step}. Espere actualizaciones de estado.",
       "qrExpiresAt": "El código QR expira a las {{time}}",
+      "reloadQrCode": "Generar Nuevo Código QR",
+      "generatingQr": "Generando Código QR...",
       "resetConfirmation": "¿Está seguro de que desea reiniciar la conexión? Esto requerirá un nuevo código QR.",
       "restartConnection": "Reiniciar Conexión",
       "restarting": "Reiniciando...",
@@ -269,7 +271,15 @@
       "syncing": "Sincronizando...",
       "syncSuccess": "¡Plantillas sincronizadas con éxito!",
       "syncError": "Error al sincronizar plantillas",
-      "nameRequired": "El nombre del canal es obligatorio"
+      "nameRequired": "El nombre del canal es obligatorio",
+      "needsMigration": "Versión Antigua",
+      "migration": {
+        "title": "Migración a Nueva Versión",
+        "description": "Este canal fue creado con una versión anterior de la API. Para acceder a nuevas funcionalidades y mejor rendimiento, recomendamos migrar a la nueva versión.",
+        "migrateButton": "Migrar a Nueva Versión",
+        "migrating": "Migrando...",
+        "success": "¡Canal migrado exitosamente a la nueva versión!"
+      }
     },
     "instagram": {
       "saveAndContinue": "Guardar y Continuar",

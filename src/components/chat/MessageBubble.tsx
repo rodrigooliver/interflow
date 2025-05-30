@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageStatus } from './MessageStatus';
-import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users, CheckSquare, Clock, Hourglass, XCircle, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { FileText, UserPlus, UserMinus, UserCog, CheckCircle, MessageSquare, MoreVertical, Reply, X, Info, ChevronRight, ChevronDown, Trash2, Loader2, RefreshCw, Menu, Ban, Users, CheckSquare, Clock, Hourglass, XCircle, ZoomIn, ZoomOut, RotateCcw, Edit3 } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
-import { Message } from '../../types/database';
+import { Chat, Message } from '../../types/database';
 import { useTranslation } from 'react-i18next';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
+import { getMessageTypeIcon } from '../../utils/chat';
 import './styles.css';
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ import {
 import { Button } from "../../components/ui/Button";
 import { TaskModal } from '../tasks/TaskModal';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { EditMessageModal } from './EditMessageModal';
 
 // Adicionar a propriedade tasks ao tipo Message
 interface MessageWithTasks extends Message {
@@ -48,6 +50,7 @@ interface ChannelFeatures {
   has24HourWindow: boolean;
   canSendAfter24Hours: boolean;
   canDeleteMessages: boolean;
+  canEditMessages: boolean;
 }
 
 // Interfaces para o formato de lista do WhatsApp
@@ -88,6 +91,7 @@ interface MessageBubbleProps {
   isPending?: boolean;
   onRetry?: (message: MessageWithTasks) => void;
   isDeleting?: boolean;
+  chat?: Chat;
 }
 
 export function MessageBubble({ 
@@ -101,12 +105,14 @@ export function MessageBubble({
     canSendTemplates: false,
     has24HourWindow: false,
     canSendAfter24Hours: true,
-    canDeleteMessages: false
+    canDeleteMessages: false,
+    canEditMessages: false
   },
   onDeleteMessage,
   isPending = false,
   onRetry,
-  isDeleting = false
+  isDeleting = false,
+  chat
 }: MessageBubbleProps) {
   const { t } = useTranslation('chats');
   const { currentOrganizationMember } = useAuthContext();
@@ -117,6 +123,7 @@ export function MessageBubble({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   
   // Ref para o container da imagem
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -178,7 +185,7 @@ export function MessageBubble({
     return (
       <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}>
         <div 
-          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-2.5 relative ${
+          className={`p-2 max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-1 relative ${
             isAgent
               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
               : 'bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400'
@@ -186,11 +193,11 @@ export function MessageBubble({
         >
           <div className="flex items-center gap-2">
             <Ban className="w-4 h-4" />
-            <span>{t('messageStatus.deleted')}</span>
+            <span className='text-sm'>{t('messageStatus.deleted')}</span>
           </div>
           <div className={`flex items-center justify-end space-x-1 text-xs mt-1 ${
             isAgent
-              ? 'text-blue-500 dark:text-blue-400'
+              ? 'text-blue-100 dark:text-blue-200'
               : 'text-gray-500 dark:text-gray-400'
           }`}>
             <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -229,7 +236,25 @@ export function MessageBubble({
     
     return diffHours <= 48;
   };
-  
+
+  // Função para verificar se a mensagem pode ser editada (últimos 15 minutos)
+  const canEditMessage = () => {
+    if (!created_at) return false;
+    if (!isAgent) return false;
+    if (type !== 'text') return false;
+    
+    const messageDate = new Date(created_at);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - messageDate.getTime()) / (1000 * 60);
+    
+    return diffMinutes <= 15;
+  };
+
+  // Função para abrir o modal de edição
+  const handleEditClick = () => {
+    setEditModalOpen(true);
+  };
+
   // Verificação combinada para habilitar exclusão
   const isDeletionAllowed = channelFeatures.canDeleteMessages && onDeleteMessage && canDeleteMessage() && isAgent;
   
@@ -253,6 +278,7 @@ export function MessageBubble({
     const date = new Date(dateString);
     return date.toLocaleString();
   };
+
 
   // Função para renderizar o valor do metadata de forma amigável
   const renderMetadataValue = (value: unknown, depth = 0, path = ''): React.ReactNode => {
@@ -822,7 +848,7 @@ export function MessageBubble({
 
     if (betterType.startsWith('image') || betterType.startsWith('image/')) {
       return (
-        <div className="max-w-full">
+        <div className="max-w-full mb-1">
           <div 
             onClick={() => openImageModal({ url: attachment.url, name: betterName })}
             className="cursor-pointer hover:opacity-90 transition-opacity"
@@ -837,28 +863,28 @@ export function MessageBubble({
       );
     }
 
-    if (betterType.startsWith('audio') || betterType.startsWith('audio/')) {
-      return (
-        <div className="w-[300px]">
-          <div className="bg-gray-200 dark:bg-gray-800/50 rounded-full p-2">
-            <AudioPlayer
-              src={attachment.url}
-              fileName={betterName}
-            />
-          </div>
-          {content && (
-            <div className="mt-2">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {t('voice.transcription')}:
-              </span>
-              <div className="mt-1 text-sm">
-                {content}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
+    // if (betterType.startsWith('audio') || betterType.startsWith('audio/')) {
+    //   return (
+    //     <div className="w-[300px]">
+    //       <div className="bg-gray-200 dark:bg-gray-800/50 rounded-full p-2">
+    //         <AudioPlayer
+    //           src={attachment.url}
+    //           fileName={betterName}
+    //         />
+    //       </div>
+    //       {content && (
+    //         <div className="mt-2">
+    //           <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+    //             {t('voice.transcription')}:
+    //           </span>
+    //           <div className="mt-1 text-sm">
+    //             {content}
+    //           </div>
+    //         </div>
+    //       )}
+    //     </div>
+    //   );
+    // }
 
     return (
       <div className="max-w-full">
@@ -885,7 +911,7 @@ export function MessageBubble({
       <div className="flex justify-center my-2 relative group">
         <div className={`flex items-center flex-row gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 text-sm text-gray-600 dark:text-gray-300 ${
           isHighlighted ? 'ring-2 ring-blue-500 dark:ring-blue-400 animate-pulse' : ''
-        } ${isPending ? 'opacity-70' : ''}`}>
+        }`}>
           {renderSystemIcon()}
           <div className='flex-1'>{getSystemMessage()}</div>
           
@@ -895,30 +921,6 @@ export function MessageBubble({
               minute: '2-digit' 
             })}
           </span>
-          {isPending && (
-            <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
-              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-              <span className="font-medium">{t('messageStatus.sending')}</span>
-              {isDeletionAllowed && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteModal(true);
-                  }}
-                  className="ml-2 px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs flex items-center whitespace-nowrap"
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  {t('actions.delete')}
-                </button>
-              )}
-            </div>
-          )}
-          {isDeleting && (
-            <div className="absolute -top-6 right-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-red-300 dark:border-red-700">
-              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-              <span className="font-medium">{t('messageStatus.deleting', 'Excluindo...')}</span>
-            </div>
-          )}
           <div className="absolute right-0 top-0 mr-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -926,22 +928,9 @@ export function MessageBubble({
                   <MoreVertical className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {chatStatus === 'in_progress' && channelFeatures.canReplyToMessages && onReply && (
-                  <DropdownMenuItem onClick={handleReply}>
-                    <Reply className="w-4 h-4 mr-2" />
-                    {t('actions.reply')}
-                  </DropdownMenuItem>
-                )}
-                {isDeletionAllowed && (
-                  <DropdownMenuItem 
-                    onClick={() => setShowDeleteModal(true)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('actions.delete')}
-                  </DropdownMenuItem>
-                )}
+              <DropdownMenuContent 
+                side={isCustomer ? "right" : "left"}
+              >
                 <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
                   <Info className="w-4 h-4 mr-2" />
                   {t('actions.details')}
@@ -952,38 +941,47 @@ export function MessageBubble({
         </div>
       </div>
     );
+  } else if (message.type === 'audio') {
+    messageContent = (
+      <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}>
+        <div className={` min-w-[300px] max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-2 relative ${
+          isAgent
+            ? 'bg-gradient-to-r from-blue-700 to-blue-800 dark:from-blue-800/80 dark:to-blue-900/80 text-white'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+        } ${isPending ? '0.5 opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}>
+          <AudioPlayer src={message?.attachments ? message?.attachments[0]?.url : ''} fileName={message?.attachments ? message?.attachments[0]?.name : ''} />
+          
+          {message.content && (
+            <div className="mt-2">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {t('voice.transcription')}:
+              </span>
+              <div className="mt-1 text-sm">
+                {message.content}
+              </div>
+            </div>
+          )}
+          {/* Exibir horário */}
+          <div className="absolute bottom-0 right-2 text-xs opacity-20">
+            <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        </div>
+      </div>
+    );
   } else {
     messageContent = (
       <div 
         id={`message-${message.id}`}
-        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}  ${hasReactions ? 'mb-3' : ''}`}
+        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}  ${hasReactions ? 'mb-4' : ''}`}
         onDoubleClick={handleReply}
       >
         <div
-          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-2.5 relative ${
+          className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-1 relative ${
             isAgent
-              ? 'bg-blue-600 text-gray-300'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-          } ${isPending ? 'opacity-80 border-2 border-dashed border-yellow-300 dark:border-yellow-500 animate-pulse' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}
+              ? 'bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-700/80 dark:to-blue-900/60 text-gray-300 dark:text-gray-300'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+          } ${isPending ? 'mt-0.5 opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}
         >
-          {isPending && (
-            <div className="absolute -top-6 right-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-yellow-300 dark:border-yellow-700">
-              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-              <span className="font-medium">{t('messageStatus.sending')}</span>
-              {isDeletionAllowed && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteModal(true);
-                  }}
-                  className="ml-2 px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs flex items-center whitespace-nowrap"
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  {t('actions.delete')}
-                </button>
-              )}
-            </div>
-          )}
           {isDeleting && (
             <div className="absolute -top-6 right-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-red-300 dark:border-red-700">
               <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
@@ -1002,21 +1000,34 @@ export function MessageBubble({
               }}
               className={`
                 mb-2 text-sm rounded-md p-2 w-full max-w-full text-left
-                hover:opacity-90 transition-opacity cursor-pointer
+                hover:opacity-90 transition-opacity cursor-pointer min-w-[150px]
                 overflow-hidden break-words
                 ${isAgent 
-                  ? 'bg-blue-900/60 text-blue-100' 
-                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                  ? 'bg-blue-900/90 dark:bg-blue-950 text-blue-50 dark:text-blue-100' 
+                  : 'bg-gray-300/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300'
                 }
               `}
             >
               <div className="font-medium flex items-center gap-1">
-                <span className="text-xs px-2 py-0.5 rounded bg-opacity-20 bg-white ">
-                  {message.response_to.sender_type === 'agent' ? t('you') : t('customer')}:
+                <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                  message.response_to.sender_type === 'agent' 
+                    ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300' 
+                    : `bg-blue-400/30 dark:bg-blue-900/60 ${isAgent ? 'text-blue-200 dark:text-blue-300' : 'text-blue-700 dark:text-gray-300'}`
+                }`}>
+                  {message.response_to.sender_type === 'agent' ? t('you') : chat?.customer?.name || t('customer')}:
                 </span>
               </div>
               <div className="mt-1 break-words overflow-hidden line-clamp-2 text-ellipsis max-w-[400px] max-h-[35px] overflow-x-hidden">
-                {message.response_to.content ? <MarkdownRenderer content={message.response_to.content}  /> : message.response_to.content}
+                {message.response_to.content ? (
+                  <MarkdownRenderer content={message.response_to.content} />
+                ) : message.response_to.type ? (
+                  <span className="flex items-center gap-1 italic">
+                    {getMessageTypeIcon(message.response_to.type, "w-3 h-3")}
+                    {t(`messageTypes.${message.response_to.type}`)}
+                  </span>
+                ) : (
+                  message.response_to.content
+                )}
               </div>
             </button>
           )}
@@ -1040,6 +1051,12 @@ export function MessageBubble({
                     {t('actions.reply')}
                   </DropdownMenuItem>
                 )}
+                {canEditMessage() && channelFeatures.canEditMessages && (
+                  <DropdownMenuItem onClick={handleEditClick}>
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    {t('actions.edit')}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
                   <Info className="w-4 h-4 mr-2" />
                   {t('actions.details')}
@@ -1059,7 +1076,7 @@ export function MessageBubble({
 
           <div className="flex flex-col gap-3">
             {attachments?.map((attachment, index) => (
-              <div key={index} className="max-w-full overflow-hidden">
+              <div key={index} className={`max-w-full overflow-hidden ${attachment.type.startsWith('image') ? (content ? '-mb-[12px]' : '-mb-[22px]') : '-mb-2'}`}>
                 {renderAttachment(attachment)}
               </div>
             ))}
@@ -1070,16 +1087,16 @@ export function MessageBubble({
             )}
 
             {/* Existing message content - não exibir quando tiver lista */}
-            {content && !whatsappList && !attachments?.some(attachment => 
-              attachment.type.startsWith('audio') || attachment.type.startsWith('audio/')
-            ) && (
-              <MarkdownRenderer content={content} />
+            {content && !whatsappList && (
+              <div className={`${isAgent ? 'mr-12' : 'mr-[30px]'} -mb-1 px-2 pt-1`}>
+                <MarkdownRenderer content={content} className='text-sm' />
+              </div>
             )}
           </div>
 
-          <div className={`flex items-center justify-end space-x-1 text-xs mt-1 -mb-1.5 -mr-1 ${
+          <div className={`flex items-center justify-end space-x-1 text-xs mt-1 -mb-0.5 ${isAgent ? 'mr-0.5' : 'mr-1'} opacity-40 ${
             isAgent
-              ? 'text-gray-400 dark:text-gray-400'
+              ? 'text-blue-100 dark:text-blue-200'
               : 'text-gray-500 dark:text-gray-400'
           }`}>
             {metadata?.edited === true && (
@@ -1091,6 +1108,7 @@ export function MessageBubble({
                 <MessageStatus 
                   status={status} 
                   errorMessage={error_message}
+                  isPending={isPending}
                 />
                 {status === 'failed' && onRetry && (
                   <div className="flex items-center gap-1">
@@ -1419,6 +1437,16 @@ export function MessageBubble({
           chatId={typeof message.chat_id === 'object' ? (message.chat_id as { id: string }).id : String(message.chat_id)}
         />
       )}
+
+      {/* Modal de edição */}
+      <EditMessageModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        messageId={String(message.id)}
+        chatId={typeof message.chat_id === 'object' ? (message.chat_id as { id: string }).id : String(message.chat_id)}
+        initialContent={content || ''}
+        organizationId={currentOrganizationMember?.organization.id}
+      />
     </>
   );
 }

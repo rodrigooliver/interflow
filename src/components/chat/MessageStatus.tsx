@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Check, CheckCheck, AlertCircle } from 'lucide-react';
+import { Clock, Check, CheckCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
@@ -7,27 +7,31 @@ interface MessageStatusProps {
   status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted';
   errorMessage?: string;
   className?: string;
+  isPending?: boolean;
 }
 
-export function MessageStatus({ status, errorMessage, className = '' }: MessageStatusProps) {
+export function MessageStatus({ status, errorMessage, className = '', isPending = false }: MessageStatusProps) {
   const { t } = useTranslation('chats');
 
   const renderIcon = () => {
+    if(isPending) {
+      return <Loader2 className={`w-4 h-4 text-yellow-300 dark:text-yellow-500 animate-spin ${className}`} />;
+    }
     switch (status) {
       case 'pending'://className="text-gray-500 dark:text-gray-400"
-        return <Clock className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
+        return <Clock className={`w-4 h-4 text-gray-100/600 dark:text-gray-400 ${className}`} />;
       case 'sent':
-        return <Check className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
+        return <Check className={`w-4 h-4 text-gray-100/60 dark:text-gray-400 ${className}`} />;
       case 'delivered':
-        return <CheckCheck className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
+        return <CheckCheck className={`w-4 h-4 text-gray-100/60 dark:text-gray-400 ${className}`} />;
       case 'read':
         return <CheckCheck className={`w-4 h-4 text-blue-400 ${className}`} />;
       case 'failed':
-        return <AlertCircle className={`w-4 h-4 text-red-500 ${className}`} />;
+        return <AlertCircle className={`w-4 h-4 text-red-400 ${className}`} />;
       case 'received':
-        return <Check className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
+        return <Check className={`w-4 h-4 text-gray-100/60 dark:text-gray-400 ${className}`} />;
       case 'deleted':
-        return <AlertCircle className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${className}`} />;
+        return <AlertCircle className={`w-4 h-4 text-gray-100/60 dark:text-gray-400 ${className}`} />;
       default:
         return null;
     }
