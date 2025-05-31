@@ -564,7 +564,7 @@ export function MessageBubble({
               )}
             </div>
             
-            <h3 className={`text-sm font-medium ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+            <h3 className={`text-xs  ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-400'}`}>
               {task.title || t('systemMessages.taskUnknown', 'tarefa')}
             </h3>
           </div>
