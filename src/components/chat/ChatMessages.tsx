@@ -1761,6 +1761,77 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     };
   }, [highlightedMessageId, messages]);
 
+  // Função para detectar se está rodando em iOS WebView
+  const isIOSWebView = () => {
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    const isStandalone = 'standalone' in window.navigator && (window.navigator as { standalone?: boolean }).standalone === true;
+    const isWebView = /(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(userAgent) || 
+                      isStandalone ||
+                      /ReactNativeWebView/.test(userAgent);
+    return isIOS && isWebView;
+  };
+
+  // Função específica para preservar scroll no iOS WebView
+  const preserveScrollForIOSWebView = (container: HTMLDivElement, referenceInfo: { elementId: string; offsetFromTop: number; scrollHeight: number }, currentScrollTop: number) => {
+    // Para iOS WebView, usamos múltiplas tentativas com delays progressivos
+    const attemptScrollRestore = (attempt = 1, maxAttempts = 5) => {
+      const delay = attempt * 100; // 100ms, 200ms, 300ms, etc.
+      
+      setTimeout(() => {
+        if (referenceInfo && container) {
+          const targetElement = document.getElementById(referenceInfo.elementId);
+          
+          if (targetElement) {
+            // Calcular nova posição baseada no elemento de referência
+            const newRect = targetElement.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const newOffset = newRect.top - containerRect.top;
+            
+            // Ajustar o scroll para manter a posição relativa
+            const scrollAdjustment = newOffset - referenceInfo.offsetFromTop;
+            const newScrollTop = container.scrollTop + scrollAdjustment;
+            
+            // Verificar se o scroll foi aplicado corretamente
+            container.scrollTop = newScrollTop;
+            
+            // Em iOS WebView, às vezes precisamos forçar um reflow
+            container.style.overflow = 'hidden';
+            setTimeout(() => {
+              container.style.overflow = 'auto';
+            }, 10);
+            
+            console.log(`iOS WebView: Tentativa ${attempt} - Scroll ajustado para: ${newScrollTop}`);
+          } else {
+            // Fallback: usar diferença de altura
+            const newScrollHeight = container.scrollHeight;
+            const heightDiff = newScrollHeight - referenceInfo.scrollHeight;
+            container.scrollTop = currentScrollTop + heightDiff;
+            
+            console.log(`iOS WebView: Fallback tentativa ${attempt} - Scroll: ${container.scrollTop}`);
+          }
+        }
+        
+        // Se ainda há tentativas restantes e o scroll não parece estar correto, tentar novamente
+        if (attempt < maxAttempts && container && container.scrollTop < 50) {
+          attemptScrollRestore(attempt + 1, maxAttempts);
+        } else {
+          // Limpar estado de preservação após última tentativa
+          scrollPreservationRef.current = {
+            isPreserving: false,
+            targetElementId: null,
+            targetOffset: 0
+          };
+          
+          // Verificar visibilidade da mensagem destacada
+          checkHighlightedMessageVisibility();
+        }
+      }, delay);
+    };
+    
+    attemptScrollRestore();
+  };
+
   // Modificar a função handleScroll para preservar o destaque
   const handleScroll = () => {
     const container = messagesContainerRef.current;
@@ -1811,38 +1882,44 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
         loadMorePromise
           .then(() => {
-            // Usar requestAnimationFrame para garantir que o DOM foi atualizado
-            requestAnimationFrame(() => {
-              if (referenceInfo && container) {
-                const targetElement = document.getElementById(referenceInfo.elementId);
-                
-                if (targetElement) {
-                  // Calcular nova posição baseada no elemento de referência
-                  const newRect = targetElement.getBoundingClientRect();
-                  const containerRect = container.getBoundingClientRect();
-                  const newOffset = newRect.top - containerRect.top;
+            // Detectar se está em iOS WebView e usar estratégia específica
+            if (isIOSWebView() && referenceInfo) {
+              console.log('Detectado iOS WebView, usando estratégia específica');
+              preserveScrollForIOSWebView(container, referenceInfo, currentScrollTop);
+            } else {
+              // Usar requestAnimationFrame para garantir que o DOM foi atualizado (Desktop/Android)
+              requestAnimationFrame(() => {
+                if (referenceInfo && container) {
+                  const targetElement = document.getElementById(referenceInfo.elementId);
                   
-                  // Ajustar o scroll para manter a posição relativa
-                  const scrollAdjustment = newOffset - referenceInfo.offsetFromTop;
-                  container.scrollTop = container.scrollTop + scrollAdjustment;
-                } else {
-                  // Fallback: usar diferença de altura
-                  const newScrollHeight = container.scrollHeight;
-                  const heightDiff = newScrollHeight - referenceInfo.scrollHeight;
-                  container.scrollTop = currentScrollTop + heightDiff;
+                  if (targetElement) {
+                    // Calcular nova posição baseada no elemento de referência
+                    const newRect = targetElement.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    const newOffset = newRect.top - containerRect.top;
+                    
+                    // Ajustar o scroll para manter a posição relativa
+                    const scrollAdjustment = newOffset - referenceInfo.offsetFromTop;
+                    container.scrollTop = container.scrollTop + scrollAdjustment;
+                  } else {
+                    // Fallback: usar diferença de altura
+                    const newScrollHeight = container.scrollHeight;
+                    const heightDiff = newScrollHeight - referenceInfo.scrollHeight;
+                    container.scrollTop = currentScrollTop + heightDiff;
+                  }
                 }
-              }
-              
-              // Limpar estado de preservação
-              scrollPreservationRef.current = {
-                isPreserving: false,
-                targetElementId: null,
-                targetOffset: 0
-              };
-              
-              // Verificar visibilidade da mensagem destacada
-              checkHighlightedMessageVisibility();
-            });
+                
+                // Limpar estado de preservação
+                scrollPreservationRef.current = {
+                  isPreserving: false,
+                  targetElementId: null,
+                  targetOffset: 0
+                };
+                
+                // Verificar visibilidade da mensagem destacada
+                checkHighlightedMessageVisibility();
+              });
+            }
           })
           .catch((error) => {
             console.error('Erro ao carregar mais mensagens:', error);

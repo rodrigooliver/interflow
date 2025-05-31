@@ -1917,6 +1917,87 @@ export function MessageInput({
           </div>
         ) : (
           <div className="flex flex-col">
+            {/* Barra de formatação desktop - acima do input */}
+            {!isMobileDevice() && (
+              <div className="formatting-toolbar flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap">
+                <button
+                  onMouseDown={handleBoldClick}
+                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                  title={t('formatting.bold')}
+                >
+                  <Bold className="w-5 h-5" />
+                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                    {isMac ? '⌘' : 'Ctrl'} B
+                  </span>
+                </button>
+                <button
+                  onMouseDown={handleItalicClick}
+                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                  title={t('formatting.italic')}
+                >
+                  <Italic className="w-5 h-5" />
+                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                    {isMac ? '⌘' : 'Ctrl'} I
+                  </span>
+                </button>
+                <button
+                  onMouseDown={handleAIClick}
+                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                  title={t('ai.improve')}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                    {isMac ? '⌘' : 'Ctrl'} J
+                  </span>
+                </button>
+                {/* Botão para adicionar tarefa */}
+                <button
+                  onMouseDown={handleTaskClick}
+                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                  title={t('task.create', 'Criar tarefa relacionada a este chat')}
+                >
+                  <ListTodo className="w-5 h-5" />
+                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                    {t('task.shortcut', 'Tarefa')}
+                  </span>
+                </button>
+                {/* Botão de emoji - visível apenas em desktop */}
+                <div className="relative ml-auto" ref={emojiPickerRef}>
+                  <button
+                    onClick={toggleEmojiPicker}
+                    className={`p-1 rounded-lg transition-colors ${
+                      showEmojiPicker
+                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                    } flex items-center`}
+                    title={t('emoji.title')}
+                  >
+                    <Smile className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {isMac ? '⌘' : 'Ctrl'} E
+                    </span>
+                  </button>
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
+                      <Picker
+                        data={data}
+                        onEmojiSelect={onEmojiSelect}
+                        locale={i18n.language}
+                        theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                        previewPosition="none"
+                        skinTonePosition="none"
+                        perLine={9}
+                        onMount={handleEmojiPickerMount}
+                        onUnmount={handleEmojiPickerUnmount}
+                        searchPosition="top"
+                        autoFocus={true}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Barra de formatação mobile - dentro do fluxo normal */}
             {isMobileDevice() && (
               <div 
@@ -1957,87 +2038,6 @@ export function MessageInput({
             )}
 
             <div className="input-container flex items-center space-x-2 bg-white dark:bg-gray-700 rounded-3xl p-1">
-              {/* Barra de formatação desktop - visível sempre */}
-              {!isMobileDevice() && (
-                <div className="formatting-toolbar flex items-center space-x-2 mr-2 flex-wrap sm:flex-nowrap">
-                  <button
-                    onMouseDown={handleBoldClick}
-                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-                    title={t('formatting.bold')}
-                  >
-                    <Bold className="w-5 h-5" />
-                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                      {isMac ? '⌘' : 'Ctrl'} B
-                    </span>
-                  </button>
-                  <button
-                    onMouseDown={handleItalicClick}
-                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-                    title={t('formatting.italic')}
-                  >
-                    <Italic className="w-5 h-5" />
-                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                      {isMac ? '⌘' : 'Ctrl'} I
-                    </span>
-                  </button>
-                  <button
-                    onMouseDown={handleAIClick}
-                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-                    title={t('ai.improve')}
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                      {isMac ? '⌘' : 'Ctrl'} J
-                    </span>
-                  </button>
-                  {/* Botão para adicionar tarefa */}
-                  <button
-                    onMouseDown={handleTaskClick}
-                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-                    title={t('task.create', 'Criar tarefa relacionada a este chat')}
-                  >
-                    <ListTodo className="w-5 h-5" />
-                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                      {t('task.shortcut', 'Tarefa')}
-                    </span>
-                  </button>
-                  {/* Botão de emoji - visível apenas em desktop */}
-                  <div className="relative" ref={emojiPickerRef}>
-                    <button
-                      onClick={toggleEmojiPicker}
-                      className={`p-1 rounded-lg transition-colors ${
-                        showEmojiPicker
-                          ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-                      } flex items-center`}
-                      title={t('emoji.title')}
-                    >
-                      <Smile className="w-5 h-5" />
-                      <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                        {isMac ? '⌘' : 'Ctrl'} E
-                      </span>
-                    </button>
-                    {showEmojiPicker && (
-                      <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
-                        <Picker
-                          data={data}
-                          onEmojiSelect={onEmojiSelect}
-                          locale={i18n.language}
-                          theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                          previewPosition="none"
-                          skinTonePosition="none"
-                          perLine={9}
-                          onMount={handleEmojiPickerMount}
-                          onUnmount={handleEmojiPickerUnmount}
-                          searchPosition="top"
-                          autoFocus={true}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* Botão de anexo (Plus) no lado esquerdo */}
               <div className="relative" ref={attachmentMenuRef}>
                 <button
