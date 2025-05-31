@@ -1978,6 +1978,60 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Detectar swipe para a direita no iOS para voltar à lista de chats
+  useEffect(() => {
+    // Só aplicar em dispositivos iOS e em visualização mobile
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS || !isMobileView) return;
+
+    let startX = 0;
+    let startY = 0;
+    let isTracking = false;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      isTracking = true;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isTracking) return;
+
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+
+      // Detectar swipe horizontal para a direita
+      // Deve começar próximo à borda esquerda da tela (primeiros 20px)
+      // e se mover pelo menos 100px para a direita
+      if (startX <= 20 && deltaX > 100 && Math.abs(deltaY) < 50) {
+        // Prevenir o comportamento padrão do navegador
+        e.preventDefault();
+        
+        // Simular o clique no botão de voltar
+        handleBackClick();
+        
+        isTracking = false;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      isTracking = false;
+    };
+
+    // Adicionar os event listeners
+    document.addEventListener('touchstart', handleTouchStart, { passive: false });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isMobileView, onBack, navigate]);
+
   // Função para carregar uma mensagem específica e seu contexto
   const loadSpecificMessage = async (messageId: string) => {
     setIsLoadingSpecificMessage(true);
