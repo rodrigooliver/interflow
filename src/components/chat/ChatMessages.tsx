@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Message as BaseMessage, Chat, Profile } from '../../types/database';
 import { supabase } from '../../lib/supabase';
@@ -229,6 +229,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [showAddCollaboratorModal, setShowAddCollaboratorModal] = useState(false);
   const scrollDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialScrollDoneRef = useRef(false);
+  // Ref para controlar e preservar o estado de scroll durante carregamentos
+  const scrollPreservationRef = useRef<{
+    isPreserving: boolean;
+    targetElementId: string | null;
+    targetOffset: number;
+  }>({ isPreserving: false, targetElementId: null, targetOffset: 0 });
   const [channelFeatures, setChannelFeatures] = useState<ChannelFeatures>({
     canReplyToMessages: true,
     canSendAudio: false,
@@ -1535,6 +1541,57 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
   };
 
+  // Memoizar o agrupamento de mensagens para evitar recálculos desnecessários e piscadas
+  const groupedMessages = useMemo(() => {
+    return groupMessagesByDate(messages);
+  }, [messages, isViewingAllCustomerMessages]);
+
+  // Memoizar mensagens otimistas filtradas para evitar recálculos desnecessários
+  const filteredOptimisticMessages = useMemo(() => {
+    return optimisticMessages.filter(msg => {
+      // Filtrar mensagens otimistas que têm conteúdo idêntico a mensagens reais recentes
+      const contentToCheck = msg.content?.trim() || '';
+      const hasIdenticalRealMessage = messages.some(realMsg => {
+        // Verificar se o conteúdo é idêntico
+        if (realMsg.content?.trim() !== contentToCheck) return false;
+        
+        // Verificar se foi criada nos últimos segundos
+        const msgDate = new Date(realMsg.created_at).getTime();
+        const now = Date.now();
+        const isRecent = (now - msgDate) < 5000; // 5 segundos
+        
+        return isRecent;
+      });
+      
+      // Manter apenas mensagens que NÃO têm correspondente real recente
+      return !hasIdenticalRealMessage;
+    });
+  }, [optimisticMessages, messages]);
+
+  // Memoizar mensagens falhas filtradas para evitar recálculos desnecessários
+  const filteredFailedMessages = useMemo(() => {
+    return failedMessages
+      .filter(failedMsg => !optimisticMessages.some(optMsg => optMsg.id === failedMsg.id))
+      .filter(msg => {
+        // Filtrar mensagens falhas que têm conteúdo idêntico a mensagens reais recentes
+        const contentToCheck = msg.content?.trim() || '';
+        const hasIdenticalRealMessage = messages.some(realMsg => {
+          // Verificar se o conteúdo é idêntico
+          if (realMsg.content?.trim() !== contentToCheck) return false;
+          
+          // Verificar se foi criada nos últimos segundos
+          const msgDate = new Date(realMsg.created_at).getTime();
+          const now = Date.now();
+          const isRecent = (now - msgDate) < 10000; // 10 segundos (um pouco mais que otimistas)
+          
+          return isRecent;
+        });
+        
+        // Manter apenas mensagens que NÃO têm correspondente real recente
+        return !hasIdenticalRealMessage;
+      });
+  }, [failedMessages, optimisticMessages, messages]);
+
   const handleResolveChat = async ({ closureTypeId, title }: { closureTypeId: string; title: string }) => {
     try {
       // Primeiro insere a mensagem de sistema
@@ -1717,67 +1774,92 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       }
       
       scrollDebounceTimerRef.current = setTimeout(() => {
-        // Salva a altura do primeiro elemento antes de carregar mais
-        const oldScrollHeight = container.scrollHeight;
-        const oldScrollTop = container.scrollTop;
+        // Salvar posição de scroll atual e altura do container
+        const currentScrollHeight = container.scrollHeight;
+        const currentScrollTop = container.scrollTop;
         
-        // Identificar a primeira mensagem visível antes de carregar mais
+        // Identificar a primeira mensagem visível como referência
         const firstMessageElement = container.querySelector('[id^="message-"]') as HTMLElement;
-        let firstMessageId = null;
-        let firstMessageDistanceFromTop = 0;
+        let referenceInfo = null;
         
         if (firstMessageElement) {
-          firstMessageId = firstMessageElement.id;
-          // Salvar a distância do elemento ao topo para referência futura
-          firstMessageDistanceFromTop = firstMessageElement.getBoundingClientRect().top - container.getBoundingClientRect().top;
+          const rect = firstMessageElement.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          
+          referenceInfo = {
+            elementId: firstMessageElement.id,
+            offsetFromTop: rect.top - containerRect.top,
+            scrollHeight: currentScrollHeight
+          };
+          
+          // Atualizar a ref de preservação
+          scrollPreservationRef.current = {
+            isPreserving: true,
+            targetElementId: referenceInfo.elementId,
+            targetOffset: referenceInfo.offsetFromTop
+          };
         }
         
         setIsLoadingMore(true);
         const newPage = page + 1;
         setPage(newPage);
         
-        // Decidir qual função de carregamento usar com base no modo de visualização
-        // Importante: ambas as funções devem tratar as mensagens de forma idêntica
+        // Decidir qual função de carregamento usar
         const loadMorePromise = isViewingAllCustomerMessages 
           ? loadAllCustomerMessages(newPage, true)
           : loadMessages(newPage, true);
           
         loadMorePromise
           .then(() => {
-            // Após o conteúdo ser carregado, mantém a posição de referência
-            setTimeout(() => {
-              if (container) {
-                if (firstMessageId && document.getElementById(firstMessageId)) {
-                  // Mantém a mesma distância do topo que o elemento tinha antes
-                  const messageElement = document.getElementById(firstMessageId);
-                  if (messageElement) {
-                    const newTop = messageElement.getBoundingClientRect().top - container.getBoundingClientRect().top;
-                    // Ajusta o scroll para manter a mesma posição relativa
-                    container.scrollTop = oldScrollTop + (newTop - firstMessageDistanceFromTop);
-                  }
-                } else {
-                  // Fallback: usa a diferença de altura como referência
-                  const newScrollHeight = container.scrollHeight;
-                  const scrollDiff = newScrollHeight - oldScrollHeight;
-                  container.scrollTop = oldScrollTop + scrollDiff;
-                }
+            // Usar requestAnimationFrame para garantir que o DOM foi atualizado
+            requestAnimationFrame(() => {
+              if (referenceInfo && container) {
+                const targetElement = document.getElementById(referenceInfo.elementId);
                 
-                // Verificar visibilidade da mensagem destacada após carregar mais mensagens
-                checkHighlightedMessageVisibility();
+                if (targetElement) {
+                  // Calcular nova posição baseada no elemento de referência
+                  const newRect = targetElement.getBoundingClientRect();
+                  const containerRect = container.getBoundingClientRect();
+                  const newOffset = newRect.top - containerRect.top;
+                  
+                  // Ajustar o scroll para manter a posição relativa
+                  const scrollAdjustment = newOffset - referenceInfo.offsetFromTop;
+                  container.scrollTop = container.scrollTop + scrollAdjustment;
+                } else {
+                  // Fallback: usar diferença de altura
+                  const newScrollHeight = container.scrollHeight;
+                  const heightDiff = newScrollHeight - referenceInfo.scrollHeight;
+                  container.scrollTop = currentScrollTop + heightDiff;
+                }
               }
-            }, 0);
+              
+              // Limpar estado de preservação
+              scrollPreservationRef.current = {
+                isPreserving: false,
+                targetElementId: null,
+                targetOffset: 0
+              };
+              
+              // Verificar visibilidade da mensagem destacada
+              checkHighlightedMessageVisibility();
+            });
           })
           .catch((error) => {
             console.error('Erro ao carregar mais mensagens:', error);
-            // Exibir mensagem de erro
             setError(t('errors.loading'));
+            
+            // Limpar estado de preservação em caso de erro
+            scrollPreservationRef.current = {
+              isPreserving: false,
+              targetElementId: null,
+              targetOffset: 0
+            };
           })
           .finally(() => {
-            // Garantir que o estado de carregamento seja limpo mesmo em caso de erro
             setIsLoadingMore(false);
             scrollDebounceTimerRef.current = null;
           });
-      }, 0); // 100ms debounce
+      }, 100); // Aumento ligeiramente o debounce para 100ms
     }
   };
 
@@ -3614,7 +3696,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               <>
                 {!isViewingAllCustomerMessages ? (
                   // Modo de visualização normal - apenas agrupamento por data
-                  Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
+                  Object.entries(groupedMessages).map(([date, dateMessages]) => (
                     <div key={date} className="w-full">
                       <div className="sticky top-0 z-10 flex justify-center mb-4 mt-4">
                         <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
@@ -3644,7 +3726,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   ))
                 ) : (
                   // Modo de visualização de histórico completo - agrupamento por chat e por data
-                  Object.entries(groupMessagesByDate(messages) as Record<string, ChatGroupResult>).map(([chatId, chatData]) => (
+                  Object.entries(groupedMessages as Record<string, ChatGroupResult>).map(([chatId, chatData]) => (
                     <div key={chatId} className="w-full mb-8 border-b border-gray-200 dark:border-gray-700 pb-4 relative">
                       {/* Cabeçalho do chat - sticky no topo */}
                       <div className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-t-lg mb-4 flex justify-between items-center shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -3707,90 +3789,42 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             )}
             
             {/* Renderizar mensagens otimistas em seu próprio grupo */}
-            {optimisticMessages.length > 0 && (
+            {filteredOptimisticMessages.length > 0 && (
               <div className="w-full">
                 <div className="flex flex-col gap-0.5 w-full">
-                  {optimisticMessages
-                    .filter(msg => {
-                      // Filtrar mensagens otimistas que têm conteúdo idêntico a mensagens reais recentes
-                      const contentToCheck = msg.content?.trim() || '';
-                      const hasIdenticalRealMessage = messages.some(realMsg => {
-                        // Verificar se o conteúdo é idêntico
-                        if (realMsg.content?.trim() !== contentToCheck) return false;
-                        
-                        // Verificar se foi criada nos últimos segundos
-                        const msgDate = new Date(realMsg.created_at).getTime();
-                        const now = Date.now();
-                        const isRecent = (now - msgDate) < 5000; // 5 segundos
-                        
-                        if (isRecent) {
-                          // console.log(`Filtrando mensagem otimista ${msg.id} porque já existe mensagem real com conteúdo idêntico (${realMsg.id})`);
-                        }
-                        
-                        return isRecent;
-                      });
-                      
-                      // Manter apenas mensagens que NÃO têm correspondente real recente
-                      // console.log(`Mensagem otimista ${msg.id} será ${!hasIdenticalRealMessage ? 'renderizada' : 'filtrada'}`);
-                      return !hasIdenticalRealMessage;
-                    })
-                    .map(msg => (
-                      <MessageBubble
-                        key={msg.id}
-                        message={msg as unknown as Message}
-                        chatStatus={chat?.status || ''}
-                        isPending={msg.isPending}
-                        channelFeatures={channelFeatures}
-                        onRetry={handleRetryMessage}
-                        onDeleteMessage={handleDeleteMessage}
-                        isDeleting={deletingMessages.includes(msg.id)}
-                        chat={chat}
-                      />
-                    ))}
+                  {filteredOptimisticMessages.map(msg => (
+                    <MessageBubble
+                      key={msg.id}
+                      message={msg as unknown as Message}
+                      chatStatus={chat?.status || ''}
+                      isPending={msg.isPending}
+                      channelFeatures={channelFeatures}
+                      onRetry={handleRetryMessage}
+                      onDeleteMessage={handleDeleteMessage}
+                      isDeleting={deletingMessages.includes(msg.id)}
+                      chat={chat}
+                    />
+                  ))}
                 </div>
               </div>
             )}
 
             {/* Adicionar aqui o bloco para mensagens falhas */}
-            {failedMessages.length > 0 && (
+            {filteredFailedMessages.length > 0 && (
               <div className="w-full">
                 <div className="flex flex-col gap-0.5 w-full">
-                  {failedMessages
-                    .filter(failedMsg => !optimisticMessages.some(optMsg => optMsg.id === failedMsg.id))
-                    .filter(msg => {
-                      // Filtrar mensagens falhas que têm conteúdo idêntico a mensagens reais recentes
-                      const contentToCheck = msg.content?.trim() || '';
-                      const hasIdenticalRealMessage = messages.some(realMsg => {
-                        // Verificar se o conteúdo é idêntico
-                        if (realMsg.content?.trim() !== contentToCheck) return false;
-                        
-                        // Verificar se foi criada nos últimos segundos
-                        const msgDate = new Date(realMsg.created_at).getTime();
-                        const now = Date.now();
-                        const isRecent = (now - msgDate) < 10000; // 10 segundos (um pouco mais que otimistas)
-                        
-                        if (isRecent) {
-                          // console.log(`Filtrando mensagem falha ${msg.id} porque já existe mensagem real com conteúdo idêntico (${realMsg.id})`);
-                        }
-                        
-                        return isRecent;
-                      });
-                      
-                      // Manter apenas mensagens que NÃO têm correspondente real recente
-                      return !hasIdenticalRealMessage;
-                    })
-                    .map(msg => (
-                      <MessageBubble
-                        key={msg.id}
-                        message={msg as unknown as Message}
-                        chatStatus={chat?.status || ''}
-                        isPending={false}
-                        channelFeatures={channelFeatures}
-                        onRetry={handleRetryMessage}
-                        onDeleteMessage={handleDeleteMessage}
-                        isDeleting={deletingMessages.includes(msg.id)}
-                      />
-                    ))}
+                  {filteredFailedMessages.map(msg => (
+                    <MessageBubble
+                      key={msg.id}
+                      message={msg as unknown as Message}
+                      chatStatus={chat?.status || ''}
+                      isPending={false}
+                      channelFeatures={channelFeatures}
+                      onRetry={handleRetryMessage}
+                      onDeleteMessage={handleDeleteMessage}
+                      isDeleting={deletingMessages.includes(msg.id)}
+                    />
+                  ))}
                 </div>
               </div>
             )}
