@@ -13,12 +13,19 @@ import { AddCollaboratorModal } from './AddCollaboratorModal';
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowDown, UserPlus, RefreshCw, Pause, Loader2, History, Image } from 'lucide-react';
+import { ArrowDown, UserPlus, RefreshCw, Pause, Loader2, History, Image, Menu } from 'lucide-react';
 import './styles.css';
 import { useClosureTypes } from '../../hooks/useQueryes';
 import { FlowModal } from './FlowModal';
 import { AxiosError } from 'axios';
 import { LeaveAttendanceModal } from './LeaveAttendanceModal';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger, 
+  DropdownMenuSeparator 
+} from '../ui/DropdownMenu';
 
 // Estendendo a interface Message para incluir a propriedade response_to
 interface Message extends BaseMessage {
@@ -3053,252 +3060,484 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           
           {/* Botões de ação */}
           <div className="flex-shrink-0 justify-self-end flex items-center space-x-1">
-            {/* Botão para visualizar todas as mensagens do cliente */}
-            {chat?.customer?.id && chat?.channel_details?.id && (
-              <button
-                className={`p-2 group ${
-                  isViewingAllCustomerMessages 
-                    ? 'bg-blue-600 hover:bg-blue-700' 
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
-                } ${
-                  isViewingAllCustomerMessages 
-                    ? 'text-white' 
-                    : 'text-gray-700 dark:text-gray-300'
-                } rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (isViewingAllCustomerMessages) {
-                    resetToCurrentChat();
-                  } else {
-                    loadAllCustomerMessages(1, false);
-                  }
-                }}
-                disabled={isLoadingHistory || isLoadingCurrentChat}
-              >
-                {isLoadingHistory || isLoadingCurrentChat ? (
-                  <svg className="animate-spin w-5 h-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <div className="flex items-center">
-                    <History className="w-5 h-5" />
-                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                      {isViewingAllCustomerMessages ? t('viewCurrentChat') : t('viewAllCustomerMessages')}
-                    </span>
-                  </div>
-                )}
-              </button>
-            )}
-
-            {/* Botão de Play para Fluxos */}
-            {(chat?.status === 'pending' || chat?.status === 'in_progress') && (
-              <button
-                className={`p-2 group ${
-                  chat?.flow_session_id 
-                    ? 'bg-yellow-500 hover:bg-yellow-600' 
-                    : 'bg-purple-600 hover:bg-purple-700'
-                } text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden`}
-                onClick={() => setShowFlowModal(true)}
-              >
-                {chat?.flow_session_id ? (
-                  <div className="flex items-center">
-                    <Pause className="w-5 h-5" />
-                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                      {t('flows.pauseFlow')}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <svg 
-                      className="w-5 h-5" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24" 
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" 
-                      />
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                      />
-                    </svg>
-                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                      {t('flows.startFlow')}
-                    </span>
-                  </div>
-                )}
-              </button>
-            )}
-
-            {/* Botões para colaboradores */}
-            {chat?.status === 'in_progress' && isCollaborator && !isAssignedAgent && (
+            {/* Versão Desktop - Botões individuais */}
+            {!isMobileView && (
               <>
-                <button
-                  className="p-2 group bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
-                  onClick={handleTransferToMe}
-                  disabled={isTransferring}
-                >
-                  {isTransferring ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <div className="flex items-center">
-                      <RefreshCw className="w-5 h-5" />
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                        {t('collaborator.transfer')}
-                      </span>
-                    </div>
-                  )}
-                </button>
-                
-                <button
-                  className="p-2 group bg-gray-600 hover:bg-gray-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
-                  onClick={handleLeaveCollaboration}
-                  disabled={isLeavingCollaboration}
-                >
-                  {isLeavingCollaboration ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <div className="flex items-center">
-                      <svg 
-                        className="w-5 h-5" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24" 
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
-                        />
+                {/* Botão para visualizar todas as mensagens do cliente */}
+                {chat?.customer?.id && chat?.channel_details?.id && (
+                  <button
+                    className={`p-2 group ${
+                      isViewingAllCustomerMessages 
+                        ? 'bg-blue-600 hover:bg-blue-700' 
+                        : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
+                    } ${
+                      isViewingAllCustomerMessages 
+                        ? 'text-white' 
+                        : 'text-gray-700 dark:text-gray-300'
+                    } rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (isViewingAllCustomerMessages) {
+                        resetToCurrentChat();
+                      } else {
+                        loadAllCustomerMessages(1, false);
+                      }
+                    }}
+                    disabled={isLoadingHistory || isLoadingCurrentChat}
+                  >
+                    {isLoadingHistory || isLoadingCurrentChat ? (
+                      <svg className="animate-spin w-5 h-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                        {t('collaborator.leave')}
-                      </span>
-                    </div>
-                  )}
-                </button>
-              </>
-            )}
-            
-            {/* Botões para usuários que não são atendentes nem colaboradores */}
-            {chat?.status === 'in_progress' && !isAssignedAgent && !isCollaborator && (
-              <>
-                <button
-                  className="p-2 group bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
-                  onClick={handleBecomeCollaborator}
-                  disabled={isAddingCollaborator}
-                >
-                  {isAddingCollaborator ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <div className="flex items-center">
-                      <UserPlus className="w-5 h-5" />
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                        {t('collaborator.join')}
-                      </span>
-                    </div>
-                  )}
-                </button>
-                
-                <button
-                  className="p-2 group bg-green-600 hover:bg-green-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
-                  onClick={handleTransferToMe}
-                  disabled={isTransferring}
-                >
-                  {isTransferring ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <div className="flex items-center">
-                      <RefreshCw className="w-5 h-5" />
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                        {t('collaborator.transfer')}
-                      </span>
-                    </div>
-                  )}
-                </button>
-              </>
-            )}
-            
-            {/* Botão de resolver (apenas para o atendente designado) */}
-            {chat?.status === 'in_progress' && isAssignedAgent && (
-              <>
-                <button
-                  className="p-2 group bg-gray-600 hover:bg-gray-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
-                  onClick={handleLeaveChat}
-                  disabled={showLeaveModal}
-                >
-                  {showLeaveModal ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <div className="flex items-center">
-                      <svg 
-                        className="w-5 h-5" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24" 
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
-                        />
-                      </svg>
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                        {t('collaborator.leaveAttendance')}
-                      </span>
-                    </div>
-                  )}
-                </button>
+                    ) : (
+                      <div className="flex items-center">
+                        <History className="w-5 h-5" />
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                          {isViewingAllCustomerMessages ? t('viewCurrentChat') : t('viewAllCustomerMessages')}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                )}
 
-                <button
-                  className="p-2 group bg-green-600 hover:bg-green-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
-                  onClick={() => setShowResolutionModal(true)}
-                >
-                  <div className="flex items-center">
-                    <svg 
-                      className="w-5 h-5" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24" 
-                      xmlns="http://www.w3.org/2000/svg"
+                {/* Botão de Play para Fluxos */}
+                {(chat?.status === 'pending' || chat?.status === 'in_progress') && (
+                  <button
+                    className={`p-2 group ${
+                      chat?.flow_session_id 
+                        ? 'bg-yellow-500 hover:bg-yellow-600' 
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    } text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden`}
+                    onClick={() => setShowFlowModal(true)}
+                  >
+                    {chat?.flow_session_id ? (
+                      <div className="flex items-center">
+                        <Pause className="w-5 h-5" />
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                          {t('flows.pauseFlow')}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <svg 
+                          className="w-5 h-5" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24" 
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" 
+                          />
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                          />
+                        </svg>
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                          {t('flows.startFlow')}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                )}
+
+                {/* Botões para colaboradores */}
+                {chat?.status === 'in_progress' && isCollaborator && !isAssignedAgent && (
+                  <>
+                    <button
+                      className="p-2 group bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
+                      onClick={handleTransferToMe}
+                      disabled={isTransferring}
                     >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M5 13l4 4L19 7" 
-                      />
-                    </svg>
-                    <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
-                      {t('resolve')}
-                    </span>
-                  </div>
-                </button>
+                      {isTransferring ? (
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <div className="flex items-center">
+                          <RefreshCw className="w-5 h-5" />
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                            {t('collaborator.transfer')}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                    
+                    <button
+                      className="p-2 group bg-gray-600 hover:bg-gray-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
+                      onClick={handleLeaveCollaboration}
+                      disabled={isLeavingCollaboration}
+                    >
+                      {isLeavingCollaboration ? (
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <div className="flex items-center">
+                          <svg 
+                            className="w-5 h-5" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+                            />
+                          </svg>
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                            {t('collaborator.leave')}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  </>
+                )}
+                
+                {/* Botões para usuários que não são atendentes nem colaboradores */}
+                {chat?.status === 'in_progress' && !isAssignedAgent && !isCollaborator && (
+                  <>
+                    <button
+                      className="p-2 group bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
+                      onClick={handleBecomeCollaborator}
+                      disabled={isAddingCollaborator}
+                    >
+                      {isAddingCollaborator ? (
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <div className="flex items-center">
+                          <UserPlus className="w-5 h-5" />
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                            {t('collaborator.join')}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                    
+                    <button
+                      className="p-2 group bg-green-600 hover:bg-green-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
+                      onClick={handleTransferToMe}
+                      disabled={isTransferring}
+                    >
+                      {isTransferring ? (
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <div className="flex items-center">
+                          <RefreshCw className="w-5 h-5" />
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                            {t('collaborator.transfer')}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  </>
+                )}
+                
+                {/* Botão de resolver (apenas para o atendente designado) */}
+                {chat?.status === 'in_progress' && isAssignedAgent && (
+                  <>
+                    <button
+                      className="p-2 group bg-gray-600 hover:bg-gray-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
+                      onClick={handleLeaveChat}
+                      disabled={showLeaveModal}
+                    >
+                      {showLeaveModal ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <div className="flex items-center">
+                          <svg 
+                            className="w-5 h-5" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+                            />
+                          </svg>
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                            {t('collaborator.leaveAttendance')}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+
+                    <button
+                      className="p-2 group bg-green-600 hover:bg-green-700 text-white rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:pr-4 overflow-hidden"
+                      onClick={() => setShowResolutionModal(true)}
+                    >
+                      <div className="flex items-center">
+                        <svg 
+                          className="w-5 h-5" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24" 
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M5 13l4 4L19 7" 
+                          />
+                        </svg>
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-200 ease-in-out">
+                          {t('resolve')}
+                        </span>
+                      </div>
+                    </button>
+                  </>
+                )}
               </>
+            )}
+
+            {/* Versão Mobile - Menu Dropdown */}
+            {isMobileView && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full transition-colors">
+                    <Menu className="w-5 h-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {/* Botão para visualizar todas as mensagens do cliente */}
+                  {chat?.customer?.id && chat?.channel_details?.id && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (isViewingAllCustomerMessages) {
+                          resetToCurrentChat();
+                        } else {
+                          loadAllCustomerMessages(1, false);
+                        }
+                      }}
+                      disabled={isLoadingHistory || isLoadingCurrentChat}
+                      className={`flex items-center space-x-2 ${
+                        isViewingAllCustomerMessages 
+                          ? 'text-blue-600 dark:text-blue-400' 
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {isLoadingHistory || isLoadingCurrentChat ? (
+                        <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <History className="w-4 h-4" />
+                      )}
+                      <span>{isViewingAllCustomerMessages ? t('viewCurrentChat') : t('viewAllCustomerMessages')}</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Botão de Fluxos */}
+                  {(chat?.status === 'pending' || chat?.status === 'in_progress') && (
+                    <DropdownMenuItem
+                      onClick={() => setShowFlowModal(true)}
+                      className={`flex items-center space-x-2 ${
+                        chat?.flow_session_id 
+                          ? 'text-yellow-600 dark:text-yellow-400' 
+                          : 'text-purple-600 dark:text-purple-400'
+                      }`}
+                    >
+                      {chat?.flow_session_id ? (
+                        <>
+                          <Pause className="w-4 h-4" />
+                          <span>{t('flows.pauseFlow')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg 
+                            className="w-4 h-4" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" 
+                            />
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                            />
+                          </svg>
+                          <span>{t('flows.startFlow')}</span>
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Menu para colaboradores */}
+                  {chat?.status === 'in_progress' && isCollaborator && !isAssignedAgent && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleTransferToMe}
+                        disabled={isTransferring}
+                        className="flex items-center space-x-2 text-blue-600 dark:text-blue-400"
+                      >
+                        {isTransferring ? (
+                          <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                        <span>{t('collaborator.transfer')}</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem
+                        onClick={handleLeaveCollaboration}
+                        disabled={isLeavingCollaboration}
+                        className="flex items-center space-x-2 text-gray-600 dark:text-gray-400"
+                      >
+                        {isLeavingCollaboration ? (
+                          <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg 
+                            className="w-4 h-4" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" 
+                            />
+                          </svg>
+                        )}
+                        <span>{t('collaborator.leave')}</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  {/* Menu para usuários que não são atendentes nem colaboradores */}
+                  {chat?.status === 'in_progress' && !isAssignedAgent && !isCollaborator && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleBecomeCollaborator}
+                        disabled={isAddingCollaborator}
+                        className="flex items-center space-x-2 text-blue-600 dark:text-blue-400"
+                      >
+                        {isAddingCollaborator ? (
+                          <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <UserPlus className="w-4 h-4" />
+                        )}
+                        <span>{t('collaborator.join')}</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem
+                        onClick={handleTransferToMe}
+                        disabled={isTransferring}
+                        className="flex items-center space-x-2 text-green-600 dark:text-green-400"
+                      >
+                        {isTransferring ? (
+                          <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                        <span>{t('collaborator.transfer')}</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  {/* Menu para atendente designado */}
+                  {chat?.status === 'in_progress' && isAssignedAgent && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleLeaveChat}
+                        disabled={showLeaveModal}
+                        className="flex items-center space-x-2 text-gray-600 dark:text-gray-400"
+                      >
+                        {showLeaveModal ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <svg 
+                            className="w-4 h-4" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" 
+                            />
+                          </svg>
+                        )}
+                        <span>{t('collaborator.leaveAttendance')}</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={() => setShowResolutionModal(true)}
+                        className="flex items-center space-x-2 text-green-600 dark:text-green-400"
+                      >
+                        <svg 
+                          className="w-4 h-4" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24" 
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M5 13l4 4L19 7" 
+                          />
+                        </svg>
+                        <span>{t('resolve')}</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
@@ -3377,7 +3616,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                   // Modo de visualização normal - apenas agrupamento por data
                   Object.entries(groupMessagesByDate(messages)).map(([date, dateMessages]) => (
                     <div key={date} className="w-full">
-                      <div className="sticky top-0 z-10 flex justify-center mb-4">
+                      <div className="sticky top-0 z-10 flex justify-center mb-4 mt-4">
                         <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-400 shadow-sm">
                           {formatMessageDate(dateMessages[0].created_at)}
                         </span>

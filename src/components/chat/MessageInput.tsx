@@ -178,34 +178,39 @@ export function MessageInput({
     const styles = `
       @media (max-width: 768px) {
         .mobile-formatting-toolbar {
-          position: absolute;
-          bottom: 100%;
-          left: 0;
-          right: 0;
-          background-color: var(--bg-color, white);
-          border-radius: 8px 8px 0 0;
-          padding: 8px;
-          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
           z-index: 10;
-          margin-bottom: 8px;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           display: flex;
           justify-content: space-around;
           align-items: center;
-          border: 1px solid var(--border-color, #e5e7eb);
-        }
-        
-        .mobile-formatting-toolbar.hidden {
-          transform: translateY(10px);
+          max-height: 0;
+          overflow: hidden;
           opacity: 0;
-          pointer-events: none;
-          visibility: hidden;
+          padding: 0;
+          margin: 0;
+          background: transparent;
+          box-shadow: none;
+          border: none;
         }
         
         .mobile-formatting-toolbar.visible {
-          transform: translateY(0);
+          max-height: 44px;
           opacity: 1;
-          visibility: visible;
+          margin-bottom: 4px;
+
+          background: transparent;
+          box-shadow: none;
+          border: none;
+        }
+        
+        .mobile-formatting-toolbar.hidden {
+          max-height: 0;
+          opacity: 0;
+          padding: 0;
+          margin: 0;
+          background: transparent;
+          box-shadow: none;
+          border: none;
         }
       }
       
@@ -1803,101 +1808,6 @@ export function MessageInput({
 
       {/* Container para a barra de formatação e o textarea */}
       <div className="relative">
-        {/* Barra de formatação - visível sempre em desktop, e apenas quando em foco em mobile */}
-        {!isRecording && !temporaryAudio && (
-          <div 
-            className={`formatting-toolbar flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap
-              ${isMobileDevice() ? 'mobile-formatting-toolbar' : ''}
-              ${isMobileDevice() && isTextareaFocused ? 'visible' : ''}
-              ${isMobileDevice() && !isTextareaFocused ? 'hidden' : ''}
-            `}
-          >
-            <button
-              onMouseDown={handleBoldClick}
-              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-              title={t('formatting.bold')}
-            >
-              <Bold className="w-5 h-5" />
-              {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                  {isMac ? '⌘' : 'Ctrl'} B
-                </span>
-              )}
-            </button>
-            <button
-              onMouseDown={handleItalicClick}
-              className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-              title={t('formatting.italic')}
-            >
-              <Italic className="w-5 h-5" />
-              {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                  {isMac ? '⌘' : 'Ctrl'} I
-                </span>
-              )}
-            </button>
-            <button
-              onMouseDown={handleAIClick}
-              className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-              title={t('ai.improve')}
-            >
-              <Sparkles className="w-5 h-5" />
-              {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                  {isMac ? '⌘' : 'Ctrl'} J
-                </span>
-              )}
-            </button>
-            {/* Botão para adicionar tarefa */}
-            <button
-              onMouseDown={handleTaskClick}
-              className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-              title={t('task.create', 'Criar tarefa relacionada a este chat')}
-            >
-              <ListTodo className="w-5 h-5" />
-              {!isMobileDevice() && (
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                  {t('task.shortcut', 'Tarefa')}
-                </span>
-              )}
-            </button>
-            {/* Botão de emoji - visível apenas em desktop */}
-            <div className="relative hidden sm:block ml-auto" ref={emojiPickerRef}>
-              <button
-                onClick={toggleEmojiPicker}
-                className={`p-1 rounded-lg transition-colors ${
-                  showEmojiPicker
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-                } flex items-center`}
-                title={t('emoji.title')}
-              >
-                <Smile className="w-5 h-5" />
-                <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                  {isMac ? '⌘' : 'Ctrl'} E
-                </span>
-              </button>
-              {showEmojiPicker && (
-                <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
-                  <Picker
-                    data={data}
-                    onEmojiSelect={onEmojiSelect}
-                    locale={i18n.language}
-                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                    previewPosition="none"
-                    skinTonePosition="none"
-                    perLine={9}
-                    onMount={handleEmojiPickerMount}
-                    onUnmount={handleEmojiPickerUnmount}
-                    searchPosition="top"
-                    autoFocus={true}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Interface de gravação de áudio */}
         {(isRecording || temporaryAudio) ? (
           <div className="recording-container flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full p-1 border border-gray-200 dark:border-gray-600">
@@ -2006,64 +1916,186 @@ export function MessageInput({
             </div>
           </div>
         ) : (
-          <div className="input-container flex items-center space-x-2 bg-white dark:bg-gray-700 rounded-3xl p-1">
-            {/* Botão de anexo (Plus) no lado esquerdo */}
-            <div className="relative" ref={attachmentMenuRef}>
-              <button
-                onMouseDown={handleAttachmentClick}
-                className={`p-2 rounded-full transition-colors ${
-                  showAttachmentMenu
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                    : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400'
-                }`}
-                title={t('attachments.title')}
+          <div className="flex flex-col">
+            {/* Barra de formatação mobile - dentro do fluxo normal */}
+            {isMobileDevice() && (
+              <div 
+                className={`mobile-formatting-toolbar formatting-toolbar flex items-center space-x-1 flex-wrap sm:flex-nowrap
+                  ${isTextareaFocused ? 'visible' : 'hidden'}
+                `}
               >
-                <Plus className="w-5 h-5" />
-              </button>
-              {showAttachmentMenu && (
-                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px] z-50">
+                <button
+                  onMouseDown={handleBoldClick}
+                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                  title={t('formatting.bold')}
+                >
+                  <Bold className="w-5 h-5" />
+                </button>
+                <button
+                  onMouseDown={handleItalicClick}
+                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                  title={t('formatting.italic')}
+                >
+                  <Italic className="w-5 h-5" />
+                </button>
+                <button
+                  onMouseDown={handleAIClick}
+                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                  title={t('ai.improve')}
+                >
+                  <Sparkles className="w-5 h-5" />
+                </button>
+                {/* Botão para adicionar tarefa */}
+                <button
+                  onMouseDown={handleTaskClick}
+                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                  title={t('task.create', 'Criar tarefa relacionada a este chat')}
+                >
+                  <ListTodo className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            <div className="input-container flex items-center space-x-2 bg-white dark:bg-gray-700 rounded-3xl p-1">
+              {/* Barra de formatação desktop - visível sempre */}
+              {!isMobileDevice() && (
+                <div className="formatting-toolbar flex items-center space-x-2 mr-2 flex-wrap sm:flex-nowrap">
                   <button
-                    onClick={() => {
-                      setShowFileUpload('image');
-                      setShowAttachmentMenu(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    onMouseDown={handleBoldClick}
+                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                    title={t('formatting.bold')}
                   >
-                    <Image className="w-4 h-4 mr-2" />
-                    <span>{t('attachments.image')}</span>
+                    <Bold className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {isMac ? '⌘' : 'Ctrl'} B
+                    </span>
                   </button>
                   <button
-                    onClick={() => {
-                      setShowFileUpload('document');
-                      setShowAttachmentMenu(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    onMouseDown={handleItalicClick}
+                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                    title={t('formatting.italic')}
                   >
-                    <FileText className="w-4 h-4 mr-2" />
-                    <span>{t('attachments.document')}</span>
+                    <Italic className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {isMac ? '⌘' : 'Ctrl'} I
+                    </span>
                   </button>
+                  <button
+                    onMouseDown={handleAIClick}
+                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                    title={t('ai.improve')}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {isMac ? '⌘' : 'Ctrl'} J
+                    </span>
+                  </button>
+                  {/* Botão para adicionar tarefa */}
+                  <button
+                    onMouseDown={handleTaskClick}
+                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                    title={t('task.create', 'Criar tarefa relacionada a este chat')}
+                  >
+                    <ListTodo className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {t('task.shortcut', 'Tarefa')}
+                    </span>
+                  </button>
+                  {/* Botão de emoji - visível apenas em desktop */}
+                  <div className="relative" ref={emojiPickerRef}>
+                    <button
+                      onClick={toggleEmojiPicker}
+                      className={`p-1 rounded-lg transition-colors ${
+                        showEmojiPicker
+                          ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                      } flex items-center`}
+                      title={t('emoji.title')}
+                    >
+                      <Smile className="w-5 h-5" />
+                      <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                        {isMac ? '⌘' : 'Ctrl'} E
+                      </span>
+                    </button>
+                    {showEmojiPicker && (
+                      <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
+                        <Picker
+                          data={data}
+                          onEmojiSelect={onEmojiSelect}
+                          locale={i18n.language}
+                          theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                          previewPosition="none"
+                          skinTonePosition="none"
+                          perLine={9}
+                          onMount={handleEmojiPickerMount}
+                          onUnmount={handleEmojiPickerUnmount}
+                          searchPosition="top"
+                          autoFocus={true}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+
+              {/* Botão de anexo (Plus) no lado esquerdo */}
+              <div className="relative" ref={attachmentMenuRef}>
+                <button
+                  onMouseDown={handleAttachmentClick}
+                  className={`p-2 rounded-full transition-colors ${
+                    showAttachmentMenu
+                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                      : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400'
+                  }`}
+                  title={t('attachments.title')}
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+                {showAttachmentMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[160px] z-50">
+                    <button
+                      onClick={() => {
+                        setShowFileUpload('image');
+                        setShowAttachmentMenu(false);
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Image className="w-4 h-4 mr-2" />
+                      <span>{t('attachments.image')}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowFileUpload('document');
+                        setShowAttachmentMenu(false);
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      <span>{t('attachments.document')}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={handleMessageChange}
+                onKeyDown={(e) => {
+                  handleKeyPress(e);
+                  handleKeyDown(e);
+                }}
+                onKeyUp={handleKeyUp}
+                onFocus={handleTextareaFocus}
+                onBlur={handleTextareaBlur}
+                onPaste={handlePaste}
+                placeholder={t('input.placeholder')}
+                className="flex-1 px-0 py-2 bg-transparent border-0 rounded-lg focus:ring-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                style={{ height: '40px', maxHeight: '120px', overflowY: 'auto' }}
+              />
+              
+              {renderSendButton()}
             </div>
-            
-            <textarea
-              ref={textareaRef}
-              value={message}
-              onChange={handleMessageChange}
-              onKeyDown={(e) => {
-                handleKeyPress(e);
-                handleKeyDown(e);
-              }}
-              onKeyUp={handleKeyUp}
-              onFocus={handleTextareaFocus}
-              onBlur={handleTextareaBlur}
-              onPaste={handlePaste}
-              placeholder={t('input.placeholder')}
-              className="flex-1 px-0 py-2 bg-transparent border-0 rounded-lg focus:ring-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
-              style={{ height: '40px', maxHeight: '120px', overflowY: 'auto' }}
-            />
-            
-            {renderSendButton()}
           </div>
         )}
       </div>
