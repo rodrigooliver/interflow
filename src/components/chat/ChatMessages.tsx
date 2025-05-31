@@ -3781,23 +3781,30 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                         </span>
                       </div>
                       
-                      <div className="flex flex-col gap-0.5 w-full">
-                        {dateMessages.map((message: Message) => (
-                          <MessageBubble
-                            key={message.id}
-                            message={message}
-                            chatStatus={chat?.status || ''}
-                            onReply={channelFeatures.canReplyToMessages ? (message) => {
-                              setReplyingTo(message);
-                            } : undefined}
-                            isHighlighted={message.id === highlightedMessageId}
-                            channelFeatures={channelFeatures}
-                            onDeleteMessage={handleDeleteMessage}
-                            onRetry={handleRetryMessage}
-                            isDeleting={deletingMessages.includes(message.id)}
-                            chat={chat}
-                          />
-                        ))}
+                      <div className="flex flex-col w-full">
+                        {dateMessages.map((message: Message, index: number) => {
+                          // Verificar se é a primeira mensagem ou se mudou o tipo de remetente
+                          const previousMessage = index > 0 ? dateMessages[index - 1] : null;
+                          const shouldAddGap = previousMessage && previousMessage.sender_type !== message.sender_type;
+                          
+                          return (
+                            <div key={message.id} className={shouldAddGap ? 'mt-4' : 'mt-0.5'}>
+                              <MessageBubble
+                                message={message}
+                                chatStatus={chat?.status || ''}
+                                onReply={channelFeatures.canReplyToMessages ? (message) => {
+                                  setReplyingTo(message);
+                                } : undefined}
+                                isHighlighted={message.id === highlightedMessageId}
+                                channelFeatures={channelFeatures}
+                                onDeleteMessage={handleDeleteMessage}
+                                onRetry={handleRetryMessage}
+                                isDeleting={deletingMessages.includes(message.id)}
+                                chat={chat}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))
@@ -3826,23 +3833,30 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                             </span>
                           </div>
                           
-                          <div className="flex flex-col gap-0.5 w-full">
-                            {msgs.map((message: Message) => (
-                              <MessageBubble
-                                key={message.id}
-                                message={message}
-                                chatStatus={chatId === chat?.id ? (chat?.status || '') : 'closed'}
-                                onReply={chatId === chat?.id && channelFeatures.canReplyToMessages ? (msg) => {
-                                  setReplyingTo(msg);
-                                } : undefined}
-                                isHighlighted={message.id === highlightedMessageId}
-                                channelFeatures={channelFeatures}
-                                onDeleteMessage={chatId === chat?.id ? handleDeleteMessage : undefined}
-                                onRetry={chatId === chat?.id ? handleRetryMessage : undefined}
-                                isDeleting={deletingMessages.includes(message.id)}
-                                chat={chat}
-                              />
-                            ))}
+                          <div className="flex flex-col w-full">
+                            {msgs.map((message: Message, index: number) => {
+                              // Verificar se é a primeira mensagem ou se mudou o tipo de remetente
+                              const previousMessage = index > 0 ? msgs[index - 1] : null;
+                              const shouldAddGap = previousMessage && previousMessage.sender_type !== message.sender_type;
+                              
+                              return (
+                                <div key={message.id} className={shouldAddGap ? 'mt-4' : 'mt-0.5'}>
+                                  <MessageBubble
+                                    message={message}
+                                    chatStatus={chatId === chat?.id ? (chat?.status || '') : 'closed'}
+                                    onReply={chatId === chat?.id && channelFeatures.canReplyToMessages ? (msg) => {
+                                      setReplyingTo(msg);
+                                    } : undefined}
+                                    isHighlighted={message.id === highlightedMessageId}
+                                    channelFeatures={channelFeatures}
+                                    onDeleteMessage={chatId === chat?.id ? handleDeleteMessage : undefined}
+                                    onRetry={chatId === chat?.id ? handleRetryMessage : undefined}
+                                    isDeleting={deletingMessages.includes(message.id)}
+                                    chat={chat}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
@@ -3868,20 +3882,23 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {/* Renderizar mensagens otimistas em seu próprio grupo */}
             {filteredOptimisticMessages.length > 0 && (
               <div className="w-full">
-                <div className="flex flex-col gap-0.5 w-full">
-                  {filteredOptimisticMessages.map(msg => (
-                    <MessageBubble
-                      key={msg.id}
-                      message={msg as unknown as Message}
-                      chatStatus={chat?.status || ''}
-                      isPending={msg.isPending}
-                      channelFeatures={channelFeatures}
-                      onRetry={handleRetryMessage}
-                      onDeleteMessage={handleDeleteMessage}
-                      isDeleting={deletingMessages.includes(msg.id)}
-                      chat={chat}
-                    />
-                  ))}
+                <div className="flex flex-col w-full">
+                  {filteredOptimisticMessages.map((msg, index) => {
+                    return (
+                      <div key={msg.id} className={index === 0 ? 'mt-4' : 'mt-0.5'}>
+                        <MessageBubble
+                          message={msg as unknown as Message}
+                          chatStatus={chat?.status || ''}
+                          isPending={msg.isPending}
+                          channelFeatures={channelFeatures}
+                          onRetry={handleRetryMessage}
+                          onDeleteMessage={handleDeleteMessage}
+                          isDeleting={deletingMessages.includes(msg.id)}
+                          chat={chat}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -3889,19 +3906,22 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             {/* Adicionar aqui o bloco para mensagens falhas */}
             {filteredFailedMessages.length > 0 && (
               <div className="w-full">
-                <div className="flex flex-col gap-0.5 w-full">
-                  {filteredFailedMessages.map(msg => (
-                    <MessageBubble
-                      key={msg.id}
-                      message={msg as unknown as Message}
-                      chatStatus={chat?.status || ''}
-                      isPending={false}
-                      channelFeatures={channelFeatures}
-                      onRetry={handleRetryMessage}
-                      onDeleteMessage={handleDeleteMessage}
-                      isDeleting={deletingMessages.includes(msg.id)}
-                    />
-                  ))}
+                <div className="flex flex-col w-full">
+                  {filteredFailedMessages.map((msg, index) => {
+                    return (
+                      <div key={msg.id} className={index === 0 ? 'mt-4' : 'mt-0.5'}>
+                        <MessageBubble
+                          message={msg as unknown as Message}
+                          chatStatus={chat?.status || ''}
+                          isPending={false}
+                          channelFeatures={channelFeatures}
+                          onRetry={handleRetryMessage}
+                          onDeleteMessage={handleDeleteMessage}
+                          isDeleting={deletingMessages.includes(msg.id)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
