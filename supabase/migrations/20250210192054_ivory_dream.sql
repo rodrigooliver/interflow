@@ -34,6 +34,10 @@ CREATE TABLE chat_channels (
 -- Enable RLS
 ALTER TABLE chat_channels ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Organization admins can manage chat channels" ON chat_channels;
+DROP POLICY IF EXISTS "Organization members can view chat channels" ON chat_channels;
+
 -- Create policies
 CREATE POLICY "Organization admins can manage chat channels"
   ON chat_channels
@@ -45,6 +49,7 @@ CREATE POLICY "Organization admins can manage chat channels"
       AND organization_members.user_id = auth.uid()
       AND organization_members.role IN ('owner', 'admin')
     )
+    OR user_is_superadmin()
   )
   WITH CHECK (
     EXISTS (
@@ -53,6 +58,7 @@ CREATE POLICY "Organization admins can manage chat channels"
       AND organization_members.user_id = auth.uid()
       AND organization_members.role IN ('owner', 'admin')
     )
+    OR user_is_superadmin()
   );
 
 -- Create policy for agents to view channels
@@ -66,4 +72,5 @@ CREATE POLICY "Organization members can view chat channels"
       WHERE organization_members.organization_id = chat_channels.organization_id
       AND organization_members.user_id = auth.uid()
     )
+    OR user_is_superadmin()
   );

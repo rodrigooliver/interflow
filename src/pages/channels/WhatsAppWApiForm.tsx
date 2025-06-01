@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, QrCode, CheckCircle2, XCircle, AlertTriangle, Power, PowerOff, Settings, Zap, Trash2, ArrowRightLeft, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
@@ -7,8 +7,9 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/api';
 import TransferChatsModal from '../../components/channels/TransferChatsModal';
-import { useTeams } from '../../hooks/useQueryes';
+import { useTeams, useOrganizationMemberByOrgId } from '../../hooks/useQueryes';
 import ChannelBasicFields from '../../components/channels/ChannelBasicFields';
+import { useQueryClient } from '@tanstack/react-query';
 
 type ConnectionType = 'custom' | 'interflow' | null;
 
@@ -25,8 +26,24 @@ export default function WhatsAppWApiForm() {
   const { t } = useTranslation(['channels', 'common', 'status']);
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganizationMember } = useAuthContext();
-  const { data: teams, isLoading: isLoadingTeams } = useTeams(currentOrganizationMember?.organization.id);
+  const { currentOrganizationMember, profile } = useAuthContext();
+  const [searchParams] = useSearchParams();
+  const queryOrganizationId = searchParams.get('organizationId');
+  const queryClient = useQueryClient();
+  
+  // Determinar qual organização usar - query string ou da organização atual
+  const targetOrganizationId = queryOrganizationId || currentOrganizationMember?.organization.id;
+  
+  // Buscar membro da organização específica se vier da URL
+  const { data: urlOrganizationMember } = useOrganizationMemberByOrgId(
+    queryOrganizationId || undefined, 
+    profile?.id
+  );
+
+  // Determinar qual membro da organização usar para verificações de permissão
+  const effectiveOrganizationMember = urlOrganizationMember || currentOrganizationMember;
+
+  const { data: teams, isLoading: isLoadingTeams } = useTeams(targetOrganizationId);
 
   // Adicionar função para voltar usando a history do navegador
   const handleGoBack = () => {
@@ -119,7 +136,7 @@ export default function WhatsAppWApiForm() {
   };
 
   useEffect(() => {
-    if (id && currentOrganizationMember) {
+    if (id && effectiveOrganizationMember && targetOrganizationId) {
       loadChannel();
       const sub = subscribeToChannelUpdates();
       setSubscription(sub);
@@ -142,7 +159,7 @@ export default function WhatsAppWApiForm() {
         setQrCountdownInterval(null);
       }
     };
-  }, [id, currentOrganizationMember]);
+  }, [id, effectiveOrganizationMember, targetOrganizationId]);
 
   useEffect(() => {
     // Se for edição, já mostra o formulário direto
@@ -269,8 +286,8 @@ export default function WhatsAppWApiForm() {
 
     try {
       const endpoint = id 
-        ? `/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/test` 
-        : `/api/${currentOrganizationMember?.organization.id}/channel/wapi/test`;
+        ? `/api/${targetOrganizationId}/channel/wapi/${id}/test` 
+        : `/api/${targetOrganizationId}/channel/wapi/test`;
       
       const response = await api.post(endpoint, {
         apiHost: formData.credentials.apiHost,
@@ -309,7 +326,7 @@ export default function WhatsAppWApiForm() {
     setError('');
 
     try {
-      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/qr`);
+      const response = await api.post(`/api/${targetOrganizationId}/channel/wapi/${id}/qr`);
       const data = response.data;
 
       if (!data.success) {
@@ -339,7 +356,7 @@ export default function WhatsAppWApiForm() {
     setResetSuccess(false);
 
     try {
-      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/reset`);
+      const response = await api.post(`/api/${targetOrganizationId}/channel/wapi/${id}/reset`);
       const data = response.data;
 
       if (!data.success) {
@@ -378,7 +395,7 @@ export default function WhatsAppWApiForm() {
     setDisconnectSuccess(false);
 
     try {
-      const response = await api.post(`/api/${currentOrganizationMember?.organization.id}/channel/wapi/${id}/disconnect`);
+      const response = await api.post(`/api/${targetOrganizationId}/channel/wapi/${id}/disconnect`);
       const data = response.data;
 
       if (!data.success) {
@@ -441,13 +458,13 @@ export default function WhatsAppWApiForm() {
   };
 
   const handleInterflowConnection = async () => {
-    if (!currentOrganizationMember || !formData.name.trim()) return;
+    if (!effectiveOrganizationMember || !formData.name.trim()) return;
     
     setCreating(true);
     setError('');
 
     try {
-      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi/interflow`, {
+      const response = await api.post(`/api/${targetOrganizationId}/channel/wapi/interflow`, {
         type: 'whatsapp_wapi',
         name: formData.name.trim(),
         settings: {
@@ -459,9 +476,14 @@ export default function WhatsAppWApiForm() {
 
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to create Interflow channel');
+      } else {
+        //Invalidar cache organization após 5 segundos
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['organization', profile?.id] });
+        }, 5000);
       }
 
-      navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi?source=interflow`);
+      navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi?source=interflow${queryOrganizationId ? `&organizationId=${queryOrganizationId}` : ''}`);
     } catch (error: unknown) {
       const apiError = error as ApiError;
       console.error('Error creating Interflow channel:', error);
@@ -474,19 +496,24 @@ export default function WhatsAppWApiForm() {
 
   // Adicionar função para deletar
   const handleDelete = async () => {
-    if (!id || !currentOrganizationMember) return;
+    if (!id || !effectiveOrganizationMember) return;
     
     setDeleting(true);
     setError('');
 
     try {
-      const response = await api.delete(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}`);
+      const response = await api.delete(`/api/${targetOrganizationId}/channel/${id}`);
       
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to delete channel');
+      } else {
+      //Invalidar cache organization após 5 segundos
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['organization', profile?.id] });
+      }, 5000);
       }
 
-      navigate('/app/channels');
+      navigate(`/app/channels${queryOrganizationId ? `?organizationId=${queryOrganizationId}` : ''}`);
     } catch (error: unknown) {
       const apiError = error as ApiError;
       console.error('Error deleting channel:', error);
@@ -499,7 +526,7 @@ export default function WhatsAppWApiForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentOrganizationMember) return;
+    if (!effectiveOrganizationMember) return;
     
     setSaving(true);
     setError('');
@@ -524,7 +551,7 @@ export default function WhatsAppWApiForm() {
       };
 
       if (id) {
-        const response = await api.put(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}`, channelData);
+        const response = await api.put(`/api/${targetOrganizationId}/channel/wapi/${id}`, channelData);
         
         if (!response.data.success) {
           throw new Error(response.data.error || 'Failed to update channel');
@@ -541,7 +568,7 @@ export default function WhatsAppWApiForm() {
           setSaveSuccess(false);
         }, 3000);
       } else {
-        const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi`, {
+        const response = await api.post(`/api/${targetOrganizationId}/channel/wapi`, {
           ...channelData,
           type: 'whatsapp_wapi',
           settings: {
@@ -558,7 +585,7 @@ export default function WhatsAppWApiForm() {
         }
 
         setSaveSuccess(true);
-        navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi`);
+        navigate(`/app/channels/${response.data.id}/edit/whatsapp_wapi${queryOrganizationId ? `?organizationId=${queryOrganizationId}` : ''}`);
       }
     } catch (error: unknown) {
       const apiError = error as ApiError;
@@ -600,9 +627,9 @@ export default function WhatsAppWApiForm() {
     setWaitingQrCode(false);
 
     // Limpar QR code no banco de dados
-    if (id && currentOrganizationMember) {
+    if (id && effectiveOrganizationMember) {
       try {
-        const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}/clear-qr`);
+        const response = await api.post(`/api/${targetOrganizationId}/channel/wapi/${id}/clear-qr`);
         
         if (!response.data.success) {
           console.error('Erro ao limpar QR code do banco:', response.data.error);
@@ -661,14 +688,14 @@ export default function WhatsAppWApiForm() {
 
   // Função para migrar para nova versão
   const handleMigrateToNewVersion = async () => {
-    if (!id || !currentOrganizationMember) return;
+    if (!id || !effectiveOrganizationMember) return;
 
     setMigrating(true);
     setError('');
     setMigrationSuccess(false);
 
     try {
-      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/channel/wapi/${id}/migrateTo2025_1`);
+      const response = await api.post(`/api/${targetOrganizationId}/channel/wapi/${id}/migrateTo2025_1`);
       const data = response.data;
 
       if (!data.success) {
@@ -703,6 +730,21 @@ export default function WhatsAppWApiForm() {
       setMigrating(false);
     }
   };
+
+  // Verificar se usuário tem acesso (super_admin ou membro da organização)
+  if (queryOrganizationId && !profile?.is_superadmin && !urlOrganizationMember) {
+    return (
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-center items-center min-h-[200px]">
+            <div className="text-red-500 dark:text-red-400">
+              {t('common:accessDenied', 'Acesso negado. Você não tem permissão para visualizar esta organização.')}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!id && connectionType === null) {
     return (
@@ -853,6 +895,19 @@ export default function WhatsAppWApiForm() {
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Indicador para super_admin visualizando outra organização */}
+        {queryOrganizationId && profile?.is_superadmin && (
+          <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-4 rounded-md">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              <span className="text-sm">
+                {t('common:superAdminViewing', 'Você está visualizando como super administrador a organização: ')}
+                <strong>{urlOrganizationMember?.organization?.name || queryOrganizationId}</strong>
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center mb-6">
           <button
             onClick={handleGoBack}
@@ -930,7 +985,7 @@ export default function WhatsAppWApiForm() {
                   ) : (
                     <>
                       <Trash2 className="w-5 h-5 mr-2" />
-                      {t('common:delete')}
+                      {/* {t('common:delete')} */}
                     </>
                   )}
                 </button>

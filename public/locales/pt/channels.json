@@ -10,6 +10,11 @@
   "deleteSuccess": "Canal removido com sucesso",
   "selectChannel": "Selecionar Canal",
   "selectChannelForCustomer": "Selecionar Canal para {{name}}",
+  "limit": {
+    "title": "Limite de canais atingido",
+    "message": "Você atingiu o limite de {{limit}} canais do seu plano atual. Para adicionar mais canais, faça upgrade do seu plano.",
+    "upgrade": "Trocar Plano"
+  },
   "descriptions": {
     "email": "Atendimento via Email com suporte IMAP/SMTP",
     "facebook": "Integração com Messenger do Facebook",

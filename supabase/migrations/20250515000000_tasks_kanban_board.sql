@@ -195,16 +195,6 @@ RETURNS boolean AS $$
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION public.user_is_org_admin(org_id uuid)
-RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM organization_members
-    WHERE organization_members.organization_id = org_id
-    AND organization_members.user_id = auth.uid()
-    AND organization_members.status = 'active'
-    AND (organization_members.role = 'admin' OR organization_members.role = 'owner')
-  );
-$$ LANGUAGE sql SECURITY DEFINER;
 
 -- Função para verificar se um projeto não tem membros
 CREATE OR REPLACE FUNCTION public.project_has_no_members(project_id uuid)

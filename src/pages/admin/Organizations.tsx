@@ -421,7 +421,12 @@ export default function Organizations() {
                             ? 'text-red-600 dark:text-red-400 font-medium'
                             : 'text-gray-500 dark:text-gray-400'
                         }`}>
-                          Canais: {org.usage?.channels?.used || 0}/{org.usage?.channels?.limit || 0}
+                          Canais: <Link
+                            to={`/app/channels?organizationId=${org.id}`}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                          >
+                            {org.usage?.channels?.used || 0}/{org.usage?.channels?.limit || 0}
+                          </Link>
                         </div>
                         <div className={`${
                           (org.usage?.flows?.used || 0) > (org.usage?.flows?.limit || 0) && (org.usage?.flows?.limit || 0) > 0

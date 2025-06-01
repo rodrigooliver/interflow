@@ -1,6 +1,6 @@
-import { Power, PowerOff, Loader2, Pencil, CheckCircle2, XCircle as XCircle2, Trash2 } from 'lucide-react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Power, PowerOff, Edit, Trash2, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { ChatChannel } from '../../types/database';
 import { getChannelIcon } from '../../utils/channel';
 
@@ -8,7 +8,7 @@ interface ChannelCardProps {
   channel: ChatChannel;
   canManage: boolean;
   onToggleStatus: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
   updatingStatus: boolean;
 }
@@ -17,14 +17,16 @@ export function ChannelCard({
   channel,
   canManage,
   onToggleStatus,
+  onEdit,
   onDelete,
   updatingStatus
 }: ChannelCardProps) {
   const { t } = useTranslation('channels');
-  const navigate = useNavigate();
 
   const handleEdit = () => {
-    navigate(`/app/channels/${channel.id}/edit/${channel.type}`);
+    if (onEdit) {
+      onEdit();
+    }
   };
 
   return (
@@ -64,7 +66,7 @@ export function ChannelCard({
                 onClick={handleEdit}
                 className="p-2 rounded-full text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-500"
               >
-                <Pencil className="w-5 h-5" />
+                <Edit className="w-5 h-5" />
               </button>
               {onDelete && (
                 <button
@@ -123,7 +125,7 @@ export function ChannelCard({
               {channel.is_connected ? (
                 <CheckCircle2 className="w-3 h-3 mr-1" />
               ) : (
-                <XCircle2 className="w-3 h-3 mr-1" />
+                <XCircle className="w-3 h-3 mr-1" />
               )}
               {t(channel.is_connected ? 'status.connected' : 'status.disconnected')}
             </span>

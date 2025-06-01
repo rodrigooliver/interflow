@@ -11,25 +11,6 @@
     - Mantém as permissões de CRUD com base em perfil do usuário
 */
 
--- Criar função para verificar se usuário é super admin
-CREATE OR REPLACE FUNCTION public.user_is_superadmin()
-RETURNS boolean AS $$
-  SELECT COALESCE(
-    (SELECT is_superadmin FROM profiles WHERE id = auth.uid()),
-    false
-  );
-$$ LANGUAGE sql SECURITY DEFINER;
-
--- Criar função para verificar se usuário é membro de uma organização específica
-CREATE OR REPLACE FUNCTION public.user_is_org_member(org_id uuid)
-RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM organization_members
-    WHERE organization_members.organization_id = org_id
-    AND organization_members.user_id = auth.uid()
-    AND organization_members.status = 'active'
-  );
-$$ LANGUAGE sql SECURITY DEFINER;
 
 -- Remover políticas existentes que não respeitam a estrutura organizacional
 DROP POLICY IF EXISTS "Agents can read all messages" ON messages;

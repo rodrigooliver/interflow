@@ -62,13 +62,36 @@ CREATE TABLE organization_members (
   UNIQUE(organization_id, user_id)
 );
 
+-- Função para verificar se um usuário é admin da organização
+CREATE OR REPLACE FUNCTION public.user_is_org_admin(org_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM organization_members
+    WHERE organization_members.organization_id = org_id
+    AND organization_members.user_id = auth.uid()
+    AND organization_members.status = 'active'
+    AND (organization_members.role = 'admin' OR organization_members.role = 'owner')
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Criar função para verificar se usuário é membro de uma organização específica
+CREATE OR REPLACE FUNCTION public.user_is_org_member(org_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM organization_members
+    WHERE organization_members.organization_id = org_id
+    AND organization_members.user_id = auth.uid()
+    AND organization_members.status = 'active'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+
 -- Add organization_id to existing tables
 ALTER TABLE customers ADD COLUMN organization_id UUID REFERENCES organizations(id);
 ALTER TABLE chats ADD COLUMN organization_id UUID REFERENCES organizations(id);
 ALTER TABLE messages ADD COLUMN organization_id UUID REFERENCES organizations(id);
 
--- Update profiles table
-ALTER TABLE profiles ADD COLUMN is_superadmin BOOLEAN DEFAULT false;
+
 
 -- Enable RLS
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;

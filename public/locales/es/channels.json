@@ -1,11 +1,16 @@
 {
-  "title": "Canales de Servicio",
+  "title": "Canales de Atención",
   "newChannel": "Nuevo Canal",
-  "deleteSuccess": "Canal eliminado con éxito",
-  "noChannelsYet": "Aún no hay canales creados",
+  "deleteSuccess": "Canal eliminado exitosamente",
+  "noChannelsYet": "Aún no se han creado canales",
   "selectChannel": "Seleccionar Canal",
   "selectChannelForCustomer": "Seleccionar Canal para {{name}}",
-  "noChannelsDescription": "Los canales le permiten conectarse con sus clientes a través de diferentes plataformas. Cree su primer canal para comenzar.",
+  "limit": {
+    "title": "Límite de canales alcanzado",
+    "message": "Has alcanzado el límite de {{limit}} canales de tu plan actual. Para agregar más canales, actualiza tu plan.",
+    "upgrade": "Cambiar Plan"
+  },
+  "noChannelsDescription": "Los canales te permiten conectarte con tus clientes a través de diferentes plataformas. Crea tu primer canal para comenzar.",
   "createFirstChannel": "Crear primer canal",
   "noEmailChannels": "No hay canales de correo electrónico configurados",
   "noWhatsAppChannels": "No hay canales de WhatsApp configurados",

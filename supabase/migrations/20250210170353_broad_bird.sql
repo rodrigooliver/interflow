@@ -20,7 +20,8 @@ CREATE TABLE profiles (
   full_name TEXT NOT NULL,
   avatar_url TEXT,
   role TEXT NOT NULL CHECK (role IN ('admin', 'agent')),
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT now(),
+  is_superadmin BOOLEAN DEFAULT false
 );
 
 -- Função para verificar se o usuário atual é superadmin
@@ -37,6 +38,16 @@ BEGIN
   RETURN COALESCE(is_admin, false);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Criar função para verificar se usuário é super admin - Mais eficiente
+CREATE OR REPLACE FUNCTION public.user_is_superadmin()
+RETURNS boolean AS $$
+  SELECT COALESCE(
+    (SELECT is_superadmin FROM profiles WHERE id = auth.uid()),
+    false
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
 
 -- Create customers table
 CREATE TABLE customers (

@@ -5,6 +5,11 @@
   "noChannelsYet": "No channels created yet",
   "selectChannel": "Select Channel",
   "selectChannelForCustomer": "Select Channel for {{name}}",
+  "limit": {
+    "title": "Channel limit reached",
+    "message": "You have reached the limit of {{limit}} channels for your current plan. To add more channels, upgrade your plan.",
+    "upgrade": "Upgrade Plan"
+  },
   "noChannelsDescription": "Channels allow you to connect with your customers through different platforms. Create your first channel to get started.",
   "createFirstChannel": "Create first channel",
   "noEmailChannels": "No email channels configured",
