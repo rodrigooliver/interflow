@@ -1,117 +1,168 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Loader2, CheckCircle2, Search, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
+import { useSubscriptionPlans } from '../../hooks/useQueryes';
+import { countryCodes } from '../../utils/countryCodes';
 
 interface FormData {
   organizationName: string;
   organizationSlug: string;
   organizationEmail: string;
   organizationWhatsapp: string;
+  countryCode: string;
   adminName: string;
   adminEmail: string;
   adminPassword: string;
+  planId: string;
+  billingPeriod: 'monthly' | 'yearly';
+  language: 'pt' | 'en' | 'es';
+  startFlow: boolean;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+      errorCode?: string;
+    };
+  };
+  message?: string;
 }
 
 export default function AddOrganization() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  
+  // Hook para carregar planos de assinatura
+  const { plans, isLoading: plansLoading } = useSubscriptionPlans();
+  
+  // Estados para o dropdown de países
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownContentRef = useRef<HTMLDivElement>(null);
+  
   const [formData, setFormData] = useState<FormData>({
     organizationName: '',
     organizationSlug: '',
     organizationEmail: '',
     organizationWhatsapp: '',
+    countryCode: 'BR', // Padrão Brasil
     adminName: '',
     adminEmail: '',
     adminPassword: '',
+    planId: '',
+    billingPeriod: 'monthly',
+    language: 'pt',
+    startFlow: false,
   });
+
+  // Efeito para fechar dropdown quando clicar fora dele
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        countryDropdownRef.current && 
+        !countryDropdownRef.current.contains(event.target as Node) &&
+        dropdownContentRef.current && 
+        !dropdownContentRef.current.contains(event.target as Node)
+      ) {
+        setShowCountryDropdown(false);
+        setCountrySearch('');
+      }
+    }
+
+    if (showCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCountryDropdown]);
+
+  // Efeito para definir o primeiro plano como padrão
+  useEffect(() => {
+    if (plans && plans.length > 0 && !formData.planId) {
+      setFormData(prev => ({ ...prev, planId: plans[0].id }));
+    }
+  }, [plans, formData.planId]);
+
+  // Função para fechar o dropdown de forma segura
+  const closeCountryDropdown = () => {
+    setShowCountryDropdown(false);
+    setCountrySearch('');
+  };
+
+  // Filtrar países com base na pesquisa
+  const filteredCountries = countrySearch 
+    ? countryCodes.filter(country => 
+        country.name.toLowerCase().includes(countrySearch.toLowerCase()) || 
+        (country.local_name && country.local_name.toLowerCase().includes(countrySearch.toLowerCase())) ||
+        country.dial_code.includes(countrySearch) ||
+        country.code.toLowerCase().includes(countrySearch.toLowerCase())
+      )
+    : countryCodes;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess(false);
 
     try {
-      // 1. Create organization
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          name: formData.organizationName,
-          slug: formData.organizationSlug,
-          email: formData.organizationEmail,
-          whatsapp: formData.organizationWhatsapp
-        })
-        .select()
-        .single();
-
-      if (orgError) throw orgError;
-
-      // 2. Create admin user
-      const { data: userData, error: userError } = await supabase.auth.signUp({
+      // Preparar dados para envio conforme a função createOrganization espera
+      const organizationData = {
         email: formData.adminEmail,
         password: formData.adminPassword,
-        options: {
-          data: {
-            full_name: formData.adminName
-          }
-        }
-      });
+        fullName: formData.adminName,
+        organizationName: formData.organizationName,
+        whatsapp: formData.organizationWhatsapp,
+        countryCode: countryCodes.find(c => c.code === formData.countryCode)?.dial_code || '55',
+        planId: formData.planId || undefined, // Se vazio, será usado o padrão
+        billingPeriod: formData.billingPeriod,
+        referral: null,
+        language: formData.language,
+        startFlow: formData.startFlow
+      };
 
-      if (userError) throw userError;
+      const response = await api.post('/api/organizations', organizationData);
 
-      // 3. Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userData.user?.id,
-          email: formData.adminEmail,
-          full_name: formData.adminName,
-          role: 'admin'
-        });
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Falha ao criar organização');
+      }
 
-      if (profileError) throw profileError;
+      setSuccess(true);
+      
+      // Redirecionar após 2 segundos
+      setTimeout(() => {
+        navigate('/app/admin/organizations');
+      }, 2000);
 
-      // 4. Create organization membership
-      const { error: memberError } = await supabase
-        .from('organization_members')
-        .insert({
-          organization_id: orgData.id,
-          user_id: userData.user?.id,
-          role: 'owner'
-        });
-
-      if (memberError) throw memberError;
-
-      // 5. Create default subscription
-      const { data: planData, error: planError } = await supabase
-        .from('subscription_plans')
-        .select('id')
-        .eq('name', 'Free')
-        .single();
-
-      if (planError) throw planError;
-
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .insert({
-          organization_id: orgData.id,
-          plan_id: planData.id,
-          status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          cancel_at_period_end: false
-        });
-
-      if (subscriptionError) throw subscriptionError;
-
-      // Success - redirect to organizations list
-      navigate('/app/admin/organizations');
     } catch (error: unknown) {
-      console.error('Error creating organization:', error);
-      setError(typeof error === 'object' && error !== null && 'message' in error 
-        ? (error as { message: string }).message 
-        : 'Ocorreu um erro ao criar a organização');
+      const apiError = error as ApiError;
+      console.error('Erro ao criar organização:', error);
+      
+      // Tratamento de erros específicos
+      const errorMessage = apiError.response?.data?.error || apiError.message || 'Ocorreu um erro ao criar a organização';
+      const errorCode = apiError.response?.data?.errorCode;
+      
+      // Personalizar mensagens de erro com base no código
+      switch (errorCode) {
+        case 'emailInUse':
+          setError('Este e-mail já está em uso. Tente outro ou faça login.');
+          break;
+        case 'weakPassword':
+          setError('A senha não atende aos requisitos mínimos de segurança.');
+          break;
+        case 'rateLimit':
+          setError('Muitas tentativas. Aguarde alguns minutos e tente novamente.');
+          break;
+        default:
+          setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -131,6 +182,15 @@ export default function AddOrganization() {
     setFormData({
       ...formData,
       organizationSlug: slug
+    });
+  };
+
+  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove tudo exceto números
+    const numbers = e.target.value.replace(/\D/g, '');
+    setFormData({
+      ...formData,
+      organizationWhatsapp: numbers
     });
   };
 
@@ -154,6 +214,13 @@ export default function AddOrganization() {
             {error && (
               <div className="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 p-4 rounded-md flex items-center">
+                <CheckCircle2 className="w-5 h-5 mr-2" />
+                Organização criada com sucesso! Redirecionando...
               </div>
             )}
 
@@ -204,18 +271,104 @@ export default function AddOrganization() {
                 />
               </div>
 
+              {/* Campo de WhatsApp com seletor de país */}
               <div>
                 <label htmlFor="organizationWhatsapp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   WhatsApp da Organização
                 </label>
-                <input
-                  type="text"
-                  id="organizationWhatsapp"
+                <div className="flex w-full">
+                  <div className="relative" ref={countryDropdownRef}>
+                    <button
+                      type="button"
+                      className="h-full rounded-l-md border-r-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 flex items-center justify-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCountryDropdown(!showCountryDropdown);
+                        setCountrySearch('');
+                      }}
+                    >
+                      <span>{countryCodes.find(country => country.code === formData.countryCode)?.dial_code || '+55'}</span>
+                      <ChevronDown className="w-4 h-4 ml-1 text-gray-500 dark:text-gray-400" />
+                    </button>
+                    
+                    {showCountryDropdown && (
+                      <div 
+                        ref={dropdownContentRef}
+                        className="absolute z-10 mt-1 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              className="w-full h-8 pl-8 pr-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              placeholder="Buscar país..."
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                            />
+                            <Search className="absolute left-2 top-1.5 h-5 w-5 text-gray-400" />
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {filteredCountries.map(country => (
+                            <button
+                              key={country.code}
+                              type="button"
+                              className="w-full px-3 py-2 text-left flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFormData(prev => ({ ...prev, countryCode: country.code }));
+                                closeCountryDropdown();
+                              }}
+                            >
+                              <span>{country.name}</span>
+                              <span className="text-gray-500 dark:text-gray-400">{country.dial_code}</span>
+                            </button>
+                          ))}
+                          {filteredCountries.length === 0 && (
+                            <div className="px-3 py-2 text-gray-500 dark:text-gray-400 text-center">
+                              Nenhum país encontrado
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="relative flex-1">
+                    <input
+                      id="organizationWhatsapp"
+                      name="organizationWhatsapp"
+                      type="text"
+                      placeholder="11987654321"
+                      value={formData.organizationWhatsapp}
+                      onChange={handleWhatsAppChange}
+                      className="block w-full rounded-r-md border-l-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 transition-all duration-200"
+                    />
+                  </div>
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Apenas números, sem espaços ou caracteres especiais
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Idioma Padrão *
+                </label>
+                <select
+                  id="language"
+                  required
                   className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                  placeholder="+55 (11) 98765-4321"
-                  value={formData.organizationWhatsapp}
-                  onChange={(e) => setFormData({ ...formData, organizationWhatsapp: e.target.value })}
-                />
+                  value={formData.language}
+                  onChange={(e) => setFormData({ ...formData, language: e.target.value as 'pt' | 'en' | 'es' })}
+                >
+                  <option value="pt">Português</option>
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </select>
               </div>
             </div>
 
@@ -262,7 +415,75 @@ export default function AddOrganization() {
                   value={formData.adminPassword}
                   onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
                 />
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Mínimo 6 caracteres
+                </p>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Configurações de Assinatura</h2>
+              
+              <div>
+                <label htmlFor="planId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Plano de Assinatura
+                </label>
+                <select
+                  id="planId"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                  value={formData.planId}
+                  onChange={(e) => setFormData({ ...formData, planId: e.target.value })}
+                  disabled={plansLoading}
+                >
+                  <option value="">
+                    {plansLoading ? 'Carregando planos...' : 'Usar plano padrão'}
+                  </option>
+                  {plans?.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name_pt} - R$ {plan.price_brl.toFixed(2)}/mês
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Selecione um plano específico ou deixe vazio para usar o plano padrão do sistema
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="billingPeriod" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Período de Cobrança *
+                </label>
+                <select
+                  id="billingPeriod"
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                  value={formData.billingPeriod}
+                  onChange={(e) => setFormData({ ...formData, billingPeriod: e.target.value as 'monthly' | 'yearly' })}
+                >
+                  <option value="monthly">Mensal</option>
+                  <option value="yearly">Anual</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Configurações Adicionais</h2>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="startFlow"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                  checked={formData.startFlow}
+                  onChange={(e) => setFormData({ ...formData, startFlow: e.target.checked })}
+                />
+                <label htmlFor="startFlow" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  Iniciar fluxo de chat automaticamente
+                </label>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Se marcado, será criado um cliente na organização principal e iniciado um fluxo de chat automaticamente
+              </p>
             </div>
 
             <div className="flex justify-end">
