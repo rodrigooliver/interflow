@@ -52,6 +52,7 @@ export function NodeToolbar({ isMinimized }: NodeToolbarProps) {
         { type: 'condition', label: t('nodes.condition.title') },
         { type: 'update_customer', label: t('nodes.updateCustomer.title') },
         { type: 'jump_to', label: t('nodes.jumpTo.title') },
+        { type: 'system_message', label: t('nodes.systemMessage.title') },
       ]
     },
     {

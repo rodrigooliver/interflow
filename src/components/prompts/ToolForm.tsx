@@ -15,6 +15,7 @@ interface ToolFormProps {
   destinations?: Record<string, ToolAction[]>;
   onDestinationsChange?: (destinations: Record<string, ToolAction[]>) => void;
   linkedFlow?: Flow;
+  onAutoSave?: (tool: Tool, destinations?: Record<string, ToolAction[]>) => void;
 }
 
 const ToolForm: React.FC<ToolFormProps> = ({ 
@@ -23,7 +24,8 @@ const ToolForm: React.FC<ToolFormProps> = ({
   initialTool,
   destinations = {},
   onDestinationsChange,
-  linkedFlow
+  linkedFlow,
+  onAutoSave
 }) => {
   // const { t, i18n } = useTranslation(['prompts', 'common']);
   const { t } = useTranslation(['prompts', 'common']);
@@ -44,6 +46,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
   const [parametersViewMode, setParametersViewMode] = useState<'json' | 'list' | 'actions'>('list');
   const [editingVariable, setEditingVariable] = useState<{ name: string; property: ParameterProperty } | null>(null);
   const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
+  const [originalToolName, setOriginalToolName] = useState<string>(''); // Novo estado para armazenar o nome original
 
   // Função para gerar um slug de função a partir de um texto
   const generateFunctionSlug = (text: string): string => {
@@ -70,6 +73,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
       });
       setParametersText(JSON.stringify(initialTool.parameters || {}, null, 2));
       setIsNameManuallyEdited(true); // Consideramos que se está editando, o nome já foi definido
+      setOriginalToolName(initialTool.name); // Armazena o nome original
     }
   }, [initialTool]);
 
@@ -162,6 +166,43 @@ const ToolForm: React.FC<ToolFormProps> = ({
     setIsNameManuallyEdited(true);
   };
 
+  // Função para lidar com quando o usuário sai do input do nome (onBlur)
+  const handleNameBlur = () => {
+    const updatedDestinations = { ...destinations };
+    
+    // Se o nome mudou e temos o nome original, atualiza o destinations
+    if (onDestinationsChange && originalToolName && originalToolName !== newTool.name) {
+      // Se existia uma entrada com o nome original, move para o novo nome
+      if (updatedDestinations[originalToolName]) {
+        updatedDestinations[newTool.name] = updatedDestinations[originalToolName];
+        delete updatedDestinations[originalToolName];
+        onDestinationsChange(updatedDestinations);
+      }
+      
+      // Atualiza o nome original para o nome atual
+      setOriginalToolName(newTool.name);
+      
+      // Salva a ferramenta automaticamente quando o nome muda (sem fechar o modal)
+      if (onAutoSave) {
+        onAutoSave(newTool, updatedDestinations);
+      } else {
+        onAddTool(newTool);
+      }
+    } else if (!originalToolName) {
+      // Se não tinha nome original (ferramenta nova), define o nome atual como original
+      setOriginalToolName(newTool.name);
+      
+      // Salva a ferramenta nova (sem fechar o modal)
+      if (newTool.name) {
+        if (onAutoSave) {
+          onAutoSave(newTool, updatedDestinations);
+        } else {
+          onAddTool(newTool);
+        }
+      }
+    }
+  };
+
   // Função para lidar com a mudança da descrição da ferramenta
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewTool({ ...newTool, description: e.target.value });
@@ -172,6 +213,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
     if (parametersViewMode === 'json' && parametersText) {
       applyParametersJson(parametersText);
     }
+
     onAddTool(newTool);
   };
 
@@ -205,12 +247,12 @@ const ToolForm: React.FC<ToolFormProps> = ({
 
   // Função para atualizar as ações da ferramenta
   const handleActionsChange = (actions: ToolAction[]) => {
-    // console.log('actions', onDestinationsChange, actions);
     if (onDestinationsChange) {
-      const updatedDestinations = {
-        ...destinations,
-        [newTool.name]: actions
-      };
+      const updatedDestinations = { ...destinations };
+      
+      // Adiciona/atualiza a entrada com o nome atual
+      updatedDestinations[newTool.name] = actions;
+      
       onDestinationsChange(updatedDestinations);
     }
   };
@@ -313,6 +355,7 @@ const ToolForm: React.FC<ToolFormProps> = ({
               type="text"
               value={newTool.name}
               onChange={handleNameChange}
+              onBlur={handleNameBlur}
               className="w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder={t('prompts:form.toolNamePlaceholder') || 'Ex: get_weather'}
             />

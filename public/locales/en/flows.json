@@ -357,6 +357,13 @@
     },
     "group": {
       "title": "Group"
+    },
+    "systemMessage": {
+      "title": "System Context",
+      "edit": "Edit System Context",
+      "messagePlaceholder": "Enter system context...",
+      "description": "This message will be added to the system context to provide relevant information without being sent to the client. Useful for guiding AI responses or maintaining internal state.",
+      "systemOnly": "System only"
     }
   },
   "delete": {

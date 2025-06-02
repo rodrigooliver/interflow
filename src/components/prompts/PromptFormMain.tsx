@@ -865,23 +865,24 @@ const PromptFormMain: React.FC = () => {
   }
 
   const handleAddTool = (tool: Tool) => {
-    if (editingTool !== null) {
-      // Estamos editando uma ferramenta existente
+    if (editingTool) {
+      // Editando ferramenta existente
       const updatedTools = [...formData.tools];
       updatedTools[editingTool.index] = tool;
       setFormData({
         ...formData,
         tools: updatedTools
       });
-      setEditingTool(null);
     } else {
-      // Estamos adicionando uma nova ferramenta
+      // Adicionando nova ferramenta
       setFormData({
         ...formData,
         tools: [...formData.tools, tool]
       });
     }
+    // Fechar modal e resetar estado de edição
     setShowToolModal(false);
+    setEditingTool(null);
   };
 
   const handleEditTool = (index: number) => {
@@ -938,6 +939,28 @@ const PromptFormMain: React.FC = () => {
       ...formData,
       content: updatedContent
     });
+  };
+
+  // Nova função para auto-save sem fechar o modal
+  const handleAutoSaveTool = (tool: Tool, updatedDestinations?: Record<string, ToolAction[]>) => {
+    if (editingTool) {
+      // Editando ferramenta existente
+      const updatedTools = [...formData.tools];
+      updatedTools[editingTool.index] = tool;
+      setFormData({
+        ...formData,
+        tools: updatedTools,
+        destinations: updatedDestinations || formData.destinations
+      });
+    } else {
+      // Adicionando nova ferramenta
+      setFormData({
+        ...formData,
+        tools: [...formData.tools, tool],
+        destinations: updatedDestinations || formData.destinations
+      });
+    }
+    // NÃO fecha o modal - apenas salva
   };
 
   return (
@@ -1893,6 +1916,7 @@ const PromptFormMain: React.FC = () => {
           destinations={formData.destinations}
           onDestinationsChange={handleDestinationsChange}
           linkedFlow={linkedFlow || undefined}
+          onAutoSave={handleAutoSaveTool}
         />
       </Modal>
 

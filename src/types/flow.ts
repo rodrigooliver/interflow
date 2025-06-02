@@ -14,7 +14,8 @@ export type NodeType =
   | 'agenteia'
   | 'jump_to'
   | 'request'
-  | 'group';
+  | 'group'
+  | 'system_message';
 
 export interface Variable {
   id: string;

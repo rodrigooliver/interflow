@@ -351,6 +351,13 @@
       },
       "group": {
         "title": "Grupo"
+      },
+      "systemMessage": {
+        "title": "Contexto Sistema",
+        "edit": "Editar Contexto del Sistema",
+        "messagePlaceholder": "Ingrese contexto del sistema...",
+        "description": "Este mensaje se agregará al contexto del sistema para proporcionar información relevante sin ser enviado al cliente. Útil para guiar respuestas de IA o mantener estado interno.",
+        "systemOnly": "Solo sistema"
       }
     }
   },

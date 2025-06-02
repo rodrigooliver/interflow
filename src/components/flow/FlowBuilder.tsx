@@ -36,6 +36,7 @@ import { UpdateCustomerNode } from './nodes/UpdateCustomerNode';
 import { RequestNode } from './nodes/RequestNode';
 import { JumpToNode } from './nodes/JumpToNode';
 import { GroupNode } from './nodes/GroupNode';
+import { SystemMessageNode } from './nodes/SystemMessageNode';
 import { Trash2, RotateCcw, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlowEditor } from '../../contexts/FlowEditorContext';
@@ -57,6 +58,7 @@ const nodeTypes: NodeTypes = {
   jump_to: JumpToNode,
   request: RequestNode,
   group: GroupNode,
+  system_message: SystemMessageNode,
 };
 
 export function FlowBuilder() {
@@ -123,6 +125,7 @@ export function FlowBuilder() {
       jump_to: t('nodes.jumpTo.title') + ` ${nodeCount}`,
       request: t('nodes.request.title') + ` ${nodeCount}`,
       group: t('nodes.group.title') + ` ${nodeCount}`,
+      system_message: t('nodes.systemMessage.title') + ` ${nodeCount}`,
     };
 
     return typeLabels[type] || t('nodes.labels.generic') + ` ${nodeCount}`;

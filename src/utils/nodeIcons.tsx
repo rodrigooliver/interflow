@@ -12,7 +12,8 @@ import {
   UserCog,
   Globe,
   SkipForward,
-  RectangleHorizontal
+  RectangleHorizontal,
+  Settings
 } from 'lucide-react';
 import { NodeType } from '../types/flow';
 
@@ -54,7 +55,8 @@ export const getNodeIcon = (type: NodeType, size: 'sm' | 'md' = 'sm') => {
     agenteia: <AgenteIALogo />,
     request: <Globe className={`${iconSize} text-violet-500`} />,
     jump_to: <SkipForward className={`${iconSize} text-blue-600`} />,
-    group: <RectangleHorizontal className={`${iconSize} text-gray-500`} />
+    group: <RectangleHorizontal className={`${iconSize} text-gray-500`} />,
+    system_message: <Settings className={`${iconSize} text-slate-500`} />
   };
 
   return iconMap[type] || <div className={iconSize} />;
@@ -78,7 +80,8 @@ export const getNodeColor = (type: NodeType): string => {
     agenteia: 'text-gray-700 dark:text-gray-300',
     request: 'text-violet-500',
     jump_to: 'text-blue-600',
-    group: 'text-gray-500'
+    group: 'text-gray-500',
+    system_message: 'text-slate-500'
   };
 
   return colorMap[type] || 'text-gray-500';
