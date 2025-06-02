@@ -442,8 +442,37 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       return;
     }
     
+    // Limpar códigos extras do Word antes de processar
+    let cleanedHtml = htmlData;
+    
+    // Remover comentários HTML completos (incluindo CSS do Word)
+    cleanedHtml = cleanedHtml.replace(/<!--[\s\S]*?-->/g, '');
+    
+    // Remover tags <style> e seu conteúdo
+    cleanedHtml = cleanedHtml.replace(/<style[\s\S]*?<\/style>/gi, '');
+    
+    // Remover tags <meta> e <link>
+    cleanedHtml = cleanedHtml.replace(/<meta[\s\S]*?(?:>|<\/meta>)/gi, '');
+    cleanedHtml = cleanedHtml.replace(/<link[\s\S]*?(?:>|<\/link>)/gi, '');
+    
+    // Remover tags <xml> e <o:> específicas do Word
+    cleanedHtml = cleanedHtml.replace(/<xml[\s\S]*?<\/xml>/gi, '');
+    cleanedHtml = cleanedHtml.replace(/<o:[^>]*>[\s\S]*?<\/o:[^>]*>/gi, '');
+    cleanedHtml = cleanedHtml.replace(/<o:[^>]*\/>/gi, '');
+    
+    // Remover atributos específicos do Word
+    cleanedHtml = cleanedHtml.replace(/\s*mso-[^=]*="[^"]*"/gi, '');
+    cleanedHtml = cleanedHtml.replace(/\s*class="Mso[^"]*"/gi, '');
+    
+    // Remover spans vazios ou que só contêm estilos do Word
+    cleanedHtml = cleanedHtml.replace(/<span[^>]*style="[^"]*"[^>]*>\s*<\/span>/gi, '');
+    
+    // Remover atributos de estilo complexos que não são essenciais
+    cleanedHtml = cleanedHtml.replace(/\s*style="[^"]*font-family:[^"]*"/gi, '');
+    cleanedHtml = cleanedHtml.replace(/\s*style="[^"]*mso-[^"]*"/gi, '');
+    
     // Converter HTML para Markdown
-    tempDiv.innerHTML = htmlData;
+    tempDiv.innerHTML = cleanedHtml;
     
     // Processar formatação antes de tudo para garantir que seja aplicada corretamente
     processFormatting();
@@ -556,6 +585,10 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
           else if (fontStyle === 'italic' || fontStyle === 'oblique') {
             span.outerHTML = `*${span.textContent}*`;
           }
+          // Se não tem formatação especial, manter apenas o texto
+          else {
+            span.outerHTML = span.textContent || '';
+          }
         });
       };
       
@@ -612,6 +645,10 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
               if (!isInsideFormattedElement(htmlEl) && !containsItalicTag(htmlEl)) {
                 htmlEl.outerHTML = `*${htmlEl.textContent}*`;
               }
+            }
+            // Se não tem formatação útil, manter apenas o texto
+            else {
+              htmlEl.outerHTML = htmlEl.textContent || '';
             }
           }
         }
@@ -692,6 +729,15 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     
     // Realizar pós-processamento para limpeza final
     markdown = processPostProcessing(markdown);
+    
+    // Limpeza final para remover restos de códigos do Word
+    markdown = markdown
+      // Remover linhas com apenas espaços ou quebras
+      .replace(/^\s*$/gm, '')
+      // Remover múltiplas quebras de linha consecutivas
+      .replace(/\n{3,}/g, '\n\n')
+      // Remover espaços em branco no início e fim
+      .trim();
     
     // Inserir o markdown na posição do cursor
     insertAtCursor(markdown, event);
