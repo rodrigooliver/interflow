@@ -471,8 +471,63 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     cleanedHtml = cleanedHtml.replace(/\s*style="[^"]*font-family:[^"]*"/gi, '');
     cleanedHtml = cleanedHtml.replace(/\s*style="[^"]*mso-[^"]*"/gi, '');
     
+    // Corrigir quebras de linha artificiais do Word
+    // O Word frequentemente quebra texto em spans separados criando quebras indesejadas
+    cleanedHtml = cleanedHtml.replace(/<\/span>\s*<span[^>]*>/gi, '');
+    cleanedHtml = cleanedHtml.replace(/<\/p>\s*<p[^>]*>/gi, ' ');
+    
+    // Remover quebras de linha entre elementos inline
+    cleanedHtml = cleanedHtml.replace(/>\s+</g, '><');
+    
+    // Consolidar spans consecutivos sem formatação especial
+    cleanedHtml = cleanedHtml.replace(/<span[^>]*>([^<]*)<\/span>\s*<span[^>]*>([^<]*)<\/span>/gi, '$1$2');
+    
     // Converter HTML para Markdown
     tempDiv.innerHTML = cleanedHtml;
+    
+    // Pré-processamento especial para consolidar texto fragmentado
+    const consolidateFragmentedText = () => {
+      // Encontrar todos os nós de texto e seus pais
+      const walker = document.createTreeWalker(
+        tempDiv,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+      
+      const textNodes: Text[] = [];
+      let node = walker.nextNode();
+      while (node) {
+        textNodes.push(node as Text);
+        node = walker.nextNode();
+      }
+      
+      // Agrupar nós de texto que estão em elementos adjacentes do mesmo tipo
+      for (let i = 0; i < textNodes.length - 1; i++) {
+        const currentNode = textNodes[i];
+        const nextNode = textNodes[i + 1];
+        
+        if (currentNode.parentElement && nextNode.parentElement) {
+          const currentParent = currentNode.parentElement;
+          const nextParent = nextNode.parentElement;
+          
+          // Se os elementos pais são adjacentes e do mesmo tipo, consolidar o texto
+          if (
+            currentParent.nextElementSibling === nextParent &&
+            currentParent.tagName === nextParent.tagName &&
+            currentParent.className === nextParent.className
+          ) {
+            // Consolidar o texto
+            currentNode.textContent = (currentNode.textContent || '') + ' ' + (nextNode.textContent || '');
+            nextParent.remove();
+            textNodes.splice(i + 1, 1);
+            i--; // Recuar para reprocessar
+          }
+        }
+      }
+    };
+    
+    // Aplicar consolidação de texto fragmentado
+    consolidateFragmentedText();
     
     // Processar formatação antes de tudo para garantir que seja aplicada corretamente
     processFormatting();
@@ -738,6 +793,75 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       .replace(/\n{3,}/g, '\n\n')
       // Remover espaços em branco no início e fim
       .trim();
+    
+    // Corrigir quebras de linha artificiais após a primeira palavra
+    const fixWordBreaks = (text: string): string => {
+      const lines = text.split('\n');
+      const fixedLines: string[] = [];
+      
+      for (let i = 0; i < lines.length; i++) {
+        const currentLine = lines[i];
+        const nextLine = lines[i + 1];
+        
+        // Verificar se a linha atual tem apenas uma palavra e a próxima linha continua a frase
+        if (
+          currentLine && 
+          nextLine && 
+          // Linha atual tem apenas uma palavra (sem espaços significativos)
+          currentLine.trim().split(/\s+/).length === 1 &&
+          // Próxima linha não é uma nova frase (não começa com maiúscula após ponto)
+          !/^[A-ZÁÀÁÂÃÉÊÍÓÔÕÚÇ]/.test(nextLine.trim()) &&
+          // Próxima linha não é um item de lista
+          !/^[-*+•]\s/.test(nextLine.trim()) &&
+          // Próxima linha não é um título
+          !/^#{1,6}\s/.test(nextLine.trim()) &&
+          // Linha atual não termina com pontuação que indica fim de frase
+          !/[.!?:;]$/g.test(currentLine.trim()) &&
+          // Próxima linha não é uma linha vazia
+          nextLine.trim().length > 0 &&
+          // Próxima linha não é outro número isolado (evitar juntar "7" com "metros")
+          !(nextLine.trim().split(/\s+/).length === 1 && /^\d+$/.test(nextLine.trim()))
+        ) {
+          // Consolidar as linhas
+          fixedLines.push(currentLine.trim() + ' ' + nextLine.trim());
+          i++; // Pular a próxima linha pois já foi processada
+        } 
+        // Verificar se temos uma quebra no meio de uma palavra composta ou frase
+        else if (
+          currentLine && 
+          nextLine && 
+          // Linha atual não termina com pontuação
+          !/[.!?:;]$/g.test(currentLine.trim()) &&
+          // Próxima linha não começa com maiúscula (indicando nova frase)
+          !/^[A-ZÁÀÁÂÃÉÊÍÓÔÕÚÇ]/.test(nextLine.trim()) &&
+          // Próxima linha não é lista ou título
+          !/^[-*+•#]\s/.test(nextLine.trim()) &&
+          // As duas linhas juntas formam uma frase coerente
+          currentLine.trim().length > 0 && nextLine.trim().length > 0 &&
+          // Não é uma quebra intencional (sem pontuação no final da linha anterior)
+          !/^\s*$/.test(currentLine) && !/^\s*$/.test(nextLine)
+        ) {
+          // Verificar se parece ser uma quebra artificial comparando com padrões comuns
+          const combined = currentLine.trim() + ' ' + nextLine.trim();
+          const currentWords = currentLine.trim().split(/\s+/);
+          
+          // Se a primeira linha tem poucas palavras e a combinação faz sentido
+          if (currentWords.length <= 3 && combined.length < 200) {
+            fixedLines.push(combined);
+            i++; // Pular a próxima linha
+          } else {
+            fixedLines.push(currentLine);
+          }
+        } else {
+          fixedLines.push(currentLine);
+        }
+      }
+      
+      return fixedLines.join('\n');
+    };
+    
+    // Aplicar correção de quebras do Word
+    markdown = fixWordBreaks(markdown);
     
     // Inserir o markdown na posição do cursor
     insertAtCursor(markdown, event);
