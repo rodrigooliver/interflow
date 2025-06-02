@@ -73,7 +73,9 @@ export default function WhatsAppWApiForm() {
       qrExpiresAt: null as string | null
     },
     settings: {
-      messageSignature: ''
+      messageSignature: '',
+      rejectCalls: false,
+      rejectCallsMessage: ''
     } as Record<string, boolean | string | null | undefined>,
     is_tested: false,
     is_connected: false,
@@ -168,6 +170,19 @@ export default function WhatsAppWApiForm() {
     }
   }, [id]);
 
+  // Inicializar mensagem padrão quando traduções estiverem disponíveis
+  useEffect(() => {
+    if (!id && formData.settings.rejectCallsMessage === '') {
+      setFormData(prev => ({
+        ...prev,
+        settings: {
+          ...prev.settings,
+          rejectCallsMessage: t('form.whatsapp.callSettings.defaultRejectMessage')
+        }
+      }));
+    }
+  }, [t, id, formData.settings.rejectCallsMessage]);
+
   const subscribeToChannelUpdates = () => {
     if (!id) return null;
 
@@ -261,7 +276,11 @@ export default function WhatsAppWApiForm() {
           is_tested: data.is_tested || false,
           is_connected: data.is_connected || false,
           status: data.status || 'inactive',
-          settings: data.settings
+          settings: {
+            ...data.settings,
+            rejectCalls: data.settings?.rejectCalls || false,
+            rejectCallsMessage: data.settings?.rejectCallsMessage || t('form.whatsapp.callSettings.defaultRejectMessage')
+          }
         });
         setShowConnectionSettings(!data.is_tested && !data.settings.isInterflow || false);
       }
@@ -469,7 +488,9 @@ export default function WhatsAppWApiForm() {
         name: formData.name.trim(),
         settings: {
           autoReply: true,
-          notifyNewTickets: true
+          notifyNewTickets: true,
+          rejectCalls: formData.settings.rejectCalls,
+          rejectCallsMessage: formData.settings.rejectCallsMessage
         },
         status: 'inactive'
       });
@@ -547,7 +568,11 @@ export default function WhatsAppWApiForm() {
         is_tested: showConnectionSettings ? true : formData.is_tested,
         is_connected: showConnectionSettings ? false : formData.is_connected,
         status: formData.status,
-        settings: formData.settings
+        settings: {
+          ...formData.settings,
+          rejectCalls: formData.settings.rejectCalls,
+          rejectCallsMessage: formData.settings.rejectCallsMessage
+        }
       };
 
       if (id) {
@@ -573,7 +598,10 @@ export default function WhatsAppWApiForm() {
           type: 'whatsapp_wapi',
           settings: {
             autoReply: true,
-            notifyNewTickets: true
+            notifyNewTickets: true,
+            rejectCalls: formData.settings.rejectCalls,
+            rejectCallsMessage: formData.settings.rejectCallsMessage,
+            ...formData.settings
           },
           status: 'inactive',
           is_connected: false,
@@ -784,7 +812,67 @@ export default function WhatsAppWApiForm() {
               />
             </div>
 
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">
+            {/* Configurações de Ligações */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                {t('form.whatsapp.callSettings.title')}
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="rejectCalls"
+                      type="checkbox"
+                      checked={formData.settings.rejectCalls as boolean}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        settings: {
+                          ...prev.settings,
+                          rejectCalls: e.target.checked
+                        }
+                      }))}
+                      className="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="rejectCalls" className="font-medium text-gray-700 dark:text-gray-300">
+                      {t('form.whatsapp.callSettings.rejectCalls')}
+                    </label>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {t('form.whatsapp.callSettings.rejectCallsDescription')}
+                    </p>
+                  </div>
+                </div>
+
+                {formData.settings.rejectCalls && (
+                  <div>
+                    <label htmlFor="rejectCallsMessage" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('form.whatsapp.callSettings.rejectCallsMessage')}
+                    </label>
+                    <textarea
+                      id="rejectCallsMessage"
+                      rows={3}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                      value={formData.settings.rejectCallsMessage as string}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        settings: {
+                          ...prev.settings,
+                          rejectCallsMessage: e.target.value
+                        }
+                      }))}
+                      placeholder={t('form.whatsapp.callSettings.rejectCallsMessagePlaceholder')}
+                    />
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {t('form.whatsapp.callSettings.rejectCallsMessageHelp')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6 mt-4">
               {t('channels:form.whatsapp.selectConnectionType')}
             </h2>
             
@@ -1031,6 +1119,66 @@ export default function WhatsAppWApiForm() {
               teams={teams}
               isLoadingTeams={isLoadingTeams}
             />
+
+            {/* Configurações de Ligações */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                {t('form.whatsapp.callSettings.title')}
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="rejectCalls"
+                      type="checkbox"
+                      checked={formData.settings.rejectCalls as boolean}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        settings: {
+                          ...prev.settings,
+                          rejectCalls: e.target.checked
+                        }
+                      }))}
+                      className="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="rejectCalls" className="font-medium text-gray-700 dark:text-gray-300">
+                      {t('form.whatsapp.callSettings.rejectCalls')}
+                    </label>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {t('form.whatsapp.callSettings.rejectCallsDescription')}
+                    </p>
+                  </div>
+                </div>
+
+                {formData.settings.rejectCalls && (
+                  <div>
+                    <label htmlFor="rejectCallsMessage" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('form.whatsapp.callSettings.rejectCallsMessage')}
+                    </label>
+                    <textarea
+                      id="rejectCallsMessage"
+                      rows={3}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                      value={formData.settings.rejectCallsMessage as string}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        settings: {
+                          ...prev.settings,
+                          rejectCallsMessage: e.target.value
+                        }
+                      }))}
+                      placeholder={t('form.whatsapp.callSettings.rejectCallsMessagePlaceholder')}
+                    />
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {t('form.whatsapp.callSettings.rejectCallsMessageHelp')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Seção de Configurações de Conexão */}
             {(formData.is_tested || formData.settings.isInterflow) && !showConnectionSettings ? 

@@ -285,6 +285,15 @@
         "migrateButton": "Migrate to New Version",
         "migrating": "Migrating...",
         "success": "Channel successfully migrated to the new version!"
+      },
+      "callSettings": {
+        "title": "Call Settings",
+        "rejectCalls": "Automatically reject calls",
+        "rejectCallsDescription": "When enabled, incoming calls will be automatically rejected and a message will be sent",
+        "rejectCallsMessage": "Call rejection message",
+        "rejectCallsMessagePlaceholder": "Enter the message to be sent when a call is rejected...",
+        "rejectCallsMessageHelp": "This message will be automatically sent when a call is rejected",
+        "defaultRejectMessage": "Sorry, we don't answer calls. Please send a text message."
       }
     },
     "instagram": {

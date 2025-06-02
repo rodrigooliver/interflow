@@ -284,6 +284,15 @@
         "migrateButton": "Migrar a Nueva Versión",
         "migrating": "Migrando...",
         "success": "¡Canal migrado exitosamente a la nueva versión!"
+      },
+      "callSettings": {
+        "title": "Configuración de Llamadas",
+        "rejectCalls": "Rechazar llamadas automáticamente",
+        "rejectCallsDescription": "Cuando esté activado, las llamadas entrantes serán rechazadas automáticamente y se enviará un mensaje",
+        "rejectCallsMessage": "Mensaje de rechazo de llamada",
+        "rejectCallsMessagePlaceholder": "Ingrese el mensaje que se enviará cuando se rechace una llamada...",
+        "rejectCallsMessageHelp": "Este mensaje se enviará automáticamente cuando se rechace una llamada",
+        "defaultRejectMessage": "Disculpe, no atendemos llamadas. Por favor, envíe un mensaje de texto."
       }
     },
     "instagram": {

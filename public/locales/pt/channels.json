@@ -307,6 +307,15 @@
         "migrateButton": "Migrar para Nova Versão",
         "migrating": "Migrando...",
         "success": "Canal migrado com sucesso para a nova versão!"
+      },
+      "callSettings": {
+        "title": "Configurações de Ligações",
+        "rejectCalls": "Rejeitar ligações automaticamente",
+        "rejectCallsDescription": "Quando ativado, as ligações recebidas serão rejeitadas automaticamente e uma mensagem será enviada",
+        "rejectCallsMessage": "Mensagem de rejeição de ligação",
+        "rejectCallsMessagePlaceholder": "Digite a mensagem que será enviada quando uma ligação for rejeitada...",
+        "rejectCallsMessageHelp": "Esta mensagem será enviada automaticamente quando uma ligação for rejeitada",
+        "defaultRejectMessage": "Desculpe, não atendemos ligações. Por favor, envie uma mensagem de texto."
       }
     }
   },
