@@ -42,6 +42,13 @@ interface TaskObject {
   }>;
 }
 
+// Interface para dados de localização
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  jpegThumbnail?: string;
+}
+
 // Interface para configurações de funcionalidades por canal
 interface ChannelFeatures {
   canReplyToMessages: boolean;
@@ -968,6 +975,172 @@ export function MessageBubble({
         </div>
       </div>
     );
+  } else if (message.type === 'location') {
+    // Extrair dados de localização dos metadados
+    const locationData = metadata?.location as LocationData | undefined;
+    const latitude = locationData?.latitude;
+    const longitude = locationData?.longitude;
+    const jpegThumbnail = locationData?.jpegThumbnail;
+
+    // Criar URL do Google Maps
+    const googleMapsUrl = latitude && longitude 
+      ? `https://www.google.com/maps?q=${latitude},${longitude}&z=15`
+      : null;
+
+    messageContent = (
+      <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}>
+        <div className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-1 relative ${
+          isAgent
+            ? 'bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-700/80 dark:to-blue-900/60 text-gray-300 dark:text-gray-300'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+        } ${isPending ? 'mt-0.5 opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}>
+          
+          {/* Dropdown Menu */}
+          <div className={`absolute top-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity ${
+            isCustomer ? 'right-0 mr-1 mt-1' : 'right-0 mr-1 mt-1'
+          }`}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  <MoreVertical className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                side={isCustomer ? "right" : "left"}
+              >
+                {chatStatus === 'in_progress' && channelFeatures.canReplyToMessages && onReply && (
+                  <DropdownMenuItem onClick={handleReply}>
+                    <Reply className="w-4 h-4 mr-2" />
+                    {t('actions.reply')}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
+                  <Info className="w-4 h-4 mr-2" />
+                  {t('actions.details')}
+                </DropdownMenuItem>
+                {isDeletionAllowed && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteModal(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('actions.delete')}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div className="flex flex-col gap-2 p-1">
+            {/* Thumbnail da localização ou ícone padrão */}
+            <div 
+              className="relative cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => {
+                if (googleMapsUrl) {
+                  window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
+            >
+              {jpegThumbnail ? (
+                <img
+                  src={`data:image/jpeg;base64,${jpegThumbnail}`}
+                  alt="Localização"
+                  className="w-full max-w-[250px] h-[150px] object-cover rounded-lg"
+                />
+              ) : (
+                <div className="w-full max-w-[250px] h-[150px] bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <svg 
+                      className="w-12 h-12 mx-auto mb-2 text-gray-400 dark:text-gray-500" 
+                      fill="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {t('location.clickToOpen', 'Clique para abrir no mapa')}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Overlay com ícone do Google Maps */}
+              <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
+                <div className="bg-white bg-opacity-80 rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity">
+                  <svg 
+                    className="w-6 h-6 text-blue-600" 
+                    fill="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Coordenadas */}
+            {/* {latitude && longitude && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 px-1">
+                <span>{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
+              </div>
+            )} */}
+
+            {/* Conteúdo da mensagem se houver */}
+            {content && (
+              <div className={`${isAgent ? 'mr-12' : 'mr-[30px]'} -mb-1 px-2 pt-1`}>
+                <MarkdownRenderer content={content} className='text-sm' />
+              </div>
+            )}
+          </div>
+
+          <div className={`flex items-center justify-end space-x-1 text-xs mt-1 -mb-0.5 ${isAgent ? 'mr-0.5' : 'mr-1'} opacity-40 ${
+            isAgent
+              ? 'text-blue-100 dark:text-blue-200'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            {metadata?.edited === true && (
+              <span className="italic">{t('messageStatus.edited')}</span>
+            )}
+            <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {isAgent && status && (
+              <>
+                <MessageStatus 
+                  status={status} 
+                  errorMessage={error_message}
+                  isPending={isPending}
+                />
+                {status === 'failed' && onRetry && (
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRetry(message);
+                      }}
+                      className="ml-2 px-2 py-0.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      {t('actions.retry')}
+                    </button>
+                    {isDeletionAllowed && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDeleteModal(true);
+                        }}
+                        className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        {t('actions.delete')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   } else {
     messageContent = (
       <div 
@@ -1033,7 +1206,7 @@ export function MessageBubble({
           )}
           
           {/* Dropdown Menu */}
-          <div className={`absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity ${
+          <div className={`absolute top-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity ${
             isCustomer ? 'right-0 mr-1 mt-1' : 'right-0 mr-1 mt-1'
           }`}>
             <DropdownMenu>

@@ -13,7 +13,8 @@ import {
   UserCog, 
   XCircle, 
   Users, 
-  FileCode 
+  FileCode,
+  MapPin
 } from 'lucide-react';
 
 export const handleImageError = async (chatId: string) => {
@@ -87,6 +88,8 @@ export const getMessageTypeIcon = (messageType: string, className: string = "w-4
       return <Users className={className} />;
     case 'template':
       return <FileCode className={className} />;
+    case 'location':
+      return <MapPin className={className} />;
     default:
       return null;
   }

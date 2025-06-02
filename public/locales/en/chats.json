@@ -347,6 +347,7 @@
     "document": "Document",
     "sticker": "Sticker",
     "email": "Email",
+    "location": "Location",
     "user_start": "Chat started",
     "user_entered": "User entered",
     "user_left": "User left",
