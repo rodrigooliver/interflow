@@ -75,6 +75,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
   const [showAssigneesDropdown, setShowAssigneesDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [hasAccessError, setHasAccessError] = useState(false);
   const navigate = useNavigate();
   
   // Refs para detectar cliques fora dos dropdowns
@@ -306,6 +307,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
 
   const loadTask = async () => {
     setIsLoading(true);
+    setHasAccessError(false);
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -318,7 +320,15 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         .eq('id', taskId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          setHasAccessError(true);
+          toast.error(t('error.accessDenied', 'Você não tem acesso a esta tarefa ou ela não existe'));
+          return;
+        }
+        throw error;
+      }
+      
       if (data) {
         const locale = i18n.language === 'pt' ? ptBR : enUS;
         
@@ -375,6 +385,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     } catch (error) {
       console.error('Error loading task:', error);
       toast.error(t('error.loading'));
+      setHasAccessError(true);
     } finally {
       setIsLoading(false);
     }
@@ -1012,6 +1023,24 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+          </div>
+        ) : hasAccessError ? (
+          <div className="flex flex-col items-center justify-center h-64 p-6">
+            <div className="text-center">
+              <X className="w-16 h-16 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                {t('error.accessDeniedTitle', 'Acesso Negado')}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
+                {t('error.accessDeniedDescription', 'Você não tem permissão para visualizar ou editar esta tarefa. Ela pode não existir ou você não possui as permissões necessárias.')}
+              </p>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                {t('form.close', 'Fechar')}
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="p-6 pt-2 space-y-6">

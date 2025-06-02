@@ -191,7 +191,10 @@
     "checklistUpdate": "Erro ao atualizar lista de verificação",
     "updateStatus": "Erro ao atualizar status da tarefa",
     "noProject": "Selecione um projeto para a tarefa",
-    "noStage": "Selecione uma etapa para a tarefa"
+    "noStage": "Selecione uma etapa para a tarefa",
+    "accessDenied": "Você não tem acesso a esta tarefa ou ela não existe",
+    "accessDeniedTitle": "Acesso Negado",
+    "accessDeniedDescription": "Você não tem permissão para visualizar ou editar esta tarefa. Ela pode não existir ou você não possui as permissões necessárias."
   },
   "now": "Agora",
   "tomorrow": "Amanhã",

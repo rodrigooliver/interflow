@@ -138,7 +138,10 @@
     "checklistUpdate": "Error updating checklist",
     "updateStatus": "Error updating task status",
     "noProject": "Please select a project for the task",
-    "noStage": "Please select a stage for the task"
+    "noStage": "Please select a stage for the task",
+    "accessDenied": "You don't have access to this task or it doesn't exist",
+    "accessDeniedTitle": "Access Denied",
+    "accessDeniedDescription": "You don't have permission to view or edit this task. It may not exist or you don't have the necessary permissions."
   },
   "stages": {
     "title": "Stage",

@@ -192,8 +192,13 @@
     "checklistUpdate": "Error al actualizar lista de verificación",
     "updateStatus": "Error al actualizar estado de la tarea",
     "noProject": "Seleccione un proyecto para la tarea",
-    "noStage": "Seleccione una etapa para la tarea"
+    "noStage": "Seleccione una etapa para la tarea",
+    "accessDenied": "No tienes acceso a esta tarea o no existe",
+    "accessDeniedTitle": "Acceso Denegado",
+    "accessDeniedDescription": "No tienes permiso para ver o editar esta tarea. Puede que no exista o no poseas los permisos necesarios."
   },
   "now": "Ahora",
-  "tomorrow": "Mañana"
+  "tomorrow": "Mañana",
+  "customerTasks": "Tareas del Cliente",
+  "noTasksForCustomer": "Ninguna tarea registrada para este cliente"
 } 
