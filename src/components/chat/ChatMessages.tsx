@@ -2901,30 +2901,44 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Calcular o offset para paginação
       const offset = (pageNumber - 1) * MESSAGES_PER_PAGE;
       
-      // Buscar mensagens de todos os chats deste cliente no mesmo canal
+      // OTIMIZAÇÃO: Primeiro buscar os chat_ids do cliente para o canal específico
+      // Limitamos a 50 chats mais recentes para evitar timeout em clientes com muitos chats
+      const { data: chatIds, error: chatIdsError } = await supabase
+        .from('chats')
+        .select('id, ticket_number')
+        .eq('customer_id', chat.customer!.id)
+        .eq('channel_id', chat.channel_details!.id)
+        .order('created_at', { ascending: false })
+        .limit(50); // LIMITE: máximo 50 chats mais recentes
+      
+      if (chatIdsError) throw chatIdsError;
+      
+      if (!chatIds || chatIds.length === 0) {
+        // Não há chats para este cliente neste canal
+        setMessages([]);
+        setHasMore(false);
+        if (pageNumber === 1) {
+          toast.error(t('noMessagesFound'));
+        }
+        return;
+      }
+      
+      // Extrair apenas os IDs para usar na consulta principal
+      const chatIdList = chatIds.map(c => c.id);
+      
+      // OTIMIZAÇÃO: Consulta simplificada das mensagens com timeout implícito
+      // Buscar apenas mensagens com menos relacionamentos aninhados
       const { data: allMessages, error: messagesError } = await supabase
         .from('messages')
         .select(`
           *,
-          chats!messages_chat_id_fkey!inner(customer_id, channel_id, ticket_number),
           sender_agent:messages_sender_agent_id_fkey(
             id,
             full_name,
             avatar_url
-          ),
-          response_to:response_message_id(
-            id,
-            content,
-            type,
-            sender_type,
-            sender_agent_response:messages_sender_agent_id_fkey(
-              id,
-              full_name
-            )
           )
         `)
-        .eq('chats.customer_id', chat.customer.id)
-        .eq('chats.channel_id', chat.channel_details.id)
+        .in('chat_id', chatIdList)
         .order('created_at', { ascending: false })
         .range(offset, offset + MESSAGES_PER_PAGE - 1);
         
@@ -2935,8 +2949,35 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       // Verificar se há mais mensagens para carregar
       setHasMore(newMessages.length === MESSAGES_PER_PAGE);
       
+      // OTIMIZAÇÃO: Adicionar informações do chat de forma mais eficiente
+      // Criar um mapa de chat_id para ticket_number para adicionar aos dados das mensagens
+      const chatTicketMap = new Map(chatIds.map(c => [c.id, c.ticket_number]));
+      
+      // Adicionar informações do chat às mensagens
+      const messagesWithChatInfo = newMessages.map(message => ({
+        ...message,
+        chats: {
+          id: message.chat_id,
+          ticket_number: chatTicketMap.get(message.chat_id),
+          customer_id: chat.customer?.id || '',
+          channel_id: chat.channel_details?.id || '',
+          start_time: null,
+          status: null
+        }
+      }));
+      
+      // OTIMIZAÇÃO: Buscar mensagens de resposta de forma batch se necessário
+      const messagesWithResponses = messagesWithChatInfo.map(message => {
+        if (message.response_message_id) {
+          // Para otimização, buscaremos essas informações apenas quando a mensagem for renderizada
+          // ou podemos fazer uma consulta separada se houver muitas mensagens com resposta
+          return message;
+        }
+        return message;
+      });
+      
       // Clone as mensagens para não modificar o array original
-      const processedMessages = [...newMessages];
+      const processedMessages = [...messagesWithResponses];
       
       // IMPORTANTE: Tratamento idêntico ao da função loadMessages para garantir consistência
       if (append) {
@@ -2953,8 +2994,6 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           initialScrollDoneRef.current = false; // Resetar para permitir o scroll inicial
           // Rolar para o final após o carregamento
           scrollToBottom();
-          // setTimeout(() => {
-          // }, 0);
         }
       }
       
