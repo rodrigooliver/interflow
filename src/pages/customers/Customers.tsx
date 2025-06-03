@@ -1,28 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Plus, Loader2, Pencil, Trash2, GitMerge, Search, MessageSquare, Tag, Filter, X, Settings, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, GitMerge, Search, MessageSquare, Tag, Filter, X, Settings, ArrowUp, ArrowDown, Download, Upload, AlertTriangle, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { CustomerAddModal } from '../../components/customers/CustomerAddModal';
 import { CustomerEditModal } from '../../components/customers/CustomerEditModal';
 import { CustomerDeleteModal } from '../../components/customers/CustomerDeleteModal';
+import { CustomerImportModal } from '../../components/customers/CustomerImportModal';
 import { CRMStage } from '../../types/crm';
 import StageProgressBar from '../../components/customers/StageProgressBar';
 import CustomerTags from '../../components/customers/CustomerTags';
 import CustomerContacts from '../../components/customers/CustomerContacts';
 import { useTags, useCustomFieldDefinitions, useFunnels } from '../../hooks/useQueryes';
 import { getChannelIcon } from '../../utils/channel';
+import { Customer, CustomerContact } from '../../types/database';
 
-
-interface CustomerContact {
-  id: string;
-  customer_id: string;
-  type: string; // 'email', 'whatsapp', 'phone', etc.
-  value: string;
-  created_at?: string;
-  updated_at?: string;
-}
 
 interface CustomerTag {
   id: string;
@@ -44,7 +37,7 @@ interface CRMStageWithFunnel extends CRMStage {
 }
 
 // Adaptar a interface para que seja compatível com nosso processamento
-interface Customer {
+interface CustomerWithDetails {
   id: string;
   organization_id: string;
   name: string;
@@ -64,18 +57,6 @@ interface ColumnConfig {
   visible: boolean;
   isCustomField?: boolean;
   field_id?: string;
-}
-
-// Adicionar uma interface específica para os modais
-interface CustomerWithTagRelations extends Omit<Customer, 'tags'> {
-  tags: { 
-    tag_id: string;
-    tags: {
-      id: string;
-      name: string;
-      color: string;
-    };
-  }[];
 }
 
 // Interface para o retorno da função RPC search_customers
@@ -120,14 +101,15 @@ const ITEMS_PER_PAGE = 10;
 
 export default function Customers() {
   const { t } = useTranslation(['customers', 'common']);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { currentOrganizationMember } = useAuthContext();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithDetails | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [totalCustomers, setTotalCustomers] = useState(0);
@@ -177,6 +159,11 @@ export default function Customers() {
       [fieldId: string]: string;
     };
   }>({});
+
+  // Verificar limite de clientes
+  const organizationData = currentOrganizationMember?.organization;
+  const customerUsage = organizationData?.usage?.customers;
+  const isCustomerLimitReached = customerUsage && customerUsage.used >= customerUsage.limit;
 
   // Efeito para carregar configurações de colunas quando a organização mudar
   useEffect(() => {
@@ -405,7 +392,7 @@ export default function Customers() {
               ...customer,
               stage_id: stageId,
               crm_stages: adaptedStage
-            } as Customer; // Forçando o tipo Customer para evitar erro de tipo
+            } as CustomerWithDetails; // Forçando o tipo CustomerWithDetails para evitar erro de tipo
           }
           return customer;
         })
@@ -510,7 +497,7 @@ export default function Customers() {
           };
           
           // Usar uma conversão de tipo explícita para evitar erros de tipo
-          return formattedCustomer as unknown as Customer;
+          return formattedCustomer as unknown as CustomerWithDetails;
         });
         
         setCustomers(formattedCustomers);
@@ -522,7 +509,7 @@ export default function Customers() {
         
         // Construir mapa de valores de campo personalizado
         const newCustomFieldValues: Record<string, Record<string, string>> = {};
-        formattedCustomers.forEach((customer: Customer) => {
+        formattedCustomers.forEach((customer: CustomerWithDetails) => {
           if (customer.field_values) {
             newCustomFieldValues[customer.id] = customer.field_values;
           }
@@ -656,7 +643,7 @@ export default function Customers() {
   };
 
   // Função auxiliar para obter valores de campo personalizado durante a exportação
-  const getCustomFieldValueForExport = (customer: Customer, fieldId: string) => {
+  const getCustomFieldValueForExport = (customer: CustomerWithDetails, fieldId: string) => {
     if (customer.field_values) {
       return customer.field_values[fieldId] || '';
     }
@@ -664,7 +651,7 @@ export default function Customers() {
   };
 
   // Função para renderizar o valor de uma coluna
-  const renderColumnValue = (column: ColumnConfig, customer: Customer) => {
+  const renderColumnValue = (column: ColumnConfig, customer: CustomerWithDetails) => {
     if (column.isCustomField && column.field_id) {
       const value = getCustomFieldValue(customer.id, column.field_id);
       
@@ -727,9 +714,10 @@ export default function Customers() {
   };
 
   // Função para converter entre os formatos de tag
-  const convertToTagRelations = (customer: Customer): CustomerWithTagRelations => {
+  const convertToTagRelations = (customer: CustomerWithDetails) => {
     return {
       ...customer,
+      field_values: [], // Converter para array vazio por compatibilidade
       tags: customer.tags.map(tag => ({
         tag_id: tag.id,
         tags: {
@@ -738,7 +726,7 @@ export default function Customers() {
           color: tag.color
         }
       }))
-    };
+    } as unknown as Customer;
   };
 
   // Função para resetar as configurações de colunas
@@ -767,7 +755,6 @@ export default function Customers() {
 
   // Configurar a função de manipulação de contato no objeto window para que o componente CustomerContacts possa acessá-la
   useEffect(() => {
-    // @ts-expect-error - Ignorar erros de tipo para a função handleContactClick
     window.handleContactClick = handleContactClick;
     
     // Limpar a função ao desmontar o componente
@@ -805,10 +792,10 @@ export default function Customers() {
   };
 
   // Função para buscar todos os clientes para exportação
-  const fetchAllCustomersForExport = async (): Promise<Customer[]> => {
+  const fetchAllCustomersForExport = async (): Promise<CustomerWithDetails[]> => {
     if (!currentOrganizationMember) return [];
     
-    const allCustomers: Customer[] = [];
+    const allCustomers: CustomerWithDetails[] = [];
     let currentPageNum = 1;
     let hasMoreData = true;
     
@@ -872,7 +859,7 @@ export default function Customers() {
               } : null
             };
             
-            return formattedCustomer as unknown as Customer;
+            return formattedCustomer as unknown as CustomerWithDetails;
           });
           
           allCustomers.push(...formattedCustomers);
@@ -1187,6 +1174,11 @@ export default function Customers() {
             <div>
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {t('customers:title')}
+                {customerUsage && (
+                  <span className="ml-3 text-sm font-normal text-gray-500 dark:text-gray-400">
+                    ({customerUsage.used}/{customerUsage.limit} clientes)
+                  </span>
+                )}
               </h1>
               {!loading && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -1198,9 +1190,14 @@ export default function Customers() {
             {/* Botão adicionar - sempre visível no mobile */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full shadow-lg transition-colors"
+              disabled={isCustomerLimitReached}
+              className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-colors ${
+                isCustomerLimitReached
+                  ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
-              <Plus className="w-5 h-5 text-white" />
+              <Plus className={`w-5 h-5 ${isCustomerLimitReached ? 'text-gray-400' : 'text-white'}`} />
             </button>
           </div>
 
@@ -1257,7 +1254,14 @@ export default function Customers() {
                 <Settings className="w-4 h-4" />
               </button>
               
-              <div className="relative export-menu-container">
+              <div className="relative export-menu-container flex items-center space-x-2">
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="flex items-center justify-center w-8 h-8 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+                
                 <button
                   onClick={() => setShowExportOptions(!showExportOptions)}
                   disabled={isExporting}
@@ -1303,6 +1307,33 @@ export default function Customers() {
 
       {/* Conteúdo principal */}
       <div className={isMobileView ? "px-0" : "p-4 md:p-6 max-w-full overflow-hidden pb-20 md:pb-6"}>
+        {/* Mensagem de limite atingido */}
+        {isCustomerLimitReached && (
+          <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 p-4 rounded-md flex items-start justify-between">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium">
+                  {t('customers:limit.title', 'Limite de clientes atingido')}
+                </h3>
+                <p className="text-sm mt-1">
+                  {t('customers:limit.message', 'Você atingiu o limite de {{limit}} clientes do seu plano atual. Para adicionar mais clientes, faça upgrade do seu plano.', { limit: customerUsage?.limit })}
+                </p>
+              </div>
+            </div>
+            <div className="ml-4">
+              <Link
+                to="/app/settings/billing"
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 dark:text-yellow-300 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              >
+                {t('customers:limit.upgrade', 'Trocar Plano')}
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Painel de filtros */}
         {showFilters && (
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6 overflow-hidden">
@@ -1561,10 +1592,39 @@ export default function Customers() {
               <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
           ) : customers.length === 0 ? (
-            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-              {searchTerm || selectedFunnelId || selectedStageId || selectedTagIds.length > 0 
-                ? t('common:noResults') 
-                : t('customers:noCustomers')}
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <Share2 className="w-16 h-16 text-gray-300 dark:text-gray-600" />
+                <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+                  {searchTerm || selectedFunnelId || selectedStageId || selectedTagIds.length > 0 
+                    ? t('common:noResults') 
+                    : t('customers:noCustomers')}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                  {searchTerm || selectedFunnelId || selectedStageId || selectedTagIds.length > 0 
+                    ? 'Nenhum cliente encontrado com os filtros aplicados.' 
+                    : t('customers:noCustomersDescription', 'Você ainda não possui clientes cadastrados. Adicione seu primeiro cliente para começar.')}
+                </p>
+                {!searchTerm && !selectedFunnelId && !selectedStageId && selectedTagIds.length === 0 && (
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    disabled={isCustomerLimitReached}
+                    className={`mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      isCustomerLimitReached
+                        ? 'text-gray-400 bg-gray-300 cursor-not-allowed'
+                        : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                    }`}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {t('customers:addFirstCustomer', 'Adicionar primeiro cliente')}
+                  </button>
+                )}
+                {isCustomerLimitReached && !searchTerm && !selectedFunnelId && !selectedStageId && selectedTagIds.length === 0 && (
+                  <div className="mt-4 text-sm text-yellow-600 dark:text-yellow-400">
+                    {t('customers:limit.title', 'Limite de clientes atingido')}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <>
@@ -1663,7 +1723,10 @@ export default function Customers() {
                                   
                                   {column.id === 'contacts' && (
                                     <div>
-                                      <CustomerContacts contacts={customer.contacts} customer={customer} />
+                                      <CustomerContacts 
+                                        contacts={customer.contacts as unknown as CustomerContact[]} 
+                                        customer={convertToTagRelations(customer)} 
+                                      />
                                     </div>
                                   )}
                                   
@@ -1899,7 +1962,7 @@ export default function Customers() {
         {/* Edit Customer Modal */}
         {showEditModal && selectedCustomer && (
           <CustomerEditModal
-            customer={convertToTagRelations(selectedCustomer)}
+            customerId={selectedCustomer.id}
             onClose={() => {
               setShowEditModal(false);
               setSelectedCustomer(null);
@@ -1925,6 +1988,17 @@ export default function Customers() {
               loadCustomers(true);
               // Ajustar a página após a exclusão
               adjustPageAfterDeletion(totalCustomers - 1);
+            }}
+          />
+        )}
+
+        {/* Import Customer Modal */}
+        {showImportModal && (
+          <CustomerImportModal
+            onClose={() => setShowImportModal(false)}
+            onSuccess={() => {
+              loadCustomers(true);
+              setShowImportModal(false);
             }}
           />
         )}

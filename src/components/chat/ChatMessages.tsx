@@ -4169,7 +4169,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
 
       {showEditCustomer && chat?.customer && createPortal(
         <CustomerEditModal
-          customer={chat.customer}
+          customerId={chat.customer.id}
           onClose={() => setShowEditCustomer(false)}
           onSuccess={() => {
             loadChat(); // Recarrega os dados do chat para atualizar as informações do cliente

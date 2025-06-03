@@ -10,7 +10,6 @@ import { CustomFieldsSection } from '../custom-fields/CustomFieldsSection';
 import { countryCodes } from '../../utils/countryCodes';
 import { ContactsFormSection, ContactFormData, formatContactValue } from './ContactsFormSection';
 import { useFunnels, useTags } from '../../hooks/useQueryes';
-import { CustomerChatsList } from '../../components/chat/CustomerChatsList';
 import { useTasksByCustomer } from '../../hooks/useTasks';
 import { TaskCard } from '../tasks/TaskCard';
 import { TaskModal } from '../tasks/TaskModal';
@@ -22,25 +21,17 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import AppointmentCard from '../schedules/AppointmentCard';
 import AppointmentForm from '../schedules/AppointmentForm';
-
-// Interface para contatos do cliente
-interface CustomerContact {
-  id: string;
-  type: string;
-  value: string;
-  label: string | null;
-  customer_id: string;
-}
+import { CustomerChatsList } from '../chat/CustomerChatsList';
 
 interface CustomerEditModalProps {
-  customer: Customer;
+  customerId: string;
   onClose: () => void;
   onSuccess: (silentRefresh?: boolean) => void;
 }
 
-export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEditModalProps) {
+export function CustomerEditModal({ customerId, onClose, onSuccess }: CustomerEditModalProps) {
   // Log para depuração
-  // console.log('CustomerEditModal - Cliente recebido:', customer);
+  // console.log('CustomerEditModal - Customer ID recebido:', customerId);
   
   const { t } = useTranslation(['customers', 'common', 'crm', 'chats', 'tasks', 'schedules', 'appointments']);
   const { currentOrganizationMember } = useAuthContext();
@@ -50,14 +41,9 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   // Estado para controlar a tab ativa
   const [activeTab, setActiveTab] = useState<'general' | 'chats' | 'tasks' | 'schedules'>('general');
   
-  // Estado para armazenar os atendimentos do cliente
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [loadingChats, setLoadingChats] = useState(false);
-  const [chatsError, setChatsError] = useState('');
-  
   // Estado para tarefas - modal
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
   
   // Usando o hook useFunnels para carregar funis e estágios
   const { data: funnelsData, isLoading: loadingFunnels } = useFunnels(currentOrganizationMember?.organization.id);
@@ -89,9 +75,73 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   // Referência para controlar operações de tag em andamento
   const tagOperationInProgress = useRef(false);
   
+  // Referência para controlar se já carregou os dados do cliente
+  const hasLoadedCustomer = useRef(false);
+  
   const [isLoadingCustomerData, setIsLoadingCustomerData] = useState(false);
   const [customerData, setCustomerData] = useState<Customer | null>(null);
-  
+
+  // Extrair organizationId de forma estável
+  const organizationId = currentOrganizationMember?.organization.id;
+
+  // Efeito para carregar dados do cliente
+  useEffect(() => {
+    if (customerId && organizationId && !hasLoadedCustomer.current) {
+      const loadCustomer = async () => {
+        hasLoadedCustomer.current = true;
+        setIsLoadingCustomerData(true);
+        try {
+          const { data, error } = await supabase
+            .from('customers')
+            .select(`
+              *,
+              contacts:customer_contacts(*),
+              tags:customer_tags(
+                tag_id,
+                tags(*)
+              ),
+              field_values:customer_field_values(
+                id,
+                field_definition_id,
+                value,
+                updated_at,
+                field_definition:custom_fields_definition(*)
+              ),
+              stage:crm_stages(*)
+            `)
+            .eq('id', customerId)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            // Transformar os dados para o formato esperado
+            const formattedCustomer: Customer = {
+              ...data,
+              tags: data.tags?.map((tag: { tag_id: string; tags: { id: string; name: string; color: string } }) => ({
+                tag_id: tag.tag_id,
+                tags: tag.tags
+              })) || []
+            };
+
+            setCustomerData(formattedCustomer);
+          }
+        } catch (err) {
+          console.error('Erro ao carregar cliente:', err);
+          setError('Erro ao carregar dados do cliente');
+          hasLoadedCustomer.current = false; // Resetar em caso de erro para permitir retry
+        } finally {
+          setIsLoadingCustomerData(false);
+        }
+      };
+
+      loadCustomer();
+    }
+  }, [customerId, organizationId]);
+
+  // Usar customerData para garantir que temos os dados
+  const currentCustomer = customerData;
+
   // Efeito para fechar dropdowns quando clicar fora deles
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -143,29 +193,40 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
   
   // Estado para o formulário
   const [formData, setFormData] = useState({
-    name: customer.name,
+    name: '',
     funnelId: '',
-    stageId: customer.stage_id || '',
+    stageId: '',
     whatsappNumber: '',
     showFunnelDropdown: false,
     showFunnelSelector: false
   });
 
+  // Efeito para inicializar os dados do formulário quando o cliente é carregado
+  useEffect(() => {
+    if (currentCustomer) {
+      setFormData(prev => ({
+        ...prev,
+        name: currentCustomer.name || '',
+        stageId: currentCustomer.stage_id || ''
+      }));
+    }
+  }, [currentCustomer]);
+
   // Efeito para inicializar as tags selecionadas
   useEffect(() => {
-    if (customer.tags) {
-      const tagIds = customer.tags.map(tagRelation => tagRelation.tag_id);
+    if (currentCustomer?.tags) {
+      const tagIds = currentCustomer.tags.map(tagRelation => tagRelation.tag_id);
       // Só atualizar as tags se não houver tags selecionadas
       if (selectedTags.length === 0) {
         setSelectedTags(tagIds);
       }
     }
-  }, [customer.tags]);
+  }, [currentCustomer?.tags]);
 
   // Efeito para inicializar os contatos
   useEffect(() => {
-    if (customer.contacts) {
-      const formattedContacts = customer.contacts.map(contact => {
+    if (currentCustomer?.contacts) {
+      const formattedContacts = currentCustomer.contacts.map(contact => {
         const isWhatsApp = contact.type === ContactType.WHATSAPP;
         const countryCode = isWhatsApp ? getWhatsAppCountryCode(contact.value) : 'BR';
         
@@ -182,12 +243,12 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
       
       setContacts(formattedContacts);
     }
-  }, [customer.contacts]);
+  }, [currentCustomer?.contacts]);
 
   // Efeito para definir o funil com base no estágio do cliente
   useEffect(() => {
-    if (!loadingFunnels && stages.length > 0 && customer.stage_id) {
-      const customerStage = stages.find(stage => stage.id === customer.stage_id);
+    if (!loadingFunnels && stages.length > 0 && currentCustomer?.stage_id) {
+      const customerStage = stages.find(stage => stage.id === currentCustomer.stage_id);
       if (customerStage) {
         const funnel = funnels.find(f => f.id === customerStage.funnel_id);
         if (funnel) {
@@ -195,7 +256,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         }
       }
     }
-  }, [customer.stage_id, stages, funnels, loadingFunnels]);
+  }, [currentCustomer?.stage_id, stages, funnels, loadingFunnels]);
 
   const handleTagToggle = (tagId: string) => {
     // Evitar múltiplas operações simultâneas
@@ -215,7 +276,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
       // console.log(`Tag ${tagId} ${isSelected ? 'removida' : 'adicionada'}. Tags selecionadas:`, newSelectedTags);
       
       // Salvar silenciosamente após alterar as tags
-      if (currentOrganizationMember && customer.id) {
+      if (currentOrganizationMember && currentCustomer?.id) {
         // Verificar se a operação está em andamento
         const feedbackElement = document.createElement('div');
         feedbackElement.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg z-50';
@@ -223,40 +284,45 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         document.body.appendChild(feedbackElement);
         
         // Atualizar as tags no banco de dados
-        updateCustomerTags(customer.id, newSelectedTags, currentOrganizationMember.organization.id)
-          .then(() => {
-            // console.log('Tags atualizadas com sucesso');
-            // Chamar onSuccess com silentRefresh=true para atualizar a lista de clientes sem fechar o modal
-            onSuccess(true);
-            
-            // Atualizar feedback visual
-            feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-            feedbackElement.textContent = isSelected ? 'Tag removida' : 'Tag adicionada';
-            
-            setTimeout(() => {
-              feedbackElement.remove();
-            }, 1500);
-          })
-          .catch(error => {
-            console.error('Erro ao atualizar tags:', error);
-            
-            // Reverter a alteração no estado local
-            setSelectedTags(isSelected ? [...prev, tagId] : prev.filter(id => id !== tagId));
-            
-            // Mostrar mensagem de erro
-            feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
-            feedbackElement.textContent = `Erro ao ${isSelected ? 'remover' : 'adicionar'} tag: ${error.message || 'Tente novamente'}`;
-            
-            setTimeout(() => {
-              feedbackElement.remove();
-            }, 3000);
-          })
-          .finally(() => {
-            // Liberar o bloqueio após um pequeno atraso para evitar cliques rápidos
-            setTimeout(() => {
-              tagOperationInProgress.current = false;
-            }, 300);
-          });
+        if (currentCustomer.id) {
+          updateCustomerTags(currentCustomer.id, newSelectedTags, organizationId!)
+            .then(() => {
+              // console.log('Tags atualizadas com sucesso');
+              // Chamar onSuccess com silentRefresh=true para atualizar a lista de clientes sem fechar o modal
+              onSuccess(true);
+              
+              // Atualizar feedback visual
+              feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+              feedbackElement.textContent = isSelected ? 'Tag removida' : 'Tag adicionada';
+              
+              setTimeout(() => {
+                feedbackElement.remove();
+              }, 1500);
+            })
+            .catch(error => {
+              console.error('Erro ao atualizar tags:', error);
+              
+              // Reverter a alteração no estado local
+              setSelectedTags(isSelected ? [...prev, tagId] : prev.filter(id => id !== tagId));
+              
+              // Mostrar mensagem de erro
+              feedbackElement.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+              feedbackElement.textContent = `Erro ao ${isSelected ? 'remover' : 'adicionar'} tag: ${error.message || 'Tente novamente'}`;
+              
+              setTimeout(() => {
+                feedbackElement.remove();
+              }, 3000);
+            })
+            .finally(() => {
+              // Liberar o bloqueio após um pequeno atraso para evitar cliques rápidos
+              setTimeout(() => {
+                tagOperationInProgress.current = false;
+              }, 300);
+            });
+        } else {
+          // Se não houver organização ou cliente, liberar o bloqueio imediatamente
+          tagOperationInProgress.current = false;
+        }
       } else {
         // Se não houver organização ou cliente, liberar o bloqueio imediatamente
         tagOperationInProgress.current = false;
@@ -311,20 +377,22 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         // console.log('Nova tag criada e selecionada:', data);
         
         // Salvar silenciosamente após criar a tag
-        if (customer.id) {
+        if (currentCustomer?.id) {
           try {
-            await updateCustomerTags(customer.id, newSelectedTags, currentOrganizationMember.organization.id);
-            onSuccess(true);
-            
-            // Mostrar feedback visual temporário
-            const feedbackElement = document.createElement('div');
-            feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-            feedbackElement.textContent = 'Tag criada e adicionada';
-            document.body.appendChild(feedbackElement);
-            
-            setTimeout(() => {
-              feedbackElement.remove();
-            }, 1500);
+            if (currentCustomer.id) {
+              await updateCustomerTags(currentCustomer.id, newSelectedTags, organizationId!);
+              onSuccess(true);
+              
+              // Mostrar feedback visual temporário
+              const feedbackElement = document.createElement('div');
+              feedbackElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+              feedbackElement.textContent = 'Tag criada e adicionada';
+              document.body.appendChild(feedbackElement);
+              
+              setTimeout(() => {
+                feedbackElement.remove();
+              }, 1500);
+            }
           } catch (updateError: unknown) {
             console.error('Erro ao adicionar novas tags:', updateError);
             
@@ -400,11 +468,9 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
         .update({
           name: formData.name.trim(),
           stage_id: stageId || null,
-          sale_price: customerData?.sale_price === undefined ? null : customerData?.sale_price
+          sale_price: currentCustomer?.sale_price === undefined ? null : currentCustomer?.sale_price
         })
-        .eq('id', customer.id)
-        .select()
-        .single();
+        .eq('id', currentCustomer?.id || '');
         
       if (updateError) throw updateError;
       
@@ -416,7 +482,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
       const { data: existingContacts, error: contactsError } = await supabase
         .from('customer_contacts')
         .select('id, type, value')
-        .eq('customer_id', customer.id);
+        .eq('customer_id', currentCustomer?.id || '');
         
       if (contactsError) throw contactsError;
       
@@ -444,7 +510,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
               label: contact.label
             })
             .eq('id', contact.id)
-            .eq('customer_id', customer.id);
+            .eq('customer_id', currentCustomer?.id || '');
             
           if (updateContactError) throw updateContactError;
         } else {
@@ -452,10 +518,10 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
           const { error: insertContactError } = await supabase
             .from('customer_contacts')
             .insert({
-              customer_id: customer.id,
+              customer_id: currentCustomer?.id || '',
               type: contact.type,
               value: formattedValue,
-              label: contact.label
+              label: contact.label || null
             });
             
           if (insertContactError) throw insertContactError;
@@ -469,18 +535,18 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
             .from('customer_contacts')
             .delete()
             .eq('id', existingId)
-            .eq('customer_id', customer.id);
+            .eq('customer_id', currentCustomer?.id || '');
             
           if (deleteContactError) throw deleteContactError;
         }
       }
 
       // If stage changed and a stage is selected, record in history
-      if (stageId && stageId !== customer.stage_id) {
+      if (stageId && stageId !== currentCustomer?.stage_id) {
         const { error: historyError } = await supabase
           .from('customer_stage_history')
           .insert({
-            customer_id: customer.id,
+            customer_id: currentCustomer?.id || '',
             stage_id: stageId,
             organization_id: currentOrganizationMember.organization.id
           });
@@ -525,172 +591,6 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
 
   // Get stages for the selected funnel
   const filteredStages = stages.filter(stage => stage.funnel_id === formData.funnelId);
-
-  // Efeito para carregar os dados do cliente em uma única consulta
-  // Esta abordagem melhora a performance ao:
-  // 1. Reduzir o número de requisições ao banco de dados (de várias para apenas uma)
-  // 2. Carregar todos os dados relacionados em uma única consulta (cliente, contatos, campos personalizados e tags)
-  // 3. Evitar consultas adicionais para contatos e campos personalizados
-  // 4. Aproveitar o cache do React Query para os dados que não mudam com frequência
-  // 5. Melhorar a experiência do usuário com carregamento mais rápido
-  useEffect(() => {
-    if (!customer.id || !currentOrganizationMember?.organization.id) return;
-    
-    const loadCustomerData = async () => {
-      setIsLoadingCustomerData(true);
-      
-      try {
-        // Fazer uma única consulta para obter o cliente com contatos e campos personalizados
-        const { data, error } = await supabase
-          .from('customers')
-          .select(`
-            *,
-            contacts:customer_contacts(*),
-            field_values:customer_field_values(
-              id,
-              field_definition_id,
-              value,
-              updated_at,
-              field_definition:custom_fields_definition(*)
-            ),
-            tags:customer_tags(
-              tag_id,
-              tags:tags(*)
-            )
-          `)
-          .eq('id', customer.id)
-          .eq('organization_id', currentOrganizationMember.organization.id)
-          .single();
-          
-        if (error) throw error;
-        
-        // Atualizar o estado com os dados carregados
-        if (data) {
-          // console.log('Dados do cliente carregados:', data);
-          setCustomerData(data);
-          
-          // Inicializar contatos
-          if (data.contacts) {
-            const formattedContacts = data.contacts.map((contact: CustomerContact) => {
-              const isWhatsApp = contact.type === ContactType.WHATSAPP;
-              const countryCode = isWhatsApp ? getWhatsAppCountryCode(contact.value) : 'BR';
-              
-              return {
-                id: contact.id,
-                type: contact.type as ContactType,
-                value: isWhatsApp ? getWhatsAppNumberWithoutCode(contact.value) : contact.value,
-                label: contact.label || null,
-                isNew: false,
-                countryCode,
-                showTypeDropdown: false
-              };
-            });
-            
-            setContacts(formattedContacts);
-          }
-          
-          // Inicializar tags
-          if (data.tags) {
-            const tagIds = data.tags.map((tag: { tag_id: string }) => tag.tag_id);
-            setSelectedTags(tagIds);
-          }
-          
-          // Inicializar estágio e funil
-          if (data.stage_id) {
-            setFormData(prev => ({ ...prev, stageId: data.stage_id }));
-            
-            // Encontrar o funil correspondente ao estágio
-            const customerStage = stages.find(stage => stage.id === data.stage_id);
-            if (customerStage) {
-              const funnel = funnels.find(f => f.id === customerStage.funnel_id);
-              if (funnel) {
-                setFormData(prev => ({ ...prev, funnelId: funnel.id }));
-              }
-            }
-          }
-          
-          // Atualizar o nome do cliente
-          setFormData(prev => ({ ...prev, name: data.name }));
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados do cliente:', error);
-      } finally {
-        setIsLoadingCustomerData(false);
-      }
-    };
-    
-    loadCustomerData();
-  }, [customer.id, currentOrganizationMember?.organization.id, stages, funnels]);
-
-  // Função para carregar os atendimentos do cliente
-  const loadCustomerChats = async () => {
-    if (!customer.id || !currentOrganizationMember?.organization.id) return;
-    
-    setLoadingChats(true);
-    setChatsError('');
-    
-    try {
-      // Carregar os atendimentos do cliente com detalhes do agente e última mensagem
-      const { data: chatsData, error: chatsError } = await supabase
-        .from('chats')
-        .select(`
-          *,
-          assigned_agent:profiles(
-            full_name,
-            email
-          ),
-          last_message:messages!chats_last_message_id_fkey(
-            content,
-            status,
-            error_message,
-            created_at
-          ),
-          channel_details:chat_channels(
-            id,
-            name,
-            type
-          ),
-          team:service_teams!inner(
-            id,
-            name,
-            members:service_team_members!inner(
-              id,
-              user_id
-            )
-          )
-        `)
-        .eq('customer_id', customer.id)
-        .eq('team.members.user_id', currentOrganizationMember?.profile_id)
-        .order('created_at', { ascending: false });
-
-      if (chatsError) throw chatsError;
-
-      // Processar os atendimentos para manter a estrutura existente
-      const processedChats = (chatsData || []).map(chat => ({
-        ...chat,
-        last_message: chat.last_message ? {
-          content: chat.last_message.content,
-          status: chat.last_message.status,
-          error_message: chat.last_message.error_message,
-          created_at: chat.last_message.created_at
-        } : undefined
-      }));
-
-      setChats(processedChats);
-    } catch (error) {
-      console.error('Erro ao carregar atendimentos do cliente:', error);
-      setChatsError(t('common:error'));
-    } finally {
-      setLoadingChats(false);
-    }
-  };
-
-  // Efeito para carregar os atendimentos quando a tab de atendimentos for selecionada
-  useEffect(() => {
-    if (activeTab === 'chats') {
-      loadCustomerChats();
-    }
-  }, [activeTab, customer.id]);
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-45 flex md:items-stretch z-50">
@@ -965,7 +865,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                       <ContactsFormSection 
                         contacts={contacts}
                         setContacts={setContacts}
-                        customer={customer}
+                        customer={currentCustomer || undefined}
                         onChatModalClose={onClose}
                       />
 
@@ -1137,7 +1037,7 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                               step="0.01"
                               min="0"
                               className="w-full h-10 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 pl-8 pr-3"
-                              value={customerData?.sale_price || ''}
+                              value={currentCustomer?.sale_price || ''}
                               onChange={(e) => {
                                 const value = e.target.value ? parseFloat(e.target.value) : undefined;
                                 setCustomerData(prev => prev ? { ...prev, sale_price: value } : null);
@@ -1153,9 +1053,9 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
                     {/* Seção de Campos Personalizados */}
                     {!isLoadingCustomerData && (
                       <CustomFieldsSection 
-                        customerId={customer.id}
+                        customerId={currentCustomer?.id || ''}
                         organizationId={currentOrganizationMember?.organization.id}
-                        preloadedFieldValues={customerData?.field_values}
+                        preloadedFieldValues={currentCustomer?.field_values}
                         onFieldsChange={() => {
                           // Não precisamos mais fazer nada aqui, apenas indicar que o callback existe
                           // Os campos são gerenciados diretamente pelo CustomFieldsSection
@@ -1197,32 +1097,29 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
               )}
 
               {/* Tab de atendimentos */}
-              {activeTab === 'chats' && (
+              {activeTab === 'chats' && currentCustomer?.id && currentOrganizationMember && (
                 <div className="p-6">
                   <CustomerChatsList 
-                    chats={chats}
-                    loadingChats={loadingChats}
-                    errorMessage={chatsError}
-                    organizationId={currentOrganizationMember?.organization.id || ''}
+                    customerId={currentCustomer.id}
+                    organizationId={organizationId!}
                     isModal={true}
-                    onCloseModal={onClose}
                   />
                 </div>
               )}
 
               {/* Tab de tarefas */}
-              {activeTab === 'tasks' && (
+              {activeTab === 'tasks' && organizationId && currentCustomer && (
                 <CustomerTasksTab 
-                  customer={customer}
-                  organizationId={currentOrganizationMember?.organization.id || ''}
+                  customer={currentCustomer}
+                  organizationId={organizationId}
                 />
               )}
 
               {/* Tab de agendamentos */}
-              {activeTab === 'schedules' && (
+              {activeTab === 'schedules' && organizationId && currentCustomer && (
                 <CustomerAppointmentsTab 
-                  customer={customer}
-                  organizationId={currentOrganizationMember?.organization.id || ''}
+                  customer={currentCustomer}
+                  organizationId={organizationId}
                 />
               )}
             </>
@@ -1231,16 +1128,16 @@ export function CustomerEditModal({ customer, onClose, onSuccess }: CustomerEdit
       </div>
 
       {/* Modal para criar/editar tarefas */}
-      {showTaskModal && (
+      {showTaskModal && currentOrganizationMember && (
         <TaskModal
           onClose={() => {
             setShowTaskModal(false);
-            setSelectedTaskId(null);
+            setSelectedTask(null);
           }}
-          organizationId={currentOrganizationMember?.organization.id}
-          taskId={selectedTaskId || undefined}
-          mode={selectedTaskId ? 'edit' : 'create'}
-          initialCustomerId={customer.id}
+          organizationId={organizationId}
+          taskId={selectedTask?.id || undefined}
+          mode={selectedTask ? 'edit' : 'create'}
+          initialCustomerId={customerId || ''}
         />
       )}
     </div>
@@ -1254,6 +1151,7 @@ function CustomerTasksTab({ customer, organizationId }: { customer: Customer, or
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
   const [showDeleteTaskModal, setShowDeleteTaskModal] = useState(false);
   const queryClient = useQueryClient();
+  const { currentOrganizationMember } = useAuthContext();
 
   // Buscar tarefas do cliente usando o hook
   const { data: tasks = [], isLoading: tasksLoading } = useTasksByCustomer(
@@ -1395,14 +1293,14 @@ function CustomerTasksTab({ customer, organizationId }: { customer: Customer, or
       )}
 
       {/* Modal para criar/editar tarefas */}
-      {showTaskModal && (
+      {showTaskModal && currentOrganizationMember && (
         <TaskModal
           onClose={() => {
             setShowTaskModal(false);
             setSelectedTask(null);
           }}
           organizationId={organizationId}
-          taskId={selectedTask?.id}
+          taskId={selectedTask?.id || undefined}
           mode={selectedTask ? 'edit' : 'create'}
           initialCustomerId={customer.id}
         />

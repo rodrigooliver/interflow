@@ -3,6 +3,7 @@
   "activeFilters": "Filtros ativos",
   "addContact": "Adicionar contato",
   "addCustomer": "Adicionar Cliente",
+  "addSuccess": "Cliente adicionado com sucesso",
   "addNewCustomer": "Adicionar novo cliente",
   "allContacts": "Todos os contatos",
   "contactLabel": "Nome do contato",
@@ -66,6 +67,7 @@
   "tabs": {
     "general": "Geral",
     "chats": "Atendimentos",
+    "chatsNotImplemented": "Funcionalidade não implementada",
     "tasks": "Tarefas",
     "schedules": "Agendamentos"
   },

@@ -600,7 +600,7 @@ export function TaskCard({
       {/* Modal de edição do cliente */}
       {showCustomerEditModal && task.customer && (
         <CustomerEditModal
-          customer={task.customer}
+          customerId={task.customer.id}
           onClose={handleCloseCustomerEditModal}
           onSuccess={handleCustomerEditSuccess}
         />

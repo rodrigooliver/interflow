@@ -1,6 +1,7 @@
 {
   "title": "Clientes",
   "addCustomer": "Agregar Cliente",
+  "addSuccess": "Cliente agregado con éxito",
   "addContact": "Agregar contacto",
   "addNewCustomer": "Agregar nuevo cliente",
   "allContacts": "Todos los contactos",
@@ -27,6 +28,7 @@
   "tabs": {
     "general": "General",
     "chats": "Conversaciones",
+    "chatsNotImplemented": "Funcionalidad no implementada",
     "tasks": "Tareas",
     "schedules": "Citas"
   },

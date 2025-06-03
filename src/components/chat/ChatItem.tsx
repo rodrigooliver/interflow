@@ -650,7 +650,7 @@ export function ChatItem({
 
       {showEditCustomerModal && selectedCustomer && (
         <CustomerEditModal
-          customer={selectedCustomer}
+          customerId={selectedCustomer.id}
           onClose={handleCloseEditCustomerModal}
           onSuccess={handleCustomerEditSuccess}
         />

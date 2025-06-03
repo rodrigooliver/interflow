@@ -762,7 +762,7 @@ export default function CRMFunnel() {
       {/* Edit Customer Modal */}
       {showEditCustomerModal && selectedCustomer && (
         <CustomerEditModal
-          customer={selectedCustomer}
+          customerId={selectedCustomer.id}
           onClose={() => {
             setShowEditCustomerModal(false);
             setSelectedCustomer(null);

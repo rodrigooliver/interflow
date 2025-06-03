@@ -741,6 +741,7 @@ export interface CustomFieldDefinition {
   mask_type?: 'cpf' | 'cnpj' | 'phone' | 'cep' | 'rg' | 'custom';
   custom_mask?: string;
   description?: string;
+  slug: string;
   created_at: string;
   updated_at: string;
 }

@@ -611,7 +611,7 @@ const EmrPatients = () => {
       {/* Modal de edição */}
       {showEditModal && selectedPatient && (
         <CustomerEditModal
-          customer={selectedPatient}
+          customerId={selectedPatient.id}
           onClose={handleCloseEditModal}
           onSuccess={handleEditSuccess}
         />

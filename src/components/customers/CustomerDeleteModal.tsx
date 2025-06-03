@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../../lib/supabase';
 import { Customer } from '../../types/database';
 import { useAuthContext } from '../../contexts/AuthContext';
+import api from '../../lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CustomerDeleteModalProps {
   customer: Customer;
@@ -13,6 +14,8 @@ interface CustomerDeleteModalProps {
 
 export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDeleteModalProps) {
   const { t } = useTranslation(['customers', 'common']);
+  const { profile } = useAuthContext();
+  const queryClient = useQueryClient();
   const { currentOrganizationMember } = useAuthContext();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -22,52 +25,46 @@ export function CustomerDeleteModal({ customer, onClose, onSuccess }: CustomerDe
     if (!currentOrganizationMember) return;
     
     setDeleting(true);
+    setError('');
+    setHasChats(false);
+    
     try {
-      // Check if customer has any active chats
-      const { count: chatsCount, error: chatsError } = await supabase
-        .from('chats')
-        .select('*', { count: 'exact', head: true })
-        .eq('customer_id', customer.id);
+      // Chamar a API do backend para excluir o cliente
+      const response = await api.delete(`/api/${currentOrganizationMember.organization.id}/customers/${customer.id}`);
 
-      if (chatsError) throw chatsError;
-      
-      if (chatsCount && chatsCount > 0) {
-        setHasChats(true);
-        setError('Não é possível excluir o cliente pois existem atendimentos em andamento.');
+      if (!response.data.success) {
+        if (response.data.hasChats) {
+          setHasChats(true);
+          setError('Não é possível excluir o cliente pois existem atendimentos em andamento.');
+        } else {
+          setError(response.data.error || t('common:error'));
+        }
         return;
       }
 
-      // Primeiro, excluir os contatos do cliente
-      const { error: contactsError } = await supabase
-        .from('customer_contacts')
-        .delete()
-        .eq('customer_id', customer.id);
-
-      if (contactsError) throw contactsError;
-
-      //Excluir as flow_sessions do cliente
-      const { error: flowsSessionsError } = await supabase
-        .from('flow_sessions')
-        .delete()
-        .eq('customer_id', customer.id);
-
-      if (flowsSessionsError) throw flowsSessionsError;
-
-      // Depois, excluir o cliente
-      const { error: deleteError } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', customer.id)
-        .eq('organization_id', currentOrganizationMember.organization.id);
-
-      if (deleteError) throw deleteError;
+        //Invalidar cache organization após 5 segundos
+        // setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['organization', profile?.id] });
+        // }, 5000);
 
       // Chamar onSuccess com parâmetro silentRefresh=true para atualização silenciosa
-      onSuccess(true);
+      // onSuccess(true);
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting customer:', error);
-      setError(t('common:error'));
+      
+      // Tratar erros específicos da API
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: { error?: string; hasChats?: boolean } } };
+        if (apiError.response?.data?.hasChats) {
+          setHasChats(true);
+          setError('Não é possível excluir o cliente pois existem atendimentos em andamento.');
+        } else {
+          setError(apiError.response?.data?.error || t('common:error'));
+        }
+      } else {
+        setError(t('common:error'));
+      }
     } finally {
       setDeleting(false);
     }

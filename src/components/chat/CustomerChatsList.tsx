@@ -19,6 +19,7 @@ import {
 import { toast } from 'react-hot-toast';
 import api from '../../lib/api';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 // Interface para os locales de formatação de data
 const locales = {
@@ -28,9 +29,7 @@ const locales = {
 };
 
 export interface CustomerChatsListProps {
-  chats: Chat[];
-  loadingChats?: boolean;
-  errorMessage?: string;
+  customerId: string;
   organizationId: string;
   isModal?: boolean; // Define se está sendo exibido em um modal ou página completa
   onCloseModal?: () => void; // Callback opcional para fechar o modal pai
@@ -38,9 +37,7 @@ export interface CustomerChatsListProps {
 }
 
 export function CustomerChatsList({
-  chats: initialChats,
-  loadingChats = false,
-  errorMessage = '',
+  customerId,
   organizationId,
   isModal = false,
   onCloseModal,
@@ -51,7 +48,9 @@ export function CustomerChatsList({
   const { currentOrganizationMember } = useAuthContext();
   
   // Estado local de chats
-  const [chats, setChats] = useState<Chat[]>(initialChats);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   // Estados para o modal de chat
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -77,8 +76,80 @@ export function CustomerChatsList({
 
   // Atualizar os chats locais quando os props mudarem
   useEffect(() => {
-    setChats(initialChats);
-  }, [initialChats]);
+    setChats([]);
+    setLoading(true);
+    setError('');
+  }, [customerId]);
+
+  // Função para carregar os chats do customer
+  async function loadChats() {
+    if (!currentOrganizationMember || !customerId) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Load customer's chats with assigned agent details, last message, and channel details
+      const { data: chatsData, error: chatsError } = await supabase
+        .from('chats')
+        .select(`
+          *,
+          assigned_agent:profiles(
+            full_name,
+            email
+          ),
+          last_message:messages!chats_last_message_id_fkey(
+            content,
+            status,
+            error_message,
+            created_at
+          ),
+          channel_details:chat_channels(
+            id,
+            name,
+            type
+          ),
+          team:service_teams!inner(
+            id,
+            name,
+            members:service_team_members!inner(
+              id,
+              user_id
+            )
+          )
+        `)
+        .eq('customer_id', customerId)
+        .eq('team.members.user_id', currentOrganizationMember?.profile_id)
+        .order('created_at', { ascending: false });
+
+      if (chatsError) throw chatsError;
+
+      // Processar os chats para manter a estrutura existente
+      const processedChats = (chatsData || []).map(chat => ({
+        ...chat,
+        last_message: chat.last_message ? {
+          content: chat.last_message.content,
+          status: chat.last_message.status,
+          error_message: chat.last_message.error_message,
+          created_at: chat.last_message.created_at
+        } : undefined
+      }));
+
+      setChats(processedChats);
+    } catch (error) {
+      console.error('Error loading customer chats:', error);
+      setError(t('common:error'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Carregar chats quando o componente montar ou o customerId/currentOrganizationMember mudar
+  useEffect(() => {
+    if (currentOrganizationMember && customerId) {
+      loadChats();
+    }
+  }, [currentOrganizationMember, customerId]);
 
   // Função para obter o ícone de status da mensagem
   const getStatusIcon = (status: string) => {
@@ -189,10 +260,10 @@ export function CustomerChatsList({
       
       const chatIdToDelete = chatToDelete.id;
       
-      // Esperar a animação terminar antes de atualizar o estado
+      // Esperar a animação terminar antes de recarregar os chats
       setTimeout(() => {
-        // Remover o chat do estado
-        setChats(prevChats => prevChats.filter(chat => chat.id !== chatIdToDelete));
+        // Recarregar os chats do servidor
+        loadChats();
         
         // Notificar o componente pai se necessário
         if (onMergeChats) {
@@ -231,7 +302,7 @@ export function CustomerChatsList({
         chatElement.classList.add('opacity-0', 'scale-95');
       }
       
-      // Notificar o componente pai
+      // Notificar o componente pai se necessário
       if (onMergeChats) {
         onMergeChats(details.sourceChatId);
       }
@@ -239,10 +310,10 @@ export function CustomerChatsList({
       // Mostrar mensagem de sucesso
       toast.success(t('chats:merge.successMessage', 'Atendimentos mesclados com sucesso'));
       
-      // Esperar a animação terminar antes de atualizar o estado
+      // Esperar a animação terminar antes de recarregar os chats
       setTimeout(() => {
-        // Atualizar o estado local
-        setChats(prevChats => prevChats.filter(chat => chat.id !== details.sourceChatId));
+        // Recarregar os chats do servidor
+        loadChats();
         
         // Fechar o modal e resetar o estado
         setShowMergeChatModal(false);
@@ -275,10 +346,10 @@ export function CustomerChatsList({
       // Exibir mensagem de sucesso
       toast.success(t('chats:transfer.singleChatSuccess', 'Atendimento transferido com sucesso'));
       
-      // Esperar a animação terminar antes de atualizar o estado
+      // Esperar a animação terminar antes de recarregar os chats
       setTimeout(() => {
-        // Remover o chat transferido da lista
-        setChats(prevChats => prevChats.filter(chat => chat.id !== transferChat.id));
+        // Recarregar os chats do servidor
+        loadChats();
         
         // Fechar o modal
         setShowTransferChatModal(false);
@@ -337,7 +408,7 @@ export function CustomerChatsList({
   }, [chats]);
 
   // Renderização do componente
-  if (loadingChats) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -345,10 +416,10 @@ export function CustomerChatsList({
     );
   }
 
-  if (errorMessage) {
+  if (error) {
     return (
       <div className="bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 p-4 rounded-lg">
-        {errorMessage}
+        {error}
       </div>
     );
   }

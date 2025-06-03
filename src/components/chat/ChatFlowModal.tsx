@@ -93,7 +93,7 @@ export function ChatFlowModal({ onClose }: ChatFlowModalProps) {
   if (currentStep === 'edit_customer' && selectedCustomer) {
     return (
       <CustomerEditModal
-        customer={selectedCustomer}
+        customerId={selectedCustomer.id}
         onClose={() => setCurrentStep('start')}
         onSuccess={handleCustomerEditSuccess}
       />

@@ -1056,7 +1056,7 @@ const PatientMedicalView = () => {
       {/* Modal de edição de paciente */}
       {isCustomerEditModalOpen && customer && (
         <CustomerEditModal
-          customer={customer}
+          customerId={customer.id}
           onClose={() => setIsCustomerEditModalOpen(false)}
           onSuccess={handleCustomerEditSuccess}
         />

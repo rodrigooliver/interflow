@@ -1406,7 +1406,7 @@ const AppointmentsPage: React.FC = () => {
       {/* Modal de edição de cliente */}
       {showCustomerEditModal && selectedCustomer && (
         <CustomerEditModal
-          customer={selectedCustomer}
+          customerId={selectedCustomer.id}
           onClose={() => {
             setShowCustomerEditModal(false);
             setSelectedCustomer(null);

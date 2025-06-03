@@ -8,6 +8,9 @@ import { ContactsFormSection, ContactFormData, formatContactValue } from './Cont
 import { useFunnels, useTags } from '../../hooks/useQueryes';
 import { CustomFieldsSection } from '../custom-fields/CustomFieldsSection';
 import { CustomFieldFormData } from '../../types/database';
+import api from '../../lib/api';
+import { CustomerEditModal } from './CustomerEditModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CustomerAddModalProps {
   onClose: () => void;
@@ -19,6 +22,12 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
   const { t } = useTranslation(['customers', 'crm', 'common']);
   const { currentOrganizationMember } = useAuthContext();
   const [loading, setLoading] = useState(false);
+  const { profile } = useAuthContext();
+  const queryClient = useQueryClient();
+  
+  // Estado para controlar o modo do modal
+  const [mode, setMode] = useState<'create' | 'edit'>('create');
+  const [createdCustomerId, setCreatedCustomerId] = useState<string | null>(null);
   
   // Usando o hook useFunnels para carregar funis e estágios
   const { data: funnelsData, isLoading: loadingFunnels } = useFunnels(currentOrganizationMember?.organization.id);
@@ -125,6 +134,17 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
       }
     }
   }, [funnels, stages, initialFunnelId, loadingFunnels]);
+
+  // Se estiver no modo de edição, renderizar o CustomerEditModal
+  if (mode === 'edit' && createdCustomerId) {
+    return (
+      <CustomerEditModal
+        customerId={createdCustomerId}
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    );
+  }
 
   // Função para lidar com a seleção de estágio na barra de progressão
   const handleStageSelect = (stageId: string) => {
@@ -245,94 +265,59 @@ export function CustomerAddModal({ onClose, onSuccess, initialFunnelId }: Custom
         return;
       }
 
-      // Create customer with stage_id directly
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .insert([{
-          name: formData.name,
-          organization_id: currentOrganizationMember.organization.id,
-          stage_id: formData.stageId || null,
-          sale_price: formData.salePrice
-        }])
-        .select()
-        .single();
+      // Preparar dados para envio
+      const customerData = {
+        name: formData.name,
+        stageId: formData.stageId || null,
+        salePrice: formData.salePrice || null,
+        contacts: contacts
+          .filter(contact => contact.value.trim() !== '')
+          .map(contact => ({
+            ...contact,
+            value: formatContactValue(contact)
+          })),
+        selectedTags,
+        customFields: customFields.filter(field => field.value && field.value.trim() !== '')
+      };
 
-      if (customerError) throw customerError;
+      // Enviar para o backend
+      const response = await api.post(`/api/${currentOrganizationMember.organization.id}/customers`, customerData);
 
-      // Adicionar contatos do cliente
-      if (customer) {
-        const validContacts = contacts.filter(contact => contact.value.trim() !== '');
-        
-        if (validContacts.length > 0) {
-          const contactsToInsert = validContacts.map(contact => ({
-            customer_id: customer.id,
-            type: contact.type,
-            value: formatContactValue(contact),
-            label: contact.label
-          }));
-
-          const { error: contactsError } = await supabase
-            .from('customer_contacts')
-            .insert(contactsToInsert);
-
-          if (contactsError) throw contactsError;
-        }
-
-        // Adicionar tags selecionadas
-        if (selectedTags.length > 0) {
-          const tagsToInsert = selectedTags.map(tagId => ({
-            customer_id: customer.id,
-            tag_id: tagId,
-            organization_id: currentOrganizationMember.organization.id,
-            created_at: new Date().toISOString()
-          }));
-
-          const { error: tagsError } = await supabase
-            .from('customer_tags')
-            .insert(tagsToInsert);
-
-          if (tagsError) throw tagsError;
-        }
-
-        // Salvar campos personalizados
-        const validCustomFields = customFields.filter(field => field.value && field.value.trim() !== '');
-        if (validCustomFields.length > 0) {
-          const customFieldsToInsert = validCustomFields.map(field => ({
-            customer_id: customer.id,
-            field_definition_id: field.field_id,
-            value: field.value || '',
-            updated_at: new Date().toISOString()
-          }));
-
-          const { error: customFieldsError } = await supabase
-            .from('customer_field_values')
-            .insert(customFieldsToInsert);
-
-          if (customFieldsError) throw customFieldsError;
-        }
-
-        // If stage changed and a stage is selected, record in history
-        if (formData.stageId) {
-          const { error: historyError } = await supabase
-            .from('customer_stage_history')
-            .insert({
-              customer_id: customer.id,
-              stage_id: formData.stageId,
-              organization_id: currentOrganizationMember.organization.id
-            });
-            
-          if (historyError) throw historyError;
-        }
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Falha ao criar cliente');
       }
 
+      const customerCreated = response.data.data;
+
       setSuccess(t('customers:addSuccess'));
+      
+      // Invalidar cache organization após 5 segundos
+      queryClient.invalidateQueries({ queryKey: ['organization', profile?.id] });
+      // setTimeout(() => {
+      // }, 5000);
+      
+      // Aguardar um momento para mostrar a mensagem de sucesso
       setTimeout(() => {
-        onSuccess(false, customer.id);
-      }, 1500);
-    } catch (err) {
-      console.error('Error:', err);
-      setError(t('common:error'));
-    } finally {
+        // Salvar o ID do cliente criado e mudar para modo de edição
+        setCreatedCustomerId(customerCreated.id);
+        setMode('edit');
+        setLoading(false);
+        
+        // Chamar onSuccess para atualizar a lista de clientes
+        // onSuccess(true, customerCreated.id);
+      }, 10);
+    } catch (err: unknown) {
+      console.error('Erro no handleSubmit:', err);
+      
+      // Tratar erros específicos da API
+      if (err && typeof err === 'object' && 'response' in err) {
+        const apiError = err as { response?: { data?: { error?: string } }; message?: string };
+        setError(apiError.response?.data?.error || apiError.message || t('common:error'));
+      } else {
+        setError(t('common:error'));
+      }
+      
+      // Só desativar loading em caso de erro
       setLoading(false);
     }
   };
