@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, Loader2, Lock, Search, ChevronDown, Building2, Wallet, CreditCard } from 'lucide-react';
+import { User, Loader2, Lock, Search, ChevronDown, Building2, Wallet, CreditCard, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthContext } from '../contexts/AuthContext';
 import { countryCodes } from '../utils/countryCodes';
@@ -849,9 +849,18 @@ export default function Profile() {
 
                 {/* Organizações */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    {t('profile:organizations')}
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      {t('profile:organizations')}
+                    </h3>
+                    <button
+                      onClick={() => navigate(`/app/admin/organizations/add?indicationId=${currentProfile?.id}`)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {t('profile:addOrganization', 'Cadastrar Nova Instituição')}
+                    </button>
+                  </div>
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <PartnerOrganizations />
                   </div>

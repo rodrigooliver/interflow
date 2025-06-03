@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Loader2, CheckCircle2, Search, ChevronDown } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import { useSubscriptionPlans } from '../../hooks/useQueryes';
 import { countryCodes } from '../../utils/countryCodes';
@@ -32,6 +32,8 @@ interface ApiError {
 
 export default function AddOrganization() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const indicationId = searchParams.get('indicationId');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -125,7 +127,8 @@ export default function AddOrganization() {
         billingPeriod: formData.billingPeriod,
         referral: null,
         language: formData.language,
-        startFlow: formData.startFlow
+        startFlow: formData.startFlow,
+        ...(indicationId && { indicationId }) // Incluir indicationId se existir
       };
 
       const response = await api.post('/api/organizations', organizationData);
@@ -136,9 +139,9 @@ export default function AddOrganization() {
 
       setSuccess(true);
       
-      // Redirecionar após 2 segundos
+      // Redirecionar após 2 segundos usando histórico do navegador
       setTimeout(() => {
-        navigate('/app/admin/organizations');
+        navigate(-1);
       }, 2000);
 
     } catch (error: unknown) {
@@ -198,16 +201,23 @@ export default function AddOrganization() {
     <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6">
-          <Link
-            to="/app/admin/organizations"
+          <button
+            onClick={() => navigate(-1)}
             className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            Voltar para Organizações
-          </Link>
+            Voltar
+          </button>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Nova Organização</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Nova Organização
+          {indicationId && (
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 block mt-1">
+              Criando por indicação: {indicationId}
+            </span>
+          )}
+        </h1>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
