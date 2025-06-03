@@ -729,10 +729,10 @@ export default function Profile() {
 
                 {/* Conta Bancária */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2 ">
                     {t('profile:bankAccount')}
                   </h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 ">
                     {accountError && (
                       <div className="mb-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-400 p-4 rounded-md">
                         {accountError}
@@ -741,8 +741,8 @@ export default function Profile() {
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <Wallet className="w-5 h-5 mr-2 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-700">
+                        <Wallet className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-300" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           {currentProfile?.stripe_account_id 
                             ? t('profile:manageBankAccount')
                             : t('profile:setupBankAccount')}
@@ -817,7 +817,7 @@ export default function Profile() {
 
                     {/* Stripe Connect Components */}
                     {stripeConnectInstance && clientSecret && (
-                      <div className="mt-4" key={`container-${activeComponent}-${mountKey}`}>
+                      <div className="mt-4 text-gray-700 dark:text-gray-300 bg-white rounded-lg p-4" key={`container-${activeComponent}-${mountKey}`}>
                         {activeComponent === 'onboarding' ? (
                           <div key={`onboarding-container-${mountKey}`}>
                             <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
