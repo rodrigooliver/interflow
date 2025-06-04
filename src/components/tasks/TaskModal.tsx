@@ -59,9 +59,10 @@ interface TaskModalProps {
   projectId?: string; // Projeto ao qual a tarefa pertence
   chatId?: string | null; // Chat ao qual a tarefa está relacionada
   initialCustomerId?: string; // Cliente pré-selecionado ao criar uma tarefa
+  isModal?: boolean; // Controla se deve ser exibido como modal ou como página
 }
 
-export function TaskModal({ onClose, organizationId, taskId, mode, initialStageId, projectId, chatId, initialCustomerId }: TaskModalProps) {
+export function TaskModal({ onClose, organizationId, taskId, mode, initialStageId, projectId, chatId, initialCustomerId, isModal = true }: TaskModalProps) {
   const { t, i18n } = useTranslation('tasks');
   const queryClient = useQueryClient();
   const { session, currentOrganizationMember } = useAuthContext();
@@ -973,10 +974,10 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div className={isModal ? "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" : ""}>
+      <div className={isModal ? "bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" : "bg-white dark:bg-gray-800 w-full overflow-y-auto rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"}>
         {/* Cabeçalho fixo */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 z-10">
+        <div className={isModal ? "sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 z-10" : "bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 rounded-t-lg"}>
           <div className="flex justify-between items-center gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3">
@@ -1004,37 +1005,38 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                  className={`text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors ${
+                    isModal ? '' : 'hidden'
+                  }`}
                 >
                   <X className="w-5 h-5" />
                 </button>
+                {chatId && (
+                  <div className="flex items-center">
+                     {isGeneratingSummary ? (
+                        <div className="px-2">
+                          <span className="text-sm font-normal text-blue-600 dark:text-blue-400 inline-flex items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                            <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
+                            {t('generatingContent', 'Gerando conteúdo com IA...')}
+                          </span>
+                        </div>
+                      ) : mode === 'create' && (
+                        <button
+                          type="button"
+                          onClick={handleRegenerateContent}
+                          disabled={isGeneratingSummary}
+                          className="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                          title={t('regenerateContent', 'Regenerar conteúdo com IA')}
+                        >
+                          <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                          {t('regenerate', 'Regenerar')}
+                        </button>
+                      )}
+                  </div>
+                )}
               </div>
-              {chatId && (
-                <div className="flex items-center">
-                   {isGeneratingSummary ? (
-                      <div className="px-2">
-                        <span className="text-sm font-normal text-blue-600 dark:text-blue-400 inline-flex items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
-                          <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
-                          {t('generatingContent', 'Gerando conteúdo com IA...')}
-                        </span>
-                      </div>
-                    ) : mode === 'create' && (
-                      <button
-                        type="button"
-                        onClick={handleRegenerateContent}
-                        disabled={isGeneratingSummary}
-                        className="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                        title={t('regenerateContent', 'Regenerar conteúdo com IA')}
-                      >
-                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                        {t('regenerate', 'Regenerar')}
-                      </button>
-                    )}
-                </div>
-              )}
             </div>
           </div>
-         
         </div>
 
         {isLoading ? (
@@ -1060,7 +1062,7 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="p-6 pt-2 space-y-6">
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className={isModal ? "p-6 pt-2 space-y-6" : "p-6 space-y-6 min-h-0 flex-1"}>
             {showValidationErrors && (
               <div className="text-sm text-red-500 dark:text-red-400 mb-2">
                 <span className="text-red-500">*</span> {t('form.requiredFields')}
