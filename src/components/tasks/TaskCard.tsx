@@ -28,6 +28,8 @@ import { CustomerEditModal } from '../customers/CustomerEditModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { useStartTask, useCompleteTask } from '../../hooks/useTasks';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 const locales = {
   pt: ptBR,
@@ -40,7 +42,7 @@ interface TaskCardProps {
   onEdit: () => void;
   onRemove: () => void;
   onToggleArchived: () => void;
-  onUpdateStatus?: (taskId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => void;
+  onStatusUpdated?: () => void;
   isLastInColumn?: boolean;
 }
 
@@ -49,10 +51,12 @@ export function TaskCard({
   onEdit, 
   onRemove, 
   onToggleArchived,
-  onUpdateStatus,
+  onStatusUpdated,
   isLastInColumn = false
 }: TaskCardProps) {
   const { t, i18n } = useTranslation(['tasks', 'common']);
+  const { currentOrganizationMember } = useAuthContext();
+  const organizationId = currentOrganizationMember?.organization.id;
   const [showDetails, setShowDetails] = useState(false);
   const [showCompleteButton, setShowCompleteButton] = useState(false);
   const [isArchiveLoading, setIsArchiveLoading] = useState(false);
@@ -62,6 +66,12 @@ export function TaskCard({
   const contentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [updatingChecklistItem, setUpdatingChecklistItem] = useState<string | null>(null);
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<'start' | 'complete' | null>(null);
+  
+  // Hooks para atualizar status via backend
+  const startTask = useStartTask();
+  const completeTask = useCompleteTask();
 
   const {
     attributes,
@@ -103,6 +113,27 @@ export function TaskCard({
     };
   }, [showDetails, isLastInColumn, task.description?.length]);
 
+  // Verificar se a tarefa pode ser iniciada ou concluída
+  const canBeStarted = task.status === 'pending';
+  const canBeCompleted = task.status === 'in_progress';
+
+  // Efeito para remover loading quando o status da tarefa mudar
+  useEffect(() => {
+    // Se está carregando, verificar se a ação específica foi concluída
+    if (isStatusLoading && loadingAction) {
+      // Se estava iniciando (pending → in_progress)
+      if (loadingAction === 'start' && task.status === 'in_progress') {
+        setIsStatusLoading(false);
+        setLoadingAction(null);
+      }
+      // Se estava concluindo (in_progress → completed)
+      else if (loadingAction === 'complete' && task.status === 'completed') {
+        setIsStatusLoading(false);
+        setLoadingAction(null);
+      }
+    }
+  }, [task.status, isStatusLoading, loadingAction]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -133,19 +164,40 @@ export function TaskCard({
   const hasChecklist = totalItems > 0;
   const progress = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
 
-  // Verificar se a tarefa pode ser iniciada ou concluída
-  const canBeStarted = task.status === 'pending';
-  const canBeCompleted = task.status === 'in_progress';
-
   // Função para atualizar o status com base no estado atual
-  const handleUpdateStatus = (e: React.MouseEvent) => {
+  const handleUpdateStatus = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!onUpdateStatus) return;
+    if (!organizationId) return;
     
-    if (canBeStarted) {
-      onUpdateStatus(task.id, 'in_progress');
-    } else if (canBeCompleted) {
-      onUpdateStatus(task.id, 'completed');
+    setIsStatusLoading(true);
+    
+    // Determinar qual ação está sendo executada
+    const action = canBeStarted ? 'start' : 'complete';
+    setLoadingAction(action);
+    
+    try {
+      if (canBeStarted) {
+        await startTask.mutateAsync({
+          taskId: task.id,
+          organizationId
+        });
+      } else if (canBeCompleted) {
+        await completeTask.mutateAsync({
+          taskId: task.id,
+          organizationId
+        });
+      }
+      
+      // Notificar o componente pai que houve mudança
+      onStatusUpdated?.();
+      
+      // Não chamar setIsStatusLoading(false) aqui
+      // O loading permanecerá até que o componente seja re-renderizado com o novo status
+    } catch (error) {
+      console.error('Erro ao atualizar status da tarefa:', error);
+      // Apenas remover loading em caso de erro
+      setIsStatusLoading(false);
+      setLoadingAction(null);
     }
   };
 
@@ -318,26 +370,38 @@ export function TaskCard({
           <div className="flex justify-between items-start relative">
             {/* Status original (que ficará oculto quando o botão concluir estiver visível) */}
             <div className={`flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs whitespace-nowrap ${statusInfo.bgColor} ${statusInfo.textColor} ${
-              showCompleteButton && (canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) ? 'invisible' : 'visible'
-            }`}>
+              showCompleteButton && (canBeStarted || canBeCompleted) && organizationId ? 'invisible' : 'visible'
+            } relative`}>
               <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
               <span className="truncate max-w-[60px] sm:max-w-none">{statusInfo.label}</span>
+              
+              {/* Loading sobreposto quando não está em foco mas está carregando */}
+              {isStatusLoading && !showCompleteButton && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-200/90 dark:bg-gray-700/90 rounded-full">
+                  <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin text-gray-600 dark:text-gray-300" />
+                </div>
+              )}
             </div>
             
             {/* Botão para iniciar ou concluir tarefa (sobreposto ao status) */}
-            {(canBeStarted || canBeCompleted) && (onUpdateStatus !== undefined) && (
+            {(canBeStarted || canBeCompleted) && organizationId && (
               <button
                 onClick={handleUpdateStatus}
+                disabled={isStatusLoading}
                 className={`absolute left-0 top-0 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs whitespace-nowrap ${
                   canBeStarted 
                     ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50' 
                     : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
                 } flex items-center transition-opacity duration-200 ${
                   showCompleteButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                } shadow-sm hover:shadow cursor-pointer transform hover:scale-105 transition-all duration-150`}
+                } shadow-sm hover:shadow cursor-pointer transform hover:scale-105 transition-all duration-150 ${
+                  isStatusLoading ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
                 title={canBeStarted ? t('tasks:startTask') : t('tasks:markAsCompleted')}
               >
-                {canBeStarted ? (
+                {isStatusLoading ? (
+                  <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0 animate-spin" />
+                ) : canBeStarted ? (
                   <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
                 ) : (
                   <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />

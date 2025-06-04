@@ -103,3 +103,13 @@ ALTER TABLE messages
 -- Remove a constraint unique de channel_id e external_id
 ALTER TABLE public.chats
   DROP CONSTRAINT IF EXISTS chats_channel_external_unique;
+
+-- Modifica a constraint closure_type_id para incluir ON DELETE SET NULL
+ALTER TABLE public.chats
+  DROP CONSTRAINT IF EXISTS chats_closure_type_id_fkey;
+
+ALTER TABLE public.chats
+  ADD CONSTRAINT chats_closure_type_id_fkey 
+  FOREIGN KEY (closure_type_id) 
+  REFERENCES public.closure_types(id) 
+  ON DELETE SET NULL;

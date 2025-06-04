@@ -110,6 +110,18 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     data: TaskProjectWithStages[]
   };
   
+  // Função helper para ordenar estágios por position
+  const sortStagesByPosition = (stages: TaskProjectWithStages['stages']) => {
+    if (!stages || !Array.isArray(stages)) return [];
+    
+    return stages.sort((a, b) => {
+      // Ordenar por position, tratando casos onde position pode ser undefined/null
+      const positionA = typeof a.position === 'number' ? a.position : 999;
+      const positionB = typeof b.position === 'number' ? b.position : 999;
+      return positionA - positionB;
+    });
+  };
+  
   // Obter os estágios com base no projeto selecionado
   const stages = useMemo(() => {
     // Se não tem projeto selecionado, retorna lista vazia
@@ -120,9 +132,9 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
     // Busca o projeto selecionado
     const selectedProject = projects.find(p => p.id === formData.project_id) as TaskProjectWithStages | undefined;
     
-    // Se encontrou o projeto e ele tem estágios, retorna os estágios
+    // Se encontrou o projeto e ele tem estágios, retorna os estágios ordenados por position
     if (selectedProject?.stages && Array.isArray(selectedProject.stages)) {
-      return selectedProject.stages;
+      return sortStagesByPosition(selectedProject.stages);
     }
     
     // Caso contrário, retorna lista vazia
@@ -172,7 +184,8 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
             
             // Selecionar primeira etapa do projeto padrão se disponível
             if (defaultProject.stages && defaultProject.stages.length > 0) {
-              const firstStage = defaultProject.stages[0];
+              const sortedStages = sortStagesByPosition(defaultProject.stages);
+              const firstStage = sortedStages[0];
               
               if (firstStage) {
                 setFormData(prev => ({ 
@@ -198,7 +211,8 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         
         // Selecionar primeira etapa se disponível
         if (firstProject.stages && firstProject.stages.length > 0) {
-          const firstStage = firstProject.stages[0];
+          const sortedStages = sortStagesByPosition(firstProject.stages);
+          const firstStage = sortedStages[0];
           
           if (firstStage) {
             setFormData(prev => ({ 
@@ -635,12 +649,15 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
         priority: formData.priority,
         status: formData.status,
         customer_id: formData.customer_id || null,
-        organization_id: organizationId,
-        user_id: session?.user?.id,
         stage_id: formData.stage_id || null,
         checklist: formData.checklist,
         project_id: formData.project_id || null,
-        chat_id: formData.chat_id
+        chat_id: formData.chat_id,
+        // Só incluir organization_id e user_id na criação, não na atualização
+        ...(mode === 'create' && { 
+          organization_id: organizationId,
+          user_id: session?.user?.id 
+        })
       };
 
       if(chatId){
@@ -1212,7 +1229,8 @@ export function TaskModal({ onClose, organizationId, taskId, mode, initialStageI
                         let firstStageId: string | undefined = undefined;
                         
                         if (selectedProject?.stages && selectedProject.stages.length > 0) {
-                          firstStageId = selectedProject.stages[0].id;
+                          const sortedStages = sortStagesByPosition(selectedProject.stages);
+                          firstStageId = sortedStages[0].id;
                         }
                         
                         // Atualizar o formulário com o novo projeto e a primeira etapa

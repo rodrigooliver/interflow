@@ -30,7 +30,7 @@ interface TaskBoardProps {
   onEditTask: (task: TaskWithRelations) => void;
   onRemoveTask: (task: TaskWithRelations) => void;
   onToggleArchived: (task: TaskWithRelations) => void;
-  onUpdateTaskStatus?: (taskId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => void;
+  onStatusUpdated?: () => void;
   organizationId: string;
   showingArchived?: boolean;
   projectId?: string;
@@ -45,7 +45,7 @@ export function TaskBoard({
   onEditTask,
   onRemoveTask,
   onToggleArchived,
-  onUpdateTaskStatus,
+  onStatusUpdated,
   organizationId,
   showingArchived = false,
   projectId
@@ -563,7 +563,7 @@ export function TaskBoard({
                     onEditTask={onEditTask}
                     onRemoveTask={onRemoveTask}
                     onToggleArchived={onToggleArchived}
-                    onUpdateTaskStatus={onUpdateTaskStatus}
+                    onStatusUpdated={onStatusUpdated}
                   />
                 </div>
               </SortableContext>

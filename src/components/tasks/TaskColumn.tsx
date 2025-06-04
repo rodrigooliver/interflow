@@ -13,7 +13,7 @@ interface TaskColumnProps {
   onEditTask: (task: TaskWithRelations) => void;
   onRemoveTask: (task: TaskWithRelations) => void;
   onToggleArchived: (task: TaskWithRelations) => void;
-  onUpdateTaskStatus?: (taskId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => void;
+  onStatusUpdated?: () => void;
 }
 
 export function TaskColumn({
@@ -25,7 +25,7 @@ export function TaskColumn({
   onEditTask,
   onRemoveTask,
   onToggleArchived,
-  onUpdateTaskStatus
+  onStatusUpdated
 }: TaskColumnProps) {
   const { t } = useTranslation(['tasks', 'common']);
   const { setNodeRef, isOver } = useDroppable({
@@ -147,7 +147,7 @@ export function TaskColumn({
                   onEdit={() => onEditTask(task)}
                   onRemove={() => onRemoveTask(task)}
                   onToggleArchived={() => onToggleArchived(task)}
-                  onUpdateStatus={onUpdateTaskStatus}
+                  onStatusUpdated={onStatusUpdated}
                 />
               ))}
               

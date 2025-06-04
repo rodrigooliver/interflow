@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthContext } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { TaskWithRelations, TaskStage, TaskProject } from '../types/tasks';
-import { useTaskStages, useTasksByStage, useDeleteTaskStage, useToggleTaskArchived, useTaskProjects, useCreateTaskProject, useUpdateTaskProject, useDeleteTaskProject, useUpdateTaskStatus } from '../hooks/useTasks';
+import { useTaskStages, useTasksByStage, useDeleteTaskStage, useToggleTaskArchived, useTaskProjects, useCreateTaskProject, useUpdateTaskProject, useDeleteTaskProject } from '../hooks/useTasks';
 import { TaskBoard } from '../components/tasks/TaskBoard';
 import { TaskModal } from '../components/tasks/TaskModal';
 import { StageDialog } from '../components/tasks/StageDialog';
@@ -13,6 +13,7 @@ import { LabelModal } from '../components/tasks/LabelModal';
 import { ProjectSelector } from '../components/tasks/ProjectSelector';
 import { ProjectModal } from '../components/tasks/ProjectModal';
 import { ProjectMembersModal } from '../components/tasks/ProjectMembersModal';
+import { FilterModal, TaskFilters } from '../components/tasks/FilterModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -100,13 +101,6 @@ const ProjectCard: React.FC<{
   );
 };
 
-// Interface para os filtros de tarefas
-interface TaskFilters {
-  assignedToMe: boolean;
-  overdue: boolean;
-  showArchived: boolean;
-}
-
 export default function Tasks() {
   const { t } = useTranslation('tasks');
   const { currentOrganizationMember } = useAuthContext();
@@ -123,6 +117,7 @@ export default function Tasks() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [showProjectMembersModal, setShowProjectMembersModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
   
   // Estados para seleção
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
@@ -139,14 +134,15 @@ export default function Tasks() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
   // Estados para os filtros
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [filters, setFilters] = useState<TaskFilters>({
     assignedToMe: false,
     overdue: false,
-    showArchived: false
+    showArchived: false,
+    status: 'all',
+    priority: 'all',
+    searchText: ''
   });
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
-  const filterDropdownRef = useRef<HTMLDivElement>(null);
   
   // Router hooks
   const navigate = useNavigate();
@@ -159,7 +155,6 @@ export default function Tasks() {
   const createProject = useCreateTaskProject();
   const updateProject = useUpdateTaskProject();
   const deleteProject = useDeleteTaskProject();
-  const updateTaskStatus = useUpdateTaskStatus();
   
   // Dados do backend
   const { data: projects = [], isLoading: isProjectsLoading } = useTaskProjects(organizationId);
@@ -172,7 +167,10 @@ export default function Tasks() {
     selectedProjectId as string | undefined,
     filters.assignedToMe ? currentUserId : undefined,
     filters.showArchived, // Mostrar ou não tarefas arquivadas
-    filters.overdue // Filtrar por tarefas vencidas
+    filters.overdue, // Filtrar por tarefas vencidas
+    filters.status, // Filtrar por status
+    filters.priority, // Filtrar por prioridade
+    filters.searchText // Texto de pesquisa
   );
 
   // Subscription para atualizações na tabela tasks
@@ -474,22 +472,18 @@ export default function Tasks() {
     });
   };
 
-  // Função para atualizar o status de uma tarefa
-  const handleUpdateTaskStatus = (taskId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => {
-    if (!organizationId) return;
-    
-    updateTaskStatus.mutate({
-      taskId,
-      status,
-      organizationId
-    });
+  // Nova função para lidar com atualizações de status
+  const handleStatusUpdated = () => {
+    if (organizationId) {
+      // queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', organizationId] });
+    }
   };
 
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
-  const projectMenuRef = React.useRef<HTMLDivElement>(null);
+  const projectMenuRef = useRef<HTMLDivElement>(null);
 
   // Fechar o menu quando clicar fora dele
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (projectMenuRef.current && !projectMenuRef.current.contains(event.target as Node)) {
         setIsProjectMenuOpen(false);
@@ -510,8 +504,11 @@ export default function Tasks() {
       
       if (savedFilters) {
         try {
-          const parsedFilters = JSON.parse(savedFilters) as TaskFilters;
-          setFilters(parsedFilters);
+          const parsedFilters = JSON.parse(savedFilters) as Omit<TaskFilters, 'searchText'>;
+          setFilters({
+            ...parsedFilters,
+            searchText: '' // Sempre resetar o texto de pesquisa
+          });
         } catch (e) {
           console.error('Erro ao carregar filtros salvos:', e);
         }
@@ -520,7 +517,10 @@ export default function Tasks() {
         setFilters({
           assignedToMe: false,
           overdue: false,
-          showArchived: false
+          showArchived: false,
+          status: 'all',
+          priority: 'all',
+          searchText: ''
         });
       }
     }
@@ -528,38 +528,34 @@ export default function Tasks() {
 
   // Verificar se há filtros ativos
   useEffect(() => {
-    const activeFilterCount = Object.values(filters).filter(Boolean).length;
-    setHasActiveFilters(activeFilterCount > 0);
+    const activeFilterCount = Object.entries(filters).filter(([key, value]) => {
+      // Não contar o searchText como filtro ativo para o localStorage
+      if (key === 'searchText') return false;
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'string') return value !== 'all' && value.trim() !== '';
+      return false;
+    }).length;
+    setHasActiveFilters(activeFilterCount > 0 || filters.searchText.trim() !== '');
   }, [filters]);
 
-  // Salvar filtros no localStorage quando mudarem
+  // Salvar filtros no localStorage quando mudarem (exceto searchText)
   useEffect(() => {
     if (selectedProjectId && organizationId) {
       const filterKey = `taskFilters_${organizationId}_${selectedProjectId}`;
-      localStorage.setItem(filterKey, JSON.stringify(filters));
+      const filtersToSave = {
+        assignedToMe: filters.assignedToMe,
+        overdue: filters.overdue,
+        showArchived: filters.showArchived,
+        status: filters.status,
+        priority: filters.priority
+      };
+      localStorage.setItem(filterKey, JSON.stringify(filtersToSave));
     }
   }, [filters, selectedProjectId, organizationId]);
 
-  // Fechar o dropdown de filtros ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
-        setIsFilterDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Função para alternar um filtro
-  const toggleFilter = (filterName: keyof TaskFilters) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterName]: !prev[filterName]
-    }));
+  // Função para atualizar filtros
+  const handleFiltersChange = (newFilters: TaskFilters) => {
+    setFilters(newFilters);
   };
 
   // Função para limpar todos os filtros
@@ -567,7 +563,10 @@ export default function Tasks() {
     setFilters({
       assignedToMe: false,
       overdue: false,
-      showArchived: false
+      showArchived: false,
+      status: 'all',
+      priority: 'all',
+      searchText: ''
     });
   };
 
@@ -677,90 +676,28 @@ export default function Tasks() {
               <span className="hidden sm:inline">{t('addTask')}</span>
             </button>
             
-            {/* Dropdown de filtros */}
-            <div className="relative" ref={filterDropdownRef}>
-              <button
-                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
-                  hasActiveFilters 
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-800/30 dark:text-blue-400' 
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <Filter className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">{t('filters.title')}</span>
-                {hasActiveFilters && (
-                  <span className="ml-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {Object.values(filters).filter(Boolean).length}
-                  </span>
-                )}
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </button>
-              
-              {isFilterDropdownOpen && (
-                <div className="absolute z-10 left-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 min-w-[250px]">
-                  <div className="p-3">
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="font-medium text-gray-800 dark:text-gray-200">
-                        {t('filters.title')}
-                      </h3>
-                      {hasActiveFilters && (
-                        <button 
-                          onClick={clearAllFilters}
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                        >
-                          {t('filters.clearAll')}
-                        </button>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {/* Filtro: Atribuídos a mim */}
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="filter-assigned-to-me"
-                          checked={filters.assignedToMe}
-                          onChange={() => toggleFilter('assignedToMe')}
-                          className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
-                        />
-                        <label htmlFor="filter-assigned-to-me" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                          {t('filters.assignedToMe')}
-                        </label>
-                      </div>
-                      
-                      {/* Filtro: Vencidos */}
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="filter-overdue"
-                          checked={filters.overdue}
-                          onChange={() => toggleFilter('overdue')}
-                          className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
-                        />
-                        <label htmlFor="filter-overdue" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                          {t('filters.overdue')}
-                        </label>
-                      </div>
-                      
-                      {/* Filtro: Arquivados */}
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="filter-archived"
-                          checked={filters.showArchived}
-                          onChange={() => toggleFilter('showArchived')}
-                          className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500"
-                        />
-                        <label htmlFor="filter-archived" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                          {t('filters.showArchived')}
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {/* Botão de filtros */}
+            <button
+              onClick={() => setShowFilterModal(true)}
+              className={`flex items-center px-3 py-2 rounded-md text-sm ${
+                hasActiveFilters 
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-800/30 dark:text-blue-400' 
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              <Filter className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">{t('filters.title')}</span>
+              {hasActiveFilters && (
+                <span className="ml-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {Object.entries(filters).filter(([, value]) => {
+                    // Contar searchText para exibição do contador
+                    if (typeof value === 'boolean') return value;
+                    if (typeof value === 'string') return value !== 'all' && value.trim() !== '';
+                    return false;
+                  }).length}
+                </span>
               )}
-            </div>
+            </button>
             
             {/* Dropdown de gerenciamento do projeto atual */}
             {selectedProjectId && (
@@ -874,7 +811,7 @@ export default function Tasks() {
               setShowDeleteTaskModal(true);
             }}
             onToggleArchived={handleToggleArchived}
-            onUpdateTaskStatus={handleUpdateTaskStatus}
+            onStatusUpdated={handleStatusUpdated}
             organizationId={organizationId || ''}
             showingArchived={filters.showArchived}
             projectId={selectedProjectId as string | undefined}
@@ -961,6 +898,15 @@ export default function Tasks() {
         onConfirm={handleDeleteProject}
         title={t('projects.deleteProject')}
         message={t('projects.confirmDelete')}
+      />
+
+      {/* Modal de filtros */}
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        onClearFilters={clearAllFilters}
       />
 
       {/* Modal de membros do projeto */}

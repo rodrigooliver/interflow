@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { toast } from 'react-hot-toast';
-import { TaskStage, TaskWithRelations, TaskLabel, TaskAssignee, TaskProject, ProjectMember, ProjectRole } from '../types/tasks';
+import { TaskStage, TaskWithRelations, TaskLabel, TaskProject, ProjectMember, ProjectRole } from '../types/tasks';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../contexts/AuthContext';
 
@@ -32,7 +33,8 @@ export function useTaskProjects(organizationId?: string) {
           ),
           stages:task_stages(
             id,
-            name
+            name,
+            position
           )
         `)
         .eq('organization_id', organizationId)
@@ -217,10 +219,13 @@ export function useTasksByStage(
   projectId?: string, 
   userId?: string, 
   includeArchived: boolean = false,
-  filterOverdue: boolean = false
+  filterOverdue: boolean = false,
+  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'all',
+  priority?: 'low' | 'medium' | 'high' | 'all',
+  searchText?: string
 ) {
   return useQuery({
-    queryKey: ['tasks-by-stage', organizationId, projectId, userId, includeArchived, filterOverdue],
+    queryKey: ['tasks-by-stage', organizationId, projectId, userId, includeArchived, filterOverdue, status, priority, searchText],
     queryFn: async () => {
       if (!organizationId) return [];
 
@@ -253,6 +258,16 @@ export function useTasksByStage(
       if (userId) {
         query = query.eq('assignees.user_id', userId);
       }
+
+      // Filtrar por status se especificado e não for 'all'
+      if (status && status !== 'all') {
+        query = query.eq('status', status);
+      }
+
+      // Filtrar por prioridade se especificado e não for 'all'
+      if (priority && priority !== 'all') {
+        query = query.eq('priority', priority);
+      }
       
       // Filtrar tarefas vencidas - onde a data de vencimento é menor que hoje e o status não é completed ou cancelled
       if (filterOverdue) {
@@ -270,7 +285,7 @@ export function useTasksByStage(
       if (error) throw error;
 
       // Processar os resultados para o formato necessário
-      return (data || []).map(task => ({
+      let processedTasks = (data || []).map(task => ({
         ...task,
         // Converter checklist de JSON para array se necessário
         checklist: Array.isArray(task.checklist) ? task.checklist : [],
@@ -278,6 +293,17 @@ export function useTasksByStage(
         assignees: task.assignees,
         labels: task.labels?.map((labelRel: {label: TaskLabel}) => labelRel.label)
       })) as TaskWithRelations[];
+
+      // Aplicar filtro de pesquisa no lado do cliente (pois Supabase não suporta busca em múltiplos campos facilmente)
+      if (searchText && searchText.trim() !== '') {
+        const searchLower = searchText.toLowerCase().trim();
+        processedTasks = processedTasks.filter(task => 
+          task.title.toLowerCase().includes(searchLower) || 
+          (task.description && task.description.toLowerCase().includes(searchLower))
+        );
+      }
+
+      return processedTasks;
     },
     enabled: !!organizationId,
     staleTime: 1 * 60 * 1000, // 1 minuto
@@ -479,7 +505,7 @@ export function useDeleteTaskStage() {
 
 // Hook para mover uma tarefa para outro estágio ou mudar a ordem
 export function useUpdateTaskStageOrder() {
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const { t } = useTranslation('tasks');
 
   return useMutation({
@@ -508,9 +534,9 @@ export function useUpdateTaskStageOrder() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
-    },
+    // onSuccess: (_, variables) => {
+    //   // queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
+    // },
     onError: (error) => {
       console.error('Error updating task stage/order:', error);
       toast.error(t('error.taskMove'));
@@ -520,7 +546,7 @@ export function useUpdateTaskStageOrder() {
 
 // Hook para criar uma nova etiqueta
 export function useCreateTaskLabel() {
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const { t } = useTranslation('tasks');
 
   return useMutation({
@@ -547,7 +573,7 @@ export function useCreateTaskLabel() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['task-labels', data.organization_id] });
+      // queryClient.invalidateQueries({ queryKey: ['task-labels', data.organization_id] });
       toast.success(t('labels.created'));
     },
     onError: (error) => {
@@ -719,7 +745,7 @@ export function useRemoveTaskAssignment() {
 
 // Hook para arquivar/desarquivar uma tarefa
 export function useToggleTaskArchived() {
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const { t } = useTranslation('tasks');
 
   return useMutation({
@@ -746,7 +772,7 @@ export function useToggleTaskArchived() {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
+      // queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
       toast.success(variables.isArchived ? t('archived') : t('unarchived'));
     },
     onError: (error) => {
@@ -785,7 +811,7 @@ export function useUpdateTaskChecklist() {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
+      // queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
     },
     onError: (error) => {
       console.error('Error updating task checklist:', error);
@@ -1022,50 +1048,95 @@ export function useCurrentUserProjectAccess(projectId?: string) {
   });
 }
 
-// Hook para atualizar o status de uma tarefa
-export function useUpdateTaskStatus() {
-  const queryClient = useQueryClient();
+// Hook para iniciar tarefa via backend
+export function useStartTask() {
   const { t } = useTranslation('tasks');
 
   return useMutation({
     mutationFn: async ({
       taskId,
-      status,
       organizationId
     }: {
       taskId: string;
-      status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
       organizationId: string;
     }) => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId)
-        .select()
-        .single();
+      const response = await api.put(`/api/${organizationId}/tasks/${taskId}/start`);
 
-      if (error) throw error;
-      return data;
+      if (!response.data.success && response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
-      
-      // Mostrar mensagem de sucesso com base no status
-      const statusMessages: Record<string, string> = {
-        'completed': t('statuses.markedAsCompleted'),
-        'pending': t('statuses.markedAsPending'),
-        'in_progress': t('statuses.markedAsInProgress'),
-        'cancelled': t('statuses.markedAsCancelled')
-      };
-      
-      toast.success(statusMessages[data.status] || t('success.updated'));
+    onSuccess: (data) => {
+       // não invalidar as queries pois tem subscription para atualizar o status da tarefa
+      toast.success(data.message || t('statuses.markedAsInProgress'));
     },
-    onError: (error) => {
-      console.error('Error updating task status:', error);
-      toast.error(t('error.updateStatus'));
+    onError: (error: Error) => {
+      console.error('Error starting task:', error);
+      toast.error(error.message || t('error.updateStatus'));
+    }
+  });
+}
+
+// Hook para concluir tarefa via backend
+export function useCompleteTask() {
+  const { t } = useTranslation('tasks');
+
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      organizationId
+    }: {
+      taskId: string;
+      organizationId: string;
+    }) => {
+      const response = await api.put(`/api/${organizationId}/tasks/${taskId}/complete`);
+
+      if (!response.data.success && response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: (data) => {
+       // não invalidar as queries pois tem subscription para atualizar o status da tarefa
+      toast.success(data.message || t('statuses.markedAsCompleted'));
+    },
+    onError: (error: Error) => {
+      console.error('Error completing task:', error);
+      toast.error(error.message || t('error.updateStatus'));
+    }
+  });
+}
+
+// Hook para cancelar tarefa via backend
+export function useCancelTask() {
+  const { t } = useTranslation('tasks');
+
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      organizationId
+    }: {
+      taskId: string;
+      organizationId: string;
+    }) => {
+      const response = await api.put(`/api/${organizationId}/tasks/${taskId}/cancel`);
+
+      if (!response.data.success && response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: (data) => {
+      // não invalidar as queries pois tem subscription para atualizar o status da tarefa
+      toast.success(data.message || t('statuses.markedAsCancelled'));
+    },
+    onError: (error: Error) => {
+      console.error('Error cancelling task:', error);
+      toast.error(error.message || t('error.updateStatus'));
     }
   });
 } 
