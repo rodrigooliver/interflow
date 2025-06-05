@@ -33,7 +33,9 @@ export function ChannelRule({ params, onChange }: ChannelRuleProps) {
       className="react-select-container"
       classNamePrefix="react-select"
       placeholder={t('triggers.selectChannels')}
-      menuPlacement="top"
+      menuPlacement="auto"
+      menuPortalTarget={document.body}
+      menuPosition="fixed"
       styles={{
         control: (base, state) => ({
           ...base,
@@ -46,7 +48,12 @@ export function ChannelRule({ params, onChange }: ChannelRuleProps) {
         menu: (base) => ({
           ...base,
           backgroundColor: 'var(--select-bg)',
-          border: '1px solid var(--select-border)'
+          border: '1px solid var(--select-border)',
+          zIndex: 9999
+        }),
+        menuPortal: (base) => ({
+          ...base,
+          zIndex: 9999
         }),
         option: (base, { isFocused, isSelected }) => ({
           ...base,
