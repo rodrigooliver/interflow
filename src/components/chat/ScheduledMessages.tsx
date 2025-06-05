@@ -3,40 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { MessageBubble } from './MessageBubble';
 import { ChevronDown, ChevronUp, Calendar, Clock } from 'lucide-react';
-import { Chat } from '../../types/database';
-
-interface BaseMessage {
-  id: string;
-  content: string | null;
-  type: string;
-  created_at: string;
-  updated_at: string;
-  sender_type: 'customer' | 'agent' | 'system';
-  sender_agent_id?: string;
-  chat_id: string;
-  status: string;
-  scheduled_at?: string;
-  attachments?: unknown[];
-  sender_agent?: {
-    id: string;
-    full_name: string;
-    avatar_url?: string;
-  };
-  response_to?: unknown;
-}
-
-interface Message extends BaseMessage {
-  response_to?: Message;
-  chats?: {
-    id: string;
-    ticket_number?: string;
-    customer_id: string;
-    channel_id: string;
-    start_time?: string;
-    end_time?: string;
-    status?: string;
-  };
-}
+import { Chat, Message } from '../../types/database';
 
 interface ChannelFeatures {
   canReplyToMessages: boolean;
@@ -195,11 +162,13 @@ export function ScheduledMessages({ chatId, channelFeatures, chat }: ScheduledMe
           const previousMessage = payload.old as Message;
           
           // Se mensagem foi deletada ou se tornou agendada
-          if (payload.eventType === 'DELETE' || message?.status === 'scheduled') {
+          if (payload.eventType === 'DELETE' || (message && 'status' in message && message.status === 'scheduled')) {
             loadScheduledMessages();
           }
           // Se a mensagem mudou de agendada para outro status, remover da lista local
-          else if (payload.eventType === 'UPDATE' && previousMessage?.status === 'scheduled' && message?.status !== 'scheduled') {
+          else if (payload.eventType === 'UPDATE' && 
+                   previousMessage && 'status' in previousMessage && previousMessage.status === 'scheduled' && 
+                   message && 'status' in message && message.status !== 'scheduled') {
             setScheduledMessages(prev => prev.filter(msg => msg.id !== message.id));
           }
         }
@@ -328,8 +297,8 @@ export function ScheduledMessages({ chatId, channelFeatures, chat }: ScheduledMe
                       <div key={message.id} className="relative">
                         {/* MessageBubble com estilo adaptado para agendadas */}
                         <div className="opacity-80 scale-95 transform">
-                                                     <MessageBubble
-                             message={message as any}
+                            <MessageBubble
+                             message={message}
                              chatStatus="scheduled"
                              isHighlighted={false}
                              channelFeatures={channelFeatures}
