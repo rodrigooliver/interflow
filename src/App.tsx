@@ -18,6 +18,7 @@ import UsagePage from './pages/settings/Usage';
 import Login from './pages/public/login';
 import Organizations from './pages/admin/Organizations';
 import AddOrganization from './pages/admin/AddOrganization';
+import WapiInstances from './pages/admin/WapiInstances';
 import OrganizationMembers from './pages/organization/MembersPage';
 import ServiceTeams from './pages/organization/ServiceTeams';
 import Channels from './pages/channels/Channels';
@@ -775,6 +776,7 @@ function AppContent() {
                             <Route path="admin/organizations" element={<Organizations />} />
                             <Route path="admin/organizations/add" element={<AddOrganization />} />
                             <Route path="admin/organizations/:organizationId/subscriptions" element={<OrganizationSubscriptions />} />
+                            <Route path="admin/wapi-instances" element={<WapiInstances />} />
                             <Route path="admin/subscription-plans" element={<SubscriptionPlans />} />
                             <Route path="admin/subscription-plans/new" element={<SubscriptionPlanForm />} />
                             <Route path="admin/subscription-plans/:id" element={<SubscriptionPlanForm />} />
