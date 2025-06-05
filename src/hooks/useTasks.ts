@@ -1051,6 +1051,7 @@ export function useCurrentUserProjectAccess(projectId?: string) {
 // Hook para iniciar tarefa via backend
 export function useStartTask() {
   const { t } = useTranslation('tasks');
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
@@ -1068,8 +1069,8 @@ export function useStartTask() {
 
       return response.data;
     },
-    onSuccess: (data) => {
-       // não invalidar as queries pois tem subscription para atualizar o status da tarefa
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
       toast.success(data.message || t('statuses.markedAsInProgress'));
     },
     onError: (error: Error) => {
@@ -1082,6 +1083,7 @@ export function useStartTask() {
 // Hook para concluir tarefa via backend
 export function useCompleteTask() {
   const { t } = useTranslation('tasks');
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
@@ -1099,8 +1101,8 @@ export function useCompleteTask() {
 
       return response.data;
     },
-    onSuccess: (data) => {
-       // não invalidar as queries pois tem subscription para atualizar o status da tarefa
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
       toast.success(data.message || t('statuses.markedAsCompleted'));
     },
     onError: (error: Error) => {
@@ -1113,7 +1115,8 @@ export function useCompleteTask() {
 // Hook para cancelar tarefa via backend
 export function useCancelTask() {
   const { t } = useTranslation('tasks');
-
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: async ({
       taskId,
@@ -1130,8 +1133,8 @@ export function useCancelTask() {
 
       return response.data;
     },
-    onSuccess: (data) => {
-      // não invalidar as queries pois tem subscription para atualizar o status da tarefa
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-stage', variables.organizationId] });
       toast.success(data.message || t('statuses.markedAsCancelled'));
     },
     onError: (error: Error) => {
