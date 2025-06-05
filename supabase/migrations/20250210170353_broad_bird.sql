@@ -71,12 +71,15 @@ CREATE TABLE chats (
   assigned_to UUID REFERENCES profiles(id)
 );
 
+-- Create enum for sender_type
+CREATE TYPE sender_type_enum AS ENUM ('customer', 'agent', 'system');
+
 -- Create messages table
 CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   chat_id UUID REFERENCES chats(id),
   content TEXT NOT NULL,
-  sender_type TEXT NOT NULL CHECK (sender_type IN ('customer', 'agent', 'system')),
+  sender_type sender_type_enum NOT NULL,
   sender_id UUID NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );

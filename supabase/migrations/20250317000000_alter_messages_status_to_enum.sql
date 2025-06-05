@@ -6,7 +6,8 @@ CREATE TYPE message_status AS ENUM (
   'read',
   'failed',
   'received',
-  'deleted'
+  'deleted',
+  'scheduled'
 );
 
 -- Primeiro, remover o trigger

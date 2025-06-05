@@ -292,7 +292,7 @@
         "rejectCallsMessage": "Mensaje de rechazo de llamada",
         "rejectCallsMessagePlaceholder": "Ingrese el mensaje que se enviará cuando se rechace una llamada...",
         "rejectCallsMessageHelp": "Este mensaje se enviará automáticamente cuando se rechace una llamada",
-        "defaultRejectMessage": "Disculpe, no atendemos llamadas. Por favor, envíe un mensaje de texto."
+        "defaultRejectMessage": "¡Hola! Le informamos que, por este WhatsApp, no estamos recibiendo llamadas. Para garantizar una atención más ágil y organizada, estamos priorizando el contacto por mensajes. ¡Siéntase libre de enviar textos o audios, como prefiera!"
       }
     },
     "instagram": {

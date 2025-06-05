@@ -293,7 +293,7 @@
         "rejectCallsMessage": "Call rejection message",
         "rejectCallsMessagePlaceholder": "Enter the message to be sent when a call is rejected...",
         "rejectCallsMessageHelp": "This message will be automatically sent when a call is rejected",
-        "defaultRejectMessage": "Sorry, we don't answer calls. Please send a text message."
+        "defaultRejectMessage": "Hello! Please note that we are not accepting calls through this WhatsApp number. To ensure faster and more organized service, we are prioritizing contact via messages. Feel free to send texts or voice notes, whichever you prefer!"
       }
     },
     "instagram": {

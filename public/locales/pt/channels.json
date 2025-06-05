@@ -315,7 +315,7 @@
         "rejectCallsMessage": "Mensagem de rejeição de ligação",
         "rejectCallsMessagePlaceholder": "Digite a mensagem que será enviada quando uma ligação for rejeitada...",
         "rejectCallsMessageHelp": "Esta mensagem será enviada automaticamente quando uma ligação for rejeitada",
-        "defaultRejectMessage": "Desculpe, não atendemos ligações. Por favor, envie uma mensagem de texto."
+        "defaultRejectMessage": "Olá! Informamos que, por este WhatsApp, não estamos recebendo ligações. Para garantir um atendimento mais ágil e organizado, estamos priorizando o contato por mensagens. Fique à vontade para enviar textos ou áudios, como preferir!"
       }
     }
   },
