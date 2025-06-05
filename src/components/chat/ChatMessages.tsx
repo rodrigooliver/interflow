@@ -671,10 +671,16 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       }, async (payload) => {
         setLastSubscriptionUpdate(new Date());
         if (payload.eventType === 'INSERT') {
+          const newMessage = payload.new as Message;
+          
+          // Se a mensagem for agendada, não adicionar à lista principal
+          // O componente ScheduledMessages gerenciará essas mensagens
+          if (newMessage.status === 'scheduled') {
+            return;
+          }
+          
           setNewMessagesCount(prev => prev + 1);
           // console.log('payload INSERT', payload);
-          
-          const newMessage = payload.new as Message;
           
           // Verificar se o usuário está próximo do final
           const shouldAutoScroll = isNearBottom();

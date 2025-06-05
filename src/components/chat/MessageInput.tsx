@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, Smile, Send, Mic, Loader2, Image, FileText, X, Sparkles, Plus, Play, Pause, RefreshCw, ListTodo } from 'lucide-react';
+import { Bold, Italic, Smile, Send, Mic, Loader2, Image, FileText, X, Sparkles, Plus, Play, Pause, RefreshCw, ListTodo, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -164,6 +164,13 @@ export function MessageInput({
   
   // Adicionar estado para o modal de tarefa
   const [showTaskModal, setShowTaskModal] = useState(false);
+  
+  // Estados para agendamento de mensagens
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [isScheduleMode, setIsScheduleMode] = useState(false);
+  const [isScheduleExpanded, setIsScheduleExpanded] = useState(false);
   
   // Função para detectar se o dispositivo é móvel
   // Usada para alterar o comportamento da tecla Enter (quebra de linha em vez de enviar)
@@ -382,7 +389,7 @@ export function MessageInput({
     return false;
   };
 
-  const handleSendMessage = async (content: string | null, attachments?: File[], tempId?: string, attachmentUrls?: {url: string, type: string, name: string}[]) => {
+  const handleSendMessage = async (content: string | null, attachments?: File[], tempId?: string, attachmentUrls?: {url: string, type: string, name: string}[], scheduledFor?: string) => {
     try {
       // Garantir que temos um tempId válido
       if (!tempId) {
@@ -432,6 +439,11 @@ export function MessageInput({
         formData.append('replyToMessageId', replyTo.message.id);
       }
 
+      // Adicionar informação de agendamento se existir
+      if (scheduledFor) {
+        formData.append('scheduledFor', scheduledFor);
+      }
+
       // Se temos um ID temporário, adicioná-lo para rastreamento
       if (tempId) {
         formData.append('metadata', JSON.stringify({ tempId }));
@@ -448,8 +460,10 @@ export function MessageInput({
         throw new Error(response.data.error || t('errors.sending'));
       }
 
-      // Emitir evento para atualizar o status da mensagem otimista para "enviada"
-      if (tempId) {
+      // Se é uma mensagem agendada, não emitir evento de atualização de status
+      // pois não existe mensagem otimista para atualizar
+      if (!scheduledFor && tempId) {
+        // Emitir evento para atualizar o status da mensagem otimista para "enviada"
         const event = new CustomEvent('update-message-status', {
           detail: {
             id: tempId,
@@ -474,32 +488,34 @@ export function MessageInput({
       if (isConnectionError(error)) {
         errorMessage = t('errors.network', 'Erro de conexão. Verifique sua internet e tente novamente.');
         
-        // Adicionar à fila de reenvio quando online
-        setFailedMessages(prev => {
-          // Verificar se já existe na lista
-          if (prev.some(msg => msg.tempId === tempId)) {
-            return prev;
-          }
-          
-          return [...prev, { 
-            content: content?.trim() || null, 
-            attachments: attachments || [],
-            tempId
-          }];
-        });
-        
-        if (tempId) {
-          const event = new CustomEvent('update-message-status', {
-            detail: {
-              id: tempId,
-              status: 'failed',
-              isPending: false,
-              error_message: 'Falha ao enviar mensagem'
+        // Adicionar à fila de reenvio quando online (apenas para mensagens não agendadas)
+        if (!scheduledFor) {
+          setFailedMessages(prev => {
+            // Verificar se já existe na lista
+            if (prev.some(msg => msg.tempId === tempId)) {
+              return prev;
             }
+            
+            return [...prev, { 
+              content: content?.trim() || null, 
+              attachments: attachments || [],
+              tempId
+            }];
           });
-          window.dispatchEvent(event);
-        } else {
-          console.warn('tempId não definido ao tentar emitir evento de erro');
+          
+          if (tempId) {
+            const event = new CustomEvent('update-message-status', {
+              detail: {
+                id: tempId,
+                status: 'failed',
+                isPending: false,
+                error_message: 'Falha ao enviar mensagem'
+              }
+            });
+            window.dispatchEvent(event);
+          } else {
+            console.warn('tempId não definido ao tentar emitir evento de erro');
+          }
         }
       } else if (axios.isAxiosError(error) && error.response?.status === 429) {
         errorMessage = t('errors.tooManyRequests', 'Muitas mensagens em pouco tempo. Aguarde alguns segundos.');
@@ -520,7 +536,8 @@ export function MessageInput({
     }
   };
 
-  const handleSend = async () => {
+  const handleSend = async (scheduledFor?: string) => {
+    
     // Não bloqueamos mais o envio por problemas de conexão
     // Mostramos o aviso, mas deixamos o usuário continuar tentando
     if (!isSubscriptionReady) {
@@ -562,11 +579,11 @@ export function MessageInput({
         name: attachment.name
       }));
 
-    // Criar ID temporário para a mensagem otimista
-    const tempId = generateTempId();
+    // Criar ID temporário para a mensagem otimista (apenas se não for agendada)
+    const tempId = scheduledFor ? undefined : generateTempId();
 
-    // Se temos a função de adicionar mensagem otimista, usá-la
-    if (addOptimisticMessage) {
+    // Se temos a função de adicionar mensagem otimista e não é uma mensagem agendada, usá-la
+    if (addOptimisticMessage && !scheduledFor && tempId) {
       // Adicionar mensagem otimista ao estado
       addOptimisticMessage({
         id: tempId,
@@ -594,13 +611,23 @@ export function MessageInput({
 
     try {
       // Enviar mensagem com anexos (arquivos e URLs) em segundo plano
-      // A UI já foi atualizada com a mensagem otimista
+      // A UI já foi atualizada com a mensagem otimista (se não for agendada)
       await handleSendMessage(
         formattedMessage.trim() || null, 
         fileAttachments,
         tempId,
-        urlAttachments
+        urlAttachments,
+        scheduledFor
       );
+
+      // Se foi uma mensagem agendada, mostrar confirmação
+      if (scheduledFor) {
+        toast.success(t('schedule.success', 'Mensagem agendada com sucesso!'));
+        // Limpar a referência de resposta se existir
+        if (replyTo?.onClose) {
+          replyTo.onClose();
+        }
+      }
     } catch {
       // O erro já foi definido na função handleSendMessage
       // Não precisamos fazer nada aqui, pois o estado de envio já foi liberado acima
@@ -649,9 +676,9 @@ export function MessageInput({
         return;
       }
       
-      // Em desktop, enviar a mensagem
+      // Em desktop, usar a mesma lógica do botão de envio (incluindo agendamento)
       e.preventDefault();
-      handleSend();
+      handleSendClick();
     }
   };
 
@@ -701,7 +728,6 @@ export function MessageInput({
       for (const type of supportedMimeTypes) {
         if (MediaRecorder.isTypeSupported(type)) {
           mimeType = type;
-          console.log(`Formato suportado encontrado: ${mimeType}`);
           break;
         }
       }
@@ -944,7 +970,6 @@ export function MessageInput({
       try {
         // Tentar carregar o módulo de áudio
         const audioConverter = await import('../../lib/audioConverter');
-        console.log('Convertendo áudio para OGG/Opus...');
         
         // Converter o blob para OGG/Opus
         const targetFileName = `audio-${Date.now()}.ogg`;
@@ -987,7 +1012,7 @@ export function MessageInput({
         
       } catch (conversionError) {
         console.error('Erro na conversão de áudio:', conversionError);
-        console.log('Usando formato original sem conversão');
+        // console.log('Usando formato original sem conversão');
         
         // Determinar a extensão baseada no tipo MIME
         let extension = 'webm';
@@ -1533,13 +1558,24 @@ export function MessageInput({
   const renderSendButton = () => {
     // Primeiro verificamos se há mensagem ou anexos - isso tem prioridade
     if (message.trim() || pendingAttachments.length > 0) {
+      const scheduleDisplay = formatScheduleDisplay();
+      const buttonText = isScheduleMode && scheduleDisplay 
+        ? `📅 ${scheduleDisplay}` 
+        : '';
+
       return (
         <button
-          onClick={handleSend}
-          className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-          aria-label={t('send')}
+          onClick={handleSendClick}
+          className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center min-w-[36px]"
+          aria-label={isScheduleMode ? t('schedule.send', `Agendar para ${scheduleDisplay}`) : t('send')}
+          title={isScheduleMode ? t('schedule.send', `Agendar para ${scheduleDisplay}`) : t('send')}
         >
           <Send className="w-5 h-5" />
+          {buttonText && (
+            <span className="ml-2 text-xs whitespace-nowrap hidden sm:inline">
+              {buttonText}
+            </span>
+          )}
         </button>
       );
     }
@@ -1728,6 +1764,227 @@ export function MessageInput({
     
     // Abrir o modal de tarefa
     setShowTaskModal(true);
+  };
+
+  // Função para formatar data/hora para o agendamento
+  const handleScheduleMessage = () => {
+    // Verificar se há conteúdo para agendar
+    if (!message.trim() && pendingAttachments.length === 0) {
+      setError(t('schedule.errorNoContent', 'Digite uma mensagem ou adicione anexos para agendar'));
+      return;
+    }
+
+    if (!scheduleDate || !scheduleTime) {
+      setError(t('schedule.errorDateTime', 'Por favor, selecione data e hora'));
+      return;
+    }
+
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+    const now = new Date();
+
+    if (scheduledDateTime <= now) {
+      setError(t('schedule.errorPastDate', 'A data agendada deve ser no futuro'));
+      return;
+    }
+
+    // Enviar mensagem agendada
+    handleSend(scheduledDateTime.toISOString());
+    
+    // Fechar modal e limpar estados
+    setShowScheduleModal(false);
+    setScheduleDate('');
+    setScheduleTime('');
+  };
+
+
+
+  // Função para lidar com o envio (imediato ou agendado)
+  const handleSendClick = () => {
+    if (isScheduleMode) {
+      // Modo agendamento ativo - validar e agendar
+      
+      if (!scheduleDate || !scheduleTime) {
+        setError(t('schedule.errorDateTime', 'Por favor, selecione data e hora para agendar'));
+        return;
+      }
+
+      const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+      const now = new Date();
+      
+
+      if (scheduledDateTime <= now) {
+        setError(t('schedule.errorPastDate', 'A data agendada deve ser no futuro'));
+        return;
+      }
+
+      // Enviar mensagem agendada
+      handleSend(scheduledDateTime.toISOString());
+      
+      // Resetar modo agendamento após enviar
+      setIsScheduleMode(false);
+      setScheduleDate('');
+      setScheduleTime('');
+    } else {
+      // Modo normal - enviar imediatamente
+      handleSend();
+    }
+  };
+
+  // Função para alternar entre modo imediato e agendado
+  const toggleScheduleMode = () => {
+    setIsScheduleMode(!isScheduleMode);
+    if (!isScheduleMode) {
+      // Ao ativar o modo agendamento, definir valores padrão e expandir
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      setScheduleDate(tomorrow.toISOString().split('T')[0]);
+      setScheduleTime('09:00');
+      setIsScheduleExpanded(true);
+    } else {
+      // Ao desativar, limpar os valores e minimizar
+      setScheduleDate('');
+      setScheduleTime('');
+      setIsScheduleExpanded(false);
+    }
+  };
+
+  // Função para alternar expansão do agendamento
+  const toggleScheduleExpansion = () => {
+    if (isScheduleMode) {
+      setIsScheduleExpanded(!isScheduleExpanded);
+    }
+  };
+
+  // Função para formatar a data de agendamento para exibição
+  const formatScheduleDisplay = () => {
+    if (!scheduleDate || !scheduleTime) return '';
+    
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const isToday = scheduledDateTime.toDateString() === today.toDateString();
+    const isTomorrow = scheduledDateTime.toDateString() === tomorrow.toDateString();
+    
+    let dateStr = '';
+    if (isToday) {
+      dateStr = 'hoje';
+    } else if (isTomorrow) {
+      dateStr = 'amanhã';
+    } else {
+      dateStr = scheduledDateTime.toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      });
+    }
+    
+    const timeStr = scheduledDateTime.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    return `${dateStr} às ${timeStr}`;
+  };
+
+  // Função para aplicar atalhos rápidos de agendamento
+  const applyQuickSchedule = (type: 'in10min' | 'in1hour' | 'tomorrow9' | 'tomorrow12' | 'threeDays' | 'in7days' | 'nextWeek' | 'nextMonth') => {
+    const now = new Date();
+    const targetDate = new Date();
+    let targetTime = '';
+
+    switch (type) {
+      case 'in10min': {
+        const tenMinutesLater = new Date(now.getTime() + 10 * 60 * 1000);
+        targetDate.setTime(tenMinutesLater.getTime());
+        targetTime = `${tenMinutesLater.getHours().toString().padStart(2, '0')}:${tenMinutesLater.getMinutes().toString().padStart(2, '0')}`;
+        break;
+      }
+      case 'in1hour': {
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+        targetDate.setTime(oneHourLater.getTime());
+        targetTime = `${oneHourLater.getHours().toString().padStart(2, '0')}:${oneHourLater.getMinutes().toString().padStart(2, '0')}`;
+        break;
+      }
+
+      case 'tomorrow9': {
+        targetDate.setDate(now.getDate() + 1);
+        targetTime = '09:00';
+        break;
+      }
+      case 'tomorrow12': {
+        targetDate.setDate(now.getDate() + 1);
+        targetTime = '12:00';
+        break;
+      }
+
+      case 'threeDays': {
+        targetDate.setDate(now.getDate() + 3);
+        targetTime = '09:00';
+        break;
+      }
+      case 'in7days': {
+        targetDate.setDate(now.getDate() + 7);
+        targetTime = '09:00';
+        break;
+      }
+      case 'nextWeek': {
+        // Próxima segunda-feira às 9h
+        const daysUntilMonday = (8 - now.getDay()) % 7;
+        const daysToAdd = daysUntilMonday === 0 ? 7 : daysUntilMonday; // Se hoje é segunda, vai para próxima segunda
+        targetDate.setDate(now.getDate() + daysToAdd);
+        targetTime = '09:00';
+        break;
+      }
+      case 'nextMonth': {
+        // Mesmo dia do próximo mês, ou último dia se não existir
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+        // Se o dia não existir no próximo mês (ex: 31 de janeiro -> 28/29 de fevereiro)
+        if (nextMonth.getMonth() !== (now.getMonth() + 1) % 12) {
+          nextMonth.setDate(0); // Vai para o último dia do mês anterior (que seria o último dia do mês desejado)
+        }
+        targetDate.setTime(nextMonth.getTime());
+        targetTime = '09:00';
+        break;
+      }
+    }
+
+    setScheduleDate(targetDate.toISOString().split('T')[0]);
+    setScheduleTime(targetTime);
+  };
+
+  // Função para gerar label dos atalhos rápidos
+  const getQuickScheduleLabel = (type: 'in10min' | 'in1hour' | 'tomorrow9' | 'tomorrow12' | 'threeDays' | 'in7days' | 'nextWeek' | 'nextMonth') => {
+    switch (type) {
+      case 'in10min': {
+        return 'Em 10 min';
+      }
+      case 'in1hour': {
+        return 'Em 1 hora';
+      }
+
+      case 'tomorrow9': {
+        return 'Amanhã 9h';
+      }
+      case 'tomorrow12': {
+        return 'Amanhã 12h';
+      }
+
+      case 'threeDays': {
+        return 'Em 3 dias';
+      }
+      case 'in7days': {
+        return 'Em 7 dias';
+      }
+      case 'nextWeek': {
+        return 'Segunda que vem';
+      }
+      case 'nextMonth': {
+        return 'Próximo mês';
+      }
+    }
   };
 
   return (
@@ -1919,79 +2176,234 @@ export function MessageInput({
           <div className="flex flex-col">
             {/* Barra de formatação desktop - acima do input */}
             {!isMobileDevice() && (
-              <div className="formatting-toolbar flex items-center space-x-2 mb-1 flex-wrap sm:flex-nowrap">
-                <button
-                  onMouseDown={handleBoldClick}
-                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-                  title={t('formatting.bold')}
-                >
-                  <Bold className="w-5 h-5" />
-                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                    {isMac ? '⌘' : 'Ctrl'} B
-                  </span>
-                </button>
-                <button
-                  onMouseDown={handleItalicClick}
-                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-                  title={t('formatting.italic')}
-                >
-                  <Italic className="w-5 h-5" />
-                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                    {isMac ? '⌘' : 'Ctrl'} I
-                  </span>
-                </button>
-                <button
-                  onMouseDown={handleAIClick}
-                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-                  title={t('ai.improve')}
-                >
-                  <Sparkles className="w-5 h-5" />
-                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                    {isMac ? '⌘' : 'Ctrl'} J
-                  </span>
-                </button>
-                {/* Botão para adicionar tarefa */}
-                <button
-                  onMouseDown={handleTaskClick}
-                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-                  title={t('task.create', 'Criar tarefa relacionada a este chat')}
-                >
-                  <ListTodo className="w-5 h-5" />
-                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                    {t('task.shortcut', 'Tarefa')}
-                  </span>
-                </button>
-                {/* Botão de emoji - visível apenas em desktop */}
-                <div className="relative ml-auto" ref={emojiPickerRef}>
+              <div className="formatting-toolbar flex items-center justify-between mb-1">
+                {/* Grupo esquerdo - ferramentas de formatação */}
+                <div className="flex items-center space-x-2">
                   <button
-                    onClick={toggleEmojiPicker}
-                    className={`p-1 rounded-lg transition-colors ${
-                      showEmojiPicker
-                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
-                    } flex items-center`}
-                    title={t('emoji.title')}
+                    onMouseDown={handleBoldClick}
+                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                    title={t('formatting.bold')}
                   >
-                    <Smile className="w-5 h-5" />
+                    <Bold className="w-5 h-5" />
                     <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
-                      {isMac ? '⌘' : 'Ctrl'} E
+                      {isMac ? '⌘' : 'Ctrl'} B
                     </span>
                   </button>
-                  {showEmojiPicker && (
-                    <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
-                      <Picker
-                        data={data}
-                        onEmojiSelect={onEmojiSelect}
-                        locale={i18n.language}
-                        theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                        previewPosition="none"
-                        skinTonePosition="none"
-                        perLine={9}
-                        onMount={handleEmojiPickerMount}
-                        onUnmount={handleEmojiPickerUnmount}
-                        searchPosition="top"
-                        autoFocus={true}
-                      />
+                  <button
+                    onMouseDown={handleItalicClick}
+                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                    title={t('formatting.italic')}
+                  >
+                    <Italic className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {isMac ? '⌘' : 'Ctrl'} I
+                    </span>
+                  </button>
+                  <button
+                    onMouseDown={handleAIClick}
+                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                    title={t('ai.improve')}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {isMac ? '⌘' : 'Ctrl'} J
+                    </span>
+                  </button>
+                  {/* Botão para adicionar tarefa */}
+                  <button
+                    onMouseDown={handleTaskClick}
+                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                    title={t('task.create', 'Criar tarefa relacionada a este chat')}
+                  >
+                    <ListTodo className="w-5 h-5" />
+                    <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                      {t('task.shortcut', 'Tarefa')}
+                    </span>
+                  </button>
+                  
+                  {/* Botão de emoji */}
+                  <div className="relative" ref={emojiPickerRef}>
+                    <button
+                      onClick={toggleEmojiPicker}
+                      className={`p-1 rounded-lg transition-colors ${
+                        showEmojiPicker
+                          ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                      } flex items-center`}
+                      title={t('emoji.title')}
+                    >
+                      <Smile className="w-5 h-5" />
+                      <span className="ml-1 text-xs px-1.5 py-0.5 bg-gray-300 dark:bg-gray-600 rounded text-gray-600 dark:text-gray-300">
+                        {isMac ? '⌘' : 'Ctrl'} E
+                      </span>
+                    </button>
+                    {showEmojiPicker && (
+                      <div className="absolute bottom-full left-0 right-auto mb-2 z-50">
+                        <Picker
+                          data={data}
+                          onEmojiSelect={onEmojiSelect}
+                          locale={i18n.language}
+                          theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                          previewPosition="none"
+                          skinTonePosition="none"
+                          perLine={9}
+                          onMount={handleEmojiPickerMount}
+                          onUnmount={handleEmojiPickerUnmount}
+                          searchPosition="top"
+                          autoFocus={true}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Grupo direito - agendamento */}
+                <div className="flex items-center">
+                  {/* Seção de agendamento */}
+                  <div className={`flex items-center border rounded-lg transition-all duration-200 ${
+                    isScheduleMode 
+                      ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                  }`}>
+                    {/* Botão principal de toggle */}
+                    <button
+                      onClick={toggleScheduleMode}
+                      className={`flex items-center px-3 py-2 transition-colors ${
+                        isScheduleMode
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                      }`}
+                      title={isScheduleMode ? t('schedule.disable', 'Desativar agendamento') : t('schedule.enable', 'Ativar agendamento')}
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      <span className="text-sm font-medium">
+                        {t('schedule.title', 'Agendar envio')}
+                      </span>
+                      
+                      {/* Exibir data quando definida e minimizado */}
+                      {isScheduleMode && !isScheduleExpanded && scheduleDate && scheduleTime && (
+                        <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                          {formatScheduleDisplay()}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Botão de expansão (apenas quando agendamento está ativo) */}
+                    {isScheduleMode && (
+                      <button
+                        onClick={toggleScheduleExpansion}
+                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors border-l border-blue-200 dark:border-blue-700"
+                        title={isScheduleExpanded ? t('schedule.collapse', 'Minimizar') : t('schedule.expand', 'Expandir')}
+                      >
+                        {isScheduleExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Campos de agendamento expandidos (desktop) */}
+            {isScheduleMode && isScheduleExpanded && !isMobileDevice() && (
+              <div className="mb-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                {/* Atalhos rápidos */}
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {/* Opções de hoje primeiro */}
+                    <button
+                      onClick={() => applyQuickSchedule('in10min')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('in10min')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('in1hour')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('in1hour')}
+                    </button>
+
+                    
+                    {/* Opções de amanhã */}
+                    <button
+                      onClick={() => applyQuickSchedule('tomorrow9')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('tomorrow9')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('tomorrow12')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('tomorrow12')}
+                    </button>
+
+                    
+                    {/* Opções de longo prazo */}
+                    <button
+                      onClick={() => applyQuickSchedule('threeDays')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('threeDays')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('in7days')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('in7days')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('nextWeek')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('nextWeek')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('nextMonth')}
+                      className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('nextMonth')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Campos manuais */}
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      {t('schedule.date', 'Data:')}
+                    </label>
+                    <input
+                      type="date"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="text-sm px-3 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      {t('schedule.time', 'Hora:')}
+                    </label>
+                    <input
+                      type="time"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                      className="text-sm px-3 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {scheduleDate && scheduleTime && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-blue-600 dark:text-blue-400">→</span>
+                      <span className="text-sm bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full font-medium">
+                        {formatScheduleDisplay()}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -2001,39 +2413,160 @@ export function MessageInput({
             {/* Barra de formatação mobile - dentro do fluxo normal */}
             {isMobileDevice() && (
               <div 
-                className={`mobile-formatting-toolbar formatting-toolbar flex items-center space-x-1 flex-wrap sm:flex-nowrap
+                className={`mobile-formatting-toolbar formatting-toolbar flex items-center justify-between space-x-1
                   ${isTextareaFocused ? 'visible' : 'hidden'}
                 `}
               >
-                <button
-                  onMouseDown={handleBoldClick}
-                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-                  title={t('formatting.bold')}
-                >
-                  <Bold className="w-5 h-5" />
-                </button>
-                <button
-                  onMouseDown={handleItalicClick}
-                  className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
-                  title={t('formatting.italic')}
-                >
-                  <Italic className="w-5 h-5" />
-                </button>
-                <button
-                  onMouseDown={handleAIClick}
-                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-                  title={t('ai.improve')}
-                >
-                  <Sparkles className="w-5 h-5" />
-                </button>
-                {/* Botão para adicionar tarefa */}
-                <button
-                  onMouseDown={handleTaskClick}
-                  className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
-                  title={t('task.create', 'Criar tarefa relacionada a este chat')}
-                >
-                  <ListTodo className="w-5 h-5" />
-                </button>
+                {/* Ferramentas de formatação mobile */}
+                <div className="flex items-center space-x-1">
+                  <button
+                    onMouseDown={handleBoldClick}
+                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                    title={t('formatting.bold')}
+                  >
+                    <Bold className="w-5 h-5" />
+                  </button>
+                  <button
+                    onMouseDown={handleItalicClick}
+                    className={`p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center`}
+                    title={t('formatting.italic')}
+                  >
+                    <Italic className="w-5 h-5" />
+                  </button>
+                  <button
+                    onMouseDown={handleAIClick}
+                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                    title={t('ai.improve')}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                  </button>
+                  <button
+                    onMouseDown={handleTaskClick}
+                    className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400 flex items-center"
+                    title={t('task.create', 'Criar tarefa relacionada a este chat')}
+                  >
+                    <ListTodo className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                {/* Agendamento mobile compacto */}
+                <div className={`flex items-center rounded-lg border ${
+                  isScheduleMode 
+                    ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                }`}>
+                  <button
+                    onClick={toggleScheduleMode}
+                    className={`p-2 transition-colors ${
+                      isScheduleMode
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}
+                    title={t('schedule.title', 'Agendar envio')}
+                  >
+                    <Clock className="w-4 h-4" />
+                  </button>
+                  
+                  {isScheduleMode && (
+                    <button
+                      onClick={toggleScheduleExpansion}
+                      className="p-2 text-blue-600 dark:text-blue-400 border-l border-blue-200 dark:border-blue-700"
+                      title={isScheduleExpanded ? t('schedule.collapse', 'Minimizar') : t('schedule.expand', 'Expandir')}
+                    >
+                      {isScheduleExpanded ? (
+                        <ChevronUp className="w-3 h-3" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Campos de agendamento expandidos (mobile) */}
+            {isScheduleMode && isScheduleExpanded && isMobileDevice() && (
+              <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                {/* Atalhos rápidos mobile */}
+                <div className="mb-3">
+                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-2">
+                    {t('schedule.quickOptions', 'Atalhos:')}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <button
+                      onClick={() => applyQuickSchedule('in10min')}
+                      className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('in10min')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('in1hour')}
+                      className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('in1hour')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('tomorrow9')}
+                      className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('tomorrow9')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('tomorrow12')}
+                      className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('tomorrow12')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('threeDays')}
+                      className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('threeDays')}
+                    </button>
+                    <button
+                      onClick={() => applyQuickSchedule('in7days')}
+                      className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-600 rounded text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                    >
+                      {getQuickScheduleLabel('in7days')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Campos manuais mobile */}
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs text-blue-700 dark:text-blue-300 font-medium min-w-[35px]">
+                      Data:
+                    </label>
+                    <input
+                      type="date"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="flex-1 text-sm px-2 py-1 border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs text-blue-700 dark:text-blue-300 font-medium min-w-[35px]">
+                      Hora:
+                    </label>
+                    <input
+                      type="time"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                      className="flex-1 text-sm px-2 py-1 border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {scheduleDate && scheduleTime && (
+                    <div className="text-center">
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                        📅 {formatScheduleDisplay()}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -2127,6 +2660,64 @@ export function MessageInput({
           mode="create"
           chatId={chatId}
         />
+      )}
+
+      {/* Modal de agendamento */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {t('schedule.title', 'Agendar Mensagem')}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('schedule.date', 'Data')}
+                </label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('schedule.time', 'Hora')}
+                </label>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  setScheduleDate('');
+                  setScheduleTime('');
+                }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                {t('schedule.cancel', 'Cancelar')}
+              </button>
+              <button
+                onClick={handleScheduleMessage}
+                disabled={!scheduleDate || !scheduleTime}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {t('schedule.confirm', 'Agendar')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Lista de atalhos */}

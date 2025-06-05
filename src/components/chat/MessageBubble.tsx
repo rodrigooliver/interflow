@@ -266,7 +266,9 @@ export function MessageBubble({
   };
 
   // Verificação combinada para habilitar exclusão
-  const isDeletionAllowed = channelFeatures.canDeleteMessages && onDeleteMessage && canDeleteMessage() && isAgent;
+  // Para mensagens agendadas (chatStatus === 'scheduled'), sempre permitir exclusão independente das configurações do canal
+  const isDeletionAllowed = onDeleteMessage && canDeleteMessage() && isAgent && 
+    (chatStatus === 'scheduled' || channelFeatures.canDeleteMessages);
   
   const handleDelete = async () => {
     if (!onDeleteMessage || !canDeleteMessage()) return;
@@ -1320,7 +1322,7 @@ export function MessageBubble({
                     {t('actions.reply')}
                   </DropdownMenuItem>
                 )}
-                {canEditMessage() && channelFeatures.canEditMessages && (
+                {canEditMessage() && channelFeatures.canEditMessages && chatStatus !== 'scheduled' && (
                   <DropdownMenuItem onClick={handleEditClick}>
                     <Edit3 className="w-4 h-4 mr-2" />
                     {t('actions.edit')}

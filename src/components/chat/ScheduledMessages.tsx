@@ -124,6 +124,31 @@ export function ScheduledMessages({ chatId, channelFeatures, chat }: ScheduledMe
     }
   };
 
+  // Função para excluir mensagem agendada
+  const handleDeleteScheduledMessage = async (message: Message) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', message.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Remover da lista local
+      setScheduledMessages(prev => prev.filter(msg => msg.id !== message.id));
+      
+      // Disparar evento customizado para notificar outras partes da aplicação
+      window.dispatchEvent(new CustomEvent('scheduled-message-deleted', {
+        detail: { messageId: message.id }
+      }));
+    } catch (error) {
+      console.error('Erro ao excluir mensagem agendada:', error);
+      throw error;
+    }
+  };
+
   // Função para obter próxima mensagem agendada
   const getNextScheduledMessage = () => {
     if (scheduledMessages.length === 0) return null;
@@ -298,11 +323,14 @@ export function ScheduledMessages({ chatId, channelFeatures, chat }: ScheduledMe
                         {/* MessageBubble com estilo adaptado para agendadas */}
                         <div className="opacity-80 scale-95 transform">
                             <MessageBubble
-                             message={message}
+                             message={{
+                               ...message,
+                               created_at: message.scheduled_at || message.created_at
+                             }}
                              chatStatus="scheduled"
                              isHighlighted={false}
                              channelFeatures={channelFeatures}
-                             onDeleteMessage={undefined} // Não permitir deletar da seção agendada
+                             onDeleteMessage={handleDeleteScheduledMessage}
                              onRetry={undefined}
                              isDeleting={false}
                              chat={chat}
