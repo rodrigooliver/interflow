@@ -35,12 +35,12 @@ export default function SelectChannelType() {
   };
 
   const channelTypes = [
-    { 
-      id: 'whatsapp_official', 
-      name: t('types.whatsapp_official'),
-      description: t('descriptions.whatsapp_official'),
-      icon: getChannelIcon('whatsapp_official')
-    },
+    // { 
+    //   id: 'whatsapp_official', 
+    //   name: t('types.whatsapp_official'),
+    //   description: t('descriptions.whatsapp_official'),
+    //   icon: getChannelIcon('whatsapp_official')
+    // },
     ...(showWapi ? [{
       id: 'whatsapp_wapi', 
       name: t('types.whatsapp_wapi'),

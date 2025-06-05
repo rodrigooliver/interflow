@@ -334,7 +334,7 @@
   "title": "Canais de Atendimento",
   "types": {
     "whatsapp_official": "WhatsApp Business API",
-    "whatsapp_wapi": "WhatsApp WApi",
+    "whatsapp_wapi": "WhatsApp QRCode",
     "whatsapp_zapi": "WhatsApp ZApi",
     "whatsapp_evo": "WhatsApp Evolution API",
     "instagram": "Instagram",

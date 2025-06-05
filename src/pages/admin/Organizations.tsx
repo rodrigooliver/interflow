@@ -175,9 +175,9 @@ export default function Organizations() {
     // Inicializar valores de exibição
     setDisplayValues({
       usage_storage: usage.storage.limit > 0 ? (usage.storage.limit / 1024 / 1024 / 1024).toString() : '',
-      usage_tokens: usage.tokens.limit > 0 ? (usage.tokens.limit / 1000000).toString() : '',
+      usage_tokens: usage.tokens.limit > 0 ? usage.tokens.limit.toString() : '',
       used_storage: usage.storage.used > 0 ? (usage.storage.used / 1024 / 1024 / 1024).toString() : '',
-      used_tokens: usage.tokens.used > 0 ? (usage.tokens.used / 1000000).toString() : ''
+      used_tokens: usage.tokens.used > 0 ? usage.tokens.used.toString() : ''
     });
     
     setActiveTab('general');
@@ -456,7 +456,7 @@ export default function Organizations() {
                             ? 'text-red-600 dark:text-red-400 font-medium'
                             : 'text-gray-500 dark:text-gray-400'
                         }`}>
-                          Tokens: {((org.usage?.tokens?.used || 0) / 1000000).toFixed(1)}M/{((org.usage?.tokens?.limit || 0) / 1000000).toFixed(1)}M
+                          Tokens: {(org.usage?.tokens?.used || 0).toLocaleString('pt-BR')}/{(org.usage?.tokens?.limit || 0).toLocaleString('pt-BR')}
                         </div>
                         <div className={`${
                           (org.usage?.storage?.used || 0) > (org.usage?.storage?.limit || 0) && (org.usage?.storage?.limit || 0) > 0
@@ -1003,7 +1003,7 @@ export default function Organizations() {
                           type="number"
                           id="used_storage"
                           min="0"
-                          step="0.1"
+                          step="0.01"
                           className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
                           value={displayValues.used_storage || ''}
                           onChange={(e) => {
@@ -1030,7 +1030,7 @@ export default function Organizations() {
                           type="number"
                           id="usage_storage"
                           min="0"
-                          step="0.1"
+                          step="0.000001"
                           className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
                           value={displayValues.usage_storage}
                           onChange={(e) => {
@@ -1054,7 +1054,7 @@ export default function Organizations() {
 
                   {/* Tokens */}
                   <div className="mb-6">
-                    <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Tokens (Milhões)</h5>
+                    <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Tokens</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="used_tokens" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -1064,7 +1064,7 @@ export default function Organizations() {
                           type="number"
                           id="used_tokens"
                           min="0"
-                          step="0.1"
+                          step="1"
                           className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
                           value={displayValues.used_tokens || ''}
                           onChange={(e) => {
@@ -1076,7 +1076,7 @@ export default function Organizations() {
                                 ...editForm.usage, 
                                 tokens: { 
                                   ...editForm.usage.tokens, 
-                                  used: value === '' ? 0 : Math.round((parseFloat(value) || 0) * 1000000)
+                                  used: value === '' ? 0 : parseInt(value) || 0
                                 }
                               }
                             });
@@ -1091,7 +1091,7 @@ export default function Organizations() {
                           type="number"
                           id="usage_tokens"
                           min="0"
-                          step="0.1"
+                          step="1"
                           className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3"
                           value={displayValues.usage_tokens}
                           onChange={(e) => {
@@ -1103,7 +1103,7 @@ export default function Organizations() {
                                 ...editForm.usage, 
                                 tokens: { 
                                   ...editForm.usage.tokens, 
-                                  limit: value === '' ? 0 : Math.round((parseFloat(value) || 0) * 1000000)
+                                  limit: value === '' ? 0 : parseInt(value) || 0
                                 }
                               }
                             });
