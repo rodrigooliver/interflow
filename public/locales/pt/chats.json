@@ -117,7 +117,9 @@
   },
   "dateHeaders": {
     "today": "Hoje",
-    "yesterday": "Ontem"
+    "yesterday": "Ontem",
+    "tomorrow": "Amanhã",
+    "dayAfterTomorrow": "Depois de amanhã"
   },
   "emptyState": {
     "title": "Nenhum atendimento",
@@ -145,7 +147,22 @@
     "failed": "Falha ao enviar",
     "edited": "Editada",
     "deleted": "Mensagem apagada",
+    "scheduled": "Mensagem agendada",
     "sending": "Enviando..."
+  },
+  "scheduledMessages": "Mensagens Agendadas",
+  "scheduledMessage": {
+    "title": "Mensagens Agendadas",
+    "single": "1 mensagem programada para envio",
+    "multiple": "{{count}} mensagens programadas para envio",
+    "next": "Próxima",
+    "nextMessage": "Próxima mensagem",
+    "loading": "Carregando mensagens agendadas...",
+    "mediaMessage": "Mensagem com mídia",
+    "overdue": "Atrasada",
+    "inDays": "em {{days}} dias",
+    "inHours": "em {{hours}}h",
+    "inMinutes": "em {{minutes}}min"
   },
   "time": {
     "start": "Início",

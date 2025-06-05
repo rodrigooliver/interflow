@@ -104,10 +104,12 @@ export interface Message {
   organization_id: Organization;
   content: string;
   type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'email' | 
-        'user_entered' | 'user_left' | 'user_transferred' | 'user_transferred_himself' | 'user_closed' | 'user_start' | 'user_join' | 'template' | 'team_transferred' | 'location' | 'instructions_model' | 'task';
+        'user_entered' | 'user_left' | 'user_transferred' | 'user_transferred_himself' | 
+        'user_closed' | 'user_start' | 'user_join' | 'template' | 'team_transferred' | 
+        'location' | 'instructions_model' | 'task';
   sent_from_system: boolean;
   sender_type: 'customer' | 'agent' | 'system';
-  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted';
+  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted' | 'scheduled';
   attachments?: { url: string; type: string; name: string }[];
   error_message?: string;
   errorMessage?: string;
@@ -119,6 +121,7 @@ export interface Message {
   sender_agent?: Profile;
   sender_customer_id?: string;
   response_to?: Message;
+  scheduled_at?: string;
   metadata?: Record<string, unknown>;
 }
 

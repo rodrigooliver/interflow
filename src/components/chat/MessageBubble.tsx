@@ -234,6 +234,9 @@ export function MessageBubble({
   const canDeleteMessage = () => {
     if (!created_at) return false;
     
+    // Não permitir deletar se estiver no modo preview de agendada
+    // if (isScheduledPreview) return false;
+    
     // Mensagens pendentes podem ser excluídas a qualquer momento
     if (isPending) return true;
     
@@ -950,12 +953,59 @@ export function MessageBubble({
     );
   } else if (message.type === 'audio') {
     messageContent = (
-      <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}>
+      <div 
+        className={`flex ${isAgent ? 'justify-end' : 'justify-start'} group relative w-full ${isHighlighted ? 'highlighted-message' : ''}`}
+        onDoubleClick={handleReply}
+      >
         <div className={` min-w-[300px] max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-2 relative ${
           isAgent
             ? 'bg-gradient-to-r from-blue-700 to-blue-800 dark:from-blue-800/80 dark:to-blue-900/80 text-white'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
         } ${isPending ? '0.5 opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}>
+          
+          {isDeleting && (
+            <div className="absolute -top-6 right-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-red-300 dark:border-red-700">
+              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+              <span className="font-medium">{t('messageStatus.deleting', 'Excluindo...')}</span>
+            </div>
+          )}
+
+          {/* Dropdown Menu */}
+          <div className={`absolute top-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity ${
+            isCustomer ? 'right-0 mr-1 mt-1' : 'right-0 mr-1 mt-1'
+          }`}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  <MoreVertical className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                side={isCustomer ? "right" : "left"}
+              >
+                {chatStatus === 'in_progress' && channelFeatures.canReplyToMessages && onReply && (
+                  <DropdownMenuItem onClick={handleReply}>
+                    <Reply className="w-4 h-4 mr-2" />
+                    {t('actions.reply')}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
+                  <Info className="w-4 h-4 mr-2" />
+                  {t('actions.details')}
+                </DropdownMenuItem>
+                {isDeletionAllowed && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteModal(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('actions.delete')}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <AudioPlayer src={message?.attachments ? message?.attachments[0]?.url : ''} fileName={message?.attachments ? message?.attachments[0]?.name : ''} />
           
           {message.content && (
@@ -968,9 +1018,52 @@ export function MessageBubble({
               </div>
             </div>
           )}
-          {/* Exibir horário */}
-          <div className="absolute bottom-0 right-2 text-xs opacity-20">
+          
+          {/* Status e horário */}
+          <div className={`flex items-center justify-end space-x-1 text-xs mt-1 ${isAgent ? 'mr-0.5' : 'mr-1'} opacity-40 ${
+            isAgent
+              ? 'text-blue-100 dark:text-blue-200'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            {metadata?.edited === true && (
+              <span className="italic">{t('messageStatus.edited')}</span>
+            )}
             <span>{new Date(created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {isAgent && status && (
+              <>
+                <MessageStatus 
+                  status={status} 
+                  errorMessage={error_message}
+                  isPending={isPending}
+                />
+                {status === 'failed' && onRetry && (
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRetry(message);
+                      }}
+                      className="ml-2 px-2 py-0.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      {t('actions.retry')}
+                    </button>
+                    {isDeletionAllowed && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDeleteModal(true);
+                        }}
+                        className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs flex items-center whitespace-nowrap"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        {t('actions.delete')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -993,7 +1086,7 @@ export function MessageBubble({
           isAgent
             ? 'bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-700/80 dark:to-blue-900/60 text-gray-300 dark:text-gray-300'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-        } ${isPending ? 'mt-0.5 opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}>
+        } ${isPending ? 'opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}>
           
           {/* Dropdown Menu */}
           <div className={`absolute top-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity ${
@@ -1150,10 +1243,12 @@ export function MessageBubble({
       >
         <div
           className={`max-w-[85%] md:max-w-[75%] lg:max-w-[65%] rounded-lg p-1 relative ${
-            isAgent
-              ? 'bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-700/80 dark:to-blue-900/60 text-gray-300 dark:text-gray-300'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-          } ${isPending ? 'mt-0.5 opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}
+            status === 'scheduled' 
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600/80 dark:to-amber-700/60 text-white border-2 border-amber-300 dark:border-amber-500'
+              : isAgent
+                ? 'bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-700/80 dark:to-blue-900/60 text-gray-300 dark:text-gray-300'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+          } ${isPending ? 'opacity-50' : ''} ${isDeleting ? 'opacity-70 border-2 border-dashed border-red-300 dark:border-red-500 animate-pulse' : ''}`}
         >
           {isDeleting && (
             <div className="absolute -top-6 right-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs px-3 py-1 rounded-full flex items-center z-10 shadow-md animate-pulse border border-red-300 dark:border-red-700">
@@ -1161,6 +1256,7 @@ export function MessageBubble({
               <span className="font-medium">{t('messageStatus.deleting', 'Excluindo...')}</span>
             </div>
           )}
+          
           {message.response_to && (
             <button 
               onClick={() => {

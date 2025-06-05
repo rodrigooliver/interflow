@@ -1,10 +1,10 @@
 import React from 'react';
-import { Clock, Check, CheckCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, Check, CheckCheck, AlertCircle, Loader2, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
 interface MessageStatusProps {
-  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted';
+  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'deleted' | 'scheduled';
   errorMessage?: string;
   className?: string;
   isPending?: boolean;
@@ -32,6 +32,8 @@ export function MessageStatus({ status, errorMessage, className = '', isPending 
         return <Check className={`w-4 h-4 text-gray-100/60 dark:text-gray-400 ${className}`} />;
       case 'deleted':
         return <AlertCircle className={`w-4 h-4 text-gray-100/60 dark:text-gray-400 ${className}`} />;
+      case 'scheduled':
+        return <Calendar className={`w-4 h-4 text-amber-400 ${className}`} />;
       default:
         return null;
     }
@@ -53,6 +55,8 @@ export function MessageStatus({ status, errorMessage, className = '', isPending 
         return t('messageStatus.received');
       case 'deleted':
         return t('messageStatus.deleted');
+      case 'scheduled':
+        return t('messageStatus.scheduled');
       default:
         return '';
     }

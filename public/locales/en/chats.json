@@ -117,7 +117,9 @@
   },
   "dateHeaders": {
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "dayAfterTomorrow": "Day after tomorrow"
   },
   "emptyState": {
     "title": "No chats",
@@ -145,7 +147,22 @@
     "failed": "Failed to send",
     "edited": "Edited",
     "deleted": "Message deleted",
+    "scheduled": "Message scheduled",
     "sending": "Sending..."
+  },
+  "scheduledMessages": "Scheduled Messages",
+  "scheduledMessage": {
+    "title": "Scheduled Messages",
+    "single": "1 message scheduled for sending",
+    "multiple": "{{count}} messages scheduled for sending",
+    "next": "Next",
+    "nextMessage": "Next message",
+    "loading": "Loading scheduled messages...",
+    "mediaMessage": "Media message",
+    "overdue": "Overdue",
+    "inDays": "in {{days}} days",
+    "inHours": "in {{hours}}h",
+    "inMinutes": "in {{minutes}}min"
   },
   "time": {
     "start": "Start",

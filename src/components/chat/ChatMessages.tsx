@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { MessageInput } from './MessageInput';
 import { MessageBubble } from './MessageBubble';
+import { ScheduledMessages } from './ScheduledMessages';
 import { CustomerEditModal } from '../customers/CustomerEditModal';
 import { ChatResolutionModal } from './ChatResolutionModal';
 import { ChatAvatar } from './ChatAvatar';
@@ -255,6 +256,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
   const [lastSubscriptionUpdate, setLastSubscriptionUpdate] = useState<Date | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Estados para mensagens agendadas
+
+
   const [isViewingAllCustomerMessages, setIsViewingAllCustomerMessages] = useState(false);
 
   // Vamos adicionar estados para controlar o carregamento específico do botão
@@ -479,6 +483,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         
         // Sempre carregamos os detalhes do chat quando o chatId muda
         loadChat();
+        
+
       }
       
       // Sempre nos inscrevemos para atualizações de mensagens
@@ -706,6 +712,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             }
           }
           
+
+
           // Verificar se é uma resposta a outra mensagem e buscar a mensagem original
           if (newMessage.response_message_id) {
             try {
@@ -963,7 +971,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
             }
           }
           
-          // Atualizar a mensagem na lista primeiro
+          // Atualizar a mensagem na lista
           setMessages(prev => prev.map(msg => 
             msg.id === updatedMessage.id ? updatedMessage : msg
           ));
@@ -1108,6 +1116,11 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         if (payload.old && payload.old.id) {
           const deletedMessageId = payload.old.id;
           
+          // Sempre disparar evento para notificar componentes sobre exclusão
+          window.dispatchEvent(new CustomEvent('scheduled-message-deleted', {
+            detail: { messageId: deletedMessageId }
+          }));
+          
           // Verificar se a mensagem existe na lista atual do chat
           // Usando comparação com trim para evitar problemas com espaços
           const messageExists = messages.some(msg => msg.id && msg.id.trim() === deletedMessageId.trim());
@@ -1115,7 +1128,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           const failedMessageExists = failedMessages.some(msg => msg.id && msg.id.trim() === deletedMessageId.trim());
           const isDeletingMessage = deletingMessages.some(id => id && id.trim() === deletedMessageId.trim());
           
-          // Se a mensagem existir em qualquer uma das listas, processamos a exclusão
+          // Se a mensagem existir em qualquer uma das listas locais, processamos a exclusão das listas
           if (messageExists || optimisticMessageExists || failedMessageExists || isDeletingMessage) {
             // Método forçado: remover qualquer mensagem com ID semelhante
             const removeMsgWithSimilarId = (msg: Message) => {
@@ -1274,6 +1287,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           )
         `)
         .eq('chat_id', chatId)
+        .neq('status', 'scheduled')
         // .neq('status', 'deleted')
         .order('created_at', { ascending: false })
         .range(offset, offset + MESSAGES_PER_PAGE - 1);
@@ -1333,6 +1347,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
     }
     return;
   };
+
+
 
 
 
@@ -2068,6 +2084,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           )
         `)
         .eq('chat_id', chatId)
+        .neq('status', 'scheduled')
         .order('created_at', { ascending: false })
         .limit(MESSAGES_PER_PAGE);
       
@@ -2110,6 +2127,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               )
             `)
             .eq('chat_id', chatId)
+            .neq('status', 'scheduled')
             .lte('created_at', specificMessage.created_at)
             .order('created_at', { ascending: false })
             .limit(MESSAGES_PER_PAGE);
@@ -2939,6 +2957,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
           )
         `)
         .in('chat_id', chatIdList)
+        .neq('status', 'scheduled')
         .order('created_at', { ascending: false })
         .range(offset, offset + MESSAGES_PER_PAGE - 1);
         
@@ -3051,6 +3070,8 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
       return () => clearTimeout(timer);
     }
   }, [droppedFiles]);
+
+
 
   if (!chatId) {
     return (
@@ -3806,6 +3827,12 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Componente de mensagens agendadas fixo no topo da área de mensagens */}
+        <ScheduledMessages 
+          chatId={chatId}
+          channelFeatures={channelFeatures}
+          chat={chat}
+        />
         {/* Overlay para drag and drop independente do scroll */}
         {isDragging && chatAreaRect && createPortal(
           <div 
@@ -3861,6 +3888,9 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
               </div>
             )}
             
+            {/* Seção de mensagens agendadas */}
+
+
             {/* Renderização das mensagens com base no modo de visualização */}
             {messages.length > 0 && (
               <>
@@ -3978,7 +4008,7 @@ export function ChatMessages({ chatId, organizationId, onBack }: ChatMessagesPro
                 <div className="flex flex-col w-full">
                   {filteredOptimisticMessages.map((msg, index) => {
                     return (
-                      <div key={msg.id} className={index === 0 ? 'mt-4' : 'mt-0.5'}>
+                      <div key={msg.id} className={index === 0 ? 'mt-0.5' : 'mt-0.5'}>
                         <MessageBubble
                           message={msg as unknown as Message}
                           chatStatus={chat?.status || ''}
