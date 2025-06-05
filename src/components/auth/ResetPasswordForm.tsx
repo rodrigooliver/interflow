@@ -22,7 +22,9 @@ export default function ResetPasswordForm({ onSuccess, isModal = false }: ResetP
     setLoading(true);
     
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://interflow.chat/app/profile',
+      });
       
       if (resetError) {
         setError(t('resetPassword.errors.generic'));
