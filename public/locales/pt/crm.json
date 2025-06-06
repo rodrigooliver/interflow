@@ -44,7 +44,7 @@
   },
   "customers": {
     "addCustomer": "Adicionar Cliente",
-    "addToStage": "Adicionar Cliente a {stage}",
+    "addToStage": "Adicionar Cliente a {{stage}}",
     "searchPlaceholder": "Buscar clientes por nome, email ou telefone...",
     "noCustomersInStage": "Nenhum cliente neste estágio"
   },
