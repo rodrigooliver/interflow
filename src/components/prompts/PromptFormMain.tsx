@@ -29,6 +29,7 @@ import { Flow } from '../../types/database.ts';
 
 // Default OpenAI models (in case the API doesn't return any)
 const DEFAULT_OPENAI_MODELS = [
+  { id: 'gpt-4.1-mini', name: 'GPT-4.1-mini' },
   { id: 'gpt-4o', name: 'GPT-4o' },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
 ];
@@ -533,7 +534,7 @@ const PromptFormMain: React.FC = () => {
   } = useOpenAIIntegrations(currentOrganizationMember?.organization.id);
   
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [selectedModel, setSelectedModel] = useState('gpt-4o');
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1-mini');
   const [temperature, setTemperature] = useState(0.7);
   
   // Using the useOpenAIModels hook to fetch available models
