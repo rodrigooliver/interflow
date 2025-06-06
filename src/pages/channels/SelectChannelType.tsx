@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

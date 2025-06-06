@@ -21,7 +21,8 @@ const namespaces = [
   'settings',
   'landing',
   'schedules',
-  'tasks'
+  'tasks',
+  'bulkMessages'
 ] as const;
 
 export type Namespace = typeof namespaces[number];

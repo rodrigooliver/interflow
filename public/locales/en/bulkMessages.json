@@ -1,0 +1,146 @@
+{
+  "navigation": {
+    "backToCampaigns": "Back to campaigns"
+  },
+  "title": "Bulk Messages",
+  "subtitle": "Send messages to multiple customers automatically",
+  "campaign": {
+    "notFound": "Campaign not found",
+    "details": "Bulk message campaign details",
+    "editTitle": "Edit Campaign"
+  },
+  "status": {
+    "draft": "Draft",
+    "scheduled": "Scheduled",
+    "processing": "Processing",
+    "paused": "Paused",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "failed": "Failed",
+    "pending": "Pending",
+    "sent": "Sent"
+  },
+  "actions": {
+    "startCampaign": "Start Campaign",
+    "starting": "Starting...",
+    "pauseCampaign": "Pause Campaign",
+    "resumeCampaign": "Resume Campaign",
+    "refresh": "Refresh",
+    "editCampaign": "Edit Campaign"
+  },
+  "scheduling": {
+    "scheduledFor": "Scheduled for:",
+    "scheduledAt": "Scheduled",
+    "sentAt": "Sent at"
+  },
+  "stats": {
+    "total": "Total",
+    "pending": "Pending",
+    "processing": "Processing",
+    "sent": "Sent",
+    "failed": "Failed"
+  },
+  "queue": {
+    "title": "Message Queue",
+    "realtimeUpdates": "Real-time updates",
+    "noMessages": "No messages in queue",
+    "noMessagesWithFilter": "No {{status}} messages",
+    "customer": "Customer",
+    "channel": "Channel",
+    "status": "Status",
+    "batch": "Batch",
+    "batchInfo": "Batch {{number}} / Pos. {{position}}",
+    "action": "Action",
+    "viewInChat": "View message in chat",
+    "contactNotAvailable": "Contact not available",
+    "customerNotFound": "Customer not found",
+    "channelNotFound": "Channel not found"
+  },
+  "channelTypes": {
+    "whatsapp_official": "WhatsApp Business API",
+    "whatsapp_wapi": "WhatsApp QRCode",
+    "whatsapp_zapi": "WhatsApp ZApi",
+    "whatsapp_evo": "WhatsApp Evolution API",
+    "instagram": "Instagram",
+    "facebook": "Facebook Messenger",
+    "email": "Email",
+    "telegram": "Telegram"
+  },
+  "filters": {
+    "all": "All",
+    "pending": "Pending",
+    "processing": "Processing",
+    "sent": "Sent",
+    "failed": "Failed"
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} messages",
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "messages": {
+    "loadError": "Error loading campaign details",
+    "loadCampaignsError": "Error loading campaigns",
+    "startSuccess": "Campaign started successfully!",
+    "startError": "Error starting campaign",
+    "pauseSuccess": "Campaign paused successfully!",
+    "pauseError": "Error pausing campaign",
+    "resumeSuccess": "Campaign resumed successfully!",
+    "resumeError": "Error resuming campaign",
+    "resumeErrorGeneric": "Error resuming campaign",
+    "cancelSuccess": "Campaign cancelled successfully!",
+    "cancelError": "Error cancelling campaign",
+    "createSuccess": "Campaign created successfully!",
+    "updateSuccess": "Campaign updated successfully!",
+    "saveError": "Error saving campaign",
+    "deleteSuccess": "Campaign deleted successfully!",
+    "deleteError": "Error deleting campaign",
+    "deleteConfirm": "Are you sure you want to delete this campaign?",
+    "refreshError": "Error refreshing data"
+  },
+  "form": {
+    "newCampaign": "New Campaign",
+    "editCampaign": "Edit Campaign",
+    "createCampaign": "Create Campaign",
+    "updateCampaign": "Update Campaign",
+    "campaignName": "Campaign Name",
+    "campaignNameRequired": "Campaign Name *",
+    "description": "Description",
+    "scheduling": "Scheduling (Optional)",
+    "recipientFilters": "Recipient Filters",
+    "channel": "Channel",
+    "channelRequired": "Channel * (required)",
+    "selectChannel": "Select a channel",
+    "funnelStages": "Funnel Stages",
+    "tags": "Tags",
+    "sendingSettings": "Sending Settings",
+    "delayBetweenMessages": "Delay between messages (ms)",
+    "batchSize": "Batch size",
+    "delayBetweenBatches": "Delay between batches (ms)",
+    "messageContent": "Message Content",
+    "messageContentRequired": "Message Content *",
+    "messagePlaceholder": "Enter the message content that will be sent to all recipients...",
+    "estimatedRecipients": "Estimated recipients:",
+    "calculating": "Calculating...",
+    "cancel": "Cancel",
+    "immediate": "Immediate"
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "noCampaigns": "No campaigns created yet",
+    "createFirst": "Create your first campaign",
+    "campaign": "Campaign",
+    "recipients": "Recipients",
+    "progress": "Progress",
+    "sent": "sent",
+    "failed": "failed",
+    "viewDetails": "View campaign details",
+    "startCampaign": "Start campaign",
+    "editCampaign": "Edit campaign",
+    "pauseCampaign": "Pause campaign",
+    "resumeCampaign": "Resume campaign",
+    "cancelCampaign": "Cancel campaign",
+    "deleteCampaign": "Delete campaign"
+  }
+} 

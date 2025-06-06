@@ -85,6 +85,8 @@ import ScheduleHolidaysPage from './pages/schedules/management/ScheduleHolidaysP
 import Tasks from './pages/Tasks';
 import TaskDetails from './pages/TaskDetails';
 import NotificationTemplatesPage from './pages/schedules/NotificationTemplatesPage';
+import BulkMessages from './pages/bulk-messages/BulkMessages';
+import BulkMessageCampaignDetails from './pages/bulk-messages/BulkMessageCampaignDetails';
 
 // Import das novas páginas do sistema financeiro
 import FinancialDashboard from './pages/financial/FinancialDashboard';
@@ -715,6 +717,8 @@ function AppContent() {
                         <Route path="appointments" element={<AppointmentsPage />} />
                         <Route path="tasks" element={<Tasks />} />
                         <Route path="tasks/:id" element={<TaskDetails />} />
+                        <Route path="bulk-messages" element={<BulkMessages />} />
+                        <Route path="bulk-messages/:id" element={<BulkMessageCampaignDetails />} />
                         <Route path="schedules/list" element={<SchedulesListPage />} />
                         <Route path="schedules/:scheduleId/management" element={<ScheduleManagementPage />} />
                         <Route path="schedules/:scheduleId/availability" element={<ScheduleAvailabilityPage />} />

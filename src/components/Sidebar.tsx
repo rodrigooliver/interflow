@@ -121,6 +121,7 @@ const Sidebar = ({ onClose, isMobile = false, isCollapsed, setIsCollapsed }: Sid
 
   // Admin and owner only links
   const adminLinks: NavigationLinkWithChildren[] = [
+    { to: '/app/bulk-messages', icon: Share2, label: t('navigation:bulkMessages') },
     { to: '/app/prompts', icon: MessageSquareText, label: t('navigation:prompts') },
     { to: '/app/flows', icon: GitFork, label: t('navigation:flows') },
     { to: '/app/channels', icon: Share2, label: t('navigation:channels') },

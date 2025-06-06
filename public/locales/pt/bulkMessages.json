@@ -1,0 +1,146 @@
+{
+  "navigation": {
+    "backToCampaigns": "Voltar para campanhas"
+  },
+  "title": "Mensagens em Massa",
+  "subtitle": "Envie mensagens para múltiplos clientes de forma automatizada",
+  "campaign": {
+    "notFound": "Campanha não encontrada",
+    "details": "Detalhes da campanha de mensagens em massa",
+    "editTitle": "Editar Campanha"
+  },
+  "status": {
+    "draft": "Rascunho",
+    "scheduled": "Agendada",
+    "processing": "Processando",
+    "paused": "Pausada",
+    "completed": "Concluída",
+    "cancelled": "Cancelada",
+    "failed": "Falhou",
+    "pending": "Pendente",
+    "sent": "Processada"
+  },
+  "actions": {
+    "startCampaign": "Iniciar Campanha",
+    "starting": "Iniciando...",
+    "pauseCampaign": "Pausar Campanha",
+    "resumeCampaign": "Retomar Campanha",
+    "refresh": "Atualizar",
+    "editCampaign": "Editar Campanha"
+  },
+  "scheduling": {
+    "scheduledFor": "Agendada para:",
+    "scheduledAt": "Agendamento",
+    "sentAt": "Enviado em"
+  },
+  "stats": {
+    "total": "Total",
+    "pending": "Pendentes",
+    "processing": "Processando",
+    "sent": "Enviadas",
+    "failed": "Falhas"
+  },
+  "queue": {
+    "title": "Fila de Mensagens",
+    "realtimeUpdates": "Atualizações em tempo real",
+    "noMessages": "Nenhuma mensagem na fila",
+    "noMessagesWithFilter": "Nenhuma mensagem {{status}}",
+    "customer": "Cliente",
+    "channel": "Canal",
+    "status": "Status",
+    "batch": "Lote",
+    "batchInfo": "Lote {{number}} / Pos. {{position}}",
+    "action": "Ação",
+    "viewInChat": "Ver mensagem no chat",
+    "contactNotAvailable": "Contato não disponível",
+    "customerNotFound": "Cliente não encontrado",
+    "channelNotFound": "Canal não encontrado"
+  },
+  "channelTypes": {
+    "whatsapp_official": "WhatsApp Business API",
+    "whatsapp_wapi": "WhatsApp QRCode",
+    "whatsapp_zapi": "WhatsApp ZApi",
+    "whatsapp_evo": "WhatsApp Evolution API",
+    "instagram": "Instagram",
+    "facebook": "Facebook Messenger",
+    "email": "Email",
+    "telegram": "Telegram"
+  },
+  "filters": {
+    "all": "Todas",
+    "pending": "Pendentes",
+    "processing": "Processando",
+    "sent": "Enviadas",
+    "failed": "Falhas"
+  },
+  "pagination": {
+    "showing": "Mostrando {{start}} a {{end}} de {{total}} mensagens",
+    "page": "Página {{current}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Próxima"
+  },
+  "messages": {
+    "loadError": "Erro ao carregar detalhes da campanha",
+    "loadCampaignsError": "Erro ao carregar campanhas",
+    "startSuccess": "Campanha iniciada com sucesso!",
+    "startError": "Erro ao iniciar campanha",
+    "pauseSuccess": "Campanha pausada com sucesso!",
+    "pauseError": "Erro ao pausar campanha",
+    "resumeSuccess": "Campanha retomada com sucesso!",
+    "resumeError": "Erro ao retomar campanha",
+    "resumeErrorGeneric": "Erro ao retomar campanha",
+    "cancelSuccess": "Campanha cancelada com sucesso!",
+    "cancelError": "Erro ao cancelar campanha",
+    "createSuccess": "Campanha criada com sucesso!",
+    "updateSuccess": "Campanha atualizada com sucesso!",
+    "saveError": "Erro ao salvar campanha",
+    "deleteSuccess": "Campanha excluída com sucesso!",
+    "deleteError": "Erro ao excluir campanha",
+    "deleteConfirm": "Tem certeza que deseja excluir esta campanha?",
+    "refreshError": "Erro ao atualizar dados"
+  },
+  "form": {
+    "newCampaign": "Nova Campanha",
+    "editCampaign": "Editar Campanha",
+    "createCampaign": "Criar Campanha",
+    "updateCampaign": "Atualizar Campanha",
+    "campaignName": "Nome da Campanha",
+    "campaignNameRequired": "Nome da Campanha *",
+    "description": "Descrição",
+    "scheduling": "Agendamento (Opcional)",
+    "recipientFilters": "Filtros de Destinatários",
+    "channel": "Canal",
+    "channelRequired": "Canal * (obrigatório)",
+    "selectChannel": "Selecione um canal",
+    "funnelStages": "Estágios do Funil",
+    "tags": "Tags",
+    "sendingSettings": "Configurações de Envio",
+    "delayBetweenMessages": "Delay entre mensagens (ms)",
+    "batchSize": "Tamanho do lote",
+    "delayBetweenBatches": "Delay entre lotes (ms)",
+    "messageContent": "Conteúdo da Mensagem",
+    "messageContentRequired": "Conteúdo da Mensagem *",
+    "messagePlaceholder": "Digite o conteúdo da mensagem que será enviada para todos os destinatários...",
+    "estimatedRecipients": "Estimativa de destinatários:",
+    "calculating": "Calculando...",
+    "cancel": "Cancelar",
+    "immediate": "Imediato"
+  },
+  "campaigns": {
+    "title": "Campanhas",
+    "noCampaigns": "Nenhuma campanha criada ainda",
+    "createFirst": "Criar sua primeira campanha",
+    "campaign": "Campanha",
+    "recipients": "Destinatários",
+    "progress": "Progresso",
+    "sent": "enviadas",
+    "failed": "falharam",
+    "viewDetails": "Ver detalhes da campanha",
+    "startCampaign": "Iniciar campanha",
+    "editCampaign": "Editar campanha",
+    "pauseCampaign": "Pausar campanha",
+    "resumeCampaign": "Retomar campanha",
+    "cancelCampaign": "Cancelar campanha",
+    "deleteCampaign": "Excluir campanha"
+  }
+} 

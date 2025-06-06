@@ -977,6 +977,142 @@ export interface Task {
   };
 }
 
+// ==========================================
+// BULK MESSAGE INTERFACES
+// ==========================================
+
+/**
+ * Represents a bulk message campaign
+ * Used for sending messages to multiple customers at once
+ */
+export interface BulkMessageCampaign {
+  id: string;
+  organization_id: string | Organization;
+  created_by: string | Profile;
+  
+  // Informações da campanha
+  name: string;
+  description?: string;
+  content: string;
+  
+  // Configurações de envio
+  channel_id: string;
+  stage_ids?: string[];
+  tag_ids?: string[];
+  custom_field_filters?: Record<string, unknown>;
+  
+  // Configurações de timing
+  delay_between_messages: number; // em milissegundos
+  batch_size: number;
+  delay_between_batches: number; // em milissegundos
+  
+  // Agendamento
+  scheduled_at?: string;
+  
+  // Status e controle
+  status: 'draft' | 'scheduled' | 'processing' | 'paused' | 'completed' | 'cancelled' | 'failed';
+  started_at?: string;
+  completed_at?: string;
+  
+  // Estatísticas
+  total_recipients: number;
+  messages_sent: number;
+  messages_failed: number;
+  
+  // Metadados
+  metadata?: Record<string, unknown>;
+  
+  created_at: string;
+  updated_at: string;
+  
+  // Campos populados pelo join
+  created_by_profile?: Profile;
+  channels?: ChatChannel[];
+  stages?: CrmStage[];
+  tags?: Tag[];
+}
+
+/**
+ * Represents a message in the bulk message queue
+ */
+export interface BulkMessageQueue {
+  id: string;
+  campaign_id: string | BulkMessageCampaign;
+  organization_id: string | Organization;
+  
+  // Destinatário
+  customer_id: string | Customer;
+  channel_id: string | ChatChannel;
+  
+  // Conteúdo da mensagem
+  content: string;
+  
+  // Controle de envio
+  status: 'pending' | 'processing' | 'sent' | 'failed' | 'cancelled';
+  batch_number: number;
+  position_in_batch: number;
+  
+  // Timing
+  scheduled_at: string;
+  sent_at?: string;
+  
+  // Resultado
+  message_id?: string;
+  error_message?: string;
+  
+  // Metadados
+  metadata?: Record<string, unknown>;
+  
+  created_at: string;
+  updated_at: string;
+  
+  // Campos populados pelo join
+  customer?: Customer;
+  channel?: ChatChannel;
+  campaign?: BulkMessageCampaign;
+}
+
+/**
+ * Represents a log entry for bulk message campaigns
+ */
+export interface BulkMessageLog {
+  id: string;
+  campaign_id: string | BulkMessageCampaign;
+  organization_id: string | Organization;
+  
+  level: 'info' | 'warning' | 'error';
+  message: string;
+  details?: Record<string, unknown>;
+  
+  created_at: string;
+  
+  // Campos populados pelo join
+  campaign?: BulkMessageCampaign;
+}
+
+/**
+ * Interface for creating bulk message campaigns
+ */
+export interface BulkMessageCampaignFormData {
+  name: string;
+  description?: string;
+  content: string;
+  
+  // Filtros
+  channel_id: string;
+  stage_ids?: string[];
+  tag_ids?: string[];
+  custom_field_filters?: Record<string, unknown>;
+  
+  // Configurações de timing
+  delay_between_messages: number;
+  batch_size: number;
+  delay_between_batches: number;
+  
+  // Agendamento
+  scheduled_at?: string;
+}
+
 // Vamos renomear a interface existente para evitar conflito
 export interface ExistingTables {
   // Definindo uma interface específica para tabelas já existentes
