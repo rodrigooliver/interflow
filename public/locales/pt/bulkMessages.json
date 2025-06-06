@@ -97,6 +97,11 @@
     "deleteSuccess": "Campanha excluída com sucesso!",
     "deleteError": "Erro ao excluir campanha",
     "deleteConfirm": "Tem certeza que deseja excluir esta campanha?",
+    "deleteModalTitle": "Confirmar Exclusão",
+    "deleteModalMessage": "Tem certeza que deseja excluir a campanha \"{{campaignName}}\"? Esta ação não pode ser desfeita.",
+    "deleteModalCancel": "Cancelar",
+    "deleteModalDelete": "Excluir",
+    "deleteModalDeleting": "Excluindo...",
     "refreshError": "Erro ao atualizar dados"
   },
   "form": {

@@ -24,6 +24,8 @@ const BulkMessages: React.FC = () => {
   const [startingCampaign, setStartingCampaign] = useState<string | null>(null);
   const [pausingCampaign, setPausingCampaign] = useState<string | null>(null);
   const [resumingCampaign, setResumingCampaign] = useState<string | null>(null);
+  const [deletingCampaign, setDeletingCampaign] = useState<string | null>(null);
+  const [campaignToDelete, setCampaignToDelete] = useState<BulkMessageCampaign | null>(null);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -115,10 +117,6 @@ const BulkMessages: React.FC = () => {
       setLoading(false);
     }
   };
-
-
-
-
 
   const handleStartCampaign = async (campaignId: string) => {
     setStartingCampaign(campaignId);
@@ -213,22 +211,24 @@ const BulkMessages: React.FC = () => {
     }
   };
 
-  const handleDeleteCampaign = async (campaignId: string) => {
-    if (!confirm(t('messages.deleteConfirm'))) return;
+  const handleDeleteCampaign = async () => {
+    if (!campaignToDelete) return;
 
+    setDeletingCampaign(campaignToDelete.id);
     try {
-      const { error } = await supabase
-        .from('bulk_message_campaigns')
-        .delete()
-        .eq('id', campaignId);
+      const response = await api.delete(`/api/${currentOrganizationMember?.organization_id}/bulk-messages/${campaignToDelete.id}`);
 
-      if (error) throw error;
+      if (!response.data.message) {
+        throw new Error(response.data.message || 'Falha ao deletar campanha');
+      }
       
       showToast({ description: t('messages.deleteSuccess'), variant: 'success' });
+      setCampaignToDelete(null);
     } catch (error) {
       console.error('Erro ao excluir campanha:', error);
       showToast({ description: t('messages.deleteError'), variant: 'destructive' });
     } finally {
+      setDeletingCampaign(null);
       // Sempre recarrega a lista, independente de sucesso ou erro
       loadCampaigns();
     }
@@ -487,9 +487,9 @@ const BulkMessages: React.FC = () => {
                           </>
                         )}
                         
-                        {['draft', 'cancelled', 'completed', 'failed'].includes(campaign.status) && (
+                        {!['processing'].includes(campaign.status) && (
                           <button
-                            onClick={() => handleDeleteCampaign(campaign.id)}
+                            onClick={() => setCampaignToDelete(campaign)}
                             className="text-red-600 hover:text-red-900 dark:text-red-400"
                             title={t('campaigns.deleteCampaign')}
                           >
@@ -505,6 +505,46 @@ const BulkMessages: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Confirmação de Exclusão */}
+      {campaignToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              {t('messages.deleteModalTitle')}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {t('messages.deleteModalMessage', { campaignName: campaignToDelete.name })}
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setCampaignToDelete(null)}
+                disabled={deletingCampaign === campaignToDelete.id}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+              >
+                {t('messages.deleteModalCancel')}
+              </button>
+              <button
+                onClick={handleDeleteCampaign}
+                disabled={deletingCampaign === campaignToDelete.id}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingCampaign === campaignToDelete.id ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                    {t('messages.deleteModalDeleting')}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    {t('messages.deleteModalDelete')}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

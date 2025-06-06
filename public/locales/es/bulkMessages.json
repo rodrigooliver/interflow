@@ -97,6 +97,11 @@
     "deleteSuccess": "¡Campaña eliminada exitosamente!",
     "deleteError": "Error al eliminar campaña",
     "deleteConfirm": "¿Estás seguro de que deseas eliminar esta campaña?",
+    "deleteModalTitle": "Confirmar Eliminación",
+    "deleteModalMessage": "¿Estás seguro de que deseas eliminar la campaña \"{{campaignName}}\"? Esta acción no se puede deshacer.",
+    "deleteModalCancel": "Cancelar",
+    "deleteModalDelete": "Eliminar",
+    "deleteModalDeleting": "Eliminando...",
     "refreshError": "Error al actualizar datos"
   },
   "form": {
